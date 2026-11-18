@@ -1838,3 +1838,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** disponibilizar staging Supabase e D1/Worker isolados para rodar o aceite reversível e a sincronização real; revisar candidatos e vínculos na curadoria privada; só então avaliar merge e ativação pública com os gates aprovados.
 
 **DO_NOT_REPEAT:** não chamar testes SQLite/fixtures de integração Supabase/D1 real; não usar a referência produtiva para migrations ou exportação; não aprovar candidatos pelo rótulo do catálogo; não aplicar `0023`, publicar/deployar, ativar flag, fazer cutover ou indexar sem os gates.
+
+## Rodada 85 — expansão revisável de identidades candidatas (18/11/2026)
+
+- Na PR #33, acrescentei candidatos pesquisados para **Son Goku, Vegeta, Frieza (rótulo do catálogo: Freeza) e Majin Buu**, apoiados por quatro páginas do site oficial de Dragon Ball. Os quatro textos biográficos são rascunhos originais; claims de identidade, franquia e biografia estão ligados a fontes e permanecem `pending_human_review`.
+- Os vínculos foram preparados apenas para **IDs e slugs exatos** da fila: 48 Goku, 42 Vegeta, 28 Freeza e 28 Majin Buu. O total do pacote passa a **11 identidades candidatas pesquisadas**, **15 URLs oficiais**, **11 rascunhos biográficos** e **230 vínculos candidatos**. Cada vínculo preserva o status de origem/publicação do catálogo, mas continua sem evidência independente por modelo e requer revisão visual/editorial.
+- A validação da fila agora impede pares personagem–modelo duplicados, mas aceita o mesmo ID de modelo candidato ligado a personagens diferentes; não presume que 2.609 modelos sejam 2.609 identidades. Teste direcionado `node --test scripts/catalog/character-catalog-inventory.test.mjs`: **11/11**; `git diff --check` passou.
+- Estado permanece fechado: **0 identidades revisadas/aprovadas**, **0 vínculos revisados/aprovados**, **0 vínculos com evidência independente**. Nenhuma identidade foi gravada na curadoria, migration aplicada, exportação executada ou projeção publicada. Migration D1 `0023`, Supabase→D1 real, flag pública e M5 continuam bloqueados por falta de staging/D1 isolado e revisão editorial humana.
+
+**NEXT_ACTION:** revisar os 11 dossiês na curadoria privada canônica e fornecer Supabase/D1 isolados para homologar a exportação; manter a flag desligada e os candidatos sem aprovação até esses gates.
+
+**DO_NOT_REPEAT:** não converter fonte oficial da franquia em prova de que um render específico representa personagem; não tratar correspondência exata do rótulo como evidência; não fazer merge/deploy ou escrita em banco para contornar a ausência de staging.

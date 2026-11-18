@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 7,
-    "preparedCandidateModelLinkCount": 84
+    "sourceResearchedIdentityCount": 11,
+    "preparedCandidateModelLinkCount": 230
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 7,
+    "preparedIdentityCount": 11,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 84,
+    "preparedCandidateModelLinkCount": 230,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -117,6 +117,38 @@
       "url": "https://www.marvel.com/teams-and-groups/x-men/in-comics",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-goku-showcase",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #1: Goku Training Arc's Son Goku!",
+      "url": "https://en.dragon-ball-official.com/news/01_23.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-vegeta-saiyan-arc",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #237: Vegeta from the Saiyan Arc!",
+      "url": "https://en.dragon-ball-official.com/news/01_3929.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-freeza-first-form",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Weekly ☆ Character Showcase #23: First Form Frieza!",
+      "url": "https://en.dragon-ball-official.com/news/01_576.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "db-majin-buu",
+      "publisher": "Dragon Ball Official Site",
+      "title": "Only Saiyans Could Exterminate Them! Why One Cellular Biologist Theorizes Majin Buu Could Be a Slime Mold!",
+      "url": "https://en.dragon-ball-official.com/news/01_3001.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
     }
   ],
   "candidates": [
@@ -194,7 +226,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "titas-ravena-flutuando-sobre-cranios-e-corvos"
+          }
         },
         {
           "modelId": "mdl_bd818f3fb3fef507610e",
@@ -208,7 +245,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "titas-ravena-meditando-sobre-livros"
+          }
         }
       ],
       "catalogCandidateModelCount": 2
@@ -290,7 +332,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "league-of-legends-ahri-la-leyenda-inmortalizada-en-formato-de-lol"
+          }
         },
         {
           "modelId": "mdl_35e491ab019653182cb8",
@@ -304,7 +351,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "league-of-legends-ahri-k-da-league-of-legends"
+          }
         },
         {
           "modelId": "mdl_9b58f295436f6a142d28",
@@ -318,7 +370,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "league-of-legends-ahri-league-of-legends-spirit-blossom-ahri-stl-league-of-legends-principal"
+          }
         }
       ],
       "catalogCandidateModelCount": 3
@@ -405,7 +462,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-modelo-promocional-traje-verde"
+          }
         },
         {
           "modelId": "mdl_494c48db754d22258e85",
@@ -419,7 +481,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-estatua-cinza-com-tentaculos-erguidos"
+          }
         },
         {
           "modelId": "mdl_687712d3dcbd80f7d2f0",
@@ -433,7 +500,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-traje-verde-com-tentaculos-em-diorama"
+          }
         },
         {
           "modelId": "mdl_960324bb4aa775f2abc2",
@@ -447,7 +519,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-traje-classico-sobre-base-industrial"
+          }
         },
         {
           "modelId": "mdl_b1381150036f81520c04",
@@ -461,7 +538,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-traje-classico-em-diorama"
+          }
         },
         {
           "modelId": "mdl_fb753fe96c65851a8bff",
@@ -475,7 +557,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-doutor-octopus-estatua-cinza-com-tentaculos-abertos"
+          }
         }
       ],
       "catalogCandidateModelCount": 6
@@ -555,7 +642,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-zangief-02"
+          }
         },
         {
           "modelId": "mdl_73131c6468590689e854",
@@ -569,7 +661,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-zangief-04"
+          }
         },
         {
           "modelId": "mdl_d77d7f95e30480a991db",
@@ -583,7 +680,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-zangief-03"
+          }
         },
         {
           "modelId": "mdl_fac3f533d461667fb129",
@@ -597,7 +699,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "street-fighter-zangief"
+          }
         }
       ],
       "catalogCandidateModelCount": 4
@@ -689,7 +796,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-absoluto-estatua-colorida"
+          }
         },
         {
           "modelId": "mdl_15e4be7003756987df96",
@@ -703,7 +815,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-estatua-colorida-sobre-gargula"
+          }
         },
         {
           "modelId": "mdl_15f27ffaed7c34388d94",
@@ -717,7 +834,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-origins-sobre-pedestal-gotico"
+          }
         },
         {
           "modelId": "mdl_175e3ad27874605eceee",
@@ -731,7 +853,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-estatua-cinza-em-gargula"
+          }
         },
         {
           "modelId": "mdl_19f93c59d12a54c79613",
@@ -745,7 +872,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-estatua-modelo-marrom-sobre-rocha"
+          }
         },
         {
           "modelId": "mdl_1dd17d993d3c38d4ba01",
@@ -759,7 +891,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-armadura-estatua-cinza-sobre-base"
+          }
         },
         {
           "modelId": "mdl_274cbc3cb49c4f49e925",
@@ -773,7 +910,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-grim-knight-com-armamento-pesado"
+          }
         },
         {
           "modelId": "mdl_7120657fdc8c5558fb1c",
@@ -787,7 +929,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-sobre-tubarao-em-diorama"
+          }
         },
         {
           "modelId": "mdl_84516f55cfb068fd8b85",
@@ -801,7 +948,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-dark-crusader-sobre-gargula"
+          }
         },
         {
           "modelId": "mdl_8e948f8b4e6e619bfa05",
@@ -815,7 +967,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-dark-knight-agachado-sobre-gargula"
+          }
         },
         {
           "modelId": "mdl_952cdae65a6fabb5e952",
@@ -829,7 +986,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-armadura-pesada-com-arma"
+          }
         },
         {
           "modelId": "mdl_a2c3cd27fdd2b38cd3ff",
@@ -843,7 +1005,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-sentado-no-trono-na-batcaverna"
+          }
         },
         {
           "modelId": "mdl_b38c91e328ec3298f081",
@@ -857,7 +1024,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-zack-snyder-estatua-cinza"
+          }
         },
         {
           "modelId": "mdl_b3b39f371cfe6388ba76",
@@ -871,7 +1043,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-sobre-torre-gotica"
+          }
         },
         {
           "modelId": "mdl_b3d7635fd06c019778da",
@@ -885,7 +1062,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-estatua-cinza-sobre-rocha"
+          }
         },
         {
           "modelId": "mdl_b6c10bda28bbee1b6a82",
@@ -899,7 +1081,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-com-bat-sinal-em-estatua"
+          }
         },
         {
           "modelId": "mdl_bcd3efa5d9bf83857d7a",
@@ -913,7 +1100,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-begins-sobre-pedestal"
+          }
         },
         {
           "modelId": "mdl_c1d0f543497b64c64e52",
@@ -927,7 +1119,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-absoluto-com-machados"
+          }
         },
         {
           "modelId": "mdl_f3f3804fb9c693f2c368",
@@ -941,7 +1138,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-beyond-armadura-preta-e-vermelha"
+          }
         },
         {
           "modelId": "mdl_f6d22cf61510c59aa022",
@@ -955,7 +1157,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-chibi-em-diorama"
+          }
         },
         {
           "modelId": "mdl_fc2638f3965c08c743ff",
@@ -969,7 +1176,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-batman-busto-estatua-cinza"
+          }
         }
       ]
     },
@@ -1051,7 +1263,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-classico-traje-roxo-com-carta"
+          }
         },
         {
           "modelId": "mdl_07693ad24c8ef3ecd685",
@@ -1065,7 +1282,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-jared-leto-em-estatua"
+          }
         },
         {
           "modelId": "mdl_08cf757918e46022b8bc",
@@ -1079,7 +1301,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-traje-roxo-em-diorama"
+          }
         },
         {
           "modelId": "mdl_194bf4644afdcfddee9e",
@@ -1093,7 +1320,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-traje-vermelho-no-palco"
+          }
         },
         {
           "modelId": "mdl_1b6d4681d1ce7ce2e8e0",
@@ -1107,7 +1339,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-chibi-traje-roxo"
+          }
         },
         {
           "modelId": "mdl_222a680601af42aa64a2",
@@ -1121,7 +1358,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-absoluto-monstruoso-em-diorama"
+          }
         },
         {
           "modelId": "mdl_27500867faf0aa348081",
@@ -1135,7 +1377,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-busto-colorido-sorrindo"
+          }
         },
         {
           "modelId": "mdl_27ac8bbb831c8b7370c4",
@@ -1149,7 +1396,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-heath-ledger-com-mascara-na-mao"
+          }
         },
         {
           "modelId": "mdl_375e5295b44392477123",
@@ -1163,7 +1415,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-animado-com-tnt"
+          }
         },
         {
           "modelId": "mdl_48a24a98c8efae6ea0d0",
@@ -1177,7 +1434,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-estatua-cinza-sobre-base"
+          }
         },
         {
           "modelId": "mdl_52becd73a5a675aec690",
@@ -1191,7 +1453,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-heath-ledger-com-arma-em-diorama"
+          }
         },
         {
           "modelId": "mdl_752795029ddfda3ad2a9",
@@ -1205,7 +1472,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-estatua-cinza-em-escada"
+          }
         },
         {
           "modelId": "mdl_7ac94a08f91a26997e6a",
@@ -1219,7 +1491,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-heath-ledger-sentado-na-cadeira"
+          }
         },
         {
           "modelId": "mdl_81c323cacd493c3e21fe",
@@ -1233,7 +1510,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-arkham-estatua-cinza"
+          }
         },
         {
           "modelId": "mdl_8ad3ee741b623f9d5505",
@@ -1247,7 +1529,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-cesar-romero-em-diorama"
+          }
         },
         {
           "modelId": "mdl_b8ca1abf2029e7137e27",
@@ -1261,7 +1548,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-traje-vermelho-dancando-na-escada"
+          }
         },
         {
           "modelId": "mdl_c6a96b072f4007bfd229",
@@ -1275,7 +1567,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-enfermeira-dupla-vista"
+          }
         },
         {
           "modelId": "mdl_c83974608c9c8ac271d5",
@@ -1289,7 +1586,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "batman-coringa-busto-estilizado-colorido"
+          }
         }
       ]
     },
@@ -1376,7 +1678,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-traje-marrom-em-diorama"
+          }
         },
         {
           "modelId": "mdl_08d88c9d9cd39758b575",
@@ -1390,7 +1697,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-azul-amarelo-concept-render"
+          }
         },
         {
           "modelId": "mdl_117cc81eeedfd16243f5",
@@ -1404,7 +1716,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-wolverine-classico-neve"
+          }
         },
         {
           "modelId": "mdl_192ad5b0f7ce80f13f70",
@@ -1418,7 +1735,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "herois-individuais-wolverine-arma-x"
+          }
         },
         {
           "modelId": "mdl_23869ae3149d43b42a7a",
@@ -1432,7 +1754,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-chibi-com-visor-e-garras"
+          }
         },
         {
           "modelId": "mdl_2f5e3899b7c8c974a06f",
@@ -1446,7 +1773,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-arma-x-diorama"
+          }
         },
         {
           "modelId": "mdl_2fe8192a21df84564743",
@@ -1460,7 +1792,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-busto-estilizado"
+          }
         },
         {
           "modelId": "mdl_43069b20371abe5fc072",
@@ -1474,7 +1811,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-hugh-jackman-estatua-corpo-inteiro"
+          }
         },
         {
           "modelId": "mdl_46f8c2e0c830ae929094",
@@ -1488,7 +1830,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-agachado-modelo-cinza"
+          }
         },
         {
           "modelId": "mdl_5afe38d6422e71732859",
@@ -1502,7 +1849,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-busto-e-corpo-modelos-cinza"
+          }
         },
         {
           "modelId": "mdl_5b0a0555993ae6275c91",
@@ -1516,7 +1868,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-traje-preto-sobre-inimigo"
+          }
         },
         {
           "modelId": "mdl_66197d7f900d022a4ace",
@@ -1530,7 +1887,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-kit-de-pecas-modelo-3d"
+          }
         },
         {
           "modelId": "mdl_80720ca0806800aaada3",
@@ -1544,7 +1906,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-modelo-cinza-agachado-sobre-escombros"
+          }
         },
         {
           "modelId": "mdl_90f401c38862bc331dc2",
@@ -1558,7 +1925,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-azul-amarelo-diorama-dinamico"
+          }
         },
         {
           "modelId": "mdl_996ac70a1cbbc7535f8e",
@@ -1572,7 +1944,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-busto-gambody"
+          }
         },
         {
           "modelId": "mdl_9f1f717547bb28b0d81f",
@@ -1586,7 +1963,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-logan-estatua-em-pose"
+          }
         },
         {
           "modelId": "mdl_a7fdc591346ace0f879d",
@@ -1600,7 +1982,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-render-com-garras"
+          }
         },
         {
           "modelId": "mdl_adb15d71b78a1492e028",
@@ -1614,7 +2001,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-marrom-amarelo-sobre-rocha"
+          }
         },
         {
           "modelId": "mdl_b3f43678ccb99b15d614",
@@ -1628,7 +2020,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-agachado-sobre-tronco"
+          }
         },
         {
           "modelId": "mdl_b594ad3721879ff4c1f5",
@@ -1642,7 +2039,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-busto-musculoso-com-garras"
+          }
         },
         {
           "modelId": "mdl_b78b3528dcc526dda5aa",
@@ -1656,7 +2058,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-amarelo-sobre-escombros"
+          }
         },
         {
           "modelId": "mdl_b9a1919c7a52253de81a",
@@ -1670,7 +2077,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-azul-amarelo-em-pe"
+          }
         },
         {
           "modelId": "mdl_c06aff20c39ab2a390a6",
@@ -1684,7 +2096,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-logan-diorama-industrial-dupla-vista"
+          }
         },
         {
           "modelId": "mdl_c49b530059713875a3aa",
@@ -1698,7 +2115,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-rustico-diorama-com-garras"
+          }
         },
         {
           "modelId": "mdl_ccd630b33f6c409032e7",
@@ -1712,7 +2134,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-com-efeito-de-chamas"
+          }
         },
         {
           "modelId": "mdl_db7d00f32692b0858f85",
@@ -1726,7 +2153,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-azul-amarelo-com-motocicleta"
+          }
         },
         {
           "modelId": "mdl_e0551fe4bde6190d9d8f",
@@ -1740,7 +2172,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-agachado-em-diorama"
+          }
         },
         {
           "modelId": "mdl_e75d913a593c54c7d51a",
@@ -1754,7 +2191,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-classico-marrom-amarelo-em-pe-com-garras"
+          }
         },
         {
           "modelId": "mdl_e9a0606f0efbc4023786",
@@ -1768,7 +2210,12 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-dinamico-modelo-cinza"
+          }
         },
         {
           "modelId": "mdl_ec953a96095732c4a0b1",
@@ -1782,9 +2229,3016 @@
           ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
-          "reviewRequired": true
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "equipes-e-grupos-wolverine-sobre-ninjas-derrotados"
+          }
         }
       ]
+    },
+    {
+      "candidateName": "Son Goku",
+      "catalogDisplayNameCandidate": "Goku",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Son Goku",
+          "sourceIds": [
+            "db-goku-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-goku-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.mountain_upbringing",
+          "value": "A fonte oficial o descreve como uma criança criada nas montanhas por Son Gohan, com força extraordinária e pouca familiaridade com o mundo exterior.",
+          "sourceIds": [
+            "db-goku-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.meeting_bulma_and_quest",
+          "value": "A Esfera de Quatro Estrelas de Goku leva ao encontro com Bulma, e ele decide acompanhá-la em sua jornada pelas Esferas do Dragão.",
+          "sourceIds": [
+            "db-goku-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Son Goku é apresentado como uma criança criada nas montanhas, de força incomum e pouca experiência com o mundo. Depois de conhecer Bulma por causa da Esfera de Quatro Estrelas, ele a acompanha na busca pelas Esferas do Dragão e segue treinando.",
+      "biographySourceIds": [
+        "db-goku-showcase"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O inventário usa o rótulo curto Goku, enquanto a fonte oficial apresenta Son Goku; a forma de exibição/alias deve ser decidida na revisão editorial.",
+        "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Formas, idades, sagas e composições de cada modelo precisam de revisão visual por ID; os vínculos abaixo continuam sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0d847949106c75465356",
+          "modelSlug": "dragon-ball-goku-ssj4-3",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ssj4-3"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_0ea4bde9ab80c664ecb8",
+          "modelSlug": "dragon-ball-goku-super-saiyan-4-1-3-173056",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-4-1-3-173056"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_147a0863f4a3df165d59",
+          "modelSlug": "dragon-ball-goku-busto-dragon-ball-107452",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-busto-dragon-ball-107452"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_19466a7d31b3ffb6319c",
+          "modelSlug": "dragon-ball-goku-fogo-close-rosto-109784",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-fogo-close-rosto-109784"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1fa344b5c134c7cbe70d",
+          "modelSlug": "dragon-ball-goku-super-saiyan-bust-1-165403",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-bust-1-165403"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_30ab0799dae420d506d2",
+          "modelSlug": "dragon-ball-goku-super-saiyan-3-1-181644",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-3-1-181644"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_31e4e17aee071462c62c",
+          "modelSlug": "dragon-ball-goku-oozaru-2-181393",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-oozaru-2-181393"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3978ce568ae7d4056d66",
+          "modelSlug": "dragon-ball-goku-flying-kick-1-140324",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-flying-kick-1-140324"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3d41b4367520099cbfd3",
+          "modelSlug": "dragon-ball-goku-ultra-instinct-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ultra-instinct-2"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3e8677c8765aa6b1b1db",
+          "modelSlug": "dragon-ball-goku-super-saiyan-bust-variant-105725",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-bust-variant-105725"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_52cffc0d9a152dd1a05f",
+          "modelSlug": "dragon-ball-goku-snow-globe-108176",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-snow-globe-108176"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_535531cf9a96f36b68f0",
+          "modelSlug": "dragon-ball-goku-sunglasses-chibi-1-139446",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-sunglasses-chibi-1-139446"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5468f259e5388a821978",
+          "modelSlug": "dragon-ball-goku-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-01"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_54a5179a933adde83b9d",
+          "modelSlug": "dragon-ball-goku-chibi-44-111774",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-chibi-44-111774"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_59c7017ca7468e9fd01b",
+          "modelSlug": "dragon-ball-goku-oozaru-1-179239",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-oozaru-1-179239"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6b9cc9332f4f4a3a956f",
+          "modelSlug": "dragon-ball-goku-ultra-instinct-1-177488",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ultra-instinct-1-177488"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_6c23efb992aa6072e873",
+          "modelSlug": "dragon-ball-goku-card-solo-111002",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-card-solo-111002"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_72894003270966e555fa",
+          "modelSlug": "dragon-ball-goku-super-saiyan-4-1-148295",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-4-1-148295"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_780cefc3f82b472eafb1",
+          "modelSlug": "dragon-ball-goku-ultra-instinct-head-option-1-132772",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ultra-instinct-head-option-1-132772"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_79f5705af3966f12ea06",
+          "modelSlug": "dragon-ball-goku-kid-1-178044",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-kid-1-178044"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_81a104c34bfe3f32739c",
+          "modelSlug": "dragon-ball-goku-child-chibi-1-180860",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-child-chibi-1-180860"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8272d3548603eaca1417",
+          "modelSlug": "dragon-ball-goku-super-saiyan-4-1-1-173054",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-4-1-1-173054"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_83a9316b9ccb05ae8565",
+          "modelSlug": "dragon-ball-goku-standing-figure-76450",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-standing-figure-76450"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8752ba8e540142a78444",
+          "modelSlug": "dragon-ball-goku-super-saiyan-god-1-181204",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-god-1-181204"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8f4e26d0784f0b6d989f",
+          "modelSlug": "dragon-ball-goku-super-saiyan-4-1-2-173055",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-4-1-2-173055"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_90359210cb1badb7ef1a",
+          "modelSlug": "dragon-ball-goku-super-saiyan-figure-104650",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-figure-104650"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_909f2bc5aac668852538",
+          "modelSlug": "dragon-ball-goku-ssj3-standing-1-181011",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ssj3-standing-1-181011"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9c5dfbfd88fc1773544f",
+          "modelSlug": "dragon-ball-goku-child-angry-1-180690",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-child-angry-1-180690"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a06b7e33b1e40e0bebce",
+          "modelSlug": "dragon-ball-goku-super-saiyan-bust-variant-105724",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-bust-variant-105724"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a0ef010befc83302cf3a",
+          "modelSlug": "dragon-ball-goku-staff-1-177471",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-staff-1-177471"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_aa7dd97adc7c5a43adc1",
+          "modelSlug": "dragon-ball-goku-super-saiyan-bust-variant-105723",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-bust-variant-105723"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ad6e83f62f2bc5393422",
+          "modelSlug": "dragon-ball-goku-sab-jacket-bust-1-181120",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-sab-jacket-bust-1-181120"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b856caf3a65e5876c4e4",
+          "modelSlug": "dragon-ball-goku-journey-to-the-west-1-174184",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-journey-to-the-west-1-174184"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bae4a2e0b5b08fc3d095",
+          "modelSlug": "dragon-ball-goku-fogo-frente-109782",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-fogo-frente-109782"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c6dfef2def2c25884737",
+          "modelSlug": "dragon-ball-goku-ultra-instinct-blue-aura-1-182201",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-ultra-instinct-blue-aura-1-182201"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d1dae36adf96d3f7714d",
+          "modelSlug": "dragon-ball-goku-chibi-45-111775",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-chibi-45-111775"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d79e42da8d427840bbc0",
+          "modelSlug": "dragon-ball-goku-chibi-dragon-ball-1-183477",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-chibi-dragon-ball-1-183477"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_db784d1b569f92d2fb82",
+          "modelSlug": "dragon-ball-goku-super-saiyan-bust-variant-105722",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-bust-variant-105722"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ddc597b669b3fd49f5bc",
+          "modelSlug": "dragon-ball-goku-super-saiyan-4-1-4-173057",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-4-1-4-173057"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_de7cb1d9eecf9a53ad3b",
+          "modelSlug": "dragon-ball-goku-snow-globe-105083",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-snow-globe-105083"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ded59b90e100df5055f4",
+          "modelSlug": "dragon-ball-goku-bust-special-extra-114363",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-bust-special-extra-114363"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e1a00d3940c064a280dd",
+          "modelSlug": "dragon-ball-goku-spirit-bomb-diorama-112977",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-spirit-bomb-diorama-112977"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e3746365fc5831b414b5",
+          "modelSlug": "dragon-ball-goku-kid-figure-120041",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-kid-figure-120041"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e8eb3333c6110daaea3e",
+          "modelSlug": "dragon-ball-goku-orange-fire-statue-112262",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-orange-fire-statue-112262"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_eb37781f5147725ff6ca",
+          "modelSlug": "dragon-ball-goku-super-saiyajin-blue-98936",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyajin-blue-98936"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ebd31691758f0eaed71e",
+          "modelSlug": "dragon-ball-goku-fogo-close-corpo-109783",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-fogo-close-corpo-109783"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f19ab5198430178c8613",
+          "modelSlug": "dragon-ball-goku-super-saiyan-3-1-177125",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-3-1-177125"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f353f16cd8f132b741aa",
+          "modelSlug": "dragon-ball-goku-super-saiyan-basquete-108647",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-goku-super-saiyan-basquete-108647"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 48
+    },
+    {
+      "candidateName": "Vegeta",
+      "catalogDisplayNameCandidate": "Vegeta",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Vegeta",
+          "sourceIds": [
+            "db-vegeta-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-vegeta-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.saiyan_prince",
+          "value": "A fonte oficial o identifica como príncipe dos Saiyajins e destaca seu orgulho.",
+          "sourceIds": [
+            "db-vegeta-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.earth_mission",
+          "value": "Vegeta e Nappa são enviados para subjugar planetas e chegam à Terra após saberem das Esferas do Dragão.",
+          "sourceIds": [
+            "db-vegeta-saiyan-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Vegeta é apresentado como príncipe dos Saiyajins e como alguém marcado pelo orgulho de sua origem. Designado com Nappa para subjugar planetas, ele chega à Terra em busca das Esferas do Dragão e enfrenta Goku.",
+      "biographySourceIds": [
+        "db-vegeta-saiyan-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte cobre uma versão específica de Vegeta no arco Saiyajin; armaduras, períodos, formas e linhas temporais dos modelos precisam de revisão visual individual.",
+        "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Os vínculos abaixo usam rótulos de inventário apenas como pistas e permanecem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_14f0a42546c7f6b94792",
+          "modelSlug": "dragon-ball-vegeta-1-1-172588",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-1-1-172588"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1dac51fdf1c07f8ea783",
+          "modelSlug": "dragon-ball-vegeta-1-2-172589",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-1-2-172589"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2f4eccadac92dcf1d397",
+          "modelSlug": "dragon-ball-vegeta-statue-74-115854",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-74-115854"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2fcf47625856925cc25f",
+          "modelSlug": "dragon-ball-vegeta-super-saiyajin-110396",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyajin-110396"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_367a568ae86b0a694617",
+          "modelSlug": "dragon-ball-vegeta-card-solo-111001",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-card-solo-111001"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_41871335d6fa3fc75f0a",
+          "modelSlug": "dragon-ball-vegeta-statue-71-115851",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-71-115851"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_44d0d4c1619042623f4b",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-chibi-1-181295",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-chibi-1-181295"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_45704ec7eea372f6c3ff",
+          "modelSlug": "dragon-ball-vegeta-ultra-ego",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-ultra-ego"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_49003d19625e1214698b",
+          "modelSlug": "dragon-ball-vegeta-blue-suit-figure-11-119888",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-blue-suit-figure-11-119888"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4a39fa4821b16387bd8c",
+          "modelSlug": "dragon-ball-vegeta-statue-73-115853",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-73-115853"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4e1e6f19a96d0bc5e42e",
+          "modelSlug": "dragon-ball-vegeta-busto-dragon-ball-107063",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-busto-dragon-ball-107063"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_51b0dcac0234bf52ca8f",
+          "modelSlug": "dragon-ball-vegeta-statue-70-115850",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-70-115850"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_52ac6158bfb13bd5e2cc",
+          "modelSlug": "dragon-ball-vegeta-blue-suit-figure-10-119887",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-blue-suit-figure-10-119887"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_538054895b3a3e0bfead",
+          "modelSlug": "dragon-ball-vegeta-armadura-frente-109347",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-armadura-frente-109347"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5a50749f6e97ede16a93",
+          "modelSlug": "dragon-ball-vegeta-statue-75-115855",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-75-115855"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5e98aa2b716ed37852ba",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-energia-110398",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-energia-110398"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7436465b306df98a14c5",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-1-183184",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-1-183184"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7865c16f6d9c29f86370",
+          "modelSlug": "dragon-ball-vegeta-blue-suit-figure-12-119889",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-blue-suit-figure-12-119889"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7b61fe9eab4fc8537cfb",
+          "modelSlug": "dragon-ball-vegeta-purple-aura-statue-close-112211",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-purple-aura-statue-close-112211"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8a00ce2536f9b531dcf1",
+          "modelSlug": "dragon-ball-vegeta-saiyan-armor-101943",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-saiyan-armor-101943"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c11a65ec4a3556ee1aa",
+          "modelSlug": "dragon-ball-vegeta-base-roxa-efeito-frente-108961",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-base-roxa-efeito-frente-108961"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8c3b4d5ae5a1420b9937",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-6-181660",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-6-181660"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8fbc51f84cad283dabd1",
+          "modelSlug": "dragon-ball-vegeta-statue-72-115852",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-statue-72-115852"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9496b622b3f536b6489d",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-base-azul-110394",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-base-azul-110394"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9d19c59dc9fc43e43496",
+          "modelSlug": "dragon-ball-vegeta-capsula-saiyajin",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-capsula-saiyajin"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ad64112dd34f84877c57",
+          "modelSlug": "dragon-ball-vegeta-1-3-172590",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-1-3-172590"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b85cf7e9777e63b4a0c3",
+          "modelSlug": "dragon-ball-vegeta-armadura-close-109349",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-armadura-close-109349"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bab9fa42c211e0f667fe",
+          "modelSlug": "dragon-ball-vegeta-ssj4",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-ssj4"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bb29f32253e7a16a6e69",
+          "modelSlug": "dragon-ball-vegeta-base-azul-amarela-108082",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-base-azul-amarela-108082"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_beb3f13aff308699275e",
+          "modelSlug": "dragon-ball-vegeta-base-roxa-efeito-lateral-108962",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-base-roxa-efeito-lateral-108962"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c327bf8c879a92afe87c",
+          "modelSlug": "dragon-ball-vegeta-rocky-base-1-122472",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-rocky-base-1-122472"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c6ce007bdb2272a689ae",
+          "modelSlug": "dragon-ball-vegeta-lying-figure-1-131868",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-lying-figure-1-131868"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c7bf12ccddea77909df5",
+          "modelSlug": "dragon-ball-vegeta-purple-aura-statue-front-112210",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-purple-aura-statue-front-112210"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_cf386f77ddb0ec212133",
+          "modelSlug": "dragon-ball-vegeta-armadura-costas-109348",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-armadura-costas-109348"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d9af07ab674e7c79e9ac",
+          "modelSlug": "dragon-ball-vegeta-1-4-172591",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-1-4-172591"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_db4cd3480fc27c855db6",
+          "modelSlug": "dragon-ball-vegeta-ultra-ego-2",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-ultra-ego-2"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ddc22ef1694469140038",
+          "modelSlug": "dragon-ball-vegeta-blue-suit-figure-9-119886",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-blue-suit-figure-9-119886"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e47fadae8a2565b5564a",
+          "modelSlug": "dragon-ball-vegeta-base-roxa-efeito-costas-108963",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-base-roxa-efeito-costas-108963"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e72f72b727603af1d810",
+          "modelSlug": "dragon-ball-vegeta-saiyan-armor-105353",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-saiyan-armor-105353"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_eb25ad90a454999b80ba",
+          "modelSlug": "dragon-ball-vegeta-super-saiyan-4-moon-1-179974",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-super-saiyan-4-moon-1-179974"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fb400c8270ca4658e3ab",
+          "modelSlug": "dragon-ball-vegeta-saiyan-armor-3-181200",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-saiyan-armor-3-181200"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fc96689b1da4d54d353b",
+          "modelSlug": "dragon-ball-vegeta-blue-suit-1-115845",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-vegeta-blue-suit-1-115845"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 42
+    },
+    {
+      "candidateName": "Frieza",
+      "catalogDisplayNameCandidate": "Freeza",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Frieza",
+          "sourceIds": [
+            "db-freeza-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-freeza-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.galactic_emperor",
+          "value": "A fonte oficial o apresenta como imperador do universo e líder de uma força militar formada por guerreiros de diversos mundos.",
+          "sourceIds": [
+            "db-freeza-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.namek_and_dragon_balls",
+          "value": "Na narrativa oficial sobre Namek, Frieza procura as Esferas do Dragão com o objetivo de obter vida eterna.",
+          "sourceIds": [
+            "db-freeza-first-form"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Frieza é apresentado como imperador do universo e líder de um exército que conquista planetas. Em Namek, ele busca reunir as Esferas do Dragão para alcançar vida eterna, enquanto outros grupos disputam os mesmos artefatos.",
+      "biographySourceIds": [
+        "db-freeza-first-form"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O catálogo usa a grafia Freeza, enquanto a página oficial em inglês usa Frieza; a forma localizada e eventual alias exigem revisão editorial.",
+        "A fonte citada descreve a primeira forma; modelos de outras formas ou cenas não podem ser vinculados automaticamente.",
+        "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0331f194d857ec1a096b",
+          "modelSlug": "dragon-ball-freeza-forma-final-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_07bc7ece00971b655dbb",
+          "modelSlug": "dragon-ball-freeza-batalha-namek-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-batalha-namek-busto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_10a94b5bb6846a09cb59",
+          "modelSlug": "dragon-ball-freeza-planet-destroyer-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-planet-destroyer-estatua-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_10bed754a39fc2fbec6f",
+          "modelSlug": "dragon-ball-freeza-forma-final-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_160fe2770f04b3eee8cd",
+          "modelSlug": "dragon-ball-freeza-forma-com-chifres-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1cd67556595156565631",
+          "modelSlug": "dragon-ball-freeza-mecha-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-mecha-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2796bbb7940c986a0321",
+          "modelSlug": "dragon-ball-freeza-forma-com-chifres-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-forma-com-chifres-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2f0cabe90f5f88d9efab",
+          "modelSlug": "dragon-ball-freeza-mecha-busto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-mecha-busto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3d314541143114aa1927",
+          "modelSlug": "dragon-ball-freeza-com-esfera-de-energia-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-com-esfera-de-energia-em-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_49d9c4f34dce4188d90d",
+          "modelSlug": "dragon-ball-freeza-dupla-vista-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-dupla-vista-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5a00c7e726826ab377e1",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-no-trono",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-no-trono"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5d8baaf7927f96a916ca",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-tres-quartos-oposto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-tres-quartos-oposto"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5e23c79f7353f1d75b94",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-tres-quartos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-tres-quartos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_61b21805032819317143",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-corpo-inteiro-em-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-corpo-inteiro-em-base"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_63b75a35912bf9ef985c",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_721cce406ed8740724d9",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-na-nave",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-na-nave"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_815e4ddff20b29aaf174",
+          "modelSlug": "dragon-ball-freeza-forma-com-chifres-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8490ab52ac47e8155d29",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-lateral-esquerdo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-lateral-esquerdo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a0d87dae5cdede71330d",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-na-nave-alternativa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-na-nave-alternativa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b2c7006e06b170d37925",
+          "modelSlug": "dragon-ball-freeza-forma-final-sobre-base-rochosa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-forma-final-sobre-base-rochosa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c1f7eaca18671e9300ac",
+          "modelSlug": "dragon-ball-freeza-forma-final-lateral",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d226f33bed041b2a0ad9",
+          "modelSlug": "dragon-ball-freeza-forma-final-frente",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-forma-final-frente"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d560b889c3ad9717f2b6",
+          "modelSlug": "dragon-ball-freeza-forma-com-chifres-tres-quartos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-forma-com-chifres-tres-quartos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_d85709c3919c1d58f3ea",
+          "modelSlug": "dragon-ball-freeza-busto-com-energia-roxa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-busto-com-energia-roxa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e8362fdb7aa2bd68087b",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-lateral-direito",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-lateral-direito"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ec05f9f0d4b5a4272c8c",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-primeira-forma-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f03561dd19a38b681d81",
+          "modelSlug": "dragon-ball-freeza-primeira-forma-sentado-no-trono-costas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f65c8b9e9a1f02ca5488",
+          "modelSlug": "dragon-ball-freeza-forma-final-sobre-rochas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-freeza-forma-final-sobre-rochas"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 28
+    },
+    {
+      "candidateName": "Majin Buu",
+      "catalogDisplayNameCandidate": "Majin Buu",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Majin Buu",
+          "sourceIds": [
+            "db-majin-buu"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "db-majin-buu"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.revival_by_babidi",
+          "value": "A fonte oficial relata que o mago Babidi revive Majin Buu para auxiliá-lo em sua vingança e tentativa de dominar o universo.",
+          "sourceIds": [
+            "db-majin-buu"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.absorption_and_forms",
+          "value": "A fonte oficial atribui a Buu capacidades de absorção, cópia de habilidades e transformação.",
+          "sourceIds": [
+            "db-majin-buu"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Majin Buu é revivido pelo mago Babidi para ajudá-lo em seus planos de domínio. A fonte oficial descreve sua capacidade de absorver outros seres, reproduzir habilidades e assumir diferentes formas.",
+      "biographySourceIds": [
+        "db-majin-buu"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "O catálogo contém formas e dioramas; a identidade compartilhada, a variante visual e eventuais personagens adicionais precisam ser revisadas separadamente por ID.",
+        "A fonte oficial sustenta identidade e contexto da franquia, mas não confirma individualmente nenhum render do catálogo.",
+        "Os vínculos abaixo usam rótulos de inventário apenas como pistas e permanecem sem evidência independente."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_008471cdfa4491e39280",
+          "modelSlug": "dragon-ball-majin-buu-forma-magra-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-forma-magra-em-pe"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_03aeabdbea22dead1876",
+          "modelSlug": "dragon-ball-majin-buu-formas-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-formas-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_16947f1a1ef486504abf",
+          "modelSlug": "dragon-ball-majin-buu-gordo-bracos-baixos",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-bracos-baixos"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1fbb7ed789bdec832d6a",
+          "modelSlug": "dragon-ball-majin-buu-chibi-vista-lateral-esquerda",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-chibi-vista-lateral-esquerda"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2a679de3f5a72dfa8dba",
+          "modelSlug": "dragon-ball-majin-buu-gordo-boxeador",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-boxeador"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2c06ebc4ab30dcdfff78",
+          "modelSlug": "dragon-ball-majin-buu-gordo-mao-erguida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-mao-erguida"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3023ee1f913ab56ba6e4",
+          "modelSlug": "dragon-ball-majin-buu-busto-e-figura-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-busto-e-figura-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3e1662b5931201a650c1",
+          "modelSlug": "dragon-ball-majin-buu-gordo-estatua-colorida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-estatua-colorida"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_3ef1d6ee83ae740fb65c",
+          "modelSlug": "dragon-ball-majin-buu-gordo-com-braco-erguido",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-com-braco-erguido"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4279131f6f562f9f7f26",
+          "modelSlug": "dragon-ball-majin-buu-magro-sobre-nuvens",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-magro-sobre-nuvens"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4417a712cb6264679b8b",
+          "modelSlug": "dragon-ball-majin-buu-gordo-com-fumaca",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-com-fumaca"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4486143edba0c32f9fdc",
+          "modelSlug": "dragon-ball-majin-buu-deitado-em-cama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-deitado-em-cama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_48aef18fcd5786f21d30",
+          "modelSlug": "dragon-ball-majin-buu-chibi-vista-lateral-direita",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-chibi-vista-lateral-direita"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_4b736c4af5a7af69a257",
+          "modelSlug": "dragon-ball-majin-buu-chibi-com-chocolate-vista-traseira",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_56cf75ecddef5047f2f8",
+          "modelSlug": "dragon-ball-majin-buu-gordo-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-modelo-cinza"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_596b72f4b027883bead4",
+          "modelSlug": "dragon-ball-majin-buu-chibi-busto-colorido",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-chibi-busto-colorido"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5cef62561eea36d68fcc",
+          "modelSlug": "dragon-ball-majin-buu-chibi-vista-frontal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-chibi-vista-frontal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_721db8cccb8e9f65115a",
+          "modelSlug": "dragon-ball-majin-buu-gordo-modelo-cinza-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-modelo-cinza-corpo-inteiro"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_867ee58199622fab5a37",
+          "modelSlug": "dragon-ball-majin-buu-chibi-vista-traseira",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_only",
+            "candidateContractPublished": false,
+            "publicCatalogSlug": null
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8a8f4b46ff3771ed2055",
+          "modelSlug": "dragon-ball-majin-buu-musculoso-gritando",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-musculoso-gritando"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8d5641d494e6fc15845f",
+          "modelSlug": "dragon-ball-majin-buu-gordo-traje-azul",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-traje-azul"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a7a65d1ef46023002231",
+          "modelSlug": "dragon-ball-majin-buu-busto-sorrindo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-busto-sorrindo"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ab715ea3a40c0a56f1cf",
+          "modelSlug": "dragon-ball-majin-buu-chibi-com-chocolate-vista-frontal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-chibi-com-chocolate-vista-frontal"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b32d5ecc89387128bfec",
+          "modelSlug": "dragon-ball-majin-buu-gordo-mao-na-cabeca",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-mao-na-cabeca"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b85f5c2397e34e346771",
+          "modelSlug": "dragon-ball-majin-buu-gordo-com-esfera-roxa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-com-esfera-roxa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c5bff81a36f7c2aadee3",
+          "modelSlug": "dragon-ball-majin-buu-miniatura-voando",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-miniatura-voando"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ef9c99abd8c204ead620",
+          "modelSlug": "dragon-ball-majin-buu-gordo-vs-evil-buu-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-vs-evil-buu-diorama"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ff4b1f5f326fcf2ccea6",
+          "modelSlug": "dragon-ball-majin-buu-gordo-com-aura-roxa",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-majin-buu-gordo-com-aura-roxa"
+          },
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 28
     }
   ]
 }

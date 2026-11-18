@@ -78,21 +78,26 @@ test("research preparation references only inventory IDs and remains unapproved"
   }));
   const sourceIds = new Set(packet.sources.map((source) => source.id));
   const links = packet.candidates.flatMap((candidate) => candidate.candidateModelLinks);
+  const relationshipKeys = packet.candidates.flatMap((candidate) =>
+    candidate.candidateModelLinks.map((link) => `${candidate.candidateName}:${link.modelId}`));
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.candidates.length, 7);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 11);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 230);
+  assert.equal(packet.candidates.length, 11);
+  assert.equal(packet.sources.length, 15);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 7);
+  assert.equal(packet.policy.preparedIdentityCount, 11);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 84);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 230);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 84);
-  assert.equal(new Set(links.map((link) => link.modelId)).size, links.length);
+  assert.equal(links.length, 230);
+  assert.equal(new Set(relationshipKeys).size, links.length);
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");
@@ -119,6 +124,11 @@ test("research preparation references only inventory IDs and remains unapproved"
       assert.equal(link.relationshipStatus, "candidate_pending_visual_and_editorial_review");
       assert.deepEqual(link.independentModelEvidence, []);
       assert.equal(link.reviewRequired, true);
+      assert.ok(["candidate_and_published", "candidate_only", "published_only"]
+        .includes(link.catalogEvidenceSnapshot.sourceStatus));
+      assert.ok([true, false, null].includes(
+        link.catalogEvidenceSnapshot.candidateContractPublished,
+      ));
     }
   }
 });
