@@ -4,14 +4,68 @@
 \set ON_ERROR_STOP on
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
-CREATE ROLE service_role NOLOGIN;
+CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA private_api;
+REVOKE ALL ON SCHEMA private_api FROM PUBLIC, anon, authenticated;
+GRANT USAGE ON SCHEMA private_api TO authenticated, service_role;
+
+-- Supply only the pre-existing admin predicate needed by the canonical wrapper.
+-- Keep its decision false; the editorial migrations and service-role guard are
+-- applied below from their original files, with no copied table definitions.
+CREATE FUNCTION private_api.is_current_admin()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = ''
+AS $admin_predicate$
+  SELECT false
+$admin_predicate$;
+REVOKE ALL ON FUNCTION private_api.is_current_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private_api.is_current_admin() TO authenticated, service_role;
+\ir ../migrations/20261105062428_tonecos_admin_access_routine.sql
 
 -- Apply the original curation chain in canonical order rather than reproducing
--- its tables or helper functions in this test fixture.
+-- its tables or editorial helper functions in this test fixture.
 \ir ../migrations/20261115154500_tonart_internal_collection_curation.sql
 \ir ../migrations/20261115154600_tonart_curation_controlled_tag_creation.sql
+
+-- Preserve one legacy verified scalar identity through the 1:N migration.
+INSERT INTO public.catalog_character_identities (
+  id, identity_key, character_name, franchise, evidence_origin, evidence_note
+) VALUES (
+  '33333333-3333-4333-8333-333333333333', 'legacy/test-character',
+  'Legacy test character', 'Test universe',
+  'https://example.org/legacy-character', 'Fixture for the one-to-many backfill'
+);
+INSERT INTO public.catalog_curation_model_profiles (
+  catalog_model_id, catalog_model_slug, character_identity_id,
+  identity_verified, identity_evidence_origin, identity_evidence_note
+) VALUES (
+  'mdl_legacy_001', 'legacy-test-model', '33333333-3333-4333-8333-333333333333',
+  true, 'https://example.org/legacy-character', 'Legacy verified model link'
+);
 \ir ../migrations/20261117030000_tonart_curated_model_characters.sql
+DO $legacy_link_backfill$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.catalog_curation_model_characters
+    WHERE catalog_model_id = 'mdl_legacy_001'
+      AND character_identity_id = '33333333-3333-4333-8333-333333333333'
+      AND evidence_origin = 'https://example.org/legacy-character'
+      AND evidence_note = 'Legacy verified model link'
+      AND unlinked_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Legacy verified identity was not preserved as an active relation';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'catalog_curation_model_profiles'
+      AND column_name IN (
+        'character_identity_id', 'identity_verified',
+        'identity_evidence_origin', 'identity_evidence_note'
+      )
+  ) THEN
+    RAISE EXCEPTION 'Legacy scalar identity columns remain after 1:N cutover';
+  END IF;
+END;
+$legacy_link_backfill$;
 \ir ../migrations/20261117040000_tonart_character_editorial_profiles.sql
 \ir ../migrations/20261118010000_tonart_public_character_approval_and_export.sql
 
