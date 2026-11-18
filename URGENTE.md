@@ -2151,3 +2151,14 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** levar os candidatos à revisão privada e decidir manualmente se o agrupamento genérico “Equipes e Grupos” deve ser reconciliado com Marvel para cada modelo.
 
 **DO_NOT_REPEAT:** não converter a categoria de agrupamento em franquia canônica nem tratar as páginas biográficas como prova das imagens TONART.
+
+## Rodada 112 — Panthro e Paragus (18/11/2026)
+
+- Preparei Panthro com a página oficial de *ThunderCats* já referenciada no pacote e Paragus com o [perfil oficial de Dragon Ball Super: Broly](https://en.dragon-ball-official.com/news/01_678.html).
+- Acrescentei quatro relações candidatas por personagem, usando IDs existentes. Panthro permanece delimitado à série animada de 1985 e Paragus ao filme *Dragon Ball Super: Broly*; nenhuma imagem foi verificada visualmente.
+- Totais atuais: **87 candidatos, 97 fontes oficiais únicas e 877 vínculos candidatos**. Revisões/aprovações e evidência independente dos renders permanecem em zero.
+- Validação: teste da fila **11/11**, importação temporária na revisão privada #31 **1/1** (rascunhos somente em memória) e `git diff --check` aprovados. O arquivo temporário foi removido; não houve escrita, migration ou publicação.
+
+**NEXT_ACTION:** validar pacote e importação da curadoria #31, depois sincronizar a mesma PR #33.
+
+**DO_NOT_REPEAT:** não promover os quatro nomes de cada grupo a vínculos confirmados sem inspeção e aprovação humana.

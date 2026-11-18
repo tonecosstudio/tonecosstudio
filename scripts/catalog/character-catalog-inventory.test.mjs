@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 85);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 869);
-  assert.equal(packet.candidates.length, 85);
-  assert.equal(packet.sources.length, 96);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 87);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 877);
+  assert.equal(packet.candidates.length, 87);
+  assert.equal(packet.sources.length, 97);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 85);
+  assert.equal(packet.policy.preparedIdentityCount, 87);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 869);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 877);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 869);
+  assert.equal(links.length, 877);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -254,6 +254,8 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["John Wick (film franchise candidate)", "John Wick", "John Wick", 5],
     ["Natasha Romanoff/Romanova (Black Widow comics candidate)", "Viúva Negra", "Marvel Universe", 5],
     ["Norrin Radd (Silver Surfer comics candidate)", "Surfista Prateado", "Marvel Universe", 5],
+    ["Panthro (1985 ThunderCats profile candidate)", "Panthro", "ThunderCats", 4],
+    ["Paragus (Dragon Ball Super: Broly candidate)", "Paragus", "Dragon Ball", 4],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -299,6 +301,8 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["John Wick (film franchise candidate)", "peacock-john-wick-franchise-guide", "biography.fact.retired_hitman_and_return"],
     ["Natasha Romanoff/Romanova (Black Widow comics candidate)", "marvel-black-widow-comics-profile", "biography.fact.red_room_and_defection"],
     ["Norrin Radd (Silver Surfer comics candidate)", "marvel-silver-surfer-heralds-galactus", "biography.fact.norrin_radd_becomes_herald"],
+    ["Panthro (1985 ThunderCats profile candidate)", "hbomax-thundercats-1985-series-and-episodes", "biography.fact.mechanical_plague_recorders"],
+    ["Paragus (Dragon Ball Super: Broly candidate)", "dragon-ball-paragus-broly-showcase", "biography.fact.broly_father_vampa_and_frieza_force"],
   ];
   for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);

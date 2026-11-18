@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 85,
-    "preparedCandidateModelLinkCount": 869
+    "sourceResearchedIdentityCount": 87,
+    "preparedCandidateModelLinkCount": 877
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 85,
+    "preparedIdentityCount": 87,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 869,
+    "preparedCandidateModelLinkCount": 877,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -795,6 +795,14 @@
       "publisher": "Marvel",
       "title": "Heralds of Galactus — Marvel Universe history",
       "url": "https://www.marvel.com/teams-and-groups/heralds-of-galactus",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-paragus-broly-showcase",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "Weekly ☆ Character Showcase #32: Paragus from Dragon Ball Super: Broly!",
+      "url": "https://en.dragon-ball-official.com/news/01_678.html",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -22190,6 +22198,256 @@
         }
       ],
       "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Panthro (1985 ThunderCats profile candidate)",
+      "catalogDisplayNameCandidate": "Panthro",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "ThunderCats",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Panthro",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "ThunderCats",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.mechanical_plague_recorders",
+          "value": "A sinopse oficial de “Mechanical Plague” atribui a Panthro a invenção de hologravadores para registrar as experiências dos ThunderCats no Terceiro Mundo e preservá-las para o futuro.",
+          "sourceIds": [
+            "hbomax-thundercats-1985-series-and-episodes"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Na série animada ThunderCats de 1985, a sinopse oficial de “Mechanical Plague” informa que Panthro inventa hologravadores para registrar as experiências dos ThunderCats no Terceiro Mundo e preservá-las para o futuro. Este rascunho se limita a essa obra e não identifica a versão retratada nos modelos.",
+      "biographySourceIds": [
+        "hbomax-thundercats-1985-series-and-episodes"
+      ],
+      "catalogFranchiseCandidates": [
+        "ThunderCats"
+      ],
+      "ambiguities": [
+        "A fonte cobre a série animada de 1985; os títulos dos quatro modelos não indicam continuidade ou versão.",
+        "Os quatro IDs são seleções por nome exato da fila, sem evidência visual independente.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_05d550806d6e9a05278d",
+          "modelSlug": "thundercats-panthro-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-panthro-02"
+          }
+        },
+        {
+          "modelId": "mdl_a8614f7c4631c40eb089",
+          "modelSlug": "thundercats-panthro-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-panthro-04"
+          }
+        },
+        {
+          "modelId": "mdl_af550a2d40aec0714f83",
+          "modelSlug": "thundercats-panthro-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-panthro-03"
+          }
+        },
+        {
+          "modelId": "mdl_d54ff38a02a1aacf593e",
+          "modelSlug": "thundercats-panthro-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "thundercats-panthro-01"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Paragus (Dragon Ball Super: Broly candidate)",
+      "catalogDisplayNameCandidate": "Paragus",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Paragus",
+          "sourceIds": [
+            "dragon-ball-paragus-broly-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-paragus-broly-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.broly_father_vampa_and_frieza_force",
+          "value": "A fonte oficial relata que Paragus persegue Broly após seu exílio em Vampa, sobrevive com ele por 41 anos e depois se alia à Força de Freeza para buscar vingança contra Vegeta.",
+          "sourceIds": [
+            "dragon-ball-paragus-broly-showcase"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "O perfil oficial de Dragon Ball Super: Broly apresenta Paragus como pai de Broly. Após o exílio do filho em Planeta Vampa, Paragus o segue e ambos sobrevivem ali por 41 anos antes de serem encontrados; depois, Paragus se junta à Força de Freeza em busca de vingança contra Vegeta. O texto cobre esse filme e não confirma visualmente os quatro modelos.",
+      "biographySourceIds": [
+        "dragon-ball-paragus-broly-showcase"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte descreve Paragus em Dragon Ball Super: Broly; não indica se os modelos representam essa continuidade ou outra.",
+        "Os quatro registros têm nome exato e franquia Dragon Ball, mas esses dados não comprovam a identidade dos renders.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_0612632db4f9d379058a",
+          "modelSlug": "dragon-ball-paragus-dragon-ball-1-1-182237",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-paragus-dragon-ball-1-1-182237"
+          }
+        },
+        {
+          "modelId": "mdl_52bad86f9b9b5a498c60",
+          "modelSlug": "dragon-ball-paragus-dragon-ball-1-2-182238",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-paragus-dragon-ball-1-2-182238"
+          }
+        },
+        {
+          "modelId": "mdl_5dffbccc80aabafeac58",
+          "modelSlug": "dragon-ball-paragus-dragon-ball-1-3-182239",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-paragus-dragon-ball-1-3-182239"
+          }
+        },
+        {
+          "modelId": "mdl_8a31a9bf35b32538c20f",
+          "modelSlug": "dragon-ball-paragus-dragon-ball-1-4-182240",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-paragus-dragon-ball-1-4-182240"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 4
     }
   ]
 }
