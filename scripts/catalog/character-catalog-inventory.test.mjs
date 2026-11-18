@@ -81,12 +81,17 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.candidates.length, 4);
+  assert.equal(packet.candidates.length, 7);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(links.length, 15);
+  assert.equal(packet.policy.preparedIdentityCount, 7);
+  assert.equal(packet.policy.humanReviewedIdentityCount, 0);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 84);
+  assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
+  assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
+  assert.equal(links.length, 84);
   assert.equal(new Set(links.map((link) => link.modelId)).size, links.length);
 
   for (const source of packet.sources) {
@@ -95,8 +100,12 @@ test("research preparation references only inventory IDs and remains unapproved"
   }
   for (const candidate of packet.candidates) {
     assert.equal(candidate.identityStatus, "prepared_pending_human_review");
-    assert.equal(candidate.franchiseStatus, "prepared_pending_human_review");
+    assert.ok([
+      "prepared_pending_human_review",
+      "ambiguous_pending_human_review",
+    ].includes(candidate.franchiseStatus));
     assert.equal(candidate.biographyStatus, "prepared_pending_human_review");
+    assert.equal(candidate.candidateModelLinks.length, candidate.catalogCandidateModelCount);
     assert.ok(candidate.biographyDraft.length > 40);
     assert.ok(candidate.biographySourceIds.length > 0);
     for (const claim of candidate.claims) {

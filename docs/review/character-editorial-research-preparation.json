@@ -6,13 +6,13 @@
     "inventoryPath": "docs/review/character-catalog-review-queue.csv",
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
-    "identityCandidateLabelCount": 1381
+    "identityCandidateLabelCount": 1381,
+    "sourceResearchedIdentityCount": 7,
+    "preparedCandidateModelLinkCount": 84
   },
   "policy": {
     "publicProjectionEligible": false,
     "databaseWritePerformed": false,
-    "approvedIdentityCount": 0,
-    "approvedModelLinkCount": 0,
     "humanApprovalRequiredFor": [
       "identity",
       "franchise",
@@ -20,7 +20,14 @@
       "each model relationship"
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
-    "catalogMetadataIsIndependentIdentityEvidence": false
+    "catalogMetadataIsIndependentIdentityEvidence": false,
+    "preparedIdentityCount": 7,
+    "humanReviewedIdentityCount": 0,
+    "approvedIdentityCount": 0,
+    "preparedCandidateModelLinkCount": 84,
+    "humanReviewedModelLinkCount": 0,
+    "approvedModelLinkCount": 0,
+    "independentlyEvidenceBackedModelLinkCount": 0
   },
   "sources": [
     {
@@ -78,6 +85,38 @@
       "url": "https://game.capcom.com/cfn/sfv/character/zangief?lang=en",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dc-batman",
+      "publisher": "DC",
+      "title": "Batman | Official DC Character",
+      "url": "https://www.dc.com/characters/batman",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dc-joker",
+      "publisher": "DC",
+      "title": "The Joker | Official DC Character",
+      "url": "https://www.dc.com/characters/the-joker",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-wolverine-history",
+      "publisher": "Marvel",
+      "title": "The History of Wolverine | Marvel Comic Reading List",
+      "url": "https://www.marvel.com/comics/guides/2233/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "marvel-xmen",
+      "publisher": "Marvel",
+      "title": "X-Men In Comics Members, Enemies, Powers",
+      "url": "https://www.marvel.com/teams-and-groups/x-men/in-comics",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
     }
   ],
   "candidates": [
@@ -92,37 +131,52 @@
         {
           "attribute": "identity.canonical_name_candidate",
           "value": "Raven",
-          "sourceIds": ["dc-raven"],
+          "sourceIds": [
+            "dc-raven"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "identity.alternate_name_candidate",
           "value": "Rachel Roth",
-          "sourceIds": ["dc-raven"],
+          "sourceIds": [
+            "dc-raven"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "franchise.candidate",
           "value": "Titãs / DC",
-          "sourceIds": ["dc-raven", "dc-titans"],
+          "sourceIds": [
+            "dc-raven",
+            "dc-titans"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.parentage_and_training",
           "value": "A personagem é filha de uma humana e de um pai demoníaco; sua trajetória inclui aprender a controlar as emoções e estudar artes místicas.",
-          "sourceIds": ["dc-raven"],
+          "sourceIds": [
+            "dc-raven"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.team_history",
           "value": "A DC a identifica como integrante fundadora dos Novos Titãs.",
-          "sourceIds": ["dc-raven"],
+          "sourceIds": [
+            "dc-raven"
+          ],
           "reviewStatus": "pending_human_review"
         }
       ],
       "biographyDraft": "Raven, também conhecida como Rachel Roth, é filha de mãe humana e pai demoníaco. Sua trajetória envolve aprender a controlar as próprias emoções e estudar artes místicas; a DC a apresenta como integrante fundadora dos Novos Titãs.",
-      "biographySourceIds": ["dc-raven"],
-      "catalogFranchiseCandidates": ["Titãs"],
+      "biographySourceIds": [
+        "dc-raven"
+      ],
+      "catalogFranchiseCandidates": [
+        "Titãs"
+      ],
       "ambiguities": [
         "O catálogo usa o nome localizado Ravena; a equivalência com Raven deve ser confirmada pela revisão editorial.",
         "O rótulo de franquia do catálogo é proveniência do modelo, não prova independente do vínculo da escultura."
@@ -131,7 +185,13 @@
         {
           "modelId": "mdl_0033cf3a5cb64ab103fd",
           "modelSlug": "titas-ravena-flutuando-sobre-cranios-e-corvos",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -139,12 +199,19 @@
         {
           "modelId": "mdl_bd818f3fb3fef507610e",
           "modelSlug": "titas-ravena-meditando-sobre-livros",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
         }
-      ]
+      ],
+      "catalogCandidateModelCount": 2
     },
     {
       "candidateName": "Ahri",
@@ -157,37 +224,55 @@
         {
           "attribute": "identity.canonical_name_candidate",
           "value": "Ahri",
-          "sourceIds": ["riot-ahri-biography", "riot-ahri-champion"],
+          "sourceIds": [
+            "riot-ahri-biography",
+            "riot-ahri-champion"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "identity.alias_candidate",
           "value": "A Raposa de Nove Caudas",
-          "sourceIds": ["riot-ahri-biography"],
+          "sourceIds": [
+            "riot-ahri-biography"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "franchise.candidate",
           "value": "League of Legends",
-          "sourceIds": ["riot-ahri-biography", "riot-ahri-champion"],
+          "sourceIds": [
+            "riot-ahri-biography",
+            "riot-ahri-champion"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.species_and_magic",
           "value": "A Riot descreve Ahri como uma vastaia com aparência de raposa, ligada à magia do reino espiritual.",
-          "sourceIds": ["riot-ahri-biography", "riot-ahri-champion"],
+          "sourceIds": [
+            "riot-ahri-biography",
+            "riot-ahri-champion"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.ancestry_and_search",
           "value": "A biografia oficial relata que Ahri descobre sua ligação ancestral com o povo Vesani e parte em busca de outros vestígios dessa herança.",
-          "sourceIds": ["riot-ahri-biography"],
+          "sourceIds": [
+            "riot-ahri-biography"
+          ],
           "reviewStatus": "pending_human_review"
         }
       ],
       "biographyDraft": "Ahri é uma vastaia com aparência de raposa e ligação com a magia do reino espiritual. Ao investigar suas origens, descobre sua ancestralidade Vesani e passa a buscar outros vestígios desse povo.",
-      "biographySourceIds": ["riot-ahri-biography", "riot-ahri-champion"],
-      "catalogFranchiseCandidates": ["League of Legends"],
+      "biographySourceIds": [
+        "riot-ahri-biography",
+        "riot-ahri-champion"
+      ],
+      "catalogFranchiseCandidates": [
+        "League of Legends"
+      ],
       "ambiguities": [
         "O catálogo apresenta três modelos com o mesmo nome candidato; cada render e variante ainda precisa de confirmação individual.",
         "Título, coleção e pasta do catálogo não comprovam por si sós cada relação de modelo."
@@ -196,7 +281,13 @@
         {
           "modelId": "mdl_00835cfec0c4ab07b525",
           "modelSlug": "league-of-legends-ahri-la-leyenda-inmortalizada-en-formato-de-lol",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -204,7 +295,13 @@
         {
           "modelId": "mdl_35e491ab019653182cb8",
           "modelSlug": "league-of-legends-ahri-k-da-league-of-legends",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -212,12 +309,19 @@
         {
           "modelId": "mdl_9b58f295436f6a142d28",
           "modelSlug": "league-of-legends-ahri-league-of-legends-spirit-blossom-ahri-stl-league-of-legends-principal",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
         }
-      ]
+      ],
+      "catalogCandidateModelCount": 3
     },
     {
       "candidateName": "Doctor Octopus",
@@ -230,43 +334,59 @@
         {
           "attribute": "identity.canonical_name_candidate",
           "value": "Doctor Octopus",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "identity.alternate_name_candidate",
           "value": "Otto Gunther Octavius",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "identity.alias_candidate",
           "value": "Doutor Octopus",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "franchise.candidate",
           "value": "Marvel / Homem-Aranha",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.research_and_arms",
           "value": "Otto Octavius é um pesquisador atômico que cria braços mecânicos para manipular materiais radioativos; um acidente os conecta ao seu sistema nervoso.",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.spider_man_adversary",
           "value": "A Marvel apresenta Doutor Octopus como um adversário recorrente do Homem-Aranha.",
-          "sourceIds": ["marvel-doctor-octopus"],
+          "sourceIds": [
+            "marvel-doctor-octopus"
+          ],
           "reviewStatus": "pending_human_review"
         }
       ],
       "biographyDraft": "Otto Octavius é um pesquisador atômico brilhante que cria braços mecânicos para manipular materiais radioativos. Após um acidente que os conecta ao seu sistema nervoso, ele passa a atuar como Doutor Octopus e se torna um dos adversários do Homem-Aranha.",
-      "biographySourceIds": ["marvel-doctor-octopus"],
-      "catalogFranchiseCandidates": ["Heróis Individuais"],
+      "biographySourceIds": [
+        "marvel-doctor-octopus"
+      ],
+      "catalogFranchiseCandidates": [
+        "Heróis Individuais"
+      ],
       "ambiguities": [
         "O valor editorial candidato Marvel / Homem-Aranha diverge do agrupamento D1 do catálogo Heróis Individuais; a franquia pública precisa de resolução humana explícita.",
         "Seis modelos trazem Doutor Octopus em nome, coleção ou pasta; a identidade deve ser confirmada visualmente em cada render.",
@@ -276,7 +396,13 @@
         {
           "modelId": "mdl_00a81c101ba466e34e57",
           "modelSlug": "herois-individuais-doutor-octopus-modelo-promocional-traje-verde",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -284,7 +410,13 @@
         {
           "modelId": "mdl_494c48db754d22258e85",
           "modelSlug": "herois-individuais-doutor-octopus-estatua-cinza-com-tentaculos-erguidos",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -292,7 +424,13 @@
         {
           "modelId": "mdl_687712d3dcbd80f7d2f0",
           "modelSlug": "herois-individuais-doutor-octopus-traje-verde-com-tentaculos-em-diorama",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -300,7 +438,13 @@
         {
           "modelId": "mdl_960324bb4aa775f2abc2",
           "modelSlug": "herois-individuais-doutor-octopus-traje-classico-sobre-base-industrial",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -308,7 +452,13 @@
         {
           "modelId": "mdl_b1381150036f81520c04",
           "modelSlug": "herois-individuais-doutor-octopus-traje-classico-em-diorama",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -316,12 +466,19 @@
         {
           "modelId": "mdl_fb753fe96c65851a8bff",
           "modelSlug": "herois-individuais-doutor-octopus-estatua-cinza-com-tentaculos-abertos",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
         }
-      ]
+      ],
+      "catalogCandidateModelCount": 6
     },
     {
       "candidateName": "Zangief",
@@ -334,37 +491,53 @@
         {
           "attribute": "identity.canonical_name_candidate",
           "value": "Zangief",
-          "sourceIds": ["capcom-zangief-guide", "capcom-zangief-profile"],
+          "sourceIds": [
+            "capcom-zangief-guide",
+            "capcom-zangief-profile"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "identity.alias_candidate",
           "value": "Ciclone Vermelho / Red Cyclone",
-          "sourceIds": ["capcom-zangief-guide"],
+          "sourceIds": [
+            "capcom-zangief-guide"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "franchise.candidate",
           "value": "Street Fighter",
-          "sourceIds": ["capcom-zangief-guide", "capcom-zangief-profile"],
+          "sourceIds": [
+            "capcom-zangief-guide",
+            "capcom-zangief-profile"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.profession_and_style",
           "value": "A Capcom apresenta Zangief como um lutador profissional russo, conhecido como Red Cyclone, com estilo que combina luta livre russa e profissional americana.",
-          "sourceIds": ["capcom-zangief-guide"],
+          "sourceIds": [
+            "capcom-zangief-guide"
+          ],
           "reviewStatus": "pending_human_review"
         },
         {
           "attribute": "biography.fact.personality",
           "value": "Na ficha de Street Fighter V, a Capcom descreve Zangief como afável apesar de sua aparência intimidadora.",
-          "sourceIds": ["capcom-zangief-guide"],
+          "sourceIds": [
+            "capcom-zangief-guide"
+          ],
           "reviewStatus": "pending_human_review"
         }
       ],
       "biographyDraft": "Zangief é um lutador profissional russo conhecido como Ciclone Vermelho. A Capcom descreve seu estilo como uma combinação de luta livre russa e profissional americana e observa que, apesar da aparência intimidadora, ele é afável.",
-      "biographySourceIds": ["capcom-zangief-guide"],
-      "catalogFranchiseCandidates": ["Street Fighter"],
+      "biographySourceIds": [
+        "capcom-zangief-guide"
+      ],
+      "catalogFranchiseCandidates": [
+        "Street Fighter"
+      ],
       "ambiguities": [
         "A biografia usada é de uma apresentação de Street Fighter V; a curadoria deve confirmar a versão narrativa adequada à ficha geral.",
         "Quatro modelos têm Zangief como candidato no inventário; cada relação ainda requer revisão visual e editorial individual."
@@ -373,7 +546,13 @@
         {
           "modelId": "mdl_00e9f012e7d8987802fb",
           "modelSlug": "street-fighter-zangief-02",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -381,7 +560,13 @@
         {
           "modelId": "mdl_73131c6468590689e854",
           "modelSlug": "street-fighter-zangief-04",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -389,7 +574,13 @@
         {
           "modelId": "mdl_d77d7f95e30480a991db",
           "modelSlug": "street-fighter-zangief-03",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
@@ -397,7 +588,1198 @@
         {
           "modelId": "mdl_fac3f533d461667fb129",
           "modelSlug": "street-fighter-zangief",
-          "catalogProvenanceFields": ["model_id", "model_slug", "model_name", "collection", "folder_path"],
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ],
+      "catalogCandidateModelCount": 4
+    },
+    {
+      "candidateName": "Batman",
+      "catalogDisplayNameCandidate": "Batman",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "DC / Gotham / Batman",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Batman",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alter_ego_candidate",
+          "value": "Bruce Wayne",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alias_candidates",
+          "value": "Dark Knight / Caped Crusader",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "DC / Gotham / Batman",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.origin_and_mission",
+          "value": "Após o assassinato de seus pais, Bruce Wayne dedica sua vida a combater o crime como Batman em Gotham.",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.methods",
+          "value": "A DC descreve seu treinamento físico e mental e o uso de tecnologia avançada.",
+          "sourceIds": [
+            "dc-batman"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "Bruce Wayne assumiu a identidade de Batman após o assassinato de seus pais e dedicou sua vida a combater o crime em Gotham. A DC descreve o personagem como um herói que aperfeiçoou corpo e mente e usa tecnologia avançada em sua atuação.",
+      "biographySourceIds": [
+        "dc-batman"
+      ],
+      "catalogFranchiseCandidates": [
+        "Batman"
+      ],
+      "catalogCandidateModelCount": 21,
+      "catalogIdentityAliasCandidates": [
+        "Bruce Wayne",
+        "Cavaleiro das Trevas",
+        "Cruzado Encapuzado"
+      ],
+      "ambiguities": [
+        "O nome Batman nos metadados é pista, não comprovação de que cada render representa o personagem.",
+        "A revisão deve confirmar a continuidade/versão retratada antes de aprovar aliases ou biografia."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_023cf42b3596d70b93fd",
+          "modelSlug": "batman-batman-absoluto-estatua-colorida",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_15e4be7003756987df96",
+          "modelSlug": "batman-batman-estatua-colorida-sobre-gargula",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_15f27ffaed7c34388d94",
+          "modelSlug": "batman-batman-origins-sobre-pedestal-gotico",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_175e3ad27874605eceee",
+          "modelSlug": "batman-batman-estatua-cinza-em-gargula",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_19f93c59d12a54c79613",
+          "modelSlug": "batman-batman-estatua-modelo-marrom-sobre-rocha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1dd17d993d3c38d4ba01",
+          "modelSlug": "batman-batman-armadura-estatua-cinza-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_274cbc3cb49c4f49e925",
+          "modelSlug": "batman-batman-grim-knight-com-armamento-pesado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7120657fdc8c5558fb1c",
+          "modelSlug": "batman-batman-sobre-tubarao-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_84516f55cfb068fd8b85",
+          "modelSlug": "batman-batman-dark-crusader-sobre-gargula",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8e948f8b4e6e619bfa05",
+          "modelSlug": "batman-batman-dark-knight-agachado-sobre-gargula",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_952cdae65a6fabb5e952",
+          "modelSlug": "batman-batman-armadura-pesada-com-arma",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a2c3cd27fdd2b38cd3ff",
+          "modelSlug": "batman-batman-sentado-no-trono-na-batcaverna",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b38c91e328ec3298f081",
+          "modelSlug": "batman-batman-zack-snyder-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b3b39f371cfe6388ba76",
+          "modelSlug": "batman-batman-sobre-torre-gotica",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b3d7635fd06c019778da",
+          "modelSlug": "batman-batman-estatua-cinza-sobre-rocha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b6c10bda28bbee1b6a82",
+          "modelSlug": "batman-batman-com-bat-sinal-em-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_bcd3efa5d9bf83857d7a",
+          "modelSlug": "batman-batman-begins-sobre-pedestal",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c1d0f543497b64c64e52",
+          "modelSlug": "batman-batman-absoluto-com-machados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f3f3804fb9c693f2c368",
+          "modelSlug": "batman-batman-beyond-armadura-preta-e-vermelha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_f6d22cf61510c59aa022",
+          "modelSlug": "batman-batman-chibi-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_fc2638f3965c08c743ff",
+          "modelSlug": "batman-batman-busto-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "candidateName": "Joker",
+      "catalogDisplayNameCandidate": "Coringa",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "DC / Gotham / Batman",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Joker",
+          "sourceIds": [
+            "dc-joker"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.localized_name_candidate",
+          "value": "Coringa",
+          "sourceIds": [
+            "dc-joker"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.civil_identity",
+          "value": "Desconhecida na apresentação oficial consultada",
+          "sourceIds": [
+            "dc-joker"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "DC / Gotham / Batman",
+          "sourceIds": [
+            "dc-joker"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.role",
+          "value": "A DC apresenta o Coringa como adversário de Batman em Gotham e agente do caos.",
+          "sourceIds": [
+            "dc-joker"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "A DC mantém desconhecidos o nome civil e a origem definitiva do Coringa. Em Gotham, ele é apresentado como um agente do caos e o principal inimigo de Batman, cuja oposição à justiça e à ordem define o conflito entre os dois.",
+      "biographySourceIds": [
+        "dc-joker"
+      ],
+      "catalogFranchiseCandidates": [
+        "Batman"
+      ],
+      "catalogCandidateModelCount": 18,
+      "catalogIdentityAliasCandidates": [
+        "The Joker"
+      ],
+      "ambiguities": [
+        "O catálogo usa a localização Coringa; a correspondência com The Joker precisa de aprovação editorial.",
+        "O próprio material oficial consultado não identifica nome civil ou origem; não preencher esses campos.",
+        "Modelos que usam atores ou interpretações de filmes exigem confirmação da versão retratada."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_02f8fcaccab93c11ce04",
+          "modelSlug": "batman-coringa-classico-traje-roxo-com-carta",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_07693ad24c8ef3ecd685",
+          "modelSlug": "batman-coringa-jared-leto-em-estatua",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_08cf757918e46022b8bc",
+          "modelSlug": "batman-coringa-traje-roxo-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_194bf4644afdcfddee9e",
+          "modelSlug": "batman-coringa-traje-vermelho-no-palco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_1b6d4681d1ce7ce2e8e0",
+          "modelSlug": "batman-coringa-chibi-traje-roxo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_222a680601af42aa64a2",
+          "modelSlug": "batman-coringa-absoluto-monstruoso-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_27500867faf0aa348081",
+          "modelSlug": "batman-coringa-busto-colorido-sorrindo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_27ac8bbb831c8b7370c4",
+          "modelSlug": "batman-coringa-heath-ledger-com-mascara-na-mao",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_375e5295b44392477123",
+          "modelSlug": "batman-coringa-animado-com-tnt",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_48a24a98c8efae6ea0d0",
+          "modelSlug": "batman-coringa-estatua-cinza-sobre-base",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_52becd73a5a675aec690",
+          "modelSlug": "batman-coringa-heath-ledger-com-arma-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_752795029ddfda3ad2a9",
+          "modelSlug": "batman-coringa-estatua-cinza-em-escada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_7ac94a08f91a26997e6a",
+          "modelSlug": "batman-coringa-heath-ledger-sentado-na-cadeira",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_81c323cacd493c3e21fe",
+          "modelSlug": "batman-coringa-arkham-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_8ad3ee741b623f9d5505",
+          "modelSlug": "batman-coringa-cesar-romero-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b8ca1abf2029e7137e27",
+          "modelSlug": "batman-coringa-traje-vermelho-dancando-na-escada",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c6a96b072f4007bfd229",
+          "modelSlug": "batman-coringa-enfermeira-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c83974608c9c8ac271d5",
+          "modelSlug": "batman-coringa-busto-estilizado-colorido",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        }
+      ]
+    },
+    {
+      "candidateName": "Wolverine",
+      "catalogDisplayNameCandidate": "Wolverine",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Marvel / X-Men (escopo pendente)",
+      "franchiseStatus": "ambiguous_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Wolverine",
+          "sourceIds": [
+            "marvel-wolverine-history",
+            "marvel-xmen"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "identity.alternate_name_candidates",
+          "value": "James Howlett / Logan",
+          "sourceIds": [
+            "marvel-wolverine-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Marvel / X-Men",
+          "sourceIds": [
+            "marvel-xmen",
+            "marvel-wolverine-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.origin_and_powers",
+          "value": "A Marvel relata que James Howlett nasceu no Canadá, passou a usar o nome Logan e manifestou poderes mutantes, incluindo garras e fator de cura.",
+          "sourceIds": [
+            "marvel-wolverine-history"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.team",
+          "value": "Wolverine é listado na equipe X-Men da Marvel.",
+          "sourceIds": [
+            "marvel-xmen"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "James Howlett, conhecido como Logan, é um mutante cujos poderes se manifestaram com garras e fator de cura. A Marvel registra sua trajetória por diferentes períodos e sua integração aos X-Men; estes modelos permanecem candidatos até a revisão de cada render.",
+      "biographySourceIds": [
+        "marvel-wolverine-history",
+        "marvel-xmen"
+      ],
+      "catalogFranchiseCandidates": [
+        "Equipes e Grupos",
+        "Heróis Individuais"
+      ],
+      "catalogCandidateModelCount": 30,
+      "catalogIdentityAliasCandidates": [
+        "Logan",
+        "James Howlett"
+      ],
+      "ambiguities": [
+        "O inventário divide os modelos entre Equipes e Grupos e Heróis Individuais; a projeção pública exige um único escopo D1 por personagem.",
+        "Não duplicar a identidade Wolverine para contornar a divisão: curadoria humana deve resolver ou excluir links até o escopo ficar coerente.",
+        "Nome, pasta e coleção do catálogo não comprovam o vínculo de nenhum render."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_01097769095f4d73cb18",
+          "modelSlug": "equipes-e-grupos-wolverine-traje-marrom-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_08d88c9d9cd39758b575",
+          "modelSlug": "equipes-e-grupos-wolverine-azul-amarelo-concept-render",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_117cc81eeedfd16243f5",
+          "modelSlug": "herois-individuais-wolverine-classico-neve",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_192ad5b0f7ce80f13f70",
+          "modelSlug": "herois-individuais-wolverine-arma-x",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_23869ae3149d43b42a7a",
+          "modelSlug": "equipes-e-grupos-wolverine-chibi-com-visor-e-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2f5e3899b7c8c974a06f",
+          "modelSlug": "equipes-e-grupos-wolverine-arma-x-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_2fe8192a21df84564743",
+          "modelSlug": "equipes-e-grupos-wolverine-busto-estilizado",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_43069b20371abe5fc072",
+          "modelSlug": "equipes-e-grupos-wolverine-hugh-jackman-estatua-corpo-inteiro",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_46f8c2e0c830ae929094",
+          "modelSlug": "equipes-e-grupos-wolverine-agachado-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5afe38d6422e71732859",
+          "modelSlug": "equipes-e-grupos-wolverine-busto-e-corpo-modelos-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_5b0a0555993ae6275c91",
+          "modelSlug": "equipes-e-grupos-wolverine-traje-preto-sobre-inimigo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_66197d7f900d022a4ace",
+          "modelSlug": "equipes-e-grupos-wolverine-kit-de-pecas-modelo-3d",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_80720ca0806800aaada3",
+          "modelSlug": "equipes-e-grupos-wolverine-modelo-cinza-agachado-sobre-escombros",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_90f401c38862bc331dc2",
+          "modelSlug": "equipes-e-grupos-wolverine-azul-amarelo-diorama-dinamico",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_996ac70a1cbbc7535f8e",
+          "modelSlug": "equipes-e-grupos-wolverine-busto-gambody",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_9f1f717547bb28b0d81f",
+          "modelSlug": "equipes-e-grupos-wolverine-logan-estatua-em-pose",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_a7fdc591346ace0f879d",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-render-com-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_adb15d71b78a1492e028",
+          "modelSlug": "equipes-e-grupos-wolverine-marrom-amarelo-sobre-rocha",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b3f43678ccb99b15d614",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-agachado-sobre-tronco",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b594ad3721879ff4c1f5",
+          "modelSlug": "equipes-e-grupos-wolverine-busto-musculoso-com-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b78b3528dcc526dda5aa",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-amarelo-sobre-escombros",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_b9a1919c7a52253de81a",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-azul-amarelo-em-pe",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c06aff20c39ab2a390a6",
+          "modelSlug": "equipes-e-grupos-wolverine-logan-diorama-industrial-dupla-vista",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_c49b530059713875a3aa",
+          "modelSlug": "equipes-e-grupos-wolverine-rustico-diorama-com-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ccd630b33f6c409032e7",
+          "modelSlug": "equipes-e-grupos-wolverine-com-efeito-de-chamas",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_db7d00f32692b0858f85",
+          "modelSlug": "equipes-e-grupos-wolverine-azul-amarelo-com-motocicleta",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e0551fe4bde6190d9d8f",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-agachado-em-diorama",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e75d913a593c54c7d51a",
+          "modelSlug": "equipes-e-grupos-wolverine-classico-marrom-amarelo-em-pe-com-garras",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_e9a0606f0efbc4023786",
+          "modelSlug": "equipes-e-grupos-wolverine-dinamico-modelo-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true
+        },
+        {
+          "modelId": "mdl_ec953a96095732c4a0b1",
+          "modelSlug": "equipes-e-grupos-wolverine-sobre-ninjas-derrotados",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
           "relationshipStatus": "candidate_pending_visual_and_editorial_review",
           "independentModelEvidence": [],
           "reviewRequired": true
