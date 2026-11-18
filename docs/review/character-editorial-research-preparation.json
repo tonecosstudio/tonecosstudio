@@ -7,8 +7,8 @@
     "capturedOn": "2026-11-18",
     "catalogModelCount": 2609,
     "identityCandidateLabelCount": 1381,
-    "sourceResearchedIdentityCount": 71,
-    "preparedCandidateModelLinkCount": 794
+    "sourceResearchedIdentityCount": 74,
+    "preparedCandidateModelLinkCount": 809
   },
   "policy": {
     "publicProjectionEligible": false,
@@ -21,10 +21,10 @@
     ],
     "canonicalReviewDestination": "existing private catalog character curation in PR #31",
     "catalogMetadataIsIndependentIdentityEvidence": false,
-    "preparedIdentityCount": 71,
+    "preparedIdentityCount": 74,
     "humanReviewedIdentityCount": 0,
     "approvedIdentityCount": 0,
-    "preparedCandidateModelLinkCount": 794,
+    "preparedCandidateModelLinkCount": 809,
     "humanReviewedModelLinkCount": 0,
     "approvedModelLinkCount": 0,
     "independentlyEvidenceBackedModelLinkCount": 0
@@ -667,6 +667,30 @@
       "publisher": "NARUTO OFFICIAL SITE / Shueisha",
       "title": "NARUTO ABOUT — official franchise and character overview",
       "url": "https://naruto-official.com/en/about",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "dragon-ball-krillin-goku-training-arc",
+      "publisher": "BIRD STUDIO / SHUEISHA — DRAGON BALL OFFICIAL SITE",
+      "title": "Weekly ☆ Character Showcase #13: Goku Training Arc’s Krillin",
+      "url": "https://en.dragon-ball-official.com/news/01_371.html",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "square-enix-ffvii-rebirth-cloud",
+      "publisher": "SQUARE ENIX",
+      "title": "Cloud Strife — FINAL FANTASY VII REBIRTH character profile",
+      "url": "https://www.square-enix.com/ffvii/en-us/games/rebirth/characters/",
+      "sourceKind": "official",
+      "consultedOn": "2026-11-18"
+    },
+    {
+      "id": "square-enix-ffvii-rebirth-tifa",
+      "publisher": "SQUARE ENIX",
+      "title": "Tifa Lockhart — FINAL FANTASY VII REBIRTH character profile",
+      "url": "https://www.square-enix.com/ffvii/en-us/games/rebirth/characters/tifa-lockhart/",
       "sourceKind": "official",
       "consultedOn": "2026-11-18"
     }
@@ -19912,6 +19936,438 @@
             "sourceStatus": "candidate_and_published",
             "candidateContractPublished": true,
             "publicCatalogSlug": "naruto-naruto-uzumaki-naruto-acervo-anterior-diorama"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Krillin (Goku Training Arc; Kuririn label candidate)",
+      "catalogDisplayNameCandidate": "Kuririn",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Dragon Ball",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Krillin",
+          "sourceIds": [
+            "dragon-ball-krillin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Dragon Ball",
+          "sourceIds": [
+            "dragon-ball-krillin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.goku_training_arc",
+          "value": "O perfil oficial apresenta Krillin no arco de treinamento de Goku: ele busca tornar-se um artista marcial, procura Kame House para treinar com Kamesennin, conhece Goku e participa do 21º Tenkaichi Budokai.",
+          "sourceIds": [
+            "dragon-ball-krillin-goku-training-arc"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil oficial do arco de treinamento de Goku, Krillin chega à Kame House para treinar com Kamesennin e encontra Goku; os dois enfrentam o treinamento da Escola Kame e participam do 21º Tenkaichi Budokai. A página consultada usa “Krillin”, enquanto a fila do catálogo usa “Kuririn”; essa forma localizada deve ser revisada. O recorte biográfico é limitado ao arco coberto pela fonte e não identifica visualmente os modelos candidatos.",
+      "biographySourceIds": [
+        "dragon-ball-krillin-goku-training-arc"
+      ],
+      "catalogFranchiseCandidates": [
+        "Dragon Ball"
+      ],
+      "ambiguities": [
+        "A fonte oficial em inglês usa o nome Krillin e cobre o arco inicial de treinamento; revisar a forma localizada Kuririn e a continuidade/versão de cada modelo antes de confirmar os vínculos.",
+        "Os cinco IDs foram localizados pelo nome exato e pela proveniência da fila; nenhum render foi usado como evidência independente.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_733210c1f0e96ae6cc27",
+          "modelSlug": "dragon-ball-kuririn-estatua-cinza",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-kuririn-estatua-cinza"
+          }
+        },
+        {
+          "modelId": "mdl_75241ca8d9c412e52d9b",
+          "modelSlug": "dragon-ball-kuririn-kienzan",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-kuririn-kienzan"
+          }
+        },
+        {
+          "modelId": "mdl_97b4c5d66d3abb134965",
+          "modelSlug": "dragon-ball-kuririn-suporte-controle",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-kuririn-suporte-controle"
+          }
+        },
+        {
+          "modelId": "mdl_9f5f8af260d3e3f2eeb4",
+          "modelSlug": "dragon-ball-kuririn-chibi-uniforme-laranja",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-kuririn-chibi-uniforme-laranja"
+          }
+        },
+        {
+          "modelId": "mdl_e2038fbc87ff57631793",
+          "modelSlug": "dragon-ball-kuririn-disco-destruidor",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "dragon-ball-kuririn-disco-destruidor"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Cloud Strife (Final Fantasy VII Rebirth candidate)",
+      "catalogDisplayNameCandidate": "Cloud",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Final Fantasy VII",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Cloud Strife",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-cloud"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Final Fantasy VII",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-cloud"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.rebirth_mercenary_and_avalanche",
+          "value": "A página oficial de Rebirth descreve Cloud como ex-SOLDIER de primeira classe que chega a Midgar como mercenário e aceita, a convite de sua amiga de infância Tifa, um trabalho com a Avalanche.",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-cloud"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil oficial de FINAL FANTASY VII REBIRTH, Cloud é descrito como ex-SOLDIER de primeira classe que chega a Midgar para iniciar uma nova fase como mercenário. A convite de Tifa, aceita um trabalho com a Avalanche e enfrenta a Shinra. Este texto resume a versão Rebirth consultada e não determina se os cinco modelos candidatos representam essa continuidade ou esse traje.",
+      "biographySourceIds": [
+        "square-enix-ffvii-rebirth-cloud"
+      ],
+      "catalogFranchiseCandidates": [
+        "Final Fantasy"
+      ],
+      "ambiguities": [
+        "A fonte descreve especificamente FINAL FANTASY VII REBIRTH; os cinco modelos candidatos exigem revisão visual para confirmar jogo, continuidade e traje.",
+        "Os cinco IDs foram localizados pelo nome exato e pela proveniência da fila; nenhum render foi usado como evidência independente.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_174365a8d09d923a9ad5",
+          "modelSlug": "final-fantasy-cloud-strife-moto",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-cloud-strife-moto"
+          }
+        },
+        {
+          "modelId": "mdl_1d102d08dd9ff5243ab0",
+          "modelSlug": "final-fantasy-cloud-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-cloud-03"
+          }
+        },
+        {
+          "modelId": "mdl_251df89eeba124ee1d85",
+          "modelSlug": "final-fantasy-cloud-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-cloud-01"
+          }
+        },
+        {
+          "modelId": "mdl_9e44ad425d7738222e26",
+          "modelSlug": "final-fantasy-cloud-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-cloud-02"
+          }
+        },
+        {
+          "modelId": "mdl_d22f606dd541a43d5e9b",
+          "modelSlug": "final-fantasy-cloud-strife-chocobo",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-cloud-strife-chocobo"
+          }
+        }
+      ],
+      "catalogCandidateModelCount": 5
+    },
+    {
+      "candidateName": "Tifa Lockhart (Final Fantasy VII Rebirth candidate)",
+      "catalogDisplayNameCandidate": "Tifa",
+      "identityStatus": "prepared_pending_human_review",
+      "franchiseCandidate": "Final Fantasy VII",
+      "franchiseStatus": "prepared_pending_human_review",
+      "biographyStatus": "prepared_pending_human_review",
+      "claims": [
+        {
+          "attribute": "identity.canonical_name_candidate",
+          "value": "Tifa Lockhart",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-tifa"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "franchise.candidate",
+          "value": "Final Fantasy VII",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-tifa"
+          ],
+          "reviewStatus": "pending_human_review"
+        },
+        {
+          "attribute": "biography.fact.rebirth_avalanche_and_search_for_path",
+          "value": "A página oficial de Rebirth apresenta Tifa como integrante da Avalanche que questiona as táticas extremistas do grupo e deixa Midgar em busca de um novo caminho após a queda da placa do Setor 7.",
+          "sourceIds": [
+            "square-enix-ffvii-rebirth-tifa"
+          ],
+          "reviewStatus": "pending_human_review"
+        }
+      ],
+      "biographyDraft": "No perfil oficial de FINAL FANTASY VII REBIRTH, Tifa é apresentada como integrante da Avalanche que questiona as táticas extremistas do grupo. Após os acontecimentos que levam à queda da placa do Setor 7, ela deixa Midgar em busca de outro caminho. Este resumo se limita à versão Rebirth consultada e não confirma o jogo, a continuidade ou o traje representado pelos cinco modelos candidatos.",
+      "biographySourceIds": [
+        "square-enix-ffvii-rebirth-tifa"
+      ],
+      "catalogFranchiseCandidates": [
+        "Final Fantasy"
+      ],
+      "ambiguities": [
+        "A fonte descreve especificamente FINAL FANTASY VII REBIRTH; revisar visualmente cada modelo antes de associar essa versão ou seus acontecimentos ao render.",
+        "Os cinco IDs foram localizados pelo nome exato e pela proveniência da fila; nenhum render foi usado como evidência independente.",
+        "Todos os vínculos seguem pendentes de inspeção visual e aprovação editorial humana."
+      ],
+      "candidateModelLinks": [
+        {
+          "modelId": "mdl_224e0bb2dafc57f921ee",
+          "modelSlug": "final-fantasy-tifa-02",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-tifa-02"
+          }
+        },
+        {
+          "modelId": "mdl_308e422e14a0f41fe95f",
+          "modelSlug": "final-fantasy-tifa-01",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-tifa-01"
+          }
+        },
+        {
+          "modelId": "mdl_5e0b1892b393fe648e51",
+          "modelSlug": "final-fantasy-tifa-05",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-tifa-05"
+          }
+        },
+        {
+          "modelId": "mdl_6e25b00469d879528657",
+          "modelSlug": "final-fantasy-tifa-03",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-tifa-03"
+          }
+        },
+        {
+          "modelId": "mdl_85ab30a049dd556f523b",
+          "modelSlug": "final-fantasy-tifa-04",
+          "catalogProvenanceFields": [
+            "model_id",
+            "model_slug",
+            "model_name",
+            "collection",
+            "folder_path"
+          ],
+          "relationshipStatus": "candidate_pending_visual_and_editorial_review",
+          "independentModelEvidence": [],
+          "reviewRequired": true,
+          "catalogEvidenceSnapshot": {
+            "sourceStatus": "candidate_and_published",
+            "candidateContractPublished": true,
+            "publicCatalogSlug": "final-fantasy-tifa-04"
           }
         }
       ],

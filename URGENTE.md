@@ -2082,3 +2082,15 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** submeter os candidatos para revisão editorial privada; obter ambiente isolado para homologar o caminho aprovado Supabase→D1→Worker→páginas públicas.
 
 **DO_NOT_REPEAT:** não contar vínculos candidatos como identidades verificadas nem afirmar homologação pública a partir de testes em memória ou offline.
+
+## Rodada 106 — Krillin, Cloud e Tifa na fila editorial (18/11/2026)
+
+- Preparei dossiês para Krillin, Cloud e Tifa com fontes oficiais de DRAGON BALL e SQUARE ENIX. Preservei a diferença de localização “Krillin/Kuririn” e limitei os perfis de Cloud e Tifa à continuidade FINAL FANTASY VII REBIRTH consultada.
+- Foram incluídos cinco modelos por candidato, selecionados por nome exato na fila. Os 15 vínculos permanecem candidatos: **não há evidência visual independente, revisão ou aprovação**.
+- O pacote da PR #33 agora contém **74 identidades preparadas, 83 fontes oficiais únicas e 809 relações candidatas**. Totais revisados/aprovados continuam em zero.
+- Validação: teste da fila **11/11**, teste temporário da importação do pacote atual pela revisão privada da #31 **1/1**, e `git diff --check` passaram. O arquivo temporário foi removido; não houve chamada de persistência.
+- Migrations #31 e 0023/#26 seguem não aplicadas; não há exportação aprovada, projeção D1 preenchida ou autorização para publicação/cutover. Nenhuma escrita de produção foi feita.
+
+**NEXT_ACTION:** encaminhar os candidatos à revisão humana e homologar a projeção somente em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não confundir títulos, nomes de fila ou biografias de uma continuidade com evidência visual dos renders; não publicar relações pendentes.

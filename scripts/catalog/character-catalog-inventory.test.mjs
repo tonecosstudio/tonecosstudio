@@ -83,21 +83,21 @@ test("research preparation references only inventory IDs and remains unapproved"
 
   assert.equal(packet.authority, "review-only; not a character catalog or publication source");
   assert.equal(packet.snapshot.catalogModelCount, inventoryModels.size);
-  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 71);
-  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 794);
-  assert.equal(packet.candidates.length, 71);
-  assert.equal(packet.sources.length, 80);
+  assert.equal(packet.snapshot.sourceResearchedIdentityCount, 74);
+  assert.equal(packet.snapshot.preparedCandidateModelLinkCount, 809);
+  assert.equal(packet.candidates.length, 74);
+  assert.equal(packet.sources.length, 83);
   assert.equal(new Set(packet.sources.map((source) => source.url)).size, packet.sources.length);
   assert.equal(packet.policy.publicProjectionEligible, false);
   assert.equal(packet.policy.databaseWritePerformed, false);
   assert.equal(packet.policy.approvedIdentityCount, 0);
   assert.equal(packet.policy.approvedModelLinkCount, 0);
-  assert.equal(packet.policy.preparedIdentityCount, 71);
+  assert.equal(packet.policy.preparedIdentityCount, 74);
   assert.equal(packet.policy.humanReviewedIdentityCount, 0);
-  assert.equal(packet.policy.preparedCandidateModelLinkCount, 794);
+  assert.equal(packet.policy.preparedCandidateModelLinkCount, 809);
   assert.equal(packet.policy.humanReviewedModelLinkCount, 0);
   assert.equal(packet.policy.independentlyEvidenceBackedModelLinkCount, 0);
-  assert.equal(links.length, 794);
+  assert.equal(links.length, 809);
   assert.equal(new Set(relationshipKeys).size, links.length);
 
   const thorCandidates = packet.candidates.filter((candidate) =>
@@ -240,6 +240,9 @@ test("research preparation references only inventory IDs and remains unapproved"
     ["All Might (My Hero Academia anime profile candidate)", "All Might", "My Hero Academia", 5],
     ["Leon S. Kennedy (Resident Evil candidate)", "Leon S. Kennedy", "Resident Evil", 5],
     ["Naruto Uzumaki (official profile candidate)", "Naruto Uzumaki", "Naruto", 5],
+    ["Krillin (Goku Training Arc; Kuririn label candidate)", "Kuririn", "Dragon Ball", 5],
+    ["Cloud Strife (Final Fantasy VII Rebirth candidate)", "Cloud", "Final Fantasy VII", 5],
+    ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "Tifa", "Final Fantasy VII", 5],
   ];
   for (const [candidateName, catalogLabel, franchise, expectedModels] of newestResearchCandidates) {
     const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
@@ -270,6 +273,16 @@ test("research preparation references only inventory IDs and remains unapproved"
     claim.sourceIds.includes("naruto-official-character-overview")));
   assert.ok(naruto.candidateModelLinks.every((link) =>
     !["mdl_4b49b9f65ccc3b7d874c", "mdl_d822c2582bcc102e6ef5"].includes(link.modelId)));
+  const newestSourceClaims = [
+    ["Krillin (Goku Training Arc; Kuririn label candidate)", "dragon-ball-krillin-goku-training-arc", "biography.fact.goku_training_arc"],
+    ["Cloud Strife (Final Fantasy VII Rebirth candidate)", "square-enix-ffvii-rebirth-cloud", "biography.fact.rebirth_mercenary_and_avalanche"],
+    ["Tifa Lockhart (Final Fantasy VII Rebirth candidate)", "square-enix-ffvii-rebirth-tifa", "biography.fact.rebirth_avalanche_and_search_for_path"],
+  ];
+  for (const [candidateName, sourceId, attribute] of newestSourceClaims) {
+    const candidate = packet.candidates.find((item) => item.candidateName === candidateName);
+    assert.ok(candidate.claims.some((claim) =>
+      claim.attribute === attribute && claim.sourceIds.includes(sourceId)));
+  }
 
   for (const source of packet.sources) {
     assert.equal(new URL(source.url).protocol, "https:");
