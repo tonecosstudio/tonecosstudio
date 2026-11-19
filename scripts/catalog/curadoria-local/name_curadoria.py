@@ -544,12 +544,14 @@ def attach_catalog_reference(db_path,message_id,expected_title,source_url,note="
         db.commit()
         return {"ok":True,"changed":True,"message_id":mid,"status":"provavel"}
 
-def propagate_reviewed_gallery_names(db_path,limit=300):
+def propagate_reviewed_gallery_names(db_path,limit=300,group_key=None):
     """Herdar proposta de nome entre VISTAS JÁ REVISADAS da mesma escultura.
 
     Não se usa similaridade automática, proximidade, mesmo personagem ou
     coincidência de título para definir a galeria. Grupos são os revisados
     manualmente por `model_gallery.register_visual_gallery`.
+    Quando group_key é informado, processa somente essa galeria, evitando
+    percorrer todas as demais em revisões incrementais.
     """
     limit=max(1,min(int(limit),1000))
     changed=skipped_conflicts=0
@@ -557,10 +559,14 @@ def propagate_reviewed_gallery_names(db_path,limit=300):
         setup(db)
         smart.setup(db)
         db.execute("BEGIN IMMEDIATE")
-        groups=db.execute("""SELECT DISTINCT g.group_key FROM model_groups g
+        query="""SELECT DISTINCT g.group_key FROM model_groups g
             JOIN model_group_members m USING(group_key)
-            WHERE g.state='revisar' AND m.match_reason='reviewed_angles'
-            ORDER BY g.group_key""").fetchall()
+            WHERE g.state='revisar' AND m.match_reason='reviewed_angles'"""
+        parameters=()
+        if group_key is not None:
+            query+=" AND g.group_key=?"
+            parameters=(str(group_key),)
+        groups=db.execute(query+" ORDER BY g.group_key",parameters).fetchall()
         manual={r[0] for r in db.execute(
             "SELECT DISTINCT message_id FROM name_proposal_events WHERE event_type LIKE 'manual_%'")}
         for g in groups:
