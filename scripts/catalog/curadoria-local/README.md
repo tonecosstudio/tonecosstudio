@@ -134,3 +134,19 @@ O CSV privado `manifesto-nomes-propostos.csv` continua preservando uma linha por
 No lote de teste real, `msg17712`, `msg17713`, `msg17714`, `msg17715` compartilham o mesmo `galeria_id`, com `fotos_na_galeria=4` e nome pendente. O grupo Psylocke também exporta quatro vistas com uma identidade de galeria. **Todas as linhas permanecem `aprovado_para_publicacao=false`**. A exportação, incluindo os dados privados, é feita somente no desktop do usuário e nunca enviada ao GitHub.
 
 Os novos endpoints e a interface foram verificados no serviço local: `GET /api/stats` inclui `galleries`, `GET /api/models?min_images=2` lista apenas fichas com várias imagens, `GET /api/names` fornece `gallery_key`/`gallery_image_count`, e `POST /api/create-gallery` conserva idempotência com token CSRF e `Origin` locais.
+
+## Continuidade entre nomeação e galeria revisada
+
+A rotina **`propagate_reviewed_gallery_names`** permite que uma proposta de nome presente em uma foto seja herdada pelas outras vistas **da mesma galeria já revisada visualmente**. Essa operação:
+
+- só considera grupos em `revisar` cujos membros têm `match_reason='reviewed_angles'`, nunca agrupamentos automáticos baseados apenas em personagem ou proximidade;
+- exige que todos os membros já nomeados concordem em estúdio, título, universo e variante; qualquer conflito suspende a propagação;
+- preenche somente membros sem título e ainda em revisão, preservando edições manuais, fontes oficiais preexistentes e nomes confirmados;
+- grava `status=provavel`, evidência `gallery_name_inherited` e mensagem de origem rastreável; **nunca confirma, licencia, publica ou materializa arquivos**;
+- preserva a proposta herdada quando o downloader sincroniza novas legendas e é idempotente em novas execuções.
+
+O serviço local chama a rotina no mesmo ciclo incremental que processa os nomes e atualiza os rótulos das galerias. `teste_model_gallery.py` foi ampliado para comprovar a herança de nome, idempotência, rastreabilidade, preservação após mudança na legenda Telegram e inexistência de aprovação automática.
+
+**Rodada de 19/11/2026**: oito novas galerias do Abe3D foram revisadas e criadas localmente, com quatro vistas cada: Morrigan, Polaris, Power Girl, Elektra, Ada Wong, Claire Redfield, Tatsumaki e Darth Talon. O lote acrescentou **8 galerias e 32 fotos**, sem conflitos; são agora **32 galerias visualmente revisadas** acumuladas no banco local. Essas associações com IDs privados do Telegram não são versionadas.
+
+O serviço reiniciou pelo **OrdaX MCP nativo**, com `computer.process_start` supervisionado, e foi verificado com `GET /health` e `GET /api/stats` retornando **HTTP 200**. No snapshot de verificação, `6101` imagens indexadas e `470` galerias com duas ou mais imagens, das quais `32` visualmente revisadas. Os números podem aumentar quando o downloader adiciona imagens; **nenhuma imagem ou catálogo comercial foi publicado**.
