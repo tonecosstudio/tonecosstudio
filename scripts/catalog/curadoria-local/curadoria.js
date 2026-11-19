@@ -71,7 +71,11 @@ async function openModel(key){
   for(const item of g.images){
    const a=document.createElement("a");a.href="/media/"+item.message_id;a.target="_blank";a.rel="noopener";
    const img=document.createElement("img");img.src="/media/"+item.message_id;img.alt="Mensagem "+item.message_id;img.loading="lazy";img.className="preview";
-   a.append(img);text(a,"div","#"+item.message_id,"sub");imgs.append(a);
+   a.append(img);text(a,"div","#"+item.message_id,"sub");
+   const cell=document.createElement("div");cell.append(a);
+   const edit=document.createElement("button");edit.textContent="Nomear esta foto";
+   edit.onclick=()=>editGalleryPhotoName(item.message_id);
+   cell.append(edit);imgs.append(cell);
   }
   const evidence=el("modelReviewEvidence");evidence.replaceChildren();
   for(const e of g.evidence){
@@ -271,6 +275,18 @@ function updateNameSourceLink(){
  else link.removeAttribute("href");
 }
 el("nameOfficialUrl").addEventListener("input",updateNameSourceLink);
+
+async function editGalleryPhotoName(mid){
+ try{
+  const found=await api("/api/names?"+new URLSearchParams({q:String(mid),limit:120}));
+  const item=found.items.find(x=>x.message_id===mid);
+  if(!item)throw Error("Imagem não encontrada na etapa de nomes");
+  topic=item.original_topic;
+  search=String(mid);el("search").value=search;currentPage=1;
+  setView("names");openName(item);
+ }catch(e){notify("Nomear foto: "+e.message)}
+}
+
 
 el("nameOpenGallery").onclick=async()=>{
  if(!chosenName?.gallery_key)return;
