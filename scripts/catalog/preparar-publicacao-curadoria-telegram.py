@@ -199,7 +199,7 @@ def build_plan(db: Path, source: Path, existing: Path | None, expected_model_cou
             "review_status": a["review_status"] or "", "name_status": a["name_status"] or "",
             "official_url": a["official_url"] or "", "name_evidence": a["evidence_type"] or "",
             "confidence": a["confidence"] or 0, "action": "", "reason": "",
-            "existing_model_id": "", "candidate_model_ids": [],
+            "existing_model_id": "", "candidate_model_ids": [], "candidate_evidence": "",
             "duplicate_of_message_id": None,
             "model_group_key": a["model_group_key"] or "",
             "model_group_state": a["model_group_state"] or "",
@@ -260,6 +260,7 @@ def build_plan(db: Path, source: Path, existing: Path | None, expected_model_cou
                     else:
                         record["action"], record["reason"] = "reuse_existing_asset", "exact_sha256"
                         record["existing_model_id"] = item["model_id"]
+                        record["candidate_evidence"] = "verified_sha256"
                 elif plausible:
                     if all(variant_conflict(record, item) for item in plausible.values()):
                         hold("variant_conflict")
@@ -269,9 +270,29 @@ def build_plan(db: Path, source: Path, existing: Path | None, expected_model_cou
                         record["candidate_model_ids"] = sorted(
                             mid for mid, item in plausible.items()
                             if not variant_conflict(record, item))
+                        record["candidate_evidence"] = "name_only_review_required"
                 else:
                     record["action"] = "stage_new_asset"
                     record["reason"] = "confirmed_not_present_in_index"
+        # Todas as imagens (inclusive não aprovadas) podem receber CANDIDATOS
+        # para revisão. Isso não valida integridade, não promove status e nunca
+        # libera publicação ou ação de galeria automaticamente.
+        if record["action"] == "hold" and existing is not None and inventory["unique_models"]:
+            exact = distinct_models(existing_hashes.get(digest, [])) if HASH.fullmatch(digest) else {}
+            if exact:
+                record["candidate_model_ids"] = sorted(exact)
+                record["candidate_evidence"] = "unverified_sha256"
+            elif studio and title:
+                same_name = (existing_identities.get(f"{key(studio)}::{key(title)}", [])
+                             or existing_titles.get(key(title), []))
+                plausible = distinct_models([
+                    x for x in same_name
+                    if not (key(x.get("studio")) and key(x.get("studio")) != key(studio))
+                    and not variant_conflict(record, x)
+                ])
+                if plausible:
+                    record["candidate_model_ids"] = sorted(plausible)
+                    record["candidate_evidence"] = "name_only_review_required"
         records.append(record)
 
     # Um mesmo SHA não pode inventar dois produtos. Repetição na mesma galeria
@@ -358,6 +379,8 @@ def build_plan(db: Path, source: Path, existing: Path | None, expected_model_cou
         "duplicate_sha_groups_in_curadoria": sum(len(x) > 1 for x in by_sha.values()),
         "exact_commercial_sha_matches": sum(r["reason"] == "exact_sha256" for r in records),
         "candidate_existing_images": counts.get("review_existing_model", 0),
+        "unverified_exact_sha_candidate_images": sum(r["candidate_evidence"] == "unverified_sha256" for r in records),
+        "unverified_name_only_candidate_images": sum(r["candidate_evidence"] == "name_only_review_required" for r in records),
         "candidate_new_images": counts.get("stage_new_asset", 0),
         "candidate_additional_photos": counts.get("append_existing_gallery", 0),
         "review_required_images": len(records) - sum(r["action"] in eligible for r in records),
@@ -388,7 +411,7 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
         "message_id", "original_sha256", "source_relative", "telegram_topic",
         "studio", "model", "universe", "variant", "proposed_filename",
         "source_priority", "review_status", "name_status", "action", "reason",
-        "existing_model_id", "candidate_model_ids", "duplicate_of_message_id",
+        "existing_model_id", "candidate_model_ids", "candidate_evidence", "duplicate_of_message_id",
         "official_url", "name_evidence", "confidence", "model_group_key",
         "model_group_state", "group_image_count", "group_studio", "group_title",
     ]
