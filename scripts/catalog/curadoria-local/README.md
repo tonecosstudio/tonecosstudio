@@ -80,3 +80,21 @@ python visual_name_suggestions.py --limit 6000
 A rotina opcional roda **fora** do servidor web para não bloquear a interface. Endpoints locais de consulta: `GET /api/official-sources?topic=...` e `GET /api/visual-candidates/<ID>`. O arquivo `teste_visual_name_suggestions.py` contém E2E com imagens artificiais; o teste confirma que possíveis semelhanças **não alteram automaticamente** `name_proposals`.
 
 A curadoria permanece privada até a homologação do catálogo comercial e dos direitos de uso. Resultados de rastreamento, nomes capturados de cartazes e bancos de imagens locais não são versionados.
+
+## Localizar nomes no próprio catálogo do estúdio (Abe3D / Uel Winner)
+
+Foi acrescentado o perfil oficial Abe3D (Cults3D, Patreon e ArtStation) à lista de referências da Curadoria; Uel Winner já tinha seus canais oficiais associados. Na tela **1. Nomes propostos**, o link de publicação individual agora também pode ser aberto diretamente, sem sair da revisão.
+
+A função `suggest_name_from_studio_catalog(...)` registra somente uma **proposta** quando uma imagem local sem legenda parece corresponder visualmente a um título do catálogo oficial. Ela:
+
+- exige fonte HTTPS de um provedor homologado, ID presente e coincidência exata com o tópico de origem;
+- preserva título, universo, estúdio e URL da fonte no SQLite local com trilha de evento;
+- atribui `status=provavel`, `evidence_type=studio_catalog_visual_candidate` e `confidence=0.60`, sem confirmar a identidade nem criar pastas ou hardlinks;
+- rejeita sobrescrita de identificações existentes;
+- permanece preservada se o Telegram alterar os metadados do arquivo. Revisões manuais e nomes com título impresso no render também são protegidos contra reprocessamento.
+
+As aplicações em lote de títulos e IDs específicos estão em scripts de diagnóstico **locais privados**, não versionados no GitHub, porque contêm referências à biblioteca privada do Telegram. Não existe uma segunda base canônica.
+
+`teste_catalogo_oficial.py` cobre ID/estúdio, fonte HTTPS, idempotência, conservação após alteração de origem, preservação de edição manual, nenhuma confirmação ou cópia automática e limpeza do banco temporário no Windows.
+
+**Licenciamento de uso comercial:** a existência do modelo no Cults3D/Patreon e a identificação da imagem não autorizam a TONART a reproduzir renders ou vender impressões. O plano pessoal do Abe3D informa uso pessoal, enquanto há opção específica para comercialização física; direitos de uso e limites devem ser verificados antes de publicar qualquer imagem ou produto. O manifesto permanece com `aprovado_para_publicacao=false` em todas as entradas.
