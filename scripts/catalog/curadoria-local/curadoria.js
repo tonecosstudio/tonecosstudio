@@ -99,7 +99,8 @@ async function refreshModels(){
    const details=document.createElement("div");details.className="details";
    text(details,"div",g.title);
    text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
-   text(details,"span",g.image_count+" imagens · "+g.state,"pill");
+   const distinct=g.unique_photo_count===undefined?g.image_count:g.unique_photo_count;
+   text(details,"span",distinct+" fotos únicas · "+g.image_count+" mensagens · "+g.state,"pill");
    b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
   }
   if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
@@ -109,7 +110,7 @@ async function refreshModels(){
   const stat=await api("/api/stats");
   const s=stat.smart||{};
   const gs=stat.galleries||{};
-  el("smartSummary").textContent=fmt(gs.photos_in_galleries||0)+" fotos reunidas em "+fmt(gs.galleries||0)+" galerias · "+
+  el("smartSummary").textContent=fmt(gs.photos_in_galleries||0)+" mensagens de fotos vinculadas a "+fmt(gs.galleries||0)+" galerias · "+
     fmt(gs.visually_reviewed_galleries||0)+" galerias revisadas visualmente · "+
     fmt(s.images_needing_review||0)+" imagens ainda sem associação.";
  }catch(e){notify("Modelos: "+e.message)}
@@ -118,14 +119,23 @@ async function openModel(key){
  try{
   const g=await api("/api/model/"+key);
   chosenGroup=g;
+  const uniquePhotos=new Map();
+  for(const item of g.images){
+   const digest=(item.sha256||"").trim();
+   const key=digest||"msg:"+item.message_id;
+   if(!uniquePhotos.has(key))uniquePhotos.set(key,item);
+  }
   el("modelReview").hidden=false;
   el("modelReviewTitle").textContent=g.title;
-  el("modelReviewMeta").textContent=g.studio+(g.universe?" · "+g.universe:"")+(g.variant?" · "+g.variant:"")+" · "+g.state+" · "+g.images.length+" imagens";
+  el("modelReviewMeta").textContent=g.studio+(g.universe?" · "+g.universe:"")+(g.variant?" · "+g.variant:"")+" · "+g.state+" · "+uniquePhotos.size+" fotos únicas / "+g.images.length+" mensagens";
   el("modelReviewState").value=g.state==="confirmado"?"confirmado":"revisar";
   el("modelOfficialUrl").value="";
   el("modelReviewNotes").value="";
   const imgs=el("modelReviewImages");imgs.replaceChildren();
-  for(const item of g.images){
+  if(g.images.length>uniquePhotos.size){
+   text(imgs,"p",(g.images.length-uniquePhotos.size)+" mensagens repetem arquivos já exibidos; todas continuam vinculadas no SQLite.","sub");
+  }
+  for(const item of uniquePhotos.values()){
    const a=document.createElement("a");a.href="/media/"+item.message_id;a.target="_blank";a.rel="noopener";
    const img=document.createElement("img");img.src="/media/"+item.message_id;img.alt="Mensagem "+item.message_id;img.loading="lazy";img.className="preview";
    a.append(img);text(a,"div","#"+item.message_id,"sub");
