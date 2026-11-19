@@ -32,7 +32,7 @@ async function refreshModels(){
  if(viewMode!=="models")return;
  try{
   const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
-  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:2});
+  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:2,unnamed:el("onlyUnnamedModels").checked?"1":"0"});
   const result=await api("/api/models?"+p);
   modelTotal=result.total;
   const root=el("modelResults");root.replaceChildren();
@@ -102,6 +102,7 @@ function setView(mode){
  el("modelResults").hidden=mode!=="models";
  el("nameResults").hidden=mode!=="names";
  el("galleryCreate").hidden=mode!=="models";
+ el("unnamedFilter").hidden=mode!=="models";
  el("namesMode").className=mode==="names"?"primary":"";
  el("modelsMode").className=mode==="models"?"primary":"";
  el("imagesMode").className=mode==="images"?"primary":"";
@@ -112,6 +113,7 @@ function setView(mode){
 const originalRefresh=refresh;
 refresh=function(){return viewMode==="names"?refreshNames():viewMode==="models"?refreshModels():originalRefresh()};
 el("modelsMode").onclick=()=>setView("models");
+el("onlyUnnamedModels").onchange=()=>{currentPage=1;refreshModels()};
 el("imagesMode").onclick=()=>setView("images");
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
 el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
