@@ -1,0 +1,516 @@
+#!/usr/bin/env python3
+"""Synthetic tests for the Telegram-first identity engine; no private data/network."""
+from __future__ import annotations
+
+import asyncio
+import hashlib
+import sqlite3
+from contextlib import contextmanager
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import telegram_identity_engine as engine
+
+
+SOURCE_CHAT = 77
+
+
+@contextmanager
+def _test_db(path):
+    db = sqlite3.connect(path)
+    try:
+        yield db
+        db.commit()
+    except BaseException:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
+class FakeSearch:
+    def __init__(self, results=None, error=None):
+        self.results = list(results or [])
+        self.error = error
+        self.calls = []
+
+    def search_official(self, query, source):
+        self.calls.append((query, source.profile_url))
+        if self.error:
+            raise self.error
+        return self.results
+
+
+class FakeTelegramClient:
+    def __init__(self, messages):
+        self.messages = messages
+        self.calls = []
+
+    async def get_messages(self, chat_id, *, ids):
+        self.calls.append((chat_id, tuple(ids)))
+        return [self.messages[item] for item in ids if item in self.messages]
+
+
+class FakeHistorySource:
+    def __init__(self, page):
+        self.page = page
+        self.calls = []
+
+    def fetch_history_page(self, *, topic_id, after_message_id, limit):
+        self.calls.append((topic_id, after_message_id, limit))
+        return self.page
+
+
+class TelegramIdentityEngineTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.db_path = self.root / "curadoria.sqlite3"
+        with _test_db(self.db_path) as db:
+            db.executescript("""
+            CREATE TABLE assets(
+                message_id INTEGER PRIMARY KEY,sha256 TEXT NOT NULL,
+                source_relative TEXT NOT NULL,original_topic TEXT NOT NULL,
+                source_date TEXT,source_caption TEXT,source_album TEXT,indexed_at TEXT NOT NULL
+            );
+            CREATE TABLE name_proposals(
+                message_id INTEGER PRIMARY KEY,studio TEXT NOT NULL DEFAULT '',
+                title TEXT NOT NULL DEFAULT '',universe TEXT NOT NULL DEFAULT '',
+                variant TEXT NOT NULL DEFAULT '',filename TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'revisar',confidence REAL NOT NULL DEFAULT 0,
+                evidence_type TEXT NOT NULL DEFAULT '',evidence_message_id INTEGER,
+                source_fingerprint TEXT NOT NULL,official_url TEXT NOT NULL DEFAULT '',
+                notes TEXT NOT NULL DEFAULT '',revision INTEGER NOT NULL DEFAULT 0,
+                modified_at TEXT NOT NULL
+            );
+            CREATE TABLE name_proposal_events(
+                event_id INTEGER PRIMARY KEY AUTOINCREMENT,message_id INTEGER NOT NULL,
+                event_type TEXT NOT NULL,evidence TEXT NOT NULL,occurred_at TEXT NOT NULL
+            );
+            CREATE TABLE model_groups(
+                group_key TEXT PRIMARY KEY,studio TEXT,title TEXT,universe TEXT,variant TEXT,
+                state TEXT NOT NULL DEFAULT 'revisar',confidence REAL NOT NULL DEFAULT 0,
+                revision INTEGER NOT NULL DEFAULT 0,created_at TEXT,updated_at TEXT
+            );
+            CREATE TABLE model_group_members(
+                message_id INTEGER PRIMARY KEY,group_key TEXT NOT NULL,
+                match_reason TEXT NOT NULL,updated_at TEXT
+            );
+            """)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def add_asset(self, message_id, caption="", album="", topic="Abe3D"):
+        with _test_db(self.db_path) as db:
+            db.execute("""
+                INSERT INTO assets(message_id,sha256,source_relative,original_topic,
+                                   source_caption,source_album,indexed_at)
+                VALUES(?,?,?,?,?,?,?)
+            """, (
+                message_id, f"sha-{message_id}", f"{message_id}.jpg",
+                topic, caption, str(album) if album else "", "synthetic",
+            ))
+        self.add_proposal(message_id)
+
+    def add_proposal(
+        self,
+        message_id,
+        *,
+        title="",
+        variant="",
+        status="revisar",
+        evidence_type="",
+        notes="",
+    ):
+        with _test_db(self.db_path) as db:
+            db.execute("""
+                INSERT OR REPLACE INTO name_proposals(
+                    message_id,studio,title,universe,variant,filename,status,confidence,
+                    evidence_type,evidence_message_id,source_fingerprint,official_url,
+                    notes,revision,modified_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                message_id, "", title, "", variant, "", status, 0.1,
+                evidence_type, None, "seed", "", notes, 0, "synthetic",
+            ))
+
+    def set_coverage(self, message_id, *, coverage="exhausted", identity="ambiguous", topic_id=5):
+        with engine._open_curadoria(self.db_path) as db:
+            db.execute("""
+                UPDATE telegram_identity_coverage
+                SET coverage_status=?,identity_status=?,topic_id=?,topic_name='Abe3D',updated_at=?
+                WHERE message_id=?
+            """, (coverage, identity, topic_id, "synthetic", message_id))
+            db.commit()
+
+    def source_registry(self, _topic):
+        return [engine.OfficialSource(
+            "Abe3D", "Cults3D", "https://cults3d.com/en/users/abe3d", verified=True
+        )]
+
+    def test_structured_caption_preserves_studio_universe_scale_and_version(self):
+        parsed = engine.parse_telegram_caption(
+            "Abe3D",
+            "▪️ Wonder Woman - DC\n▫️ Studio: Abe3D\n▫️ Scale: 1/6\n▫️ Version: Battle Scarred",
+            message_id=10,
+        )
+        self.assertEqual(parsed.identity_status, "telegram_found")
+        candidate = parsed.candidates[0]
+        self.assertEqual(candidate.title, "Wonder Woman")
+        self.assertEqual(candidate.studio, "Abe3D")
+        self.assertEqual(candidate.universe, "DC")
+        self.assertEqual(candidate.variant, "1/6; Battle Scarred")
+        self.assertEqual(candidate.source_message_id, 10)
+
+    def test_free_text_examples_are_candidates_without_confirming_single_words(self):
+        cases = {
+            "Wonder Woman — Battle Scarred": ("Wonder Woman", "Battle Scarred", "revisar"),
+            "Black Widow 2021": ("Black Widow 2021", "", "provavel"),
+            "Princess Jasmine": ("Princess Jasmine", "", "provavel"),
+            "The Wasp": ("The Wasp", "", "provavel"),
+            "Thena": ("Thena", "", "revisar"),
+            "Mantis": ("Mantis", "", "revisar"),
+            "Mary Jane Watson": ("Mary Jane Watson", "", "provavel"),
+            "She-Hulk Bust": ("She-Hulk Bust", "", "provavel"),
+            "Elektra": ("Elektra", "", "revisar"),
+        }
+        for caption, expected in cases.items():
+            with self.subTest(caption=caption):
+                result = engine.parse_telegram_caption("Mixed Studio Topic", caption)
+                self.assertEqual(len(result.candidates), 1)
+                candidate = result.candidates[0]
+                self.assertEqual((candidate.title, candidate.variant, candidate.status), expected)
+                self.assertEqual(candidate.studio, "")
+
+    def test_hashtags_are_candidates_for_review_and_generic_tags_are_ignored(self):
+        result = engine.parse_telegram_caption(
+            "Abe3D", "#WonderWoman #marvel #3dprinting #wip"
+        )
+        self.assertEqual(result.identity_status, "ambiguous")
+        self.assertEqual([c.title for c in result.candidates], ["Wonder Woman"])
+        self.assertEqual(result.candidates[0].status, "revisar")
+        self.assertEqual(engine.parse_telegram_caption(
+            "Abe3D", "#3dprinting #model #wip #marvel"
+        ).identity_status, "unidentified")
+
+    def test_alias_and_version_labels_preserve_original_name(self):
+        result = engine.parse_telegram_caption(
+            "Abe3D",
+            "Title: Black Widow 2021\nAlias: Natasha Romanoff\nScale: 1/10",
+        )
+        candidate = result.candidates[0]
+        self.assertEqual(candidate.title, "Black Widow 2021")
+        self.assertEqual(candidate.aliases, ("Natasha Romanoff",))
+        self.assertEqual(candidate.variant, "1/10")
+
+    def test_reply_relation_is_verified_and_updates_existing_name_proposal(self):
+        self.add_asset(200)
+        message = engine.TelegramHistoryMessage(
+            SOURCE_CHAT, 220, 5, "Abe3D", "Title: Princess Jasmine",
+            reply_to_message_id=200,
+        )
+        saved = engine.ingest_history_messages(self.db_path, SOURCE_CHAT, [message])
+        self.assertEqual(saved["verified_links"], 1)
+        result = engine.apply_telegram_evidence(self.db_path)
+        self.assertEqual(result["proposed"], 1)
+        with _test_db(self.db_path) as db:
+            title, evidence_type, status = db.execute(
+                "SELECT title,evidence_type,status FROM name_proposals WHERE message_id=200"
+            ).fetchone()
+            self.assertEqual(db.execute(
+                "SELECT relation_type FROM telegram_history_links WHERE asset_message_id=200"
+            ).fetchone()[0], "reply_to_asset")
+        self.assertEqual((title, evidence_type, status), (
+            "Princess Jasmine", "telegram_reply_text", "provavel"
+        ))
+        self.assertEqual(engine.list_telegram_findings(self.db_path, 200)["related_messages"][0]["evidence_message_id"], 220)
+
+    def test_temporal_proximity_never_creates_a_relation(self):
+        self.add_asset(300)
+        message = engine.TelegramHistoryMessage(
+            SOURCE_CHAT, 301, 5, "Abe3D", "Title: Elektra"
+        )
+        engine.ingest_history_messages(self.db_path, SOURCE_CHAT, [message])
+        engine.apply_telegram_evidence(self.db_path)
+        finding = engine.list_telegram_findings(self.db_path, 300)
+        self.assertEqual(finding["related_messages"], [])
+        self.assertEqual(finding["candidates"], [])
+        self.assertEqual(finding["coverage"]["identity_status"], "unidentified")
+
+    def test_album_text_is_review_context_and_is_not_auto_inherited(self):
+        self.add_asset(400, album="album-400")
+        message = engine.TelegramHistoryMessage(
+            SOURCE_CHAT, 401, 5, "Abe3D", "Title: Uther Lightbringer",
+            grouped_id="album-400", has_media=True,
+        )
+        engine.ingest_history_messages(self.db_path, SOURCE_CHAT, [message])
+        finding = engine.list_telegram_findings(self.db_path, 400)
+        self.assertEqual(finding["candidates"][0]["evidence_type"], "telegram_album_context")
+        self.assertEqual(finding["candidates"][0]["status"], "revisar")
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            title = db.execute(
+                "SELECT title FROM name_proposals WHERE message_id=400"
+            ).fetchone()[0]
+        self.assertEqual(title, "")
+
+    def test_multiple_scales_in_one_album_remain_separate(self):
+        self.add_asset(500, "Title: Uther Lightbringer\nScale: 1/6", album="album-500")
+        self.add_asset(501, "Title: Uther Lightbringer\nScale: 1/10", album="album-500")
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            rows = db.execute("""
+                SELECT message_id,title,variant FROM name_proposals
+                WHERE message_id IN (500,501) ORDER BY message_id
+            """).fetchall()
+            group_count = db.execute("SELECT COUNT(*) FROM model_group_members").fetchone()[0]
+        self.assertEqual(rows, [
+            (500, "Uther Lightbringer", "1/6"),
+            (501, "Uther Lightbringer", "1/10"),
+        ])
+        self.assertEqual(group_count, 0)
+
+    def test_reviewed_gallery_angles_share_one_external_search(self):
+        self.add_asset(600, "#WonderWoman")
+        self.add_asset(601, "#WonderWoman")
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            for mid in (600, 601):
+                db.execute(
+                    "UPDATE telegram_identity_coverage SET coverage_status='exhausted',topic_id=5 "
+                    "WHERE message_id=?", (mid,)
+                )
+                db.execute(
+                    "INSERT INTO model_group_members(message_id,group_key,match_reason,updated_at) "
+                    "VALUES(?,?,?,?)", (mid, "gallery-600", "reviewed_angles", "synthetic")
+                )
+            db.commit()
+        search = FakeSearch([engine.OfficialSearchResult(
+            "Wonder Woman", "https://cults3d.com/en/3d-model/art/wonder-woman"
+        )])
+        first = engine.research_official_pending(self.db_path, self.source_registry, search)
+        second = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(len(search.calls), 1)
+        self.assertEqual(first["searches"], 1)
+        self.assertEqual(second["searches"], 0)
+        with _test_db(self.db_path) as db:
+            states = db.execute(
+                "SELECT status,official_url FROM name_proposals WHERE message_id IN (600,601)"
+            ).fetchall()
+        self.assertEqual(states, [("revisar", ""), ("revisar", "")])
+
+    def test_same_character_in_separate_reviewed_galleries_is_not_merged(self):
+        self.add_asset(610, "#HarleyQuinn")
+        self.add_asset(611, "#HarleyQuinn")
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            db.execute("UPDATE name_proposals SET variant='Classic' WHERE message_id=610")
+            db.execute("UPDATE name_proposals SET variant='Bikini' WHERE message_id=611")
+            for mid, group in ((610, "sculpture-a"), (611, "sculpture-b")):
+                db.execute(
+                    "UPDATE telegram_identity_coverage SET coverage_status='exhausted' WHERE message_id=?",
+                    (mid,),
+                )
+                db.execute(
+                    "INSERT INTO model_group_members(message_id,group_key,match_reason,updated_at) "
+                    "VALUES(?,?,?,?)", (mid, group, "reviewed_angles", "synthetic")
+                )
+            db.commit()
+        search = FakeSearch([engine.OfficialSearchResult(
+            "Harley Quinn", "https://cults3d.com/en/3d-model/art/harley-quinn"
+        )])
+        result = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(len(search.calls), 2)
+        self.assertEqual(result["searches"], 2)
+
+    def test_incomplete_telegram_coverage_blocks_external_search(self):
+        self.add_asset(700, "#Mantis")
+        engine.apply_telegram_evidence(self.db_path)
+        search = FakeSearch([engine.OfficialSearchResult(
+            "Mantis", "https://cults3d.com/en/3d-model/art/mantis"
+        )])
+        result = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(result["telegram_not_exhausted"], 1)
+        self.assertEqual(search.calls, [])
+
+    def test_exhausted_but_unidentified_without_terms_is_not_searched(self):
+        self.add_asset(701, "")
+        engine.apply_telegram_evidence(self.db_path)
+        self.set_coverage(701, identity="unidentified")
+        search = FakeSearch()
+        result = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(result["no_search_terms"], 1)
+        self.assertEqual(search.calls, [])
+
+    def test_official_source_unavailable_is_cached_without_confirmation(self):
+        self.add_asset(702, "#Elektra")
+        engine.apply_telegram_evidence(self.db_path)
+        self.set_coverage(702, identity="ambiguous")
+        search = FakeSearch(error=RuntimeError("offline"))
+        result = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(result["unavailable_sources"], 1)
+        with _test_db(self.db_path) as db:
+            status, official_url = db.execute(
+                "SELECT status,official_url FROM name_proposals WHERE message_id=702"
+            ).fetchone()
+            cache_status = db.execute(
+                "SELECT status FROM telegram_official_search_cache"
+            ).fetchone()[0]
+        self.assertEqual(status, "revisar")
+        self.assertEqual(official_url, "")
+        self.assertEqual(cache_status, "unavailable")
+
+    def test_conflicting_official_pages_remain_candidates_not_confirmations(self):
+        self.add_asset(703, "#Elektra")
+        engine.apply_telegram_evidence(self.db_path)
+        self.set_coverage(703, identity="ambiguous")
+        search = FakeSearch([
+            engine.OfficialSearchResult(
+                "Elektra Bust", "https://cults3d.com/en/3d-model/art/elektra-bust",
+                variant="Bust",
+            ),
+            engine.OfficialSearchResult(
+                "Elektra Full Statue", "https://cults3d.com/en/3d-model/art/elektra-statue",
+                variant="Full Statue",
+            ),
+        ])
+        result = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(result["conflicts"], 1)
+        with _test_db(self.db_path) as db:
+            status = db.execute(
+                "SELECT status FROM name_proposals WHERE message_id=703"
+            ).fetchone()[0]
+            cached_status = db.execute(
+                "SELECT status FROM telegram_official_search_cache"
+            ).fetchone()[0]
+        self.assertEqual(status, "revisar")
+        self.assertEqual(cached_status, "conflict")
+
+    def test_unverified_source_and_off_domain_result_are_rejected(self):
+        self.add_asset(704, "#Thena")
+        engine.apply_telegram_evidence(self.db_path)
+        self.set_coverage(704, identity="ambiguous")
+        search = FakeSearch([engine.OfficialSearchResult(
+            "Thena", "https://example.invalid/thena"
+        )])
+        unverified = lambda _topic: [engine.OfficialSource(
+            "Abe3D", "Cults3D", "https://cults3d.com/en/users/abe3d", verified=False
+        )]
+        result = engine.research_official_pending(self.db_path, unverified, search)
+        self.assertEqual(result["unavailable_sources"], 1)
+        self.assertEqual(search.calls, [])
+        accepted = engine.research_official_pending(self.db_path, self.source_registry, search)
+        self.assertEqual(accepted["official_candidates"], 0)
+        with _test_db(self.db_path) as db:
+            self.assertEqual(db.execute(
+                "SELECT status FROM telegram_official_search_cache"
+            ).fetchone()[0], "empty")
+
+    def test_manual_review_is_preserved_and_telegram_proposals_never_confirm(self):
+        self.add_asset(705, "Princess Jasmine")
+        self.add_proposal(705, title="Manual Title", status="revisar", notes="manual note")
+        result = engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            title, status = db.execute(
+                "SELECT title,status FROM name_proposals WHERE message_id=705"
+            ).fetchone()
+        self.assertEqual(result["preserved_manual"], 1)
+        self.assertEqual((title, status), ("Manual Title", "revisar"))
+
+        self.add_asset(706, "Princess Jasmine")
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            status = db.execute(
+                "SELECT status FROM name_proposals WHERE message_id=706"
+            ).fetchone()[0]
+        self.assertEqual(status, "provavel")
+        self.assertNotEqual(status, "confirmado")
+
+    def test_incremental_ignored_message_recovery_preserves_source_database(self):
+        self.add_asset(800)
+        source_path = self.root / "source.sqlite3"
+        with _test_db(source_path) as db:
+            db.executescript("""
+                CREATE TABLE mensagens(
+                    origem INTEGER,mensagem INTEGER,status TEXT,hash TEXT,caminho TEXT,
+                    titulo TEXT,data_mensagem TEXT,referencia TEXT,erro TEXT,
+                    PRIMARY KEY(origem,mensagem)
+                );
+                CREATE TABLE topicos_mensagens(
+                    origem INTEGER,mensagem INTEGER,topico_id INTEGER,topico_nome TEXT,
+                    legenda TEXT,album_id TEXT
+                );
+            """)
+            db.executemany(
+                "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
+                [(SOURCE_CHAT, 801, "ignorado"), (SOURCE_CHAT, 802, "ignorado")],
+            )
+            db.execute(
+                "INSERT INTO topicos_mensagens VALUES(?,?,?,?,?,?)",
+                (SOURCE_CHAT, 800, 5, "Abe3D", "", ""),
+            )
+        before = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        client = FakeTelegramClient({
+            801: {"id": 801, "message": "Title: Elektra", "reply_to_message_id": 800, "topic_id": 5},
+            802: {"id": 802, "message": "Title: Thena", "topic_id": 5},
+        })
+        registered = engine.register_asset_topics(source_path, self.db_path, SOURCE_CHAT)
+        self.assertEqual(registered["topics_recovered"], 1)
+        first = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, client, SOURCE_CHAT, batch_size=1, overlap=0
+        ))
+        second = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, client, SOURCE_CHAT, batch_size=1, overlap=0
+        ))
+        self.assertEqual((first["new_message_ids"], second["new_message_ids"]), (1, 1))
+        self.assertEqual(first["verified_links"], 1)
+        self.assertEqual(client.calls[0][1], (801,))
+        self.assertEqual(client.calls[1][1], (802,))
+        engine.apply_telegram_evidence(self.db_path)
+        with _test_db(self.db_path) as db:
+            title = db.execute(
+                "SELECT title FROM name_proposals WHERE message_id=800"
+            ).fetchone()[0]
+        after = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        self.assertEqual(title, "Elektra")
+        self.assertEqual(before, after)
+
+    def test_history_scan_requires_verified_full_range_and_updates_incrementally(self):
+        self.add_asset(900)
+        with engine._open_curadoria(self.db_path) as db:
+            db.execute("""
+                UPDATE telegram_identity_coverage SET topic_id=9,topic_name='Abe3D'
+                WHERE message_id=900
+            """)
+            db.commit()
+        partial = FakeHistorySource(engine.HistoryPage(
+            messages=[], source_chat_id=SOURCE_CHAT, topic_id=9, topic_name="Abe3D",
+            next_cursor=50, history_high_water_id=100, has_more=True,
+            coverage_verified=False, range_start_id=1, range_end_id=50,
+        ))
+        first = asyncio.run(engine.scan_history_batch(
+            self.db_path, partial, SOURCE_CHAT, 9, topic_name="Abe3D"
+        ))
+        self.assertEqual(first["coverage_status"], "partial")
+        complete = FakeHistorySource(engine.HistoryPage(
+            messages=[], source_chat_id=SOURCE_CHAT, topic_id=9, topic_name="Abe3D",
+            next_cursor=100, history_high_water_id=100, has_more=False,
+            coverage_verified=True, range_start_id=51, range_end_id=100,
+        ))
+        second = asyncio.run(engine.scan_history_batch(
+            self.db_path, complete, SOURCE_CHAT, 9, topic_name="Abe3D"
+        ))
+        self.assertEqual(second["coverage_status"], "exhausted")
+        with _test_db(self.db_path) as db:
+            self.assertEqual(db.execute(
+                "SELECT coverage_status FROM telegram_identity_coverage WHERE message_id=900"
+            ).fetchone()[0], "exhausted")
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
+
