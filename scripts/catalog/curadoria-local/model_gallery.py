@@ -89,10 +89,10 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
             "studio":studio,"state":"revisar","created":old is None}
 
 def list_album_candidates(db_path,topic="",limit=60):
-    """Álbuns privados ainda totalmente sem galeria; apenas leitura e revisão.
+    """Álbuns com ao menos duas fotos livres, inclusive álbuns parciais.
 
-    Nunca une imagens automaticamente. Se uma imagem já possui galeria, o
-    álbum inteiro sai da fila para evitar substituição de revisão prévia.
+    As fotos já agrupadas aparecem somente como contexto de revisão; os IDs
+    oferecidos para criar uma galeria são exclusivamente os ainda livres.
     """
     topic=str(topic or "").strip()
     limit=max(1,min(int(limit),100))
@@ -104,25 +104,39 @@ def list_album_candidates(db_path,topic="",limit=60):
     with smart.db_open(db_path) as db:
         smart.setup(db)
         rows=db.execute("""SELECT a.original_topic,a.source_album,
-            COUNT(*) image_count,MIN(a.message_id) sample_message
+            SUM(CASE WHEN m.message_id IS NULL THEN 1 ELSE 0 END) image_count,
+            COUNT(*) album_image_count,COUNT(m.message_id) grouped_images,
+            MIN(a.message_id) sample_message
             FROM assets a LEFT JOIN model_group_members m USING(message_id)
             WHERE """+" AND ".join(clauses)+"""
             GROUP BY a.original_topic,a.source_album
-            HAVING COUNT(*) BETWEEN 2 AND 40 AND COUNT(m.message_id)=0
+            HAVING COUNT(*) BETWEEN 2 AND 40
+              AND SUM(CASE WHEN m.message_id IS NULL THEN 1 ELSE 0 END)>=2
             ORDER BY image_count DESC,sample_message LIMIT ?""",
             params+[limit]).fetchall()
         items=[]
         for row in rows:
-            photos=db.execute("""SELECT message_id,source_caption
-                FROM assets WHERE original_topic=? AND source_album=?
-                ORDER BY message_id""",
+            photos=db.execute("""SELECT a.message_id,a.source_caption,
+                m.group_key,p.title,p.variant
+                FROM assets a LEFT JOIN model_group_members m USING(message_id)
+                LEFT JOIN name_proposals p USING(message_id)
+                WHERE a.original_topic=? AND a.source_album=?
+                ORDER BY a.message_id""",
                 (row["original_topic"],row["source_album"])).fetchall()
             captions=[str(x["source_caption"]).strip() for x in photos
                       if (x["source_caption"] or "").strip()]
             items.append({"topic":row["original_topic"],
                           "album_id":row["source_album"],
                           "image_count":row["image_count"],
-                          "message_ids":[x["message_id"] for x in photos],
+                          "album_image_count":row["album_image_count"],
+                          "grouped_images":row["grouped_images"],
+                          "message_ids":[x["message_id"] for x in photos
+                                         if not x["group_key"]],
+                          "all_message_ids":[x["message_id"] for x in photos],
+                          "already_grouped":[{"message_id":x["message_id"],
+                               "title":x["title"] or "",
+                               "variant":x["variant"] or ""} for x in photos
+                               if x["group_key"]],
                           "caption":captions[0][:500] if captions else ""})
         return {"items":items,"limit":limit}
 
