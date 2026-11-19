@@ -91,10 +91,10 @@ const env = {
   CLOUDFLARE_R2_ALLOW_OVERWRITE: "false",
   CLOUDFLARE_R2_EXECUTE: "false",
 };
-const run = () => new Promise((resolve, reject) => {
+const run = (extra = []) => new Promise((resolve, reject) => {
   const p = spawn(process.execPath, [uploader, "--private-telegram-studios",
     "--execute", "--plan", planFile, "--report", reportFile,
-    "--checkpoint", checkpoint, "--concurrency", "2"], { env, stdio: ["ignore","pipe","pipe"] });
+    "--checkpoint", checkpoint, "--concurrency", "2", ...extra], { env, stdio: ["ignore","pipe","pipe"] });
   let out = "", err = "";
   p.stdout.on("data", b => out += b);
   p.stderr.on("data", b => err += b);
@@ -119,6 +119,14 @@ try {
   report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.equal(report.uploaded, 0);
   assert.equal(report.reused, 2);
+  assert.equal(writes, 2);
+  const resumed = await run(["--resume-checkpoint"]);
+  assert.equal(resumed.code, 0, resumed.err);
+  report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
+  assert.equal(report.checkpoint_verified, 2);
+  assert.equal(report.uploaded, 0);
+  assert.equal(report.reused, 0);
+  assert.equal(report.remote_full_sha_verified, 2);
   assert.equal(writes, 2);
   const target = objects.get(prefix + "/display.webp");
   objects.set(prefix + "/display.webp", {...target, hash: "f".repeat(64)});
