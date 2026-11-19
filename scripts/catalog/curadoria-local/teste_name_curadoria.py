@@ -78,4 +78,38 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
     assert (root/"manifesto-nomes.csv").exists()
     for mid in (101,102,103,104):
         assert (source/f"msg_{mid}.jpg").read_bytes()==f"imagem-ficticia-{mid}".encode()
+    # Legenda livre, sem marcadores: proposta auditável, nunca confirmação automática.
+    caption="Wonder Woman - Battle Scarred Gal Gadot #DianaPrince"
+    fixture=source/"msg_105.jpg"
+    fixture.write_bytes(b"imagem-ficticia-105")
+    with closing(sqlite3.connect(db)) as conn, conn as cn:
+        cn.execute("INSERT INTO assets VALUES(?,?,?,?,?,?)",
+            (105,hashlib.sha256(fixture.read_bytes()).hexdigest(),
+             fixture.name,"VX-Labs",caption,"album-vx"))
+    assert m.process_batch(db,50)["processed"]==1
+    for wrong_title,wrong_studio in [("Batman","VX-Labs"),
+                                     ("Wonder Woman - Battle Scarred","Outra Marca")]:
+        try:
+            m.suggest_name_from_telegram_caption(
+                db,105,wrong_title,wrong_studio,variant="Battle Scarred")
+            assert False,"Legenda ou estúdio sem evidência deveria falhar"
+        except ValueError: pass
+    proposed=m.suggest_name_from_telegram_caption(
+        db,105,"Wonder Woman - Battle Scarred","VX-Labs",
+        variant="Battle Scarred",evidence_note="Painel visual fictício")
+    assert proposed["ok"] and proposed["status"]=="provavel",proposed
+    assert not m.suggest_name_from_telegram_caption(
+        db,105,"Wonder Woman - Battle Scarred","VX-Labs")["ok"]
+    with closing(sqlite3.connect(db)) as conn, conn as cn:
+        state=cn.execute("""SELECT title,status,evidence_type,notes
+            FROM name_proposals WHERE message_id=105""").fetchone()
+        assert state[0]=="Wonder Woman - Battle Scarred"
+        assert state[1]=="provavel" and state[2]=="telegram_caption_curated"
+        assert "pendentes" in state[3]
+        cn.execute("UPDATE assets SET source_caption=? WHERE message_id=105",
+                   ("Legenda editada pelo downloader",))
+    m.process_batch(db,50)
+    with closing(sqlite3.connect(db)) as conn:
+        assert conn.execute("SELECT title FROM name_proposals WHERE message_id=105").fetchone()[0]=="Wonder Woman - Battle Scarred"
+    assert fixture.read_bytes()==b"imagem-ficticia-105"
     print("NOMEAÇÃO E2E APROVADA: propostas, álbum, nomes únicos, aprovação com fonte, conflito, retomada, CSV e originais intactos")
