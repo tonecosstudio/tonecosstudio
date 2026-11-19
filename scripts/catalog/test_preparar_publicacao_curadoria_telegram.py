@@ -2,7 +2,9 @@
 """E2E offline. Nao utiliza Telegram, backend publico nem credenciais."""
 from __future__ import annotations
 import csv
+from contextlib import closing
 import hashlib
+import json
 import importlib.util
 import sqlite3
 import tempfile
@@ -113,6 +115,63 @@ def test():
         else:
             raise AssertionError("Staging dentro do Telegram deveria falhar")
         assert not any(x.suffix == ".webp" for x in out.iterdir())
+
+        # A galeria revisada manda na identidade: duas vistas da mesma
+        # escultura precisam produzir um unico lote de modelo, nao duas fichas.
+        source_extra = source / "SaltSculpt" / "msg_8.jpg"
+        source_extra.write_bytes(b"fixture-angle-two")
+        hash_extra = hashlib.sha256(source_extra.read_bytes()).hexdigest()
+        with closing(sqlite3.connect(db)) as conn:
+            conn.executescript("""
+                CREATE TABLE model_groups(
+                    group_key TEXT PRIMARY KEY, state TEXT, studio TEXT, title TEXT);
+                CREATE TABLE model_group_members(
+                    message_id INTEGER PRIMARY KEY, group_key TEXT);
+            """)
+            conn.execute("INSERT INTO model_groups VALUES (?,?,?,?)",
+                         ("gallery-fern", "confirmado", "SaltSculpt", "Fern"))
+            conn.execute("INSERT INTO model_group_members VALUES (?,?)", (1, "gallery-fern"))
+            conn.execute("INSERT INTO model_group_members VALUES (?,?)", (8, "gallery-fern"))
+            conn.execute("INSERT INTO assets VALUES (?,?,?,?,?)",
+                         (8, hash_extra, "SaltSculpt/msg_8.jpg", "SaltSculpt", "2026-11-19"))
+            conn.execute("INSERT INTO annotations VALUES (?,?,?)", (8, "aprovado", "Fern"))
+            conn.execute("INSERT INTO name_proposals VALUES (?,?,?,?,?,?,?,?)",
+                         (8, "confirmado", "SaltSculpt", "Fern", "", "", "fern-back.jpg", ""))
+            conn.commit()
+        save_csv(rights, ["message_id", "sha256", "public_use_authorized", "evidence_url"], [
+            {"message_id": mid, "sha256": (hashes[mid] if mid != 6 else "0" * 64),
+             "public_use_authorized": "sim",
+             "evidence_url": f"https://example.org/rights/{mid}"}
+            for mid in (1, 2, 3, 6, 7)
+        ] + [{"message_id": 8, "sha256": hash_extra, "public_use_authorized": "sim",
+              "evidence_url": "https://example.org/rights/8"}])
+        grouped, summary_grouped = m.build_plan(db, source, catalog, rights)
+        by_id = {r["message_id"]: r for r in grouped}
+        assert by_id[1]["action"] == "stage_new_asset"
+        assert by_id[8]["action"] == "stage_new_asset"
+        assert by_id[1]["group_image_count"] == 2
+        assert summary_grouped["distinct_model_groups"] == 1
+        m.write_plan(out, grouped, summary_grouped)
+        batches = [json.loads(line) for line in
+                   (out / "lote_modelos_elegiveis.jsonl").read_text(encoding="utf-8").splitlines()]
+        fern = [b for b in batches if b["group_key"] == "gallery-fern"]
+        assert len(fern) == 1, batches
+        assert fern[0]["message_ids"] == [1, 8], fern
+        assert len((out / "galerias_para_revisao.csv").read_text(encoding="utf-8").splitlines()) == 2
+
+        # Um album ainda provavel ou com identidade divergente nunca vai
+        # para o lote publico, mesmo se suas imagens tiverem direitos.
+        with closing(sqlite3.connect(db)) as conn:
+            conn.execute("UPDATE model_groups SET state='provavel'")
+            conn.commit()
+        pending, _ = m.build_plan(db, source, catalog, rights)
+        assert next(r for r in pending if r["message_id"] == 1)["reason"] == "model_group_not_confirmed"
+        with closing(sqlite3.connect(db)) as conn:
+            conn.execute("UPDATE model_groups SET state='confirmado',title='Another sculpture'")
+            conn.commit()
+        mismatched, _ = m.build_plan(db, source, catalog, rights)
+        assert next(r for r in mismatched if r["message_id"] == 8)["reason"] == "group_identity_mismatch"
+        assert source_extra.read_bytes() == b"fixture-angle-two"
     print("E2E APROVADO: aprovado/direitos, SHA, duplicatas, colisao de modelo, path traversal, sem escrita externa")
 
 

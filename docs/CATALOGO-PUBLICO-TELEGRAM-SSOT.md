@@ -113,3 +113,30 @@ Entrada: SQLite da Curadoria (`assets`, `annotations`, `name_proposals`) e image
 **Prova no Windows em 19/11/2026:** 85 imagens com nome sugerido, geradas 85 galerias WebP + 85 miniaturas (sem falhas). Originais: 10.543.860 bytes; WebP completo: 4.438.106 bytes; **57,9% de redução**, sem perda nem alteração de originais. Ensaio do importador público: 0 elegíveis, 85 rejeitadas; zero operações externas. A porcentagem varia com o conteúdo das imagens.
 
 Upload de itens Telegram só inicia depois de seleção/homologação do primeiro lote elegível e prova de autorização. A TONART pode continuar servindo os modelos já aprovados do catálogo atual sem reenvio desnecessário.
+
+
+## 8. Reconciliação de álbuns como uma única estatueta
+
+O pré-publicador canônico `scripts/catalog/preparar-publicacao-curadoria-telegram.py`
+lê **somente** as tabelas existentes `model_groups` e `model_group_members`
+da Curadoria (quando disponíveis), sem criar banco ou schema duplicado.
+
+- Cada imagem mantém a referência Telegram e SHA-256, mas o `group_key`
+  confirmado torna-se a identidade interna da galeria de uma escultura.
+- Um grupo com várias fotos elegíveis gera **uma linha** em
+  `lote_modelos_elegiveis.jsonl`, com todos os `message_ids`.
+- `galerias_para_revisao.csv` registra o total de ângulos, status do grupo,
+  nomes confirmados e fotos individualmente aprovadas.
+- Grupo `provavel`/`revisar` ou com estúdio/título conflitantes bloqueia
+  a importação, mesmo se alguma imagem individual estiver aprovada.
+- Se um grupo mistura imagem com hash já existente e imagem nova, a
+  reconciliação com o `model_id` canônico exige revisão; não dividir em
+  produtos separados nem forçar fusão pela coincidência de personagem.
+- Imagem não vinculada a grupo permanece individual (identidade
+  `single:<message_id>`) até sua associação visual ser revisada.
+- Os gates anteriores de identificação, licença para uso público,
+  integridade e inventário TONART **continuam obrigatórios**.
+
+A operação permanece `read-only` nos originais e no catálogo público.
+Uma URL de Patreon/Cults comprova potencialmente o nome do produto,
+**não** o direito de reproduzir sua imagem comercialmente.

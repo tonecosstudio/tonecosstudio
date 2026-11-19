@@ -111,13 +111,31 @@ def read_curation(path: Path) -> list[dict]:
         expected = {"assets", "annotations", "name_proposals"}
         if not expected <= tables:
             raise ValueError("Schema da Curadoria sem tabelas: " + ", ".join(sorted(expected - tables)))
-        sql = """SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
+        # Galerias sao autoridade da Curadoria. O schema e opcional para
+        # permitir importacoes de bancos antigos sem criar tabelas paralelas.
+        has_groups = {"model_groups", "model_group_members"} <= tables
+        if has_groups:
+            group_columns = """gm.group_key AS model_group_key,
+                mg.state AS model_group_state,
+                mg.studio AS group_studio,
+                mg.title AS group_title,
+                (SELECT COUNT(*) FROM model_group_members member
+                 WHERE member.group_key = gm.group_key) AS group_image_count"""
+            group_joins = """LEFT JOIN model_group_members gm ON gm.message_id=a.message_id
+                LEFT JOIN model_groups mg ON mg.group_key=gm.group_key"""
+        else:
+            group_columns = """NULL AS model_group_key,
+                NULL AS model_group_state,NULL AS group_studio,
+                NULL AS group_title,0 AS group_image_count"""
+            group_joins = ""
+        sql = f"""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
                  a.source_date,n.status AS review_status,n.model AS review_model,
                  p.status AS name_status,p.studio,p.title,p.universe,p.variant,
-                 p.filename,p.official_url
+                 p.filename,p.official_url, {group_columns}
                  FROM assets a
                  LEFT JOIN annotations n USING(message_id)
                  LEFT JOIN name_proposals p USING(message_id)
+                 {group_joins}
                  ORDER BY a.message_id"""
         return [dict(row) for row in db.execute(sql)]
     finally:
@@ -165,12 +183,24 @@ def build_plan(db: Path, source: Path, existing: Path | None, rights_file: Path 
             "name_status": a["name_status"] or "", "official_url": a["official_url"] or "",
             "action": "", "reason": "", "existing_model_id": "",
             "rights_evidence_url": "",
+            "model_group_key": a["model_group_key"] or "",
+            "model_group_state": a["model_group_state"] or "",
+            "group_image_count": int(a["group_image_count"] or 0),
+            "group_studio": a["group_studio"] or "",
+            "group_title": a["group_title"] or "",
         }
         def block(reason):
             record["action"] = "hold"
             record["reason"] = reason
         if a["review_status"] != "aprovado" or a["name_status"] != "confirmado":
             block("name_or_model_not_approved")
+        elif a["model_group_key"] and a["model_group_state"] != "confirmado":
+            block("model_group_not_confirmed")
+        elif a["model_group_key"] and (
+            key(studio) != key(a["group_studio"]) or
+            key(title) != key(a["group_title"])
+        ):
+            block("group_identity_mismatch")
         elif not studio or not title or not HASH.fullmatch(digest):
             block("invalid_identification_or_hash")
         elif existing is None:
@@ -218,6 +248,9 @@ def build_plan(db: Path, source: Path, existing: Path | None, rights_file: Path 
         "inventory_supplied": existing is not None,
         "rights_manifest_supplied": rights_file is not None,
         "total": len(records), "counts": counts, "reasons": reasons,
+        "grouped_images": sum(bool(r["model_group_key"]) for r in records),
+        "distinct_model_groups": len({r["model_group_key"] for r in records
+                                     if r["model_group_key"]}),
         "publish_performed": False, "external_writes": False,
         "notes": "Plano local, nao autorizacao para R2/D1/Supabase ou release.",
     }
@@ -242,6 +275,8 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
         "studio", "model", "universe", "variant", "proposed_filename",
         "source_priority", "review_status", "name_status", "action", "reason",
         "existing_model_id", "rights_evidence_url", "official_url",
+        "model_group_key", "model_group_state", "group_image_count",
+        "group_studio", "group_title",
     ]
     from io import StringIO
     sio = StringIO(newline="")
@@ -250,9 +285,70 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
     writer.writerows(records)
     atomic_text(out / "decisoes.csv", sio.getvalue())
     atomic_text(out / "resumo.json", json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
-    ready = [r for r in records if r["action"] in {"stage_new_asset", "reuse_existing_asset"}]
+    # Um grupo = uma escultura. Nunca criar um modelo por angulo da foto.
+    # Fotos avulsas permanecem individuais ate o revisor reuni-las.
+    groups = defaultdict(list)
+    for r in records:
+        if r["model_group_key"]:
+            groups[r["model_group_key"]].append(r)
+    from io import StringIO
+    review = StringIO(newline="")
+    columns_group = [
+        "group_key", "studio", "model", "universe", "variant", "group_state",
+        "declared_image_count", "indexed_image_count", "confirmed_name_count",
+        "approved_image_count", "eligible_image_count",
+    ]
+    group_writer = csv.DictWriter(review, fieldnames=columns_group)
+    group_writer.writeheader()
+    for group_key, members in sorted(groups.items()):
+        sample = members[0]
+        group_writer.writerow({
+            "group_key": group_key, "studio": sample["studio"],
+            "model": sample["model"], "universe": sample["universe"],
+            "variant": sample["variant"],
+            "group_state": sample["model_group_state"],
+            "declared_image_count": sample["group_image_count"],
+            "indexed_image_count": len(members),
+            "confirmed_name_count": sum(r["name_status"] == "confirmado" for r in members),
+            "approved_image_count": sum(r["review_status"] == "aprovado" for r in members),
+            "eligible_image_count": sum(r["action"] in {"stage_new_asset", "reuse_existing_asset"}
+                                        for r in members),
+        })
+    atomic_text(out / "galerias_para_revisao.csv", review.getvalue())
+
+    # Preparar um lote por identidade de escultura, nao por arquivo.
+    # Mesclar ativo conhecido e foto nova exige vinculo de modelo validado;
+    # caso contrario nao gerar um lote publicavel de identidade ambigua.
+    candidates = defaultdict(list)
+    for r in records:
+        if r["action"] in {"stage_new_asset", "reuse_existing_asset"}:
+            identity = r["model_group_key"] or f"single:{r['message_id']}"
+            candidates[identity].append(r)
+    ready, model_batches = [], []
+    for identity, members in sorted(candidates.items()):
+        known_ids = {r["existing_model_id"] for r in members if r["existing_model_id"]}
+        actions = {r["action"] for r in members}
+        if len(known_ids) > 1 or len(actions) > 1:
+            continue  # Reconciliacao visual manual antes de qualquer importacao
+        ready.extend(members)
+        head = members[0]
+        model_batches.append({
+            "group_key": head["model_group_key"] or None,
+            "identity_key": identity,
+            "studio": head["studio"],
+            "model": head["model"],
+            "universe": head["universe"],
+            "variant": head["variant"],
+            "existing_model_id": next(iter(known_ids), None),
+            "action": "reuse_existing_model" if "reuse_existing_asset" in actions
+                       else "stage_new_model",
+            "message_ids": [r["message_id"] for r in members],
+            "original_sha256": [r["original_sha256"] for r in members],
+        })
     atomic_text(out / "lote_elegivel.jsonl",
                 "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in ready))
+    atomic_text(out / "lote_modelos_elegiveis.jsonl",
+                "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in model_batches))
 
 
 def main():
