@@ -341,6 +341,11 @@ class Handler(BaseHTTPRequestHandler):
                    page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
                    topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
                    status=p.get("status",[""])[0][:20]))
+            if route.path=="/api/album-candidates":
+                p=parse_qs(route.query)
+                return self.respond(gallery.list_album_candidates(DB_PATH,
+                    topic=p.get("topic",[""])[0][:120],
+                    limit=p.get("limit",["60"])[0]))
             if route.path=="/api/models":
                 p=parse_qs(route.query)
                 return self.respond(smart.list_models(DB_PATH,
