@@ -150,3 +150,9 @@ O serviço local chama a rotina no mesmo ciclo incremental que processa os nomes
 **Rodada de 19/11/2026**: oito novas galerias do Abe3D foram revisadas e criadas localmente, com quatro vistas cada: Morrigan, Polaris, Power Girl, Elektra, Ada Wong, Claire Redfield, Tatsumaki e Darth Talon. O lote acrescentou **8 galerias e 32 fotos**, sem conflitos; são agora **32 galerias visualmente revisadas** acumuladas no banco local. Essas associações com IDs privados do Telegram não são versionadas.
 
 O serviço reiniciou pelo **OrdaX MCP nativo**, com `computer.process_start` supervisionado, e foi verificado com `GET /health` e `GET /api/stats` retornando **HTTP 200**. No snapshot de verificação, `6101` imagens indexadas e `470` galerias com duas ou mais imagens, das quais `32` visualmente revisadas. Os números podem aumentar quando o downloader adiciona imagens; **nenhuma imagem ou catálogo comercial foi publicado**.
+
+### Nomear uma foto diretamente pela galeria
+
+Ao abrir uma ficha em **Galerias de modelos**, cada vista exibe o botão **Nomear esta foto**. Ele abre a mesma imagem na aba **Nomes propostos**, reutilizando os campos e a revisão existentes — nenhuma segunda tela de cadastro, tabela ou API de edição foi criada. Depois que o nome dessa vista for salvo, a rotina de herança acima oferece a mesma proposta às outras fotos **somente se a galeria tiver sido revisada visualmente**. A galeria continua não aprovada para publicação até a verificação de fonte e direitos.
+
+`teste_ui.py` e `node --check` foram aprovados no Windows após a atualização.
