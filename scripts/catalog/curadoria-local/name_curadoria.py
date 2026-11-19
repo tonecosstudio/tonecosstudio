@@ -235,18 +235,28 @@ def export_manifest(db_path,destination):
     tmp=output.with_suffix(".tmp")
     with smart.db_open(db_path) as db, tmp.open("w",newline="",encoding="utf-8-sig") as fh:
         setup(db)
+        smart.setup(db)
         writer=csv.writer(fh,delimiter=";")
         writer.writerow(["message_id","status","studio","nome_modelo","universo",
             "versao","nome_arquivo_proposto","arquivo_original","sha256",
-            "evidencia_tipo","evidencia_telegram","fonte_oficial","aprovado_para_publicacao"])
+            "evidencia_tipo","evidencia_telegram","fonte_oficial",
+            "galeria_id","galeria_nome","fotos_na_galeria","prova_agrupamento",
+            "aprovado_para_publicacao"])
         count=0
-        for r in db.execute("""SELECT p.*,a.source_relative,a.sha256 FROM name_proposals p
-            JOIN assets a USING(message_id) ORDER BY a.message_id"""):
+        for r in db.execute("""SELECT p.*,a.source_relative,a.sha256,
+            g.group_key AS gallery_key,g.title AS gallery_title,
+            m.match_reason,(SELECT COUNT(*) FROM model_group_members x
+              WHERE x.group_key=m.group_key) AS gallery_photos
+            FROM name_proposals p JOIN assets a USING(message_id)
+            LEFT JOIN model_group_members m USING(message_id)
+            LEFT JOIN model_groups g ON g.group_key=m.group_key
+            ORDER BY a.message_id"""):
             mid=r["evidence_message_id"] or r["message_id"]
             writer.writerow([r["message_id"],r["status"],r["studio"],r["title"],
                 r["universe"],r["variant"],r["filename"],r["source_relative"],
                 r["sha256"],r["evidence_type"],SOURCE_C+str(mid),
-                r["official_url"],"false"])
+                r["official_url"],r["gallery_key"] or "",r["gallery_title"] or "",
+                r["gallery_photos"] or "",r["match_reason"] or "","false"])
             count+=1
     tmp.replace(output)
     return {"exported":count,"path":str(output),"size_bytes":output.stat().st_size}
