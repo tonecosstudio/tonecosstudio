@@ -345,7 +345,29 @@ OFFICIAL_STUDIO_PROFILES={
    ("Kaidan 3D","patreon","https://www.patreon.com/cw/kaidan3d")],
  "3Dmoonn":[
    ("3Dmoonn","cults3d","https://cults3d.com/en/users/3Dmoonn/3d-models"),
-   ("3Dmoonn","patreon","https://www.patreon.com/cw/3Dmoonn")]
+   ("3Dmoonn","patreon","https://www.patreon.com/cw/3Dmoonn")],
+ "3DXM":[
+   ("3DXM","patreon","https://www.patreon.com/3DXM"),
+   ("3DXM","cgtrader","https://www.cgtrader.com/designers/3DPrintingSTL")],
+ "Bulkamancer":[
+   ("Bulkamancer","website","https://bulkamancer.com/"),
+   ("Bulkamancer","cults3d","https://cults3d.com/en/users/Bulkamancer/3d-models")],
+ "C27 Collectibles":[
+   ("C27 Collectibles","website","https://c27-studios.com/")],
+ "Kuton Sculpts":[
+   ("Kuton Sculpts","website","https://kutonsculpts.com/")],
+ "MPPrints _ My Poke Prints":[
+   ("MPPrints","cults3d","https://cults3d.com/en/users/MPPrints/3d-models"),
+   ("MPPrints","patreon","https://www.patreon.com/mypokeprints")],
+ "Momoji":[
+   ("Momoji","cults3d","https://cults3d.com/en/users/3DMomoji/3d-models"),
+   ("Momoji","patreon","https://www.patreon.com/3Dmomoji")],
+ "StepanovSculpts":[
+   ("StepanovSculpts","cgtrader","https://www.cgtrader.com/designers/stepanovsculpts"),
+   ("StepanovSculpts","etsy","https://www.etsy.com/shop/stepanovsculpts")],
+ "Wicked":[
+   ("Wicked","cults3d","https://cults3d.com/en/users/Wicked/3d-models"),
+   ("Wicked","patreon","https://www.patreon.com/c/3dWicked")]
 }
 
 def official_sources(topic):
