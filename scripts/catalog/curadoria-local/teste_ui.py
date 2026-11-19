@@ -7,6 +7,12 @@ assert '<script src="/curadoria.js" defer></script>' in html
 assert '<script>' not in html
 assert script.exists()
 js=script.read_text(encoding="utf-8")
+assert 'id="namesMode"' in html
+assert 'id="nameReview"' in html
+assert 'id="materializeNames"' in html
+assert 'async function refreshNames' in js
+assert 'api/review-name' in js
+assert 'api/materialize-confirmed-names' in js
 assert 'function drawGallery' in js
 assert 'async function refresh' in js
 assert '__LOCAL_CSRF__' in js
