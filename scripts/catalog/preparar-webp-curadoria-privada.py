@@ -34,7 +34,9 @@ def read_candidates(db_path: Path, source_root: Path, limit: int):
     try:
         rows = db.execute("""
             SELECT a.message_id, a.sha256, a.source_relative, a.original_topic,
-                   p.studio, p.title, p.status AS name_status, p.confidence,
+                   a.source_date, a.source_caption, a.source_album, a.indexed_at,
+                   p.studio, p.title, p.universe, p.variant,
+                   p.status AS name_status, p.confidence,
                    n.status AS review_status
             FROM assets AS a
             LEFT JOIN name_proposals AS p ON p.message_id = a.message_id
@@ -67,6 +69,13 @@ def read_candidates(db_path: Path, source_root: Path, limit: int):
                 "source_name": relative,
                 "telegram_origin_id": ORIGIN_ID,
                 "original_topic": topic,
+                "source_date": a["source_date"],
+                "source_caption": a["source_caption"],
+                "source_album": a["source_album"],
+                "source_indexed_at": a["indexed_at"],
+                "curation_studio": a["studio"],
+                "curation_universe": a["universe"],
+                "curation_variant": a["variant"],
                 "catalog_relpath": "curadoria-privada/telegram/" + str(mid),
                 "status": "prepared_private",
                 "private_staging_only": True,

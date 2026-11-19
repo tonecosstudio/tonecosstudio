@@ -3,10 +3,10 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+
 
 const script = new URL("./build-telegram-webp-final.mjs", import.meta.url);
 const profile = "telegram-webp-final-v1";
@@ -18,25 +18,32 @@ test("WebP privado: identidade estável, duplicação, Geral, checkpoint e retom
   const manifest = path.join(dir, "input.jsonl");
   try {
     await fs.mkdir(path.join(root, "Estudio-A"), { recursive: true });
-    const input = path.join(root, "Estudio-A", "msg_10.jpg");
-    await sharp({ create: { width: 1300, height: 950, channels: 3,
-      background: "#9a6d48" } }).jpeg({ quality: 92 }).toFile(input);
+    const input = path.join(root, "Estudio-A", "msg_10.png");
+    await fs.writeFile(input, Buffer.from("iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGUlEQVR4nGOclevBQApgIkn1qIZRDUNKAwAz8AFvOCKO2wAAAABJRU5ErkJggg==", "base64"));
     const original = await fs.readFile(input);
     const sha = crypto.createHash("sha256").update(original).digest("hex");
     const row = {
       message_id: 10, sha256: sha, telegram_origin_id: "2370335738",
-      source_name: "Estudio-A/msg_10.jpg", original_topic: "Estudio-A",
+      source_name: "Estudio-A/msg_10.png", original_topic: "Estudio-A",
+      source_date: "2026-11-19", source_caption: "Render original", source_album: "album-1",
       status: "prepared_private", private_staging_only: true,
       category: "curadoria-privada", catalog_relpath: "curadoria-privada/teste/modelo-a",
       franchise: "Modelo A"
     };
-    const run = (records, limit = 100) => {
-      return fs.writeFile(manifest, records.map(x => JSON.stringify(x)).join("\n") + "\n")
-        .then(() => spawnSync(process.execPath, [fileURLToPath(script), "--root", root,
+    const run = async (records, limit = 100) => {
+      await fs.writeFile(manifest, records.map(x => JSON.stringify(x)).join("\n") + "\n");
+      return new Promise((resolve, reject) => {
+        const child = spawn(process.execPath, [fileURLToPath(script), "--root", root,
           "--output", output, "--manifest", manifest, "--private-curadoria",
-          "--limit", String(limit), "--checkpoint-size", "1"], {
-            encoding: "utf8", timeout: 20000
-          }));
+          "--limit", String(limit), "--checkpoint-size", "1"], { windowsHide: true });
+        let stdout = "", stderr = "";
+        child.stdout.setEncoding("utf8");
+        child.stderr.setEncoding("utf8");
+        child.stdout.on("data", chunk => { stdout += chunk; });
+        child.stderr.on("data", chunk => { stderr += chunk; });
+        child.on("error", reject);
+        child.on("close", status => resolve({ status, stdout, stderr }));
+      });
     };
     const first = await run([row]);
     assert.equal(first.status, 0, first.stderr || first.stdout);
@@ -44,10 +51,12 @@ test("WebP privado: identidade estável, duplicação, Geral, checkpoint e retom
       .trim().split("\n").map(JSON.parse);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].asset_key, ["telegram", "2370335738", sha, profile].join(":"));
+    assert.equal(rows[0].source_caption, "Render original");
+    assert.equal(rows[0].source_album, "album-1");
     const gallery = path.join(output, rows[0].display_relpath);
     const thumb = path.join(output, rows[0].thumb_relpath);
-    assert.equal((await sharp(gallery).metadata()).format, "webp");
-    assert.equal((await sharp(thumb).metadata()).format, "webp");
+    assert.equal((await fs.readFile(gallery)).subarray(8, 12).toString(), "WEBP");
+    assert.equal((await fs.readFile(thumb)).subarray(8, 12).toString(), "WEBP");
     const galleryHash = crypto.createHash("sha256").update(await fs.readFile(gallery)).digest("hex");
     const firstMtime = (await fs.stat(gallery)).mtimeMs;
 
@@ -67,6 +76,7 @@ test("WebP privado: identidade estável, duplicação, Geral, checkpoint e retom
     assert.deepEqual(rows.map(x => x.message_id).sort(), [10, 11]);
     assert.equal(rows[0].display_relpath, rows[1].display_relpath);
     assert.equal(rows[0].thumb_relpath, rows[1].thumb_relpath);
+    assert.equal(rows[0].original_name, "Novo Nome");
     assert.equal((await fs.stat(gallery)).mtimeMs, firstMtime);
     assert.equal(crypto.createHash("sha256").update(await fs.readFile(gallery)).digest("hex"), galleryHash);
     assert.deepEqual(await fs.readFile(input), original);
