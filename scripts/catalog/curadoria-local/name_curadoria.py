@@ -99,6 +99,16 @@ def extract_candidates(assets):
                 evidence_mid,ident=options[0]
                 reason="telegram_album"
                 conf=0.68
+            elif len(options)>=2:
+                # Mesma identidade textual, mas edições/escalas diferentes:
+                # herdar SOMENTE nome, estúdio e universo, NUNCA a variante.
+                cores={(smart.normalize(x["studio"]),smart.normalize(x["title"]),
+                        smart.normalize(x["universe"])) for _,x in options}
+                if len(cores)==1:
+                    evidence_mid,seed=options[0]
+                    ident={**seed,"variant":""}
+                    reason="telegram_album_shared_identity"
+                    conf=0.55
         resolved[mid]=(ident,reason,evidence_mid,conf)
     return resolved
 
@@ -118,7 +128,14 @@ def process_batch(db_path,limit=500):
             mid=a["message_id"]
             fingerprint=source_fingerprint(a)
             previous=seen.get(mid)
-            if previous and previous["source_fingerprint"]==fingerprint:
+            # Atualiza sem reindexar o acervo: antes os álbuns com variantes
+            # diferentes ficavam sem nome, mesmo com identidade comum.
+            # A proposta já criada não volta a ser editada no próximo ciclo.
+            shared_identity_upgrade=bool(previous and
+                previous["status"]=="revisar" and
+                not (previous["evidence_type"] or "").strip() and
+                resolved[mid][1]=="telegram_album_shared_identity")
+            if previous and previous["source_fingerprint"]==fingerprint and not shared_identity_upgrade:
                 continue
             if previous and (previous["status"]=="confirmado" or mid in manual_review_ids or
                 previous["evidence_type"] in {"embedded_render_title","studio_catalog_visual_candidate"}
