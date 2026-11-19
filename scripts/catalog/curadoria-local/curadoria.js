@@ -97,6 +97,8 @@ function setView(mode){
  el("modelReview").hidden=mode!=="models"||!chosenGroup;
  if(mode==="models")refreshModels();else refresh();
 }
+const originalRefresh=refresh;
+refresh=function(){return viewMode==="models"?refreshModels():originalRefresh()};
 el("modelsMode").onclick=()=>setView("models");
 el("imagesMode").onclick=()=>setView("images");
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
