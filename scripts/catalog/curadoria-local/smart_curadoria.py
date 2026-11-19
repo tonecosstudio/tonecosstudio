@@ -263,8 +263,24 @@ def model_detail(db_path,key):
            USING(message_id) WHERE m.group_key=? ORDER BY a.message_id""",(key,)).fetchall()
         sources=db.execute("""SELECT source_type,source_url,description
           FROM model_group_evidence WHERE group_key=? ORDER BY recorded_at""",(key,)).fetchall()
+        # Mensagens distintas podem apontar para os mesmos bytes. Quando um
+        # arquivo presente na galeria recebeu títulos incompatíveis em qualquer
+        # mensagem, mostrar a divergência, sem sobrescrever as propostas.
+        conflicts=db.execute("""SELECT a.sha256,
+            GROUP_CONCAT(DISTINCT p.title) titles,
+            COUNT(DISTINCT a.message_id) message_count
+            FROM assets a JOIN name_proposals p USING(message_id)
+            WHERE a.sha256 IN (
+                SELECT DISTINCT a2.sha256 FROM assets a2
+                JOIN model_group_members m USING(message_id)
+                WHERE m.group_key=? AND TRIM(COALESCE(a2.sha256,''))!='')
+              AND TRIM(COALESCE(p.title,''))!=''
+            GROUP BY a.sha256
+            HAVING COUNT(DISTINCT LOWER(TRIM(p.title)))>1
+            ORDER BY a.sha256""",(key,)).fetchall()
         return {**dict(row),"images":[dict(r) for r in members],
-                "evidence":[dict(r) for r in sources]}
+                "evidence":[dict(r) for r in sources],
+                "identity_conflicts":[dict(r) for r in conflicts]}
 
 def review_model(db_path,key,revision,state,official_url="",notes=""):
     if state not in {"revisar","confirmado"}:
