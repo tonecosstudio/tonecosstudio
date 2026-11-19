@@ -38,6 +38,7 @@ fs.writeFileSync(planFile, JSON.stringify({
 const objects = new Map();
 let writes = 0;
 let requests = 0;
+let transientFailures = 0;
 const server = http.createServer(async (req, res) => {
   requests++;
   const key = decodeURI(req.url.split("?")[0]).replace(/^\/tonecos-catalogo-staging\//, "");
@@ -62,6 +63,12 @@ const server = http.createServer(async (req, res) => {
     if (hash !== req.headers["x-amz-meta-optimized-sha256"] ||
         req.headers["x-amz-meta-original-sha256"] !== originalSha) {
       res.writeHead(400); res.end("bad metadata"); return;
+    }
+    if (key.endsWith("/thumb.webp") && transientFailures === 0) {
+      transientFailures++;
+      res.writeHead(500);
+      res.end("temporary R2 internal error");
+      return;
     }
     objects.set(key, { body, hash, originalSha }); writes++;
     res.writeHead(200); res.end(); return;
@@ -105,6 +112,7 @@ try {
   assert.equal(report.remote_full_sha_verified, 2);
   assert.equal(report.bytes_transferred, bytes.length*2);
   assert.equal(writes, 2);
+  assert.equal(transientFailures, 1, "HTTP 500 must be retried safely");
   assert.ok(fs.existsSync(checkpoint));
   const second = await run();
   assert.equal(second.code, 0, second.err);
