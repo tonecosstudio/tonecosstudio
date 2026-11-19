@@ -153,9 +153,13 @@ async function main() {
     for (const role of ["display", "thumb"]) {
       const expectedHash = r[role + "_sha256"];
       const relative = r[role + "_relpath"];
-      const local = await validatedLocal(realRoot, relative, r[role + "_bytes"], expectedHash, role);
-      const reason = local.error ||
-        (evidence ? null : "external_storage_authorization_missing");
+      // Sem concessao de armazenamento externo, nem abrir milhares de arquivos privados.
+      // A auditoria WebP independente valida o acervo; o uploadador valida os elegiveis.
+      const local = evidence
+        ? await validatedLocal(realRoot, relative, r[role + "_bytes"], expectedHash, role)
+        : { error: null, file: null, bytes: null };
+      const reason = evidence
+        ? (local.error || null) : "external_storage_authorization_missing";
       if (local.error) integrityFailures += 1;
       const operation = {
         operation_id: [r.telegram_origin_id, r.source_sha256, r.profile_version, role].join(":"),
@@ -192,7 +196,8 @@ async function main() {
     authorization_file: authPath,
     source_messages: rows.length, unique_original_sha256: unique.size,
     local_derivations: operations.length,
-    locally_valid: operations.length - integrityFailures,
+    locally_valid: ready.length,
+    local_not_rechecked_due_missing_authorization: operations.length - ready.length - integrityFailures,
     local_integrity_failures: integrityFailures,
     ready_to_upload: ready.length,
     blocked_missing_external_authorization: blocked.filter(
