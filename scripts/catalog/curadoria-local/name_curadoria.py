@@ -467,3 +467,72 @@ def attach_catalog_reference(db_path,message_id,expected_title,source_url,note="
         db.commit()
         return {"ok":True,"changed":True,"message_id":mid,"status":"provavel"}
 
+def propagate_reviewed_gallery_names(db_path,limit=300):
+    """Herdar proposta de nome entre VISTAS JÁ REVISADAS da mesma escultura.
+
+    Não se usa similaridade automática, proximidade, mesmo personagem ou
+    coincidência de título para definir a galeria. Grupos são os revisados
+    manualmente por `model_gallery.register_visual_gallery`.
+    """
+    limit=max(1,min(int(limit),1000))
+    changed=skipped_conflicts=0
+    with smart.db_open(db_path) as db:
+        setup(db)
+        smart.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        groups=db.execute("""SELECT DISTINCT g.group_key FROM model_groups g
+            JOIN model_group_members m USING(group_key)
+            WHERE g.state='revisar' AND m.match_reason='reviewed_angles'
+            ORDER BY g.group_key""").fetchall()
+        manual={r[0] for r in db.execute(
+            "SELECT DISTINCT message_id FROM name_proposal_events WHERE event_type LIKE 'manual_%'")}
+        for g in groups:
+            members=db.execute("""SELECT p.message_id,p.studio,p.title,p.universe,
+                  p.variant,p.status,p.confidence,p.evidence_type,p.notes,
+                  p.official_url,p.revision,a.source_relative
+                FROM model_group_members m JOIN name_proposals p
+                ON p.message_id=m.message_id JOIN assets a USING(message_id)
+                WHERE m.group_key=? ORDER BY p.message_id""",
+                (g["group_key"],)).fetchall()
+            named=[r for r in members if (r["title"] or "").strip()]
+            if not named:continue
+            identities={(smart.normalize(r["studio"]),smart.normalize(r["title"]),
+                         smart.normalize(r["universe"]),smart.normalize(r["variant"]))
+                        for r in named}
+            if len(identities)!=1:
+                skipped_conflicts+=1
+                continue
+            origin=sorted(named,key=lambda r:(r["status"]!="confirmado",
+                 r["evidence_type"] not in {"telegram_caption","embedded_render_title"},
+                 r["message_id"]))[0]
+            for dest in members:
+                if changed>=limit:break
+                if dest["status"]!="revisar" or (dest["title"] or "").strip() or dest["notes"] or dest["official_url"] or dest["message_id"] in manual:
+                    continue
+                stamp=smart.utc()
+                filename=proposed_name({"title":origin["title"],"variant":origin["variant"]},
+                    dest["message_id"],dest["source_relative"])
+                updated=db.execute("""UPDATE name_proposals SET studio=?,title=?,
+                    universe=?,variant=?,filename=?,status='provavel',
+                    confidence=?,evidence_type='gallery_name_inherited',
+                    evidence_message_id=?,notes=?,revision=revision+1,modified_at=?
+                    WHERE message_id=? AND revision=? AND status='revisar'
+                    AND TRIM(COALESCE(title,''))='' AND TRIM(COALESCE(notes,''))=''
+                    AND TRIM(COALESCE(official_url,''))=''""",
+                    (origin["studio"],origin["title"],origin["universe"],origin["variant"],
+                     filename,min(0.66,float(origin["confidence"] or 0.66)),
+                     origin["message_id"],
+                     "Nome proposto a partir de outra vista da mesma escultura em galeria revisada; requer verificação oficial.",
+                     stamp,dest["message_id"],dest["revision"]))
+                if updated.rowcount:
+                    db.execute("""INSERT INTO name_proposal_events
+                      (message_id,event_type,evidence,occurred_at)
+                      VALUES(?,?,?,?)""",
+                      (dest["message_id"],"gallery_name_inherited",
+                       SOURCE_C+str(origin["message_id"]),stamp))
+                    changed+=1
+            if changed>=limit:break
+        db.commit()
+    return {"inherited_names":changed,"conflicting_galleries":skipped_conflicts}
+
+
