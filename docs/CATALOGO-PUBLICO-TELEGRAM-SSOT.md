@@ -59,13 +59,12 @@ python scripts/catalog/preparar-publicacao-curadoria-telegram.py `
   --db "C:\Users\ordax\Documents\TONART-Telegram-Import\espelho-telegram\curadoria-local\curadoria.sqlite3" `
   --source-root "C:\Users\ordax\Downloads\telegram-2370335738-images" `
   --existing-csv "C:\dados-privados\tonart-inventario-canonico.csv" `
-  --rights-csv "C:\dados-privados\direitos-de-imagens.csv" `
   --out "C:\Users\ordax\Documents\TONART-Telegram-Import\publicacao-staging"
 ```
 
 **Inventário TONART CSV:** colunas de SHA (`sha256`, `original_sha256` ou `image_hash`), `model_id`, `studio` e `model`. Extrair dos dados canônicos, sem inventar correspondências.
 
-O preparador utiliza o inventário do catálogo existente e a Curadoria. Não exige formulários ou manifestos de autorização. Os nomes confirmados no próprio render, com referência oficial, já podem ser encaminhados ao lote de publicação. Nomes incertos e álbuns inconsistentes permanecem para revisão.
+O preparador utiliza o inventário do catálogo existente e a Curadoria. Os nomes confirmados no próprio render, com referência oficial, já podem ser encaminhados ao lote de publicação. Nomes incertos e álbuns inconsistentes permanecem para revisão.
 
 ## 5. Critérios para ativar catalogo.tonartstudio.com.br
 
