@@ -260,6 +260,11 @@ async function inspectOperation(operation) {
   if (operation.sha256 && operation.sha256 !== actualHash) {
     errors.push("sha256_mismatch");
   }
+  if (PRIVATE_STUDIOS && (bytes.length < 12 ||
+      bytes.toString("ascii", 0, 4) !== "RIFF" ||
+      bytes.toString("ascii", 8, 12) !== "WEBP")) {
+    errors.push("invalid_webp_magic");
+  }
   return { bytes, actualBytes, actualHash, errors };
 }
 
