@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-creator-catalog-") as directory:
    sha256 TEXT NOT NULL, original_topic TEXT NOT NULL,
    source_caption TEXT NOT NULL, source_album TEXT NOT NULL,
    source_relative TEXT NOT NULL)""")
-  for mid,topic in [(101,"Abe3D"),(102,"Other Studio"),(103,"Abe3D")]:
+  for mid,topic in [(101,"Abe3D"),(102,"Other Studio"),(103,"Abe3D"),(104,"Uel Winner_ ilustrartuel")]:
    img=files/("msg_%d.jpg"%mid)
    img.write_bytes(("synthetic-%s"%mid).encode())
    sha=hashlib.sha256(img.read_bytes()).hexdigest()
@@ -53,6 +53,9 @@ with tempfile.TemporaryDirectory(prefix="tonart-creator-catalog-") as directory:
  with closing(names.smart.db_open(db)) as c, c:
   row=c.execute("SELECT title,status FROM name_proposals WHERE message_id=103").fetchone()
  assert row["title"]=="Manual Work" and row["status"]=="revisar",dict(row)
+ uel=names.suggest_name_from_studio_catalog(db,104,"Magilla Gorilla","Uel Winner",
+    "https://uel.artstation.com/","Uel Winner_ ilustrartuel","Hanna-Barbera")
+ assert uel["ok"] and uel["status"]=="provavel"
  assert names.stats(db)["names_confirmed"]==0
  assert names.materialize_confirmed(db,files,root)["approved_images"]==0
  print("TESTE CATÁLOGO OFICIAL APROVADO: HTTPS, estúdio, idempotência, revisão manual e originais",flush=True)
