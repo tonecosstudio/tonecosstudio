@@ -117,13 +117,16 @@ def read_curation(path: Path) -> list[dict]:
         if has_groups:
             group_columns = """gm.group_key AS model_group_key,
                 mg.state AS model_group_state,
+                mg.studio AS group_studio,
+                mg.title AS group_title,
                 (SELECT COUNT(*) FROM model_group_members member
                  WHERE member.group_key = gm.group_key) AS group_image_count"""
             group_joins = """LEFT JOIN model_group_members gm ON gm.message_id=a.message_id
                 LEFT JOIN model_groups mg ON mg.group_key=gm.group_key"""
         else:
             group_columns = """NULL AS model_group_key,
-                NULL AS model_group_state,0 AS group_image_count"""
+                NULL AS model_group_state,NULL AS group_studio,
+                NULL AS group_title,0 AS group_image_count"""
             group_joins = ""
         sql = f"""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
                  a.source_date,n.status AS review_status,n.model AS review_model,
@@ -183,6 +186,8 @@ def build_plan(db: Path, source: Path, existing: Path | None, rights_file: Path 
             "model_group_key": a["model_group_key"] or "",
             "model_group_state": a["model_group_state"] or "",
             "group_image_count": int(a["group_image_count"] or 0),
+            "group_studio": a["group_studio"] or "",
+            "group_title": a["group_title"] or "",
         }
         def block(reason):
             record["action"] = "hold"
@@ -191,6 +196,11 @@ def build_plan(db: Path, source: Path, existing: Path | None, rights_file: Path 
             block("name_or_model_not_approved")
         elif a["model_group_key"] and a["model_group_state"] != "confirmado":
             block("model_group_not_confirmed")
+        elif a["model_group_key"] and (
+            key(studio) != key(a["group_studio"]) or
+            key(title) != key(a["group_title"])
+        ):
+            block("group_identity_mismatch")
         elif not studio or not title or not HASH.fullmatch(digest):
             block("invalid_identification_or_hash")
         elif existing is None:
@@ -266,6 +276,7 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
         "source_priority", "review_status", "name_status", "action", "reason",
         "existing_model_id", "rights_evidence_url", "official_url",
         "model_group_key", "model_group_state", "group_image_count",
+        "group_studio", "group_title",
     ]
     from io import StringIO
     sio = StringIO(newline="")
