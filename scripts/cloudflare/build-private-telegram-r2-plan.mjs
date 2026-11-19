@@ -50,26 +50,62 @@ function validRow(row) {
   }
 }
 function parseAuthorization(text) {
-  const grants = new Map();
+  const byAsset = new Map();
+  const byOrigin = new Map();
   for (const item of lines(text)) {
     const row = JSON.parse(item);
-    required(row && ORIGIN.test(String(row.telegram_origin_id || "")) &&
-      HASH.test(String(row.source_sha256 || "")) &&
-      PROFILE.test(String(row.profile_version || "")),
-      "Autorizacao com identidade invalida");
+    required(row && ORIGIN.test(String(row.telegram_origin_id || "")),
+      "Autorizacao com origem Telegram invalida");
     required(row.bucket === BUCKET, "Autorizacao para bucket diferente");
+    if (row.policy_type === "telegram_origin") {
+      required(!byOrigin.has(String(row.telegram_origin_id)),
+        "Politica de origem duplicada");
+      required(row.scope === "private_r2_storage" &&
+        row.external_storage_authorized === true &&
+        typeof row.evidence_ref === "string" && row.evidence_ref.trim() &&
+        row.source_collection === "telegram_studios",
+        "Politica da origem deve comprovar armazenamento externo privado");
+      const excludedTopics = row.excluded_topics;
+      required(Array.isArray(excludedTopics) &&
+        excludedTopics.includes("Geral +50k"),
+        "A politica deve preservar a exclusao do Geral +50k");
+      required(excludedTopics.every(x => typeof x === "string" && x.trim()),
+        "Topico excluido invalido");
+      const excludedHashes = row.excluded_sha256 ?? [];
+      required(Array.isArray(excludedHashes) &&
+        excludedHashes.every(x => HASH.test(x)), "SHA excluido invalido");
+      byOrigin.set(String(row.telegram_origin_id), {
+        evidence: row.evidence_ref.trim(),
+        excludedTopics: new Set(excludedTopics.map(x => x.trim().toLowerCase())),
+        excludedHashes: new Set(excludedHashes),
+      });
+      continue;
+    }
+    required(HASH.test(String(row.source_sha256 || "")) &&
+      PROFILE.test(String(row.profile_version || "")),
+      "Autorizacao de arquivo com SHA/perfil invalido");
     const k = key(row);
-    required(!grants.has(k), "Autorizacao duplicada: " + k);
+    required(!byAsset.has(k), "Autorizacao de arquivo duplicada: " + k);
     if (row.external_storage_authorized === true) {
       required(row.scope === "private_r2_storage" &&
         typeof row.evidence_ref === "string" && row.evidence_ref.trim(),
-        "Falta evidencia de permissao de armazenamento externo: " + k);
-      grants.set(k, row.evidence_ref.trim());
+        "Falta evidencia de permissao externa: " + k);
+      byAsset.set(k, row.evidence_ref.trim());
     } else {
-      grants.set(k, null);
+      byAsset.set(k, null);
     }
   }
-  return grants;
+  return {
+    get(k, group) {
+      // Excecao ou bloqueio por SHA tem precedencia sobre a politica da origem.
+      if (byAsset.has(k)) return byAsset.get(k);
+      const policy = byOrigin.get(String(group.row.telegram_origin_id));
+      if (!policy || policy.excludedHashes.has(group.row.source_sha256)) return null;
+      if ([...group.topics].some(topic =>
+        policy.excludedTopics.has(topic.trim().toLowerCase()))) return null;
+      return policy.evidence;
+    },
+  };
 }
 async function validatedLocal(root, rel, expectedSize, expectedHash, role) {
   const normalized = rel.replaceAll("\\", "/");
@@ -149,7 +185,7 @@ async function main() {
   let integrityFailures = 0;
   for (const [k, group] of [...unique.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
     const r = group.row;
-    const evidence = grants.get(k);
+    const evidence = grants.get(k, group);
     for (const role of ["display", "thumb"]) {
       const expectedHash = r[role + "_sha256"];
       const relative = r[role + "_relpath"];
