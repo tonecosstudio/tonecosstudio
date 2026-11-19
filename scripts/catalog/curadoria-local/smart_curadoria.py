@@ -218,7 +218,7 @@ def stats(db_path):
                 "images_waiting":total-processed,"model_groups":groups,
                 "model_states":by_state}
 
-def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1):
+def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unnamed_only=False):
     page=max(1,int(page)); limit=max(1,min(int(limit),120))
     clauses=["1=1"];args=[]
     if topic:
@@ -228,6 +228,8 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1):
         args += ["%"+q+"%"]*4
     if state in VALID_STATE:
         clauses.append("g.state=?");args.append(state)
+    if unnamed_only:
+        clauses.append("g.title LIKE 'Modelo sem nome #%'")
     where=" AND ".join(clauses)
     min_images=max(1,min(40,int(min_images)))
     with db_open(db_path) as db:
