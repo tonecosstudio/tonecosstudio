@@ -1,6 +1,9 @@
 param(
   [ValidateRange(1,100000)][int]$Limit=85
 )
+$utf8 = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = $utf8
+$OutputEncoding = $utf8
 $ErrorActionPreference = 'Stop'
 $Here=Split-Path -Parent $MyInvocation.MyCommand.Path
 $Root=Join-Path $env:USERPROFILE 'Downloads\telegram-2370335738-images'
