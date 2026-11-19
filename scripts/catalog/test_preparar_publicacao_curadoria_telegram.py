@@ -2,6 +2,7 @@
 """E2E offline. Nao utiliza Telegram, backend publico nem credenciais."""
 from __future__ import annotations
 import csv
+from contextlib import closing
 import hashlib
 import json
 import importlib.util
@@ -120,7 +121,7 @@ def test():
         source_extra = source / "SaltSculpt" / "msg_8.jpg"
         source_extra.write_bytes(b"fixture-angle-two")
         hash_extra = hashlib.sha256(source_extra.read_bytes()).hexdigest()
-        with sqlite3.connect(db) as conn:
+        with closing(sqlite3.connect(db)) as conn:
             conn.executescript("""
                 CREATE TABLE model_groups(
                     group_key TEXT PRIMARY KEY, state TEXT, studio TEXT, title TEXT);
@@ -136,6 +137,7 @@ def test():
             conn.execute("INSERT INTO annotations VALUES (?,?,?)", (8, "aprovado", "Fern"))
             conn.execute("INSERT INTO name_proposals VALUES (?,?,?,?,?,?,?,?)",
                          (8, "confirmado", "SaltSculpt", "Fern", "", "", "fern-back.jpg", ""))
+            conn.commit()
         save_csv(rights, ["message_id", "sha256", "public_use_authorized", "evidence_url"], [
             {"message_id": mid, "sha256": (hashes[mid] if mid != 6 else "0" * 64),
              "public_use_authorized": "sim",
@@ -159,12 +161,14 @@ def test():
 
         # Um album ainda provavel ou com identidade divergente nunca vai
         # para o lote publico, mesmo se suas imagens tiverem direitos.
-        with sqlite3.connect(db) as conn:
+        with closing(sqlite3.connect(db)) as conn:
             conn.execute("UPDATE model_groups SET state='provavel'")
+            conn.commit()
         pending, _ = m.build_plan(db, source, catalog, rights)
         assert next(r for r in pending if r["message_id"] == 1)["reason"] == "model_group_not_confirmed"
-        with sqlite3.connect(db) as conn:
+        with closing(sqlite3.connect(db)) as conn:
             conn.execute("UPDATE model_groups SET state='confirmado',title='Another sculpture'")
+            conn.commit()
         mismatched, _ = m.build_plan(db, source, catalog, rights)
         assert next(r for r in mismatched if r["message_id"] == 8)["reason"] == "group_identity_mismatch"
         assert source_extra.read_bytes() == b"fixture-angle-two"
