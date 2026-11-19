@@ -126,3 +126,11 @@ Na interface local, a aba **Galerias de modelos** apresenta por padrão **apenas
 O teste `teste_model_gallery.py` usa imagens fictícias para cobrir criação, repetição idempotente, duas vistas numa mesma ficha, recusa de tópicos e nomes conflitantes, proteção contra reprocessamento por legenda, atualização posterior de título, ausência de liberação comercial e bytes originais intactos. `teste_smart_curadoria.py` continua cobrindo os agrupamentos conservadores existentes por álbum ou hash exato.
 
 **Atenção:** a mesma personagem em duas esculturas diferentes gera **fichas diferentes**; `modelo`, `versão` e `pose` não são deduzidos apenas pela aparência. Uma galeria é organização visual local e não certificação de autorização comercial.
+
+### Manifesto com ID de galeria para importação futura
+
+O CSV privado `manifesto-nomes-propostos.csv` continua preservando uma linha por imagem original (rastreabilidade), mas agora exporta `galeria_id`, `galeria_nome`, `fotos_na_galeria` e `prova_agrupamento`. **Várias linhas com o mesmo `galeria_id` representam uma única estatueta e suas imagens/ângulos**, não produtos independentes. Imagens sem galeria mantêm esses campos vazios. Isso prepara a futura reconciliação do catálogo comercial sem modificar as fontes de produção.
+
+No lote de teste real, `msg17712`, `msg17713`, `msg17714`, `msg17715` compartilham o mesmo `galeria_id`, com `fotos_na_galeria=4` e nome pendente. O grupo Psylocke também exporta quatro vistas com uma identidade de galeria. **Todas as linhas permanecem `aprovado_para_publicacao=false`**. A exportação, incluindo os dados privados, é feita somente no desktop do usuário e nunca enviada ao GitHub.
+
+Os novos endpoints e a interface foram verificados no serviço local: `GET /api/stats` inclui `galleries`, `GET /api/models?min_images=2` lista apenas fichas com várias imagens, `GET /api/names` fornece `gallery_key`/`gallery_image_count`, e `POST /api/create-gallery` conserva idempotência com token CSRF e `Origin` locais.
