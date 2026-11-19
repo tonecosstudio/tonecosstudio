@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useEffect,
   useId,
   useMemo,
@@ -10,7 +12,6 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
-import { TonartCommercialOfferDetails } from "@/components/catalog/TonartCommercialOfferDetails";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -38,6 +39,20 @@ import {
   validCatalogSlug,
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
+
+// A statically imported commercial offer initializes Supabase in the public
+// model detail chunk even when its JSX is hidden. Only the commercial build
+// may import that module; the public gallery has no Auth runtime.
+const CommercialOfferDetails =
+  import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+    ? lazy(() =>
+        import("@/components/catalog/TonartCommercialOfferDetails").then(
+          ({ TonartCommercialOfferDetails }) => ({
+            default: TonartCommercialOfferDetails,
+          }),
+        ),
+      )
+    : null;
 
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 
@@ -857,10 +872,14 @@ export default function CanonicalModelDetails() {
                         finalizadas.
                       </p>
                     </div>
-                    <TonartCommercialOfferDetails
-                      modelSlug={model.slug}
-                      enabled={quoteRequestsEnabled}
-                    />
+                    {quoteRequestsEnabled && CommercialOfferDetails ? (
+                      <Suspense fallback={null}>
+                        <CommercialOfferDetails
+                          modelSlug={model.slug}
+                          enabled
+                        />
+                      </Suspense>
+                    ) : null}
                     <div className="space-y-3">
                       <button
                         type="button"
