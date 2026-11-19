@@ -26,6 +26,13 @@ assert 'const selectedIds=new Set(item.message_ids)' in js
 assert 'if(!taken)' in js and 'check.onchange' in js
 assert 'ids.join(", ")' in js and 'item.message_ids.filter' in js
 assert 'Nomear esta foto' in js
+# A visualização deve exibir cada arquivo SHA-256 uma única vez,
+# sem eliminar vínculos/proveniência das mensagens repetidas.
+assert 'const uniquePhotos=new Map()' in js
+assert 'if(!uniquePhotos.has(key))uniquePhotos.set(key,item)' in js
+assert 'for(const item of uniquePhotos.values())' in js
+assert 'unique_photo_count' in js
+assert 'mensagens repetem arquivos já exibidos' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
 assert 'showNameReferences' in js
