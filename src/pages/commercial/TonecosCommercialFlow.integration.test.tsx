@@ -310,6 +310,12 @@ describe("TONART commercial screens: account → request → history → respons
     });
     const href = contact.getAttribute("href") ?? "";
     expect(href).toMatch(/^mailto:/);
+    expect(contact).toHaveClass("font-semibold");
+    const login = screen.getByRole("link", { name: "Entrar" });
+    expect(login).not.toHaveClass("font-semibold");
+    expect(
+      screen.getByText(/solicitar um orçamento por e-mail, sem criar conta/),
+    ).toBeInTheDocument();
     const message = decodeURIComponent(href);
     expect(message).toContain("Naruto");
     expect(message).toContain("TC-NARUTO");
