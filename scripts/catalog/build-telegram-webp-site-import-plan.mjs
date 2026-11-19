@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { defaultTelegramWebpOutput } from "./telegram-paths.mjs";
+import { isPrivateCuradoriaRecord } from "./telegram-private-staging-gate.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -1138,7 +1139,7 @@ const SITE_IMPORT_EXCLUDED_CATEGORIES = new Set([
 ]);
 
 function rejectReason(record, displayExists, thumbExists) {
-  if (record.private_staging_only === true) return "private_curadoria_staging";
+  if (isPrivateCuradoriaRecord(record)) return "private_curadoria_staging";
   if (
     SITE_IMPORT_EXCLUDED_CATEGORIES.has(
       normalizeComparable(record.final_category),
