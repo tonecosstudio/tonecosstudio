@@ -20,6 +20,7 @@ assert 'min_images:2' in js
 assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js
 assert 'editGalleryPhotoName' in js
+assert 'onlyUnnamedModels' in js and 'unnamedFilter' in html
 assert 'Nomear esta foto' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
