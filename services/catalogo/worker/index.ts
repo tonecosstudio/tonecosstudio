@@ -1,4 +1,5 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
+import { routeTelegramDrafts, type TelegramDraftEnv } from './telegramDrafts'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
 import { type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
@@ -590,8 +591,13 @@ async function createQuote(request: Request, env: Env) {
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    if (request.method === 'OPTIONS') return options(request, env)
     const url = new URL(request.url)
+    // Protect private drafts and R2 before any public route or public CORS.
+    if (url.pathname === '/api/admin/telegram-drafts' ||
+        url.pathname.startsWith('/api/admin/telegram-drafts/')) {
+      return routeTelegramDrafts(request, env as unknown as TelegramDraftEnv)
+    }
+    if (request.method === 'OPTIONS') return options(request, env)
 
     if (request.method === 'GET' && url.pathname === '/api/health') {
       const schema = await catalogSchemaStatus(env.DB)
