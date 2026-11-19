@@ -1512,6 +1512,8 @@ async function buildItem(record) {
     status,
     reject_reason: reject,
     source_type: "telegram_webp_final",
+    private_staging_only: isPrivateCuradoriaRecord(record),
+    original_catalog_relpath: record.original_catalog_relpath || null,
     source_file_name: publicSourceFileName(record.source_name),
     message_id: record.message_id || null,
     original_sha256: record.source_sha256 || null,
