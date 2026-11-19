@@ -28,12 +28,46 @@ refresh();setInterval(()=>{if(!typing)refresh()},10000);
 
 /* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
 let viewMode="models",chosenGroup=null,modelTotal=0;
+let albumCandidates=[];
+async function refreshAlbumCandidates(){
+ const select=el("albumCandidate"),previous=select.value;
+ albumCandidates=[];select.replaceChildren();
+ const first=document.createElement("option");first.value="";
+ first.textContent=topic?"Selecione um álbum para comparar as vistas":"Selecione um estúdio à esquerda";
+ select.append(first);
+ if(!topic)return;
+ const data=await api("/api/album-candidates?"+new URLSearchParams({topic,limit:60}));
+ albumCandidates=data.items||[];
+ for(const item of albumCandidates){
+  const option=document.createElement("option");
+  option.value=item.album_id;
+  option.textContent=item.image_count+" fotos · #"+item.message_ids[0]+(item.caption?" · "+item.caption.slice(0,35):"");
+  select.append(option);
+ }
+ if(albumCandidates.some(x=>x.album_id===previous))select.value=previous;
+}
+el("loadAlbumCandidate").onclick=()=>{
+ const item=albumCandidates.find(x=>x.album_id===el("albumCandidate").value);
+ if(!item||item.topic!==topic){notify("Selecione um álbum do estúdio antes de revisar.");return;}
+ el("galleryIds").value=item.message_ids.join(", ");
+ const root=el("albumCandidatePreview");root.replaceChildren();
+ for(const mid of item.message_ids){
+  const a=document.createElement("a");a.href="/media/"+mid;a.target="_blank";a.rel="noopener noreferrer";
+  const img=document.createElement("img");img.src="/media/"+mid;img.loading="lazy";
+  img.alt="Mensagem "+mid;img.className="preview";
+  a.append(img);text(a,"div","#"+mid,"sub");root.append(a);
+ }
+ el("albumCandidateCaption").textContent=item.caption||"Álbum sem legenda: verifique as fotos antes de unir.";
+ notify("IDs preenchidos. Confira se todas as imagens são da mesma escultura antes de criar a galeria.");
+};
+
 async function refreshModels(){
  if(viewMode!=="models")return;
  try{
   const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
   const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:2,unnamed:el("onlyUnnamedModels").checked?"1":"0"});
   const result=await api("/api/models?"+p);
+  await refreshAlbumCandidates();
   modelTotal=result.total;
   const root=el("modelResults");root.replaceChildren();
   for(const g of result.items){
