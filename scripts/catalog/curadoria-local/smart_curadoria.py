@@ -266,7 +266,12 @@ def model_detail(db_path,key):
         # Mensagens distintas podem apontar para os mesmos bytes. Quando um
         # arquivo presente na galeria recebeu títulos incompatíveis em qualquer
         # mensagem, mostrar a divergência, sem sobrescrever as propostas.
-        conflicts=db.execute("""SELECT a.sha256,
+        # O agrupamento funciona independentemente do modulo opcional de nomes.
+        # Se a tabela de propostas ainda nao existe, nao ha conflitos para listar.
+        has_name_proposals=db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='name_proposals'"
+        ).fetchone() is not None
+        conflicts=(db.execute("""SELECT a.sha256,
             GROUP_CONCAT(DISTINCT p.title) titles,
             COUNT(DISTINCT a.message_id) message_count
             FROM assets a JOIN name_proposals p USING(message_id)
@@ -277,7 +282,7 @@ def model_detail(db_path,key):
               AND TRIM(COALESCE(p.title,''))!=''
             GROUP BY a.sha256
             HAVING COUNT(DISTINCT LOWER(TRIM(p.title)))>1
-            ORDER BY a.sha256""",(key,)).fetchall()
+            ORDER BY a.sha256""",(key,)).fetchall() if has_name_proposals else [])
         return {**dict(row),"images":[dict(r) for r in members],
                 "evidence":[dict(r) for r in sources],
                 "identity_conflicts":[dict(r) for r in conflicts]}
