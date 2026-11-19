@@ -14,6 +14,11 @@ assert 'async function refreshNames' in js
 assert 'api/review-name' in js
 assert 'nameOfficialProfiles' in html
 assert 'nameSourceLink' in html
+assert 'galleryCreate' in html and 'saveVisualGallery' in html
+assert 'nameOpenGallery' in html
+assert 'min_images:2' in js
+assert 'api/create-gallery' in js
+assert 'gallery_image_count' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
 assert 'showNameReferences' in js
