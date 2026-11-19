@@ -432,6 +432,14 @@ function productSuffix(subject) {
 }
 
 function hasGenericSubject(subject) {
+  // "Zoro vs Mihawk Diorama" is a named sculpture, not a generic
+  // folder called "dioramas". Require two non-generic subjects.
+  const duel = subject.match(/^([a-z0-9]+)-vs-([a-z0-9]+)-diorama$/);
+  if (
+    duel &&
+    !GENERIC_SUBJECT_WORDS.has(duel[1]) &&
+    !GENERIC_SUBJECT_WORDS.has(duel[2])
+  ) return false;
   if (GENERIC_EXACT_SUBJECTS.has(subject)) return true;
   const words = subject.split("-").filter(Boolean);
   if (words.some((word) => ["unknown", "identificado"].includes(word))) return true;
@@ -470,7 +478,7 @@ function subjectIdentity(franchiseSlug, subject) {
 
   return {
     slug: rawSubject,
-    name: titleCase(rawSubject),
+    name: titleCase(rawSubject).replace(/\bVs\b/g, "vs"),
     aliases: [],
     productType: suffix?.productType || null,
   };
