@@ -1,5 +1,6 @@
 const TOKEN="__LOCAL_CSRF__";
 const el=id=>document.getElementById(id);
+let chosenName=null,nameTotal=0;
 let items=[],selected=null,currentPage=1,topic="",status="",search="",total=0,refreshing=false,typing=false;
 const fmt=n=>Number(n||0).toLocaleString("pt-BR");
 const fields={studio:"studio",model:"model",character_name:"character",universe:"universe",file_label:"fileLabel",status:"status",notes:"notes"};
@@ -90,15 +91,18 @@ el("saveModelReview").onclick=async()=>{
 };
 function setView(mode){
  viewMode=mode;currentPage=1;
- el("gallery").hidden=mode==="models";
+ el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
+ el("nameResults").hidden=mode!=="names";
+ el("namesMode").className=mode==="names"?"primary":"";
  el("modelsMode").className=mode==="models"?"primary":"";
  el("imagesMode").className=mode==="images"?"primary":"";
  el("modelReview").hidden=mode!=="models"||!chosenGroup;
- if(mode==="models")refreshModels();else refresh();
+ el("nameReview").hidden=mode!=="names"||!chosenName;
+ if(mode==="names")refreshNames();else if(mode==="models")refreshModels();else originalRefresh();
 }
 const originalRefresh=refresh;
-refresh=function(){return viewMode==="models"?refreshModels():originalRefresh()};
+refresh=function(){return viewMode==="names"?refreshNames():viewMode==="models"?refreshModels():originalRefresh()};
 el("modelsMode").onclick=()=>setView("models");
 el("imagesMode").onclick=()=>setView("images");
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
@@ -108,3 +112,93 @@ el("next").onclick=()=>{currentPage++;if(viewMode==="models")refreshModels();els
 el("search").addEventListener("input",()=>{if(viewMode==="models"){search=el("search").value;currentPage=1;clearTimeout(window.smartSearch);window.smartSearch=setTimeout(refreshModels,350)}});
 setView("models");
 setInterval(refreshModels,10000);
+
+/* Etapa 1: nomear primeiro; etapa 2: agrupar após os nomes sugeridos. */
+async function refreshNames(){
+ if(viewMode!=="names")return;
+ try {
+  const nameStatus=["provavel","revisar","confirmado"].includes(status)?status:"";
+  const qs=new URLSearchParams({page:currentPage,limit:48,topic,q:search,status:nameStatus});
+  const [data,info]=await Promise.all([api("/api/names?"+qs),api("/api/stats")]);
+  nameTotal=data.total;
+  drawTopics(info.topics);
+  el("numImages").textContent=fmt(info.total);
+  el("numPending").textContent=fmt(info.naming?.awaiting_name_review||0);
+  el("numCheck").textContent=fmt(info.source_checkpoint);
+  const root=el("nameResults");root.replaceChildren();
+  for(const item of data.items){
+   const tile=document.createElement("button");tile.className="tile";
+   const img=document.createElement("img");img.loading="lazy";img.src="/media/"+item.message_id;
+   img.alt=item.title||"Mensagem "+item.message_id;tile.append(img);
+   const infoBox=document.createElement("div");infoBox.className="details";
+   text(infoBox,"div",item.title||"Sem nome identificado");
+   text(infoBox,"div",item.studio+(item.universe?" · "+item.universe:""),"sub");
+   text(infoBox,"span",item.status+" · #"+item.message_id,"pill");
+   tile.append(infoBox);tile.onclick=()=>openName(item);root.append(tile);
+  }
+  if(!data.items.length)text(root,"p","Nenhuma proposta neste filtro.","empty");
+  const names=info.naming||{};
+  el("smartSummary").textContent=fmt(names.names_proposed||0)+" nomes sugeridos · "+
+   fmt(names.names_confirmed||0)+" confirmados · "+
+   fmt(names.awaiting_name_review||0)+" sem nome confiável · "+
+   fmt(names.images_waiting||0)+" aguardando nomeação.";
+  el("summary").textContent=fmt(nameTotal)+" imagens nesta etapa";
+  el("page").textContent="Página "+currentPage;
+  el("prev").disabled=currentPage<=1;
+  el("next").disabled=currentPage*48>=nameTotal;
+ }catch(e){notify("Nomes: "+e.message)}
+}
+function openName(item){
+ chosenName=item;el("nameReview").hidden=false;
+ el("namePreview").src="/media/"+item.message_id;
+ el("nameCaption").textContent=item.source_caption||"Legenda ausente: revisão necessária.";
+ el("nameTitle").value=item.title||"";
+ el("nameStudio").value=item.studio||"";
+ el("nameUniverse").value=item.universe||"";
+ el("nameVariant").value=item.variant||"";
+ el("nameStatus").value=item.status==="confirmado"?"confirmado":"revisar";
+ el("nameOfficialUrl").value=item.official_url||"";
+ el("nameNotes").value=item.notes||"";
+ el("nameFilename").textContent="Arquivo proposto: "+(item.filename||"A definir");
+}
+el("saveNameReview").onclick=async()=>{
+ if(!chosenName)return;
+ try{
+  const data={
+   message_id:chosenName.message_id,revision:chosenName.revision,
+   title:el("nameTitle").value,studio:el("nameStudio").value,
+   universe:el("nameUniverse").value,variant:el("nameVariant").value,
+   status:el("nameStatus").value,official_url:el("nameOfficialUrl").value,
+   notes:el("nameNotes").value
+  };
+  const result=await post("/api/review-name",data);
+  chosenName={...chosenName,...data,revision:result.revision,filename:result.filename};
+  el("nameFilename").textContent="Arquivo proposto: "+result.filename;
+  notify("Nome salvo na curadoria; o arquivo original não foi alterado.");
+  await refreshNames();
+ }catch(e){notify(e.message)}
+};
+el("nameMessage").onclick=()=>{
+ if(chosenName)window.open("https://t.me/c/2370335738/"+chosenName.message_id,"_blank","noopener");
+};
+el("exportNames").onclick=async()=>{
+ try{
+  const result=await post("/api/export-names",{});
+  el("exports").textContent="Nomes propostos: "+result.path+" · "+fmt(result.exported)+" registros";
+  notify("Manifesto de nomes exportado, sem publicar os arquivos.");
+ }catch(e){notify(e.message)}
+};
+el("namesMode").onclick=()=>setView("names");
+selectTopic=function(name){topic=name;currentPage=1;refresh()};
+el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;refresh()};
+el("prev").onclick=()=>{currentPage=Math.max(1,currentPage-1);refresh()};
+el("next").onclick=()=>{currentPage++;refresh()};
+el("search").addEventListener("input",()=>{
+ if(viewMode!=="images"){
+  search=el("search").value;currentPage=1;
+  clearTimeout(window.smartSearch);
+  window.smartSearch=setTimeout(refresh,350);
+ }
+});
+setView("names");
+setInterval(refreshNames,10000);
