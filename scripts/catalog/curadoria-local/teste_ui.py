@@ -12,6 +12,11 @@ assert 'id="nameReview"' in html
 assert 'id="materializeNames"' in html
 assert 'async function refreshNames' in js
 assert 'api/review-name' in js
+assert 'nameOfficialProfiles' in html
+assert 'nameVisualSuggestions' in html
+assert 'showNameReferences' in js
+assert 'api/official-sources' in js
+assert 'api/visual-candidates' in js
 assert 'api/materialize-confirmed-names' in js
 assert 'function drawGallery' in js
 assert 'async function refresh' in js
