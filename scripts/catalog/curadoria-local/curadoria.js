@@ -160,6 +160,7 @@ function openName(item){
  el("nameOfficialUrl").value=item.official_url||"";
  el("nameNotes").value=item.notes||"";
  el("nameFilename").textContent="Arquivo proposto: "+(item.filename||"A definir");
+ showNameReferences(item).catch(err=>notify("Fontes: "+err.message));
 }
 el("saveNameReview").onclick=async()=>{
  if(!chosenName)return;
@@ -212,3 +213,43 @@ el("materializeNames").onclick=async()=>{
   notify("Somente nomes confirmados gerados. Originais mantidos.");
  }catch(e){notify(e.message)}
 };
+
+async function showNameReferences(item){
+ const refs=el("nameOfficialProfiles"),matches=el("nameVisualSuggestions");
+ refs.replaceChildren();matches.replaceChildren();
+ text(refs,"div","Consultando catálogos do estúdio...","sub");
+ const [profiles,visual]=await Promise.all([
+   api("/api/official-sources?"+new URLSearchParams({topic:item.original_topic})),
+   api("/api/visual-candidates/"+item.message_id)
+ ]);
+ if(chosenName?.message_id!==item.message_id)return;
+ refs.replaceChildren();
+ if(!profiles.profiles.length)text(refs,"div","Não há perfil oficial previamente identificado para este tópico.","sub");
+ for(const source of profiles.profiles){
+   const link=document.createElement("a");link.href=source.url;link.rel="noopener noreferrer";link.target="_blank";
+   link.textContent=source.studio+" · "+source.provider+" · Abrir catálogo oficial";refs.append(link);
+ }
+ if(!visual.candidates.length)text(matches,"div","Nenhuma imagem semelhante suficientemente próxima foi encontrada.","sub");
+ for(const candidate of visual.candidates){
+   const group=document.createElement("div");
+   group.className="buttons";group.style.alignItems="center";group.style.marginBottom="8px";
+   const img=document.createElement("img");img.width=70;img.height=85;
+   img.style.objectFit="contain";img.src="/media/"+candidate.candidate_message_id;
+   img.alt="Imagem semelhante #"+candidate.candidate_message_id;img.loading="lazy";
+   group.append(img);
+   const content=document.createElement("div");
+   content.style.flex="1";
+   text(content,"div",candidate.title||"Sem nome");
+   text(content,"div","Origem #"+candidate.candidate_message_id+" · Semelhança "+Math.round(candidate.similarity*100)+"%","sub");
+   const choose=document.createElement("button");
+   choose.textContent="Usar como rascunho";choose.onclick=()=>{
+     el("nameTitle").value=candidate.title||"";
+     el("nameStudio").value=candidate.studio||"";
+     el("nameUniverse").value=candidate.universe||"";
+     el("nameVariant").value=candidate.variant||"";
+     el("nameStatus").value="revisar";
+     notify("Nome copiado para revisão; sem confirmação nem gravação automática.");
+   };
+   content.append(choose);group.append(content);matches.append(group);
+ }
+}
