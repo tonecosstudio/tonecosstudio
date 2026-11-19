@@ -347,7 +347,8 @@ class Handler(BaseHTTPRequestHandler):
                     page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
                     topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
                     state=p.get("state",[""])[0][:20],
-                    min_images=p.get("min_images",["1"])[0]))
+                    min_images=p.get("min_images",["1"])[0],
+                    unnamed_only=p.get("unnamed",["0"])[0]=="1"))
             if route.path.startswith("/api/model/"):
                 return self.respond(smart.model_detail(DB_PATH,route.path.split("/")[-1]))
             if route.path=="/api/candidates":
