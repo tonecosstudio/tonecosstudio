@@ -108,3 +108,21 @@ A operação `attach_catalog_reference(db_path, message_id, expected_title, sour
 Na inspeção privada de 19/11/2026, foram transcritos 17 títulos claros do lote Merge Project/Nostalgic e ligadas cinco páginas específicas do criador no Cults3D (Gallantmon, Obelisk the Tormentor, Matt and MetalGarurumon, Peppercat e Rokusho). As correspondências **permanecem propostas**, não se tornando automaticamente catálogos públicos, arquivos aprovados ou licenças de comercialização. Os IDs locais, as fotos do Telegram e os scripts de ingestão de dados privados permanecem fora do GitHub.
 
 As regras de lançamento são invariantes: não alterar as fotos originais nem o downloader, não enviar o SQLite/manifesto privado para o repositório, não agrupar imagens apenas porque exibem o mesmo personagem, e não marcar `aprovado_para_publicacao=true` sem revisão de direitos de imagem e autorização comercial.
+
+## Galerias: reunir diferentes vistas da MESMA escultura (sem duplicar o produto)
+
+A curadoria possui **três etapas integradas**, que podem avançar ao mesmo tempo no **mesmo banco SQLite local**:
+
+1. **Nomeação pelas legendas e álbuns do Telegram**; nunca presumir nome por proximidade de mensagem.
+2. **Pesquisa dos sem nome nos sites do escultor**, incluindo títulos impressos nos cartazes e publicações específicas; registros não verificados continuam `provavel` ou `revisar`.
+3. **Consolidação de imagens por escultura e base, incluindo ângulos e fotos promocionais**, independentemente de o título já estar identificado. Uma escultura/kit corresponde a **uma ficha de galeria com várias imagens**, não a várias fichas de produto.
+
+A implementação `model_gallery.py` **reutiliza** `model_groups`, `model_group_members`, `model_group_evidence` e `curation_events` de `smart_curadoria.py`: nenhum segundo banco ou SSOT. A operação `register_visual_gallery(db_path, message_ids, topic, note)` permite 2–40 IDs visualmente revisados. Impõe um único tópico, nomes/versões não contraditórios, rejeita mover imagens de outros grupos já revisados ou confirmados, registra evidência por mensagem e é idempotente. O estado do grupo é **`revisar`**, nunca `confirmado` automaticamente. Uma imagem ainda não nomeada pode fazer parte de uma galeria. A sincronização Telegram não desfaz revisões de ângulos; títulos de grupos provisórios são atualizados quando chega um nome consistente, sem alterar os membros.
+
+Na interface local, a aba **Galerias de modelos** apresenta por padrão **apenas fichas com pelo menos duas imagens** (`GET /api/models?min_images=2`), com a galeria de fotos completa ao abrir a ficha. A aba **Nomes propostos** indica quando uma mensagem já pertence a uma galeria, permitindo navegar até ela. A ação **Criar galeria revisada** usa `POST /api/create-gallery` com validação local de Origin e token CSRF existente, sendo necessário informar o tópico e os IDs das fotos que comprovadamente pertencem à mesma escultura.
+
+**Prova inicial no Windows, 19/11/2026:** revisão visual de 24 conjuntos de fotos do tópico Abe3D (4 vistas cada, 96 imagens), incluindo exemplos de Psylocke, Rogue, Chun-Li Bikini, Bowsette, Emma Frost e também fichas ainda sem nome. Nenhuma identidade editorial adicional foi aprovada, nenhuma foto original foi movida e nenhum produto foi publicado. As fotos particulares e listas de IDs locais não são enviadas ao GitHub; somente o código e os testes.
+
+O teste `teste_model_gallery.py` usa imagens fictícias para cobrir criação, repetição idempotente, duas vistas numa mesma ficha, recusa de tópicos e nomes conflitantes, proteção contra reprocessamento por legenda, atualização posterior de título, ausência de liberação comercial e bytes originais intactos. `teste_smart_curadoria.py` continua cobrindo os agrupamentos conservadores existentes por álbum ou hash exato.
+
+**Atenção:** a mesma personagem em duas esculturas diferentes gera **fichas diferentes**; `modelo`, `versão` e `pose` não são deduzidos apenas pela aparência. Uma galeria é organização visual local e não certificação de autorização comercial.
