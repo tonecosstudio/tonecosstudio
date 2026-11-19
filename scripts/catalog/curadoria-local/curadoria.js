@@ -158,6 +158,7 @@ function openName(item){
  el("nameVariant").value=item.variant||"";
  el("nameStatus").value=item.status==="confirmado"?"confirmado":"revisar";
  el("nameOfficialUrl").value=item.official_url||"";
+ updateNameSourceLink();
  el("nameNotes").value=item.notes||"";
  el("nameFilename").textContent="Arquivo proposto: "+(item.filename||"A definir");
  showNameReferences(item).catch(err=>notify("Fontes: "+err.message));
@@ -253,3 +254,15 @@ async function showNameReferences(item){
    content.append(choose);group.append(content);matches.append(group);
  }
 }
+
+function updateNameSourceLink(){
+ const link=el("nameSourceLink"),textValue=el("nameOfficialUrl").value.trim();
+ let allowed=false,parsed;
+ try{parsed=new URL(textValue);
+   allowed=parsed.protocol==="https:"&&!parsed.username&&!parsed.password;
+ }catch(_){allowed=false;}
+ link.hidden=!allowed;
+ if(allowed)link.href=parsed.href;
+ else link.removeAttribute("href");
+}
+el("nameOfficialUrl").addEventListener("input",updateNameSourceLink);
