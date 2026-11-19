@@ -24,3 +24,85 @@ el("export").onclick=async()=>{try{const result=await post("/api/export",{});el(
 el("materialize").onclick=async()=>{try{const result=await post("/api/materialize",{});el("exports").textContent="Pastas revisadas: "+result.root+" | novas "+result.created+" | existentes "+result.existing;notify("Pastas nomeadas geradas, sem modificar originais.")}catch(e){notify(e.message)}};
 el("compare").onclick=async()=>{try{const result=await post("/api/import-tonart-csv",{path:el("tonartFile").value});el("exports").textContent="Comparadas "+result.candidates+" imagens TONART; duplicatas exatas com Telegram: "+result.exact_hash_matches;notify("Comparação em staging; nada foi publicado ou apagado.")}catch(e){notify(e.message)}};
 refresh();setInterval(()=>{if(!typing)refresh()},10000);
+
+/* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
+let viewMode="models",chosenGroup=null,modelTotal=0;
+async function refreshModels(){
+ if(viewMode!=="models")return;
+ try{
+  const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
+  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter});
+  const result=await api("/api/models?"+p);
+  modelTotal=result.total;
+  const root=el("modelResults");root.replaceChildren();
+  for(const g of result.items){
+   const b=document.createElement("button");b.className="tile";
+   const img=document.createElement("img");img.loading="lazy";img.src="/media/"+g.sample_message;img.alt=g.title;b.append(img);
+   const details=document.createElement("div");details.className="details";
+   text(details,"div",g.title);
+   text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
+   text(details,"span",g.image_count+" imagens · "+g.state,"pill");
+   b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
+  }
+  if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
+  el("summary").textContent=fmt(modelTotal)+" grupos de modelos";
+  el("page").textContent="Página "+currentPage;
+  el("prev").disabled=currentPage<=1;el("next").disabled=currentPage*48>=modelTotal;
+  const stat=await api("/api/stats");
+  const s=stat.smart||{};
+  el("smartSummary").textContent=fmt(s.images_grouped||0)+" imagens em "+fmt(s.model_groups||0)+" grupos prováveis/avaliados · "+fmt(s.images_needing_review||0)+" imagens sem associação · "+fmt(s.images_waiting||0)+" aguardando processamento.";
+ }catch(e){notify("Modelos: "+e.message)}
+}
+async function openModel(key){
+ try{
+  const g=await api("/api/model/"+key);
+  chosenGroup=g;
+  el("modelReview").hidden=false;
+  el("modelReviewTitle").textContent=g.title;
+  el("modelReviewMeta").textContent=g.studio+(g.universe?" · "+g.universe:"")+(g.variant?" · "+g.variant:"")+" · "+g.state+" · "+g.images.length+" imagens";
+  el("modelReviewState").value=g.state==="confirmado"?"confirmado":"revisar";
+  el("modelOfficialUrl").value="";
+  el("modelReviewNotes").value="";
+  const imgs=el("modelReviewImages");imgs.replaceChildren();
+  for(const item of g.images){
+   const a=document.createElement("a");a.href="/media/"+item.message_id;a.target="_blank";a.rel="noopener";
+   const img=document.createElement("img");img.src="/media/"+item.message_id;img.alt="Mensagem "+item.message_id;img.loading="lazy";img.className="preview";
+   a.append(img);text(a,"div","#"+item.message_id,"sub");imgs.append(a);
+  }
+  const evidence=el("modelReviewEvidence");evidence.replaceChildren();
+  for(const e of g.evidence){
+   const a=document.createElement("a");
+   const url=new URL(e.source_url);if(url.protocol!=="https:")continue;
+   a.href=url.href;a.target="_blank";a.rel="noopener noreferrer";a.textContent=e.source_type+" · "+url.hostname+" · "+url.pathname; evidence.append(a);
+  }
+  if(!g.evidence.length)text(evidence,"p","Sem fonte vinculada.","sub");
+ }catch(e){notify(e.message)}
+}
+el("saveModelReview").onclick=async()=>{
+ if(!chosenGroup)return;
+ const state=el("modelReviewState").value,official_url=el("modelOfficialUrl").value.trim();
+ if(state==="confirmado"&&!official_url){notify("Para confirmar, informe a publicação oficial conferida.");return}
+ try{
+  await post("/api/review-model",{group_key:chosenGroup.group_key,revision:chosenGroup.revision,state,official_url,notes:el("modelReviewNotes").value});
+  notify("Revisão registrada no banco local.");
+  await openModel(chosenGroup.group_key);await refreshModels();
+ }catch(e){notify(e.message)}
+};
+function setView(mode){
+ viewMode=mode;currentPage=1;
+ el("gallery").hidden=mode==="models";
+ el("modelResults").hidden=mode!=="models";
+ el("modelsMode").className=mode==="models"?"primary":"";
+ el("imagesMode").className=mode==="images"?"primary":"";
+ el("modelReview").hidden=mode!=="models"||!chosenGroup;
+ if(mode==="models")refreshModels();else refresh();
+}
+el("modelsMode").onclick=()=>setView("models");
+el("imagesMode").onclick=()=>setView("images");
+selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
+el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
+el("prev").onclick=()=>{currentPage=Math.max(1,currentPage-1);if(viewMode==="models")refreshModels();else refresh()};
+el("next").onclick=()=>{currentPage++;if(viewMode==="models")refreshModels();else refresh()};
+el("search").addEventListener("input",()=>{if(viewMode==="models"){search=el("search").value;currentPage=1;clearTimeout(window.smartSearch);window.smartSearch=setTimeout(refreshModels,350)}});
+setView("models");
+setInterval(refreshModels,10000);
