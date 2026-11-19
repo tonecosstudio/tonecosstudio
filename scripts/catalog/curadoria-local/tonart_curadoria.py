@@ -408,6 +408,9 @@ def main():
                 named=naming.process_batch(DB_PATH,600)
                 if named["images_waiting"]==0:
                     smart.process_batch(DB_PATH,400)
+                # Herda nome apenas de outro ângulo no MESMO grupo
+                # já revisado visualmente; nunca confirma automaticamente.
+                naming.propagate_reviewed_gallery_names(DB_PATH,120)
                 gallery.refresh_titles(DB_PATH)
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
