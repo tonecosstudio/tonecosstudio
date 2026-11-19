@@ -124,5 +124,20 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert [x["message_id"] for x in smart.model_detail(
         db,gallery.register_visual_gallery(db,[110,111],"Kuton Sculpts")["group_key"])["images"]]==[110,111]
     assert gallery.list_album_candidates(db,"Abe3D")["items"]==[]
+    # Hash idêntico e títulos diferentes: alertar, não alterar proposta nem galeria.
+    with smart.db_open(db) as con:
+        original=con.execute("SELECT sha256 FROM assets WHERE message_id=101").fetchone()[0]
+        con.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",
+                    (115,original,"msg_101.jpg","Abe3D","","","2026-11-19",smart.utc()))
+    naming.process_batch(db,100)
+    with smart.db_open(db) as con:
+        rev=con.execute("SELECT revision FROM name_proposals WHERE message_id=115").fetchone()[0]
+    naming.review_name(db,115,rev,"Other Statue","Abe3D","","","revisar")
+    detail=smart.model_detail(db,g["group_key"])
+    assert len(detail["identity_conflicts"])==1,detail["identity_conflicts"]
+    conflict=detail["identity_conflicts"][0]
+    assert conflict["sha256"]==original and "Same Statue" in conflict["titles"]
+    assert "Other Statue" in conflict["titles"] and conflict["message_count"]==2
+    assert len(detail["images"])==2 and detail["state"]=="revisar"
     print("E2E GALERIA APROVADO: múltiplos ângulos, idempotência, "
           "conflitos, metadados, nomes pendentes, integridade dos originais")
