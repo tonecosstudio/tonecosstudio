@@ -112,4 +112,46 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
     with closing(sqlite3.connect(db)) as conn:
         assert conn.execute("SELECT title FROM name_proposals WHERE message_id=105").fetchone()[0]=="Wonder Woman - Battle Scarred"
     assert fixture.read_bytes()==b"imagem-ficticia-105"
+    # Mesmo título de álbum, com versões de impressão diferentes:
+    # somente a identidade deve ser herdada, sem inventar escala.
+    with closing(sqlite3.connect(db)) as conn, conn as cn:
+        for mid,title,variant,album in [
+            (201,"Varian Wrynn","Pre-Supported 1/6","album-variantes"),
+            (202,"Varian Wrynn","1/6","album-variantes"),
+            (203,"","","album-variantes"),
+            (204,"","","album-variantes"),
+            (205,"Varian Wrynn","1/10","album-variantes"),
+            (210,"Varian Wrynn","1/6","album-conflito"),
+            (211,"Uther Lightbringer","1/6","album-conflito"),
+            (212,"","","album-conflito")]:
+            payload=("imagem-ficticia-"+str(mid)).encode()
+            (source/f"msg_{mid}.jpg").write_bytes(payload)
+            caption=(f"▪️ {title} - World of Warcraft\n"
+                     f"▫️ Versão: {variant}\n▫️ Estúdio: Luftmensch") if title else ""
+            cn.execute("INSERT INTO assets VALUES(?,?,?,?,?,?)",
+                (mid,hashlib.sha256(payload).hexdigest(),f"msg_{mid}.jpg",
+                 "Luftmensch",caption,album))
+    initial=m.process_batch(db,50)
+    assert initial["processed"]==8,initial
+    with closing(sqlite3.connect(db)) as cn:
+        varian=cn.execute("""SELECT title,variant,status,evidence_type,evidence_message_id
+            FROM name_proposals WHERE message_id=203""").fetchone()
+        conflict=cn.execute("""SELECT title,status
+            FROM name_proposals WHERE message_id=212""").fetchone()
+    assert varian[0]=="Varian Wrynn" and varian[1]=="",varian
+    assert varian[2]=="provavel" and varian[3]=="telegram_album_shared_identity",varian
+    assert varian[4]==201,varian
+    assert conflict==("","revisar"),conflict
+    assert m.process_batch(db,50)["processed"]==0
+    # Migração idempotente de proposta antiga sem fingerprint novo:
+    # preserve todo registro confirmado e toda decisão manual.
+    with closing(sqlite3.connect(db)) as cn, cn:
+        cn.execute("""UPDATE name_proposals
+            SET title='',variant='',status='revisar',evidence_type=''
+            WHERE message_id=204""")
+    upgrade=m.process_batch(db,50)
+    assert upgrade["processed"]==1,upgrade
+    with closing(sqlite3.connect(db)) as cn:
+        row=cn.execute("SELECT title,variant,status FROM name_proposals WHERE message_id=204").fetchone()
+    assert row==("Varian Wrynn","","provavel"),row
     print("NOMEAÇÃO E2E APROVADA: propostas, álbum, nomes únicos, aprovação com fonte, conflito, retomada, CSV e originais intactos")
