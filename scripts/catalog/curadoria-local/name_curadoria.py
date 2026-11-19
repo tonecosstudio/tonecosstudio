@@ -109,7 +109,9 @@ def process_batch(db_path,limit=500):
         assets=db.execute("""SELECT message_id,sha256,original_topic,source_caption,
             source_album,source_relative FROM assets ORDER BY message_id""").fetchall()
         seen={r["message_id"]:r for r in db.execute(
-            "SELECT message_id,source_fingerprint,status FROM name_proposals")}
+            "SELECT message_id,source_fingerprint,status,evidence_type,notes FROM name_proposals")}
+        manual_review_ids={r[0] for r in db.execute(
+            "SELECT DISTINCT message_id FROM name_proposal_events WHERE event_type LIKE 'manual_%'")}
         resolved=extract_candidates(assets)
         processed=named=review=0
         for a in assets:
@@ -118,7 +120,9 @@ def process_batch(db_path,limit=500):
             previous=seen.get(mid)
             if previous and previous["source_fingerprint"]==fingerprint:
                 continue
-            if previous and previous["status"]=="confirmado":
+            if previous and (previous["status"]=="confirmado" or mid in manual_review_ids or
+                previous["evidence_type"] in {"embedded_render_title","studio_catalog_visual_candidate"}
+                or (previous["notes"] or "").strip()):
                 # Revisão humana não é sobrescrita por sincronização automática.
                 continue
             ident,reason,evidence_mid,conf=resolved[mid]
@@ -296,6 +300,10 @@ OFFICIAL_STUDIO_PROFILES={
    ("Uel Winner","artstation","https://uel.artstation.com/"),
    ("Uel Winner","cults3d","https://cults3d.com/en/users/ilustrartuel/3d-models"),
    ("Uel Winner","patreon","https://www.patreon.com/uelwinner3d")],
+ "Abe3D":[
+   ("Abe3D","cults3d","https://cults3d.com/en/users/Abe3D/3d-models"),
+   ("Abe3D","patreon","https://www.patreon.com/cw/abe3d"),
+   ("Abe3D","artstation","https://abe3660.artstation.com/")],
  "Sekai 3D Models":[
    ("Sekai 3D Models","cults3d","https://cults3d.com/en/users/Sekai3DModels/3d-models"),
    ("Sekai 3D Models","patreon","https://www.patreon.com/cw/sekai3dmodels")],
@@ -351,3 +359,53 @@ def suggest_name_from_embedded_text(db_path,message_id,title,studio,universe="",
         db.commit()
         return {"ok":True,"message_id":mid,"filename":filename,
                 "status":"provavel","revision":row["revision"]+1}
+
+def suggest_name_from_studio_catalog(db_path,message_id,title,studio,source_url,
+                                    topic,universe="",variant="",evidence_note=""):
+    """Sugere SEM CONFIRMAR nome visto no catálogo do modelador + inspeção local.
+
+    A fonte prova que o criador publica um modelo com esse título; não prova,
+    por si só, que esta imagem é exatamente a do produto.
+    """
+    mid=int(message_id)
+    fields=[str(s or "").strip() for s in (title,studio,universe,variant)]
+    title,studio,universe,variant=fields
+    if not title or not studio or max(map(len,fields))>170 or len(studio)>120:
+        raise ValueError("Identidade candidata inválida")
+    parsed=urlparse(str(source_url or "").strip())
+    if parsed.scheme!="https" or not parsed.hostname or parsed.username or parsed.password:
+        raise ValueError("Fonte deve usar HTTPS")
+    domain=parsed.hostname.lower()
+    if domain not in {"cults3d.com","www.cults3d.com","patreon.com","www.patreon.com",
+                      "abe3d.gumroad.com","abe3660.artstation.com"}:
+        raise ValueError("Fonte do criador não homologada")
+    with smart.db_open(db_path) as db:
+        setup(db)
+        a=db.execute("""SELECT p.status,p.title,p.revision,a.source_relative,
+                           a.original_topic FROM name_proposals p JOIN assets a
+                       USING(message_id) WHERE p.message_id=?""",(mid,)).fetchone()
+        if a is None:raise ValueError("Imagem não indexada")
+        if a["original_topic"]!=str(topic):
+            raise ValueError("Tópico da origem diferente do estúdio pesquisado")
+        if a["status"]!="revisar" or a["title"].strip():
+            return {"ok":False,"reason":"existing_proposal_or_review","message_id":mid}
+        filename=proposed_name({"title":title,"variant":variant},mid,a["source_relative"])
+        stamp=smart.utc()
+        response=db.execute("""UPDATE name_proposals SET title=?,studio=?,universe=?,
+                    variant=?,filename=?,status='provavel',confidence=0.60,
+                    evidence_type='studio_catalog_visual_candidate',
+                    evidence_message_id=?,official_url=?,notes=?,
+                    revision=revision+1,modified_at=?
+                    WHERE message_id=? AND revision=? AND status='revisar'
+                      AND TRIM(COALESCE(title,''))=''""",
+                    (title,studio,universe,variant,filename,mid,source_url,
+                     (str(evidence_note or "").strip() or
+                      "Catálogo oficial e comparação visual: confirmar correspondência exata")[:1000],
+                     stamp,mid,a["revision"]))
+        if response.rowcount!=1:raise RuntimeError("Conflito de revisão")
+        db.execute("""INSERT INTO name_proposal_events
+                    (message_id,event_type,evidence,occurred_at) VALUES(?,?,?,?)""",
+                   (mid,"studio_catalog_candidate",source_url,stamp))
+        db.commit()
+        return {"ok":True,"message_id":mid,"status":"provavel",
+                "filename":filename,"revision":a["revision"]+1}
