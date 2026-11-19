@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -34,7 +35,7 @@ describe("internal catalog curation service", () => {
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
     const gateway = readFileSync(
-      new URL("../../../../supabase/functions/admin-rpc/index.ts", import.meta.url),
+      resolve("supabase/functions/admin-rpc/index.ts"),
       "utf8",
     );
     const entries = (registry: string): string[] => {
@@ -94,10 +95,10 @@ describe("internal catalog curation service", () => {
 
   it("keeps both curation migrations atomic and the vocabulary RPC admin-only", () => {
     const paths = [
-      "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
-      "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
+      "supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
+      "supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
     ];
-    const migrations = paths.map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+    const migrations = paths.map((path) => readFileSync(resolve(path), "utf8"));
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
@@ -105,17 +106,23 @@ describe("internal catalog curation service", () => {
       expect(migration).not.toContain("public.assert_admin_access");
       expect(migration).not.toContain("public.collections");
       expect(migration).not.toContain("public.collection_tier_assignments");
-      const functions = [...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g)].map(
-        (match) => match[1],
-      );
+      const functions = [
+        ...migration.matchAll(/CREATE OR REPLACE FUNCTION public\.(\w+)\(/g),
+      ].map((match) => match[1]);
       expect(new Set(functions).size).toBe(functions.length);
     }
-    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.catalog_curation_tags");
-    expect(migrations[0]).toContain("CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections");
+    expect(migrations[0]).toContain(
+      "CREATE TABLE IF NOT EXISTS public.catalog_curation_tags",
+    );
+    expect(migrations[0]).toContain(
+      "CREATE TABLE IF NOT EXISTS public.tonart_editorial_collections",
+    );
     expect(migrations[0]).toContain(
       "REVOKE ALL ON TABLE public.tonart_editorial_collections FROM PUBLIC, anon, authenticated, service_role",
     );
-    expect(migrations[0]).toContain("FROM PUBLIC, anon, authenticated, service_role;");
+    expect(migrations[0]).toContain(
+      "FROM PUBLIC, anon, authenticated, service_role;",
+    );
     expect(migrations[0]).toContain(
       "IF p_offset IS NULL OR p_limit IS NULL OR p_offset < 0",
     );
@@ -125,18 +132,28 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).toContain(
       "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE\n  public.catalog_character_identities,",
     );
-    expect(migrations[0]).not.toContain("REVOKE INSERT, UPDATE, DELETE ON TABLE");
-    expect(migrations[0]).toContain("REFERENCES public.tonart_editorial_collections(id)");
+    expect(migrations[0]).not.toContain(
+      "REVOKE INSERT, UPDATE, DELETE ON TABLE",
+    );
+    expect(migrations[0]).toContain(
+      "REFERENCES public.tonart_editorial_collections(id)",
+    );
     expect(migrations[0]).toContain("IF v_collection.name <> v_name THEN");
-    expect(migrations[0]).toContain("Editorial collection slug belongs to a different name");
-    expect(migrations[0]).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migrations[0]).toContain(
+      "Editorial collection slug belongs to a different name",
+    );
+    expect(migrations[0]).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
     for (const helper of [
       "guard_catalog_curation_tag_alias()",
       "guard_catalog_curation_tag_slug()",
       "admin_validate_catalog_curation_text(text, text, integer, boolean)",
       "admin_validate_catalog_model_reference(text, text)",
     ]) {
-      expect(migrations[0]).toContain(`REVOKE ALL ON FUNCTION public.${helper}`);
+      expect(migrations[0]).toContain(
+        `REVOKE ALL ON FUNCTION public.${helper}`,
+      );
     }
     expect(migrations[0]).toContain(
       "GRANT EXECUTE ON FUNCTION public.admin_validate_catalog_curation_text(text, text, integer, boolean)",
@@ -148,8 +165,12 @@ describe("internal catalog curation service", () => {
     expect(migrations[0]).not.toContain("public.collections");
     expect(migrations[0]).not.toContain("public.collection_tier_assignments");
     expect(migrations[0]).not.toContain("public.assert_admin_access");
-    expect(migrations[1]).toContain("CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(");
-    expect(migrations[1]).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migrations[1]).toContain(
+      "CREATE OR REPLACE FUNCTION public.admin_create_catalog_curation_tag(",
+    );
+    expect(migrations[1]).toContain(
+      "private_api.assert_tonart_curation_service_role()",
+    );
     expect(migrations[1]).toContain(
       "REVOKE ALL ON FUNCTION public.admin_create_catalog_curation_tag(text, text, text)",
     );
@@ -159,7 +180,6 @@ describe("internal catalog curation service", () => {
     );
     expect(migrations[1]).toContain("TO service_role;");
   });
-
 
   it("builds valid custom editorial collections without inventing models", () => {
     expect(
@@ -173,14 +193,16 @@ describe("internal catalog curation service", () => {
       description: "Revisão editorial de antagonistas",
     });
     expect(
-      createInternalCollectionTemplate("A".repeat(110), "Revisão editorial").slug,
+      createInternalCollectionTemplate("A".repeat(110), "Revisão editorial")
+        .slug,
     ).toHaveLength(110);
     expect(
-      createInternalCollectionTemplate("A".repeat(150), "Revisão editorial").slug,
+      createInternalCollectionTemplate("A".repeat(150), "Revisão editorial")
+        .slug,
     ).toHaveLength(120);
-    expect(() => createInternalCollectionTemplate("<script>", "Descrição")).toThrow(
-      "catalog_internal_collection_template_invalid",
-    );
+    expect(() =>
+      createInternalCollectionTemplate("<script>", "Descrição"),
+    ).toThrow("catalog_internal_collection_template_invalid");
     expect(() => createInternalCollectionTemplate("  ", "Descrição")).toThrow(
       "catalog_internal_collection_template_invalid",
     );
@@ -314,7 +336,10 @@ describe("internal catalog curation service", () => {
     ).toThrow("catalog_curation_model_reference_stale");
     expect(() =>
       assertCurrentCanonicalCurationModels(selected, [
-        { modelId: "44444444-4444-4444-8444-444444444444", slug: "modelo-real" },
+        {
+          modelId: "44444444-4444-4444-8444-444444444444",
+          slug: "modelo-real",
+        },
       ]),
     ).toThrow("catalog_curation_model_reference_stale");
 
