@@ -66,6 +66,19 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     with smart.db_open(db) as con:
         revision=con.execute("SELECT revision FROM name_proposals WHERE message_id=101").fetchone()[0]
     naming.review_name(db,101,revision,"Same Statue","Abe3D","","","revisar")
+    inherited=naming.propagate_reviewed_gallery_names(db)
+    assert inherited["inherited_names"]==1,inherited
+    assert naming.propagate_reviewed_gallery_names(db)["inherited_names"]==0
+    with smart.db_open(db) as con:
+        label=con.execute("SELECT status,title,evidence_type,evidence_message_id FROM name_proposals WHERE message_id=102").fetchone()
+    assert (label["status"],label["title"],label["evidence_type"],label["evidence_message_id"])==(
+        "provavel","Same Statue","gallery_name_inherited",101),dict(label)
+    with smart.db_open(db) as con:
+        con.execute("UPDATE assets SET source_caption=? WHERE message_id=102",
+                    ("▪️ Other Character - Marvel\n▫️ Estúdio: Abe3D",))
+    naming.process_batch(db,100)
+    with smart.db_open(db) as con:
+        assert con.execute("SELECT title FROM name_proposals WHERE message_id=102").fetchone()[0]=="Same Statue"
     assert gallery.refresh_titles(db)["updated_titles"]==1
     assert gallery.refresh_titles(db)["updated_titles"]==0
     assert smart.model_detail(db,g["group_key"])["title"]=="Same Statue"
