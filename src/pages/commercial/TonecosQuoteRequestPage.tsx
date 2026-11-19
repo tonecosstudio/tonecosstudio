@@ -211,14 +211,20 @@ export default function TonecosQuoteRequestPage() {
         ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">
-              Entre com sua conta para enviar a seleção e acompanhar a resposta
-              da TONART Studio.
+              {guestEmailHref
+                ? "Você pode solicitar um orçamento por e-mail, sem criar conta. Para acompanhar pedidos em Meus Orçamentos, entre com sua conta existente."
+                : "Entre com sua conta para enviar a seleção e acompanhar a resposta da TONART Studio."}
               {signupAvailability === "disabled" &&
                 " Novos cadastros estão fechados nesta etapa."}
             </p>
             <div className="flex flex-wrap gap-3">
+              {guestEmailHref && (
+                <a className={actionClass} href={guestEmailHref}>
+                  Pedir orçamento por e-mail
+                </a>
+              )}
               <Link
-                className={actionClass}
+                className={guestEmailHref ? secondaryClass : actionClass}
                 to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
               >
                 Entrar
@@ -230,11 +236,6 @@ export default function TonecosQuoteRequestPage() {
                 >
                   Criar conta
                 </Link>
-              )}
-              {guestEmailHref && (
-                <a className={secondaryClass} href={guestEmailHref}>
-                  Pedir orçamento por e-mail
-                </a>
               )}
             </div>
             {!guestEmailHref && selectedModels.length > 0 ? (
