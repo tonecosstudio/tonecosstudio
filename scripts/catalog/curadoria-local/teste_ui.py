@@ -33,6 +33,9 @@ assert 'if(!uniquePhotos.has(key))uniquePhotos.set(key,item)' in js
 assert 'for(const item of uniquePhotos.values())' in js
 assert 'unique_photo_count' in js
 assert 'mensagens repetem arquivos já exibidos' in js
+assert 'identity_conflicts' in js
+assert 'um mesmo arquivo possui nomes diferentes' in js
+assert 'Mensagens com foto repetida' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
 assert 'showNameReferences' in js
