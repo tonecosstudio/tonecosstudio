@@ -88,6 +88,45 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
     return {"group_key":group_key,"image_count":len(ids),"title":title,
             "studio":studio,"state":"revisar","created":old is None}
 
+def list_album_candidates(db_path,topic="",limit=60):
+    """Álbuns privados ainda totalmente sem galeria; apenas leitura e revisão.
+
+    Nunca une imagens automaticamente. Se uma imagem já possui galeria, o
+    álbum inteiro sai da fila para evitar substituição de revisão prévia.
+    """
+    topic=str(topic or "").strip()
+    limit=max(1,min(int(limit),100))
+    clauses=["TRIM(COALESCE(a.source_album,''))!=''"]
+    params=[]
+    if topic:
+        clauses.append("a.original_topic=?")
+        params.append(topic)
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        rows=db.execute("""SELECT a.original_topic,a.source_album,
+            COUNT(*) image_count,MIN(a.message_id) sample_message
+            FROM assets a LEFT JOIN model_group_members m USING(message_id)
+            WHERE """+" AND ".join(clauses)+"""
+            GROUP BY a.original_topic,a.source_album
+            HAVING COUNT(*) BETWEEN 2 AND 40 AND COUNT(m.message_id)=0
+            ORDER BY image_count DESC,sample_message LIMIT ?""",
+            params+[limit]).fetchall()
+        items=[]
+        for row in rows:
+            photos=db.execute("""SELECT message_id,source_caption
+                FROM assets WHERE original_topic=? AND source_album=?
+                ORDER BY message_id""",
+                (row["original_topic"],row["source_album"])).fetchall()
+            captions=[str(x["source_caption"]).strip() for x in photos
+                      if (x["source_caption"] or "").strip()]
+            items.append({"topic":row["original_topic"],
+                          "album_id":row["source_album"],
+                          "image_count":row["image_count"],
+                          "message_ids":[x["message_id"] for x in photos],
+                          "caption":captions[0][:500] if captions else ""})
+        return {"items":items,"limit":limit}
+
+
 def refresh_titles(db_path):
     """Quando nomes chegam depois da reunião das fotos, atualiza só rótulos
     provisórios sem alterar grupos revisados, membros ou fontes."""
