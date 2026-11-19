@@ -278,8 +278,8 @@ export default function TonecosQuoteRequestPage() {
                 <p className="mt-4 text-xs leading-5 text-white/60">
                   {guestEmailDraft.prefilled
                     ? "O e-mail inclui as referências selecionadas. Revise e envie a mensagem no seu aplicativo de e-mail."
-                    : "A seleção é extensa para um link de e-mail preenchido. Abra seu aplicativo de e-mail e copie o texto completo abaixo; nenhuma referência será omitida."}
-                  {" "}A resposta será por e-mail, sem protocolo em Meus Orçamentos.
+                    : "A seleção é extensa para um link de e-mail preenchido. Abra seu aplicativo de e-mail e copie o texto completo abaixo; nenhuma referência será omitida."}{" "}
+                  A resposta será por e-mail, sem protocolo em Meus Orçamentos.
                 </p>
                 <details className="mt-4 border-t border-white/15 pt-4">
                   <summary className="cursor-pointer text-sm text-white/80 underline-offset-4 hover:underline">
@@ -300,8 +300,8 @@ export default function TonecosQuoteRequestPage() {
                   />
                   <p className="mt-2 text-xs leading-5 text-white/60">
                     Se seu aplicativo de e-mail não abrir, copie este texto e
-                    envie para {CONTACT.CONTACT_EMAIL}. Isso não envia a mensagem
-                    automaticamente.
+                    envie para {CONTACT.CONTACT_EMAIL}. Isso não envia a
+                    mensagem automaticamente.
                   </p>
                 </details>
               </>
