@@ -21,6 +21,10 @@ assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js
 assert 'editGalleryPhotoName' in js
 assert 'onlyUnnamedModels' in js and 'unnamedFilter' in html
+assert 'albumSelectionCount' in html and 'albumSelectionCount' in js
+assert 'const selectedIds=new Set(item.message_ids)' in js
+assert 'if(!taken)' in js and 'check.onchange' in js
+assert 'ids.join(", ")' in js and 'item.message_ids.filter' in js
 assert 'Nomear esta foto' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
