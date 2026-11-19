@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
@@ -80,6 +80,8 @@ export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
   const guestEmailDraft = guestQuoteEmailDraft(selectedModels);
+  const guestQuoteTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [guestCopyFeedback, setGuestCopyFeedback] = useState("");
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
@@ -148,6 +150,25 @@ export default function TonecosQuoteRequestPage() {
       active = false;
     };
   }, [user, authError, profileAttempt]);
+
+  async function copyGuestQuote() {
+    if (!guestEmailDraft) return;
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("clipboard_unavailable");
+      }
+      await navigator.clipboard.writeText(guestEmailDraft.body);
+      setGuestCopyFeedback(
+        "Mensagem copiada. Cole no seu e-mail e envie; ela não foi enviada automaticamente.",
+      );
+    } catch {
+      guestQuoteTextareaRef.current?.focus();
+      guestQuoteTextareaRef.current?.select();
+      setGuestCopyFeedback(
+        "Cópia automática indisponível. O texto foi selecionado; copie manualmente e envie por e-mail.",
+      );
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -293,11 +314,29 @@ export default function TonecosQuoteRequestPage() {
                   </label>
                   <textarea
                     id="tonart-guest-quote-copy"
+                    ref={guestQuoteTextareaRef}
                     readOnly
                     rows={8}
                     value={guestEmailDraft.body}
                     className={fieldClass + " mt-2 resize-y"}
                   />
+                  <button
+                    type="button"
+                    className={secondaryClass + " mt-3"}
+                    onClick={() => {
+                      void copyGuestQuote();
+                    }}
+                  >
+                    Copiar mensagem
+                  </button>
+                  {guestCopyFeedback && (
+                    <p
+                      role="status"
+                      className="mt-2 text-xs leading-5 text-white/70"
+                    >
+                      {guestCopyFeedback}
+                    </p>
+                  )}
                   <p className="mt-2 text-xs leading-5 text-white/60">
                     Se seu aplicativo de e-mail não abrir, copie este texto e
                     envie para {CONTACT.CONTACT_EMAIL}. Isso não envia a

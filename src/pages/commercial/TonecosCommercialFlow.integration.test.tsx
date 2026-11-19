@@ -387,10 +387,70 @@ describe("TONART commercial screens: account → request → history → respons
     expect(body).toContain("TC-M1-");
     expect(body).toContain("TC-M50-");
     expect(body.match(/ — código /g)).toHaveLength(50);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "clipboard",
+    );
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Copiar mensagem" }),
+      );
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(body));
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /não foi enviada automaticamente/,
+      );
+    } finally {
+      if (clipboardDescriptor) {
+        Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
     expect(
       screen.queryByRole("link", { name: "Criar conta" }),
     ).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("keeps a selectable complete draft when clipboard access is unavailable", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/solicitar-orcamento", true);
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "clipboard",
+    );
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      await screen.findByRole("link", { name: "Pedir orçamento por e-mail" });
+      fireEvent.click(screen.getByText("Ver e copiar texto do orçamento"));
+      const area = screen.getByLabelText(
+        "Texto completo para enviar ao estúdio",
+      ) as HTMLTextAreaElement;
+      fireEvent.click(
+        screen.getByRole("button", { name: "Copiar mensagem" }),
+      );
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /copie manualmente e envie por e-mail/i,
+      );
+      expect(area.selectionStart).toBe(0);
+      expect(area.selectionEnd).toBe(area.value.length);
+      expect(mocks.submit).not.toHaveBeenCalled();
+    } finally {
+      if (clipboardDescriptor) {
+        Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
   });
 
   it("shows only the catalog chooser when a visitor has selected no models", async () => {
