@@ -1,6 +1,6 @@
 # TONART — Catálogo público separado e Telegram como origem prioritária
 
-**Estado:** contrato de implementação / pré-publicação. Não autoriza upload, publicação ou mudanças de DNS.  
+**Estado:** contrato de implementação / pré-publicação. Não autoriza upload, publicação ou mudanças de DNS.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
 ## 1. Dois frontends, uma autoridade de catálogo
