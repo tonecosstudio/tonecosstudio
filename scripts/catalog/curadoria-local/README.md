@@ -98,3 +98,13 @@ As aplicações em lote de títulos e IDs específicos estão em scripts de diag
 `teste_catalogo_oficial.py` cobre ID/estúdio, fonte HTTPS, idempotência, conservação após alteração de origem, preservação de edição manual, nenhuma confirmação ou cópia automática e limpeza do banco temporário no Windows.
 
 **Licenciamento de uso comercial:** a existência do modelo no Cults3D/Patreon e a identificação da imagem não autorizam a TONART a reproduzir renders ou vender impressões. O plano pessoal do Abe3D informa uso pessoal, enquanto há opção específica para comercialização física; direitos de uso e limites devem ser verificados antes de publicar qualquer imagem ou produto. O manifesto permanece com `aprovado_para_publicacao=false` em todas as entradas.
+
+## Títulos legíveis nos renders e páginas específicas dos criadores
+
+A etapa de nomeação aceita transcrever **nomes impressos no próprio cartaz** por meio de `suggest_name_from_embedded_text`; não confundir com OCR automático nem com identidade confirmada. O tópico compartilhado `Merge Project Figures _ Nostalgic Studios` contém imagens de mais de uma marca. Por isso, o estúdio deve ser atribuído pela evidência da imagem e não por herança indiscriminada do nome do tópico.
+
+A operação `attach_catalog_reference(db_path, message_id, expected_title, source_url, note)` associa à proposta `provavel` uma página **específica** do produto no catálogo do estúdio, sem promover seu status. Aceita apenas HTTPS, título esperado idêntico, provedor associado ao estúdio nesse tópico e nenhuma referência preexistente conflitante. URLs iguais são idempotentes; links divergentes exigem revisão explícita. Atualiza revisão e auditoria no **mesmo SQLite local**. O teste `teste_catalogo_oficial.py` cobre vínculo, conflitos, idempotência e ausência de aprovação/materialização automática.
+
+Na inspeção privada de 19/11/2026, foram transcritos 17 títulos claros do lote Merge Project/Nostalgic e ligadas cinco páginas específicas do criador no Cults3D (Gallantmon, Obelisk the Tormentor, Matt and MetalGarurumon, Peppercat e Rokusho). As correspondências **permanecem propostas**, não se tornando automaticamente catálogos públicos, arquivos aprovados ou licenças de comercialização. Os IDs locais, as fotos do Telegram e os scripts de ingestão de dados privados permanecem fora do GitHub.
+
+As regras de lançamento são invariantes: não alterar as fotos originais nem o downloader, não enviar o SQLite/manifesto privado para o repositório, não agrupar imagens apenas porque exibem o mesmo personagem, e não marcar `aprovado_para_publicacao=true` sem revisão de direitos de imagem e autorização comercial.
