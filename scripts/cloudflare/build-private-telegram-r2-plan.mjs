@@ -13,6 +13,8 @@ const ORIGIN = /^[0-9]{1,30}$/;
 const BUCKET = "tonecos-catalogo-staging";
 const NAMESPACE = "telegram-studios/v1";
 const SOURCE_TYPE = "telegram";
+// O uploadador verifica SHA e bytes imediatamente antes de PUT/HEAD.
+const DEFER_LOCAL_HASH = process.argv.includes("--defer-local-hash");
 
 function arg(name, fallback = null) {
   const eq = process.argv.find((x) => x.startsWith("--" + name + "="));
@@ -122,6 +124,7 @@ async function validatedLocal(root, rel, expectedSize, expectedHash, role) {
     if (!stat.isFile() || stat.size !== expectedSize) {
       return { error: "missing_or_size_mismatch" };
     }
+    if (DEFER_LOCAL_HASH) return { file: real, bytes: stat.size, hash_verification_deferred: true };
     const f = await fs.open(real, "r");
     let header;
     try {
@@ -235,6 +238,7 @@ async function main() {
     locally_valid: ready.length,
     local_not_rechecked_due_missing_authorization: operations.length - ready.length - integrityFailures,
     local_integrity_failures: integrityFailures,
+    local_sha256_checks_deferred_to_uploader: DEFER_LOCAL_HASH ? ready.length : 0,
     ready_to_upload: ready.length,
     blocked_missing_external_authorization: blocked.filter(
       (x) => x.reject_reason === "external_storage_authorization_missing").length,
