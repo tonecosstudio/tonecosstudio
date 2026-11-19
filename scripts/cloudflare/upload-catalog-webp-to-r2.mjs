@@ -288,20 +288,35 @@ function assertPrivateHead(head, op) {
   }
 }
 
+function isTransientR2Error(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /(?:R2 (?:upload|HEAD|GET) (?:failed )?\((?:429|5\d\d)\)|(?:fetch failed|ECONNRESET|ETIMEDOUT|EAI_AGAIN|UND_ERR_CONNECT_TIMEOUT))/i.test(message);
+}
+
 async function privateOne(op) {
   const local = await inspectOperation(op);
   if (local.errors.length) throw new Error(local.errors.join(","));
   if (!EXECUTE) return { status: "dry_run", bytes: 0 };
-  const before = await headObject(op.storage_path);
-  if (before.exists === null) throw new Error("R2 HEAD failed (" + before.status + ")");
-  if (before.exists === true) {
-    assertPrivateHead(before, op);
-    return { status: "reused", bytes: 0 };
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      // HEAD before every retry prevents repeating a PUT that actually succeeded
+      // before a 429/5xx or a lost response.
+      const before = await headObject(op.storage_path);
+      if (before.exists === null) throw new Error("R2 HEAD failed (" + before.status + ")");
+      if (before.exists === true) {
+        assertPrivateHead(before, op);
+        return { status: "reused", bytes: 0 };
+      }
+      await putObject(op, local.bytes);
+      const after = await headObject(op.storage_path);
+      assertPrivateHead(after, op);
+      return { status: "uploaded", bytes: local.actualBytes };
+    } catch (error) {
+      if (attempt === 4 || !isTransientR2Error(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 500 * (2 ** attempt)));
+    }
   }
-  await putObject(op, local.bytes);
-  const after = await headObject(op.storage_path);
-  assertPrivateHead(after, op);
-  return { status: "uploaded", bytes: local.actualBytes };
+  throw new Error("R2 retry attempts exhausted");
 }
 
 async function privateFullGet(op) {
