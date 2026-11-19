@@ -119,6 +119,9 @@ O teste `teste_model_gallery.py` cobre os candidatos, a preservação de membros
 
 O conteúdo privado de álbuns e nomes permanece exclusivamente no SQLite/manifesto local.
 
+**Arquivos repetidos e proveniência.** Várias mensagens podem apontar para o mesmo `sha256` e o mesmo arquivo físico (inclusive com legendas/versões divergentes). O painel preserva todas as mensagens no SQLite e no manifesto, mas mostra **um único preview para cada arquivo SHA-256 por galeria** e distingue `unique_photo_count` de `image_count`. O total `photos_in_galleries` da API legada representa **mensagens vinculadas**, não fotos visuais distintas. Uma identidade conflitante para o mesmo arquivo não deve ser confirmada sem evidência adicional; não unir diferentes produtos apenas pelo hash.
+
+
 ## Galerias: reunir diferentes vistas da MESMA escultura (sem duplicar o produto)
 
 A curadoria possui **três etapas integradas**, que podem avançar ao mesmo tempo no **mesmo banco SQLite local**:
