@@ -35,6 +35,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     assert groups["total"]==2,groups
     couple=next(g for g in groups["items"] if g["image_count"]==2)
     detail=m.model_detail(dbpath,couple["group_key"])
+    assert detail["identity_conflicts"]==[],detail  # banco isolado sem modulo de nomes
     assert {a["message_id"] for a in detail["images"]}=={101,102},detail
     assert len(detail["evidence"])==2,detail
     try:
