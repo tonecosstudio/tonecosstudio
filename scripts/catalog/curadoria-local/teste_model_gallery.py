@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Galeria real de diferentes vistas: teste isolado, originais fictícios intocados."""
 import hashlib
+import csv
 import sqlite3
 import tempfile
 from contextlib import closing
@@ -34,6 +35,14 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert gallery.stats(db)=={"galleries":1,"photos_in_galleries":2,"visually_reviewed_galleries":1}
     assert smart.list_models(db,min_images=2)["total"]==1
     assert len(smart.model_detail(db,g["group_key"])["images"])==2
+    manifest=naming.export_manifest(db,root/"nomes.csv")
+    assert manifest["exported"]==6,manifest
+    with (root/"nomes.csv").open(encoding="utf-8-sig",newline="") as fd:
+        rows={int(row["message_id"]):row for row in csv.DictReader(fd,delimiter=";")}
+    assert rows[101]["galeria_id"]==g["group_key"]
+    assert rows[102]["fotos_na_galeria"]=="2"
+    assert rows[101]["aprovado_para_publicacao"]=="false"
+    assert rows[103]["galeria_id"]==""
     try:gallery.register_visual_gallery(db,[102,103],"Abe3D")
     except ValueError:pass
     else:raise AssertionError("Cross-group merge should reject")
