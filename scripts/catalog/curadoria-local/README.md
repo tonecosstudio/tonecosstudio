@@ -59,3 +59,24 @@ Use **Exportar nomes propostos** para gerar exclusivamente no computador o arqui
 - Testes de regressão: `python teste_curadoria.py`, `python teste_smart_curadoria.py`, `python teste_ui.py`.
 
 As cópias privadas de imagens, mensagens, manifestos preenchidos, arquivos de sessão e bancos locais **não entram no GitHub**. O ambiente local Windows deve sincronizar o código da PR #45 sem substituir a pasta privada `curadoria-local`.
+
+## Nomes sem legenda: cartaz, fontes oficiais e similaridade local
+
+Para imagens sem metadados textuais, a Curadoria **não inventa um personagem**. O fluxo de revisão prioritário é:
+
+1. Conferir se o **próprio render** contém nome/versão (por exemplo, um cartaz do criador). O aplicativo pode registrar a proposta por `suggest_name_from_embedded_text`; a proposta não vira `confirmado` automaticamente.
+2. Abrir **Referências do próprio estúdio** diretamente na tela **Nomes propostos**. A seleção por tópico em `official_sources` fornece os perfis verificados no Patreon, Cults3D ou ArtStation. Em tópicos que misturam vários criadores, um perfil de estúdio é apenas referência — **não comprova** autoria de uma imagem individual.
+3. Examinar **Imagens locais semelhantes**, que usa dHash, aHash e proporção, exibindo até três candidatos e opção **Usar como rascunho**. Isso não escreve um nome automaticamente e nunca o confirma. A revisão precisa verificar a imagem correspondente na publicação oficial.
+4. Somente após cruzar título/arte e a página do lançamento, registrar `confirmado` com link oficial e gerar hardlinks, se necessário.
+
+A pesquisa encontrou perfis oficiais para Merge Project Figures, Uel Winner, Sekai 3D Models, Nomnom Figures, Kaidan 3D e 3Dmoonn. Os perfis e links são públicos; **nenhuma imagem privada do Telegram foi enviada** aos sites para pesquisa reversa. Algumas páginas bloqueiam requisições automatizadas: o aplicativo somente oferece links de consulta e não tenta contornar desafios de acesso.
+
+Para gerar as assinaturas visuais em **lotes com checkpoint no SQLite local** (Pillow instalado somente na máquina de trabalho):
+
+```powershell
+python visual_name_suggestions.py --limit 6000
+```
+
+A rotina opcional roda **fora** do servidor web para não bloquear a interface. Endpoints locais de consulta: `GET /api/official-sources?topic=...` e `GET /api/visual-candidates/<ID>`. O arquivo `teste_visual_name_suggestions.py` contém E2E com imagens artificiais; o teste confirma que possíveis semelhanças **não alteram automaticamente** `name_proposals`.
+
+A curadoria permanece privada até a homologação do catálogo comercial e dos direitos de uso. Resultados de rastreamento, nomes capturados de cartazes e bancos de imagens locais não são versionados.
