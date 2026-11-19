@@ -32,7 +32,7 @@ async function refreshModels(){
  if(viewMode!=="models")return;
  try{
   const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
-  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter});
+  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:2});
   const result=await api("/api/models?"+p);
   modelTotal=result.total;
   const root=el("modelResults");root.replaceChildren();
@@ -46,12 +46,15 @@ async function refreshModels(){
    b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
   }
   if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
-  el("summary").textContent=fmt(modelTotal)+" grupos de modelos";
+  el("summary").textContent=fmt(modelTotal)+" galerias com pelo menos 2 imagens";
   el("page").textContent="Página "+currentPage;
   el("prev").disabled=currentPage<=1;el("next").disabled=currentPage*48>=modelTotal;
   const stat=await api("/api/stats");
   const s=stat.smart||{};
-  el("smartSummary").textContent=fmt(s.images_grouped||0)+" imagens em "+fmt(s.model_groups||0)+" grupos prováveis/avaliados · "+fmt(s.images_needing_review||0)+" imagens sem associação · "+fmt(s.images_waiting||0)+" aguardando processamento.";
+  const gs=stat.galleries||{};
+  el("smartSummary").textContent=fmt(gs.photos_in_galleries||0)+" fotos reunidas em "+fmt(gs.galleries||0)+" galerias · "+
+    fmt(gs.visually_reviewed_galleries||0)+" galerias revisadas visualmente · "+
+    fmt(s.images_needing_review||0)+" imagens ainda sem associação.";
  }catch(e){notify("Modelos: "+e.message)}
 }
 async function openModel(key){
@@ -94,6 +97,7 @@ function setView(mode){
  el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
  el("nameResults").hidden=mode!=="names";
+ el("galleryCreate").hidden=mode!=="models";
  el("namesMode").className=mode==="names"?"primary":"";
  el("modelsMode").className=mode==="models"?"primary":"";
  el("imagesMode").className=mode==="images"?"primary":"";
@@ -133,7 +137,7 @@ async function refreshNames(){
    const infoBox=document.createElement("div");infoBox.className="details";
    text(infoBox,"div",item.title||"Sem nome identificado");
    text(infoBox,"div",item.studio+(item.universe?" · "+item.universe:""),"sub");
-   text(infoBox,"span",item.status+" · #"+item.message_id,"pill");
+   text(infoBox,"span",(item.gallery_image_count>=2?item.gallery_image_count+" fotos · ":"")+item.status+" · #"+item.message_id,"pill");
    tile.append(infoBox);tile.onclick=()=>openName(item);root.append(tile);
   }
   if(!data.items.length)text(root,"p","Nenhuma proposta neste filtro.","empty");
@@ -161,6 +165,7 @@ function openName(item){
  updateNameSourceLink();
  el("nameNotes").value=item.notes||"";
  el("nameFilename").textContent="Arquivo proposto: "+(item.filename||"A definir");
+ el("nameOpenGallery").hidden=!(item.gallery_key&&item.gallery_image_count>=2);
  showNameReferences(item).catch(err=>notify("Fontes: "+err.message));
 }
 el("saveNameReview").onclick=async()=>{
@@ -202,7 +207,7 @@ el("search").addEventListener("input",()=>{
   window.smartSearch=setTimeout(refresh,350);
  }
 });
-setView("names");
+setView("models");
 setInterval(refreshNames,10000);
 
 el("materializeNames").onclick=async()=>{
@@ -266,3 +271,27 @@ function updateNameSourceLink(){
  else link.removeAttribute("href");
 }
 el("nameOfficialUrl").addEventListener("input",updateNameSourceLink);
+
+el("nameOpenGallery").onclick=async()=>{
+ if(!chosenName?.gallery_key)return;
+ setView("models");
+ await openModel(chosenName.gallery_key);
+};
+el("saveVisualGallery").onclick=async()=>{
+ if(!topic){notify("Selecione um estúdio na coluna esquerda antes de reunir imagens.");return;}
+ const ids=el("galleryIds").value.split(/[,;\s]+/).filter(Boolean);
+ if(ids.length<2||ids.length>40||ids.some(x=>!/^\d+$/.test(x))){
+   notify("Informe entre 2 e 40 IDs de mensagens, separados por vírgulas.");return;
+ }
+ if(new Set(ids).size!==ids.length){notify("Há IDs repetidos.");return;}
+ try{
+  const response=await post("/api/create-gallery",{
+   message_ids:ids.map(Number),topic,
+   note:"Mesma escultura e diferentes vistas verificadas na Curadoria Visual local; identidade e direitos não confirmados."
+  });
+  notify("Galeria com "+response.image_count+" fotos vinculada sem alterar os originais.");
+  el("galleryIds").value="";
+  await refreshModels();await openModel(response.group_key);
+ }catch(e){notify("Galeria não criada: "+e.message);}
+};
+
