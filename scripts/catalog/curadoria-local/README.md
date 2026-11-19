@@ -156,3 +156,21 @@ O serviço reiniciou pelo **OrdaX MCP nativo**, com `computer.process_start` sup
 Ao abrir uma ficha em **Galerias de modelos**, cada vista exibe o botão **Nomear esta foto**. Ele abre a mesma imagem na aba **Nomes propostos**, reutilizando os campos e a revisão existentes — nenhuma segunda tela de cadastro, tabela ou API de edição foi criada. Depois que o nome dessa vista for salvo, a rotina de herança acima oferece a mesma proposta às outras fotos **somente se a galeria tiver sido revisada visualmente**. A galeria continua não aprovada para publicação até a verificação de fonte e direitos.
 
 `teste_ui.py` e `node --check` foram aprovados no Windows após a atualização.
+
+## Redução de duplicatas e pesquisa por galeria — rodada de 19/11/2026
+
+A Curadoria agora oferece **Exibir apenas galerias sem nome** na aba **Galerias de modelos**, consumindo `GET /api/models?min_images=2&unnamed=1`. O filtro não altera dados, imagens ou fontes de produção; utiliza as próprias fichas existentes em `model_groups` e identifica as que ainda têm o título provisório `Modelo sem nome #...`. Ao nomear uma vista de uma galeria já revisada visualmente, o nome pode ser herdado como **proposta** pelas demais imagens da mesma escultura.
+
+**Execução real no Windows:** os painéis privados de imagens não agrupadas do Abe3D foram inspecionados visualmente; **43 conjuntos adicionais de quatro fotos (172 imagens)** foram associados às tabelas canônicas pelo mesmo `model_gallery.register_visual_gallery`. Uma imagem sem evidência de outras vistas foi mantida solta. O acumulado aumentou para **75 galerias revisadas visualmente / 300 fotos**. O script privado com a seleção de IDs não é versionado e os originais permanecem intocados.
+
+A segunda etapa utilizou páginas específicas no catálogo oficial do Abe3D (Cults3D) para **seis novas identidades candidatas**: Chun-Li, Harley Quinn, Rogue, Scarlet Witch, Emma Frost e Storm. Uma proposta foi gravada por galeria, com `status=provavel`, `evidence_type=studio_catalog_visual_candidate` e URL da publicação; a rotina de herança sugeriu o mesmo nome às outras vistas, sem aprovação automática. O título/personagem publicado pelo criador é evidência de pesquisa, não prova definitiva da mesma escultura nem licença comercial.
+
+**Verificações realizadas**:
+
+- `teste_model_gallery.py`, `teste_ui.py`, `teste_smart_curadoria.py`, `node --check` e `py_compile` aprovados.
+- O serviço foi reiniciado pelo OrdaX MCP supervisionado e os endpoints `/health`, `/api/models`, `/api/stats` e a interface responderam HTTP 200.
+- Filtro testado no Abe3D: 78 galerias com múltiplas fotos, sendo 45 provisoriamente sem nome no checkpoint.
+- O manifesto CSV **privado** foi reexportado com 6.703 registros no último checkpoint, todos com `aprovado_para_publicacao=false`. As cinco imagens anteriormente confirmadas passaram novamente no cotejo SHA-256 entre original e hardlink.
+- Nenhuma imagem, dado sensível do Telegram, SQLite, lista privada de IDs ou CSV preenchido foi enviado ao GitHub; nenhuma foto foi publicada ou produto da TONART modificado.
+
+Os totais variam porque o downloader continua acrescentando imagens e galerias de outras fontes ao banco. A validação de identidade exata e dos direitos comerciais segue como etapa distinta da organização visual.
