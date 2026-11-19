@@ -24,6 +24,7 @@ import smart_curadoria as smart
 import name_curadoria as naming
 import visual_name_suggestions as visual
 import model_gallery as gallery
+import telegram_curadoria_adapter as telegram_identity
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -322,7 +323,8 @@ class Handler(BaseHTTPRequestHandler):
             if route.path=="/api/stats":
                 sync()
                 return self.respond({**stats(),"smart":smart.stats(DB_PATH),
-                       "naming":naming.stats(DB_PATH),"galleries":gallery.stats(DB_PATH)})
+                       "naming":naming.stats(DB_PATH),"galleries":gallery.stats(DB_PATH),
+                       "telegram_identity":telegram_identity.status(DB_PATH)})
             if route.path=="/api/items":
                 sync()
                 return self.respond(get_items(parse_qs(route.query)))
@@ -411,13 +413,12 @@ def main():
         while True:
             try:
                 sync()
-                named=naming.process_batch(DB_PATH,600)
-                if named["images_waiting"]==0:
-                    smart.process_batch(DB_PATH,400)
-                # Herda nome apenas de outro ângulo no MESMO grupo
-                # já revisado visualmente; nunca confirma automaticamente.
-                naming.propagate_reviewed_gallery_names(DB_PATH,120)
-                gallery.refresh_titles(DB_PATH)
+                telegram_identity.run_cycle(
+                    ROOT,SOURCE_DB,DB_PATH,SOURCE_ID,
+                    naming=naming,smart=smart,gallery=gallery,
+                    ignored_batch=100,history_page_size=300,
+                    official_entities_per_cycle=1,
+                )
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
