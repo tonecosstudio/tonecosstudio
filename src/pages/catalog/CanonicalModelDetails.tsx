@@ -40,20 +40,6 @@ import {
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
 
-// A statically imported commercial offer initializes Supabase in the public
-// model detail chunk even when its JSX is hidden. Only the commercial build
-// may import that module; the public gallery has no Auth runtime.
-const CommercialOfferDetails =
-  import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
-    ? lazy(() =>
-        import("@/components/catalog/TonartCommercialOfferDetails").then(
-          ({ TonartCommercialOfferDetails }) => ({
-            default: TonartCommercialOfferDetails,
-          }),
-        ),
-      )
-    : null;
-
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 
 /** Restore only known first-party catalog filters from navigation state. */
@@ -175,6 +161,21 @@ function adjacentCatalogModels(
 }
 
 export default function CanonicalModelDetails() {
+  // The commercial-only module must not be bundled into the public app.
+  // Resolve at render-time so commercial tests can set the mode before mount.
+  const CommercialOfferDetails = useMemo(
+    () =>
+      import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+        ? lazy(() =>
+            import("@/components/catalog/TonartCommercialOfferDetails").then(
+              ({ TonartCommercialOfferDetails }) => ({
+                default: TonartCommercialOfferDetails,
+              }),
+            ),
+          )
+        : null,
+    [],
+  );
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
