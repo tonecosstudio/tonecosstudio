@@ -371,7 +371,9 @@ describe("TONART commercial screens: account → request → history → respons
     const email = await screen.findByRole("link", {
       name: "Pedir orçamento por e-mail",
     });
-    expect(email).toHaveAttribute("href", "mailto:atendimento@example.com");
+    expect(decodeURIComponent(email.getAttribute("href") ?? "")).toBe(
+      "mailto:atendimento@example.com",
+    );
     expect(email).toHaveClass("font-semibold");
     expect(
       screen.getByText(/seleção é extensa para um link de e-mail preenchido/i),
