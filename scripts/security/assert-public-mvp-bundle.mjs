@@ -47,12 +47,41 @@ export function assertPublicMvpManifest(manifest) {
   return { entry: entrypoints[0], chunks: visited.size };
 }
 
+/**
+ * The Vite manifest lists chunks, not modules inlined into chunks.
+ * A commercial Auth module can therefore be embedded inside PublicCatalogApp
+ * without appearing as a "supabase" file in the manifest.
+ * Reject the actual compiled runtime when it contains Supabase bootstrap code.
+ */
+export function assertPublicMvpRuntimeSources(manifest, readAsset) {
+  const chunks = Object.values(manifest).filter(item =>
+    typeof item?.file === "string" && item.file.endsWith(".js")
+  );
+  if (chunks.length === 0) throw new Error("public MVP has no JavaScript chunks");
+  for (const chunk of chunks) {
+    const source = readAsset(chunk.file);
+    if (typeof source !== "string") throw new Error("unable to inspect built chunk " + chunk.file);
+    if (
+      source.includes("Missing required environment variables:") ||
+      source.includes("VITE_SUPABASE_PUBLISHABLE_KEY") ||
+      source.includes("Invalid VITE_SUPABASE_URL format:")
+    ) {
+      throw new Error("Public MVP embeds Supabase Auth runtime: " + chunk.file);
+    }
+  }
+  return { checkedJsChunks: chunks.length };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.env.VITE_PUBLIC_CATALOG_MVP === "true") {
     if (process.env.VITE_PREVIEW_READ_ONLY !== "true") throw new Error("public MVP is not readonly");
     const path = join("dist", ".vite", "manifest.json");
     if (!existsSync(path)) throw new Error("Vite manifest not emitted");
-    const result = assertPublicMvpManifest(JSON.parse(readFileSync(path, "utf8")));
-    console.log("Public catalog excludes commercial and Supabase runtime", result);
+    const manifest = JSON.parse(readFileSync(path, "utf8"));
+    const result = assertPublicMvpManifest(manifest);
+    const js = assertPublicMvpRuntimeSources(manifest, file =>
+      readFileSync(join("dist", file), "utf8")
+    );
+    console.log("Public catalog manifest and compiled Auth isolation verified", { ...result, ...js });
   }
 }
