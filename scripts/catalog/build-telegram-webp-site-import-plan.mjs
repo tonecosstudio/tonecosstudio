@@ -1138,6 +1138,7 @@ const SITE_IMPORT_EXCLUDED_CATEGORIES = new Set([
 ]);
 
 function rejectReason(record, displayExists, thumbExists) {
+  if (record.private_staging_only === true) return "private_curadoria_staging";
   if (
     SITE_IMPORT_EXCLUDED_CATEGORIES.has(
       normalizeComparable(record.final_category),

@@ -52,6 +52,7 @@ const MANIFEST = path.resolve(
 const LIMIT = Number.parseInt(argValue("limit", "500"), 10);
 const CHECKPOINT_SIZE = Number.parseInt(argValue("checkpoint-size", "100"), 10);
 const DRY_RUN = argFlag("dry-run");
+const PRIVATE_CURADORIA = argFlag("private-curadoria");
 const INCLUDE_LOW = argFlag("include-low-confidence");
 const OVERWRITE = argFlag("overwrite");
 const RETRY_FAILED = argFlag("retry-failed");
@@ -385,7 +386,9 @@ function acceptedConfidence(value) {
 
 function acceptedRecord(record) {
   const status = String(record.status || "");
-  if (!["copied", "already_cataloged"].includes(status)) return false;
+  if (status === "prepared_private") {
+    if (!PRIVATE_CURADORIA || record.private_staging_only !== true) return false;
+  } else if (!["copied", "already_cataloged"].includes(status)) return false;
   if (!record.source_name || !record.catalog_relpath) return false;
   const { category } = catalogRelParts(record);
   if (SKIPPED_CATEGORIES.has(normalizeComparable(category))) return false;
@@ -535,6 +538,7 @@ function finalRecord(record, inputPath, relpaths, display, thumb) {
     built_at: new Date().toISOString(),
     profile_version: PROFILE.version,
     source_type: "telegram",
+    private_staging_only: record.private_staging_only === true,
     source_name: record.source_name || null,
     message_id: record.message_id || null,
     source_sha256: record.sha256 || null,
@@ -558,7 +562,7 @@ function finalRecord(record, inputPath, relpaths, display, thumb) {
     public_name_pt_br: null,
     original_name: cleanName(record.folder || record.filename || record.source_name),
     aliases: [],
-    curation_status: "needs_ptbr_name",
+    curation_status: record.private_staging_only === true ? "private_not_authorized" : "needs_ptbr_name",
   };
 }
 
@@ -586,6 +590,7 @@ async function main() {
     manifest: MANIFEST,
     final_manifest: FINAL_MANIFEST,
     dry_run: DRY_RUN,
+    private_curadoria: PRIVATE_CURADORIA,
     limit: LIMIT,
     checkpoint_size: CHECKPOINT_SIZE,
     retry_failed: RETRY_FAILED,

@@ -94,3 +94,22 @@ Sem inventário canônico ou sem autorização comprovada, o script permanece *f
 - Chat da Curadoria / PR #45: identifica e confirma modelos, nomes, álbuns e evidências.
 - Esta etapa: leitura somente dos resultados aprovados, reconciliação com catálogo existente e plano de publicação. Não editar PR #45.
 - Pipeline publicado: **uma única autoridade** (`services/catalogo/` e scripts existentes), com testes e logs, sem pipelines paralelos.
+
+
+## 7. Otimização de imagens enquanto a curadoria continua (implementada)
+
+**Conversor único:** `scripts/catalog/build-telegram-webp-final.mjs` com Sharp já existente (perfil canônico: galeria até 900px e miniatura até 512px, qualidade 68). Nenhum segundo mecanismo de transcodificação foi criado. Para o Telegram atual, o adaptador `preparar-webp-curadoria-privada.py` gera um manifesto compatível com o conversor existente.
+
+**Importante:** nomes `provavel`/sugeridos autorizam **somente otimização local privada**, não disponibilização na Internet. Manifesto tem `status=prepared_private` e `private_staging_only=true`; o conversor só aceita esse tipo com `--private-curadoria`. O plano de publicação rejeita `private_staging_only` independentemente do nome/taxonomia. O fluxo público continua exigindo dupla aprovação, permissões documentadas, verificação do acervo e reconciliação com IDs já publicados.
+
+No Windows com Node 24, Python 3.12 e dependências canônicas instaladas:
+
+```powershell
+powershell -NoProfile -File scripts/catalog/otimizar-curadoria-privada.ps1 -Limit 85
+```
+
+Entrada: SQLite da Curadoria (`assets`, `annotations`, `name_proposals`) e imagens originais **somente leitura**. Saída privada: `%USERPROFILE%\Documents\TONART-Telegram-Import\otimizacao-privada\webp`, fora do Git, com manifesto/checkpoint e arquivos de galeria + miniatura. O mesmo lote pode ser reexecutado: os registros processados são pulados. A integridade de cada original é validada por SHA-256 antes da seleção e depois pela auditoria `verificar-webp-curadoria-privada.py`.
+
+**Prova no Windows em 19/11/2026:** 85 imagens com nome sugerido, geradas 85 galerias WebP + 85 miniaturas (sem falhas). Originais: 10.543.860 bytes; WebP completo: 4.438.106 bytes; **57,9% de redução**, sem perda nem alteração de originais. Ensaio do importador público: 0 elegíveis, 85 rejeitadas; zero operações externas. A porcentagem varia com o conteúdo das imagens.
+
+Upload de itens Telegram só inicia depois de seleção/homologação do primeiro lote elegível e prova de autorização. A TONART pode continuar servindo os modelos já aprovados do catálogo atual sem reenvio desnecessário.
