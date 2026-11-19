@@ -1,11 +1,10 @@
-/** Canonical visual navigation shared by public-readonly and commercial modes. Uses the canonical signup availability hook. */
+/** Pure navigation view shared by public-readonly and commercial modes. Auth state comes from the commercial controller. */
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { Bell, Menu, X } from "lucide-react";
 import { CoinCounter } from "@/components/arcade/CoinCounter";
 import { BRAND_SHORT_NAME } from "@/config/brand";
 import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
-import { useTonecosSignupAvailability } from "@/hooks/auth/useTonecosSignupAvailability";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
@@ -40,6 +39,7 @@ export type ArcadeNavViewProps = {
   isAdmin?: boolean;
   userBalance?: number;
   balanceLoading?: boolean;
+  signupEnabled?: boolean;
 };
 
 export function ArcadeNavView({
@@ -47,16 +47,14 @@ export function ArcadeNavView({
   isAdmin = false,
   userBalance = 0,
   balanceLoading = false,
+  signupEnabled = false,
 }: ArcadeNavViewProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const signupAvailability = useTonecosSignupAvailability(
-    !visibleUser && !PREVIEW_READ_ONLY,
-  );
   const showPublicSignup =
-    !visibleUser && !PREVIEW_READ_ONLY && signupAvailability === "enabled";
+    !visibleUser && !PREVIEW_READ_ONLY && signupEnabled;
 
   // Navigation may happen outside the menu (browser Back, catalog cards,
   // footer links). Never leave an expanded mobile menu on the next page.

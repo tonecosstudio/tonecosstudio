@@ -1,4 +1,6 @@
 import {
+  Suspense,
+  lazy,
   useEffect,
   useId,
   useMemo,
@@ -10,7 +12,6 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
-import { TonartCommercialOfferDetails } from "@/components/catalog/TonartCommercialOfferDetails";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -160,6 +161,21 @@ function adjacentCatalogModels(
 }
 
 export default function CanonicalModelDetails() {
+  // The commercial-only module must not be bundled into the public app.
+  // Resolve at render-time so commercial tests can set the mode before mount.
+  const CommercialOfferDetails = useMemo(
+    () =>
+      import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true"
+        ? lazy(() =>
+            import("@/components/catalog/TonartCommercialOfferDetails").then(
+              ({ TonartCommercialOfferDetails }) => ({
+                default: TonartCommercialOfferDetails,
+              }),
+            ),
+          )
+        : null,
+    [],
+  );
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
   const catalogReturnTo = catalogReturnPath(location.state);
@@ -857,10 +873,14 @@ export default function CanonicalModelDetails() {
                         finalizadas.
                       </p>
                     </div>
-                    <TonartCommercialOfferDetails
-                      modelSlug={model.slug}
-                      enabled={quoteRequestsEnabled}
-                    />
+                    {quoteRequestsEnabled && CommercialOfferDetails ? (
+                      <Suspense fallback={null}>
+                        <CommercialOfferDetails
+                          modelSlug={model.slug}
+                          enabled
+                        />
+                      </Suspense>
+                    ) : null}
                     <div className="space-y-3">
                       <button
                         type="button"

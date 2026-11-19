@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { assertPublicMvpManifest } from "./assert-public-mvp-bundle.mjs";
+import { assertPublicMvpManifest, assertPublicMvpRuntimeSources } from "./assert-public-mvp-bundle.mjs";
 
 const base = () => ({
   "index.html": {
@@ -28,6 +28,17 @@ test("blocks the commercial application reachable via dynamic import", () => {
   m["src/App.tsx"] = { file: "assets/App-1.js" };
   assert.throws(() => assertPublicMvpManifest(m), /commercial chunks/);
 });
+test("inspects compiled public chunks, not only Vite manifest filenames", () => {
+  const m = base();
+  const safe = () => "export const status = 'catalog-ready'";
+  assert.deepEqual(assertPublicMvpRuntimeSources(m, safe), { checkedJsChunks: 3 });
+  const auth = file => file.includes("PublicCatalogApp")
+    ? 'throw new Error("Missing required environment variables: VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY")'
+    : "export const status = 'catalog-ready'";
+  assert.throws(() => assertPublicMvpRuntimeSources(m, auth), /embeds Supabase Auth runtime/);
+  assert.throws(() => assertPublicMvpRuntimeSources(m, () => null), /unable to inspect/);
+});
+
 test("fails closed when public catalog is not reachable", () => {
   const m = base();
   m["index.html"].dynamicImports = [];
