@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -70,6 +71,52 @@ class FakeOpener:
 
 
 class TelegramCuradoriaAdapterTests(unittest.TestCase):
+    def test_cycle_aggregates_include_real_telegram_recovery_and_history_counts(self):
+        self.assertEqual(adapter._aggregates({
+            "telegram": {
+                "status": "session_ok",
+                "recovery": {"text_messages_recovered": 7, "verified_links": 2},
+                "history": {"messages_fetched": 11, "verified_links": 3},
+            },
+        }), {
+            "telegram_recovery_text_messages_recovered": 7,
+            "telegram_recovery_verified_links": 2,
+            "telegram_history_messages_fetched": 11,
+            "telegram_history_verified_links": 3,
+        })
+
+    def test_general_50k_is_excluded_from_topic_selection_and_official_sources(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db_path = Path(temp) / "curadoria.sqlite3"
+            db = sqlite3.connect(db_path)
+            try:
+                db.execute("CREATE TABLE assets(message_id INTEGER PRIMARY KEY)")
+                db.executemany("INSERT INTO assets(message_id) VALUES(?)", [(1,), (2,), (3,)])
+                db.commit()
+            finally:
+                db.close()
+            with identity._open_curadoria(db_path) as db:
+                db.execute("""
+                    UPDATE telegram_identity_coverage
+                    SET source_chat_id=99,topic_id=35546,topic_name='Geral + 50k'
+                    WHERE message_id IN (1,2)
+                """)
+                db.execute("""
+                    UPDATE telegram_identity_coverage
+                    SET source_chat_id=99,topic_id=5,topic_name='Abe3D'
+                    WHERE message_id=3
+                """)
+                db.commit()
+
+            self.assertEqual(adapter._topic_to_scan(db_path, 99), (5, "Abe3D"))
+
+        class CuratedNames:
+            def official_sources(self, topic):
+                return [{"studio": topic, "provider": "Official", "profile_url": "https://official.example"}]
+
+        self.assertEqual(list(adapter._official_sources(CuratedNames(), "Geral + 50k")), [])
+        self.assertEqual(len(list(adapter._official_sources(CuratedNames(), "Abe3D"))), 1)
+
     def test_history_pages_are_forward_only_and_bounded_to_the_requested_topic(self):
         client = FakeHistoryClient()
         source = adapter.TelethonHistorySource(client, "chat", 99, 50, "Studio")

@@ -477,9 +477,9 @@ class TelegramIdentityEngineTests(unittest.TestCase):
                 "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
                 [(SOURCE_CHAT, 801, "ignorado"), (SOURCE_CHAT, 802, "ignorado")],
             )
-            db.execute(
+            db.executemany(
                 "INSERT INTO topicos_mensagens VALUES(?,?,?,?,?,?)",
-                (SOURCE_CHAT, 800, 5, "Abe3D", "", ""),
+                [(SOURCE_CHAT, mid, 5, "Abe3D", "", "") for mid in (800, 801, 802)],
             )
         before = hashlib.sha256(source_path.read_bytes()).hexdigest()
         client = FakeTelegramClient({
@@ -506,6 +506,53 @@ class TelegramIdentityEngineTests(unittest.TestCase):
         after = hashlib.sha256(source_path.read_bytes()).hexdigest()
         self.assertEqual(title, "Elektra")
         self.assertEqual(before, after)
+
+    def test_ignored_message_recovery_excludes_general_50k(self):
+        source_path = self.root / "source-general.sqlite3"
+        with _test_db(source_path) as db:
+            db.executescript("""
+                CREATE TABLE mensagens(origem INTEGER,mensagem INTEGER,status TEXT);
+                CREATE TABLE topicos_mensagens(
+                    origem INTEGER,mensagem INTEGER,topico_id INTEGER,topico_nome TEXT,
+                    legenda TEXT,album_id TEXT
+                );
+            """)
+            db.executemany(
+                "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
+                [(SOURCE_CHAT, 901, "ignorado"), (SOURCE_CHAT, 902, "ignorado")],
+            )
+            db.executemany(
+                "INSERT INTO topicos_mensagens VALUES(?,?,?,?,?,?)",
+                [
+                    (SOURCE_CHAT, 901, 9, "Abe3D", "", ""),
+                    (SOURCE_CHAT, 902, 35546, "Geral + 50k", "", ""),
+                ],
+            )
+        self.assertEqual(
+            engine.read_ignored_message_ids(source_path, SOURCE_CHAT, limit=10), [901, 902]
+        )
+        self.assertEqual(
+            engine.read_recent_ignored_message_ids(
+                source_path, SOURCE_CHAT, through_id=1000, limit=10,
+            ),
+            [901, 902],
+        )
+        client = FakeTelegramClient({
+            901: {"id": 901, "message": "Title: Elektra", "topic_id": 9},
+            902: {"id": 902, "message": "Title: General Model", "topic_id": 35546},
+        })
+        result = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, client, SOURCE_CHAT, batch_size=10, overlap=0,
+        ))
+        self.assertEqual(result["message_ids_requested"], 2)
+        self.assertEqual(result["text_messages_recovered"], 1)
+        self.assertEqual(client.calls[0][1], (901, 902))
+        with _test_db(self.db_path) as db:
+            stored = db.execute("""
+                SELECT message_id,topic_name,text FROM telegram_history_messages
+                WHERE source_chat_id=? ORDER BY message_id
+            """, (SOURCE_CHAT,)).fetchall()
+        self.assertEqual(stored, [(901, "Abe3D", "Title: Elektra")])
 
     def test_history_scan_requires_verified_full_range_and_updates_incrementally(self):
         self.add_asset(900)
@@ -626,6 +673,10 @@ class TelegramIdentityEngineTests(unittest.TestCase):
             db.executemany(
                 "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
                 [(SOURCE_CHAT, mid, "ignorado") for mid in range(901, 907)],
+            )
+            db.executemany(
+                "INSERT INTO topicos_mensagens VALUES(?,?,?,?,?,?)",
+                [(SOURCE_CHAT, mid, 9, "Abe3D", "", "") for mid in range(901, 907)],
             )
         client = FakeTelegramClient({})
         first = asyncio.run(engine.recover_ignored_message_batch(

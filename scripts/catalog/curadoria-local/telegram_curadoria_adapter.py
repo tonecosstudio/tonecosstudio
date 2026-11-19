@@ -94,6 +94,10 @@ def _message_id(value: Any) -> int | None:
         return None
 
 
+def _is_general_50k(topic_name: str) -> bool:
+    return identity._label_key(topic_name) == "geral50k"
+
+
 def _topic_to_scan(curadoria_db_path: str | Path, source_chat_id: int):
     with identity._open_curadoria(curadoria_db_path) as db:
         row = db.execute("""
@@ -105,6 +109,7 @@ def _topic_to_scan(curadoria_db_path: str | Path, source_chat_id: int):
               ON p.source_chat_id=c.source_chat_id
              AND p.scope='topic:' || CAST(c.topic_id AS TEXT)
             WHERE c.source_chat_id=? AND c.topic_id IS NOT NULL
+              AND lower(replace(replace(trim(c.topic_name),' ',''),'+',''))!='geral50k'
             GROUP BY c.topic_id
             ORDER BY incomplete DESC,checkpoint_at ASC,c.topic_id ASC
             LIMIT 1
@@ -323,6 +328,8 @@ class OfficialProfileSearch:
 
 def _official_sources(naming_module: Any, topic: str):
     # Only the existing, curated PR #45 registry can designate verified sources.
+    if _is_general_50k(topic):
+        return
     for source in naming_module.official_sources(topic) or ():
         yield {**source, "verified": True}
 
@@ -335,6 +342,10 @@ def _aggregates(result: Mapping[str, Any]) -> dict[str, int]:
         for key, value in data.items():
             if isinstance(value, (bool, int)):
                 values[f"{stage}_{key}"] = int(value)
+            elif stage == "telegram" and isinstance(value, Mapping):
+                for nested_key, nested_value in value.items():
+                    if isinstance(nested_value, (bool, int)):
+                        values[f"telegram_{key}_{nested_key}"] = int(nested_value)
     return values
 
 

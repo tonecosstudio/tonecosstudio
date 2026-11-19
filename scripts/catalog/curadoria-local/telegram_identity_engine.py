@@ -870,8 +870,19 @@ async def recover_ignored_message_batch(
         pending_ids = [int(row[0]) for row in db.execute("""
             SELECT message_id FROM telegram_history_messages
             WHERE source_chat_id=? AND fetch_status='not_returned'
+              AND topic_id IS NOT NULL
+              AND lower(replace(replace(trim(topic_name),' ',''),'+',''))!='geral50k'
             ORDER BY fetched_at,message_id LIMIT ?
         """, (int(source_chat_id), pending_limit))]
+        known_topic_names = {
+            int(row["topic_id"]): str(row["topic_name"] or "")
+            for row in db.execute("""
+                SELECT topic_id,MIN(topic_name) AS topic_name
+                FROM telegram_identity_coverage
+                WHERE topic_id IS NOT NULL AND TRIM(topic_name)!=''
+                GROUP BY topic_id
+            """)
+        }
     tail_ids = read_recent_ignored_message_ids(
         source_db_path, source_chat_id, through_id=cursor, limit=max(0, int(overlap)),
     )
@@ -909,6 +920,8 @@ async def recover_ignored_message_batch(
         raw = by_id.get(message_id)
         if raw is None or raw.__class__.__name__ == "MessageEmpty":
             topic_id, topic_name = metadata.get(message_id, (None, ""))
+            if topic_id is None or not topic_name or _label_key(topic_name) == "geral50k":
+                continue
             not_returned += 1
             not_returned_ids.append(message_id)
             recovered.append(TelegramHistoryMessage(
@@ -918,12 +931,17 @@ async def recover_ignored_message_batch(
             ))
             continue
         message = _to_history_message(raw, source_chat_id)
-        topic_id, topic_name = metadata.get(message_id, (None, ""))
-        if message.topic_id is None and topic_id is not None:
-            message = TelegramHistoryMessage(
-                **{**asdict(message), "topic_id": topic_id,
-                   "topic_name": message.topic_name or topic_name}
-            )
+        metadata_topic_id, metadata_topic_name = metadata.get(message_id, (None, ""))
+        topic_id = message.topic_id or metadata_topic_id
+        topic_name = (
+            message.topic_name or metadata_topic_name
+            or known_topic_names.get(int(topic_id), "") if topic_id is not None else ""
+        )
+        if topic_id is None or not topic_name or _label_key(topic_name) == "geral50k":
+            continue
+        message = TelegramHistoryMessage(
+            **{**asdict(message), "topic_id": int(topic_id), "topic_name": topic_name}
+        )
         text_count += bool(message.text.strip())
         recovered.append(message)
     result = ingest_history_messages(curadoria_db_path, source_chat_id, recovered)
@@ -961,7 +979,7 @@ async def recover_ignored_message_batch(
         "text_messages_recovered": int(text_count),
         "verified_links": result["verified_links"],
         "not_returned": int(not_returned),
-        "has_more": int(bool(pending_ids) or len(new_ids) == batch_size),
+        "has_more": int(bool(pending_ids) or len(new_ids) == capacity),
     }
 
 
@@ -1170,7 +1188,9 @@ def apply_telegram_evidence(db_path: str | Path, *, limit: int = 1000) -> dict[s
         db.execute("BEGIN IMMEDIATE")
         assets = db.execute("""
             SELECT message_id,sha256,original_topic,source_caption,source_album,source_relative
-            FROM assets ORDER BY message_id
+            FROM assets
+            WHERE lower(replace(replace(trim(COALESCE(original_topic,'')),' ',''),'+',''))!='geral50k'
+            ORDER BY message_id
         """).fetchall()
         for asset in assets:
             mid = int(asset["message_id"])
@@ -1410,6 +1430,7 @@ def research_official_pending(
                    p.evidence_type,c.coverage_status,c.identity_status
             FROM assets a JOIN telegram_identity_coverage c USING(message_id)
             LEFT JOIN name_proposals p USING(message_id)
+            WHERE lower(replace(replace(trim(COALESCE(a.original_topic,'')),' ',''),'+',''))!='geral50k'
             ORDER BY a.message_id
         """).fetchall()
         entities: dict[str, dict[str, Any]] = {}
