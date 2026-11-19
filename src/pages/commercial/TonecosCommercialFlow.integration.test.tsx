@@ -387,6 +387,28 @@ describe("TONART commercial screens: account → request → history → respons
     expect(body).toContain("TC-M1-");
     expect(body).toContain("TC-M50-");
     expect(body.match(/ — código /g)).toHaveLength(50);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "clipboard",
+    );
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(body));
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /não foi enviada automaticamente/,
+      );
+    } finally {
+      if (clipboardDescriptor) {
+        Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
     expect(
       screen.queryByRole("link", { name: "Criar conta" }),
     ).not.toBeInTheDocument();
