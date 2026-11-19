@@ -31,7 +31,7 @@ export function resolveSocialOrigin(env = process.env) {
   }
   if (env.VERCEL_ENV === "preview") {
     const host = (env.VERCEL_URL || "").trim().toLowerCase();
-    if (!/^(?:tonecosstudio|tonart-studio-public)-[a-z0-9-]+\.vercel\.app$/.test(host)) {
+    if (!/^(?:tonecosstudio|tonart-studio-public|tonart-catalogo-publico)-[a-z0-9-]+\.vercel\.app$/.test(host)) {
       throw new Error("Tonecos preview requires its own authenticated Vercel hostname.");
     }
     return `https://${host}`;
