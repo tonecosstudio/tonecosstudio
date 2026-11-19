@@ -374,6 +374,66 @@ def suggest_name_from_embedded_text(db_path,message_id,title,studio,universe="",
         return {"ok":True,"message_id":mid,"filename":filename,
                 "status":"provavel","revision":row["revision"]+1}
 
+def suggest_name_from_telegram_caption(db_path,message_id,title,studio,universe="",variant="",evidence_note=""):
+    """Registra como PROVÁVEL um título conferido na legenda original do Telegram.
+
+    O texto precisa estar presente na legenda do próprio ativo. Não confunde a
+    identificação do personagem com a confirmação oficial da escultura, nem
+    modifica propostas existentes ou cria um novo agrupamento.
+    """
+    mid=int(message_id)
+    title=str(title or "").strip()
+    studio=str(studio or "").strip()
+    universe=str(universe or "").strip()
+    variant=str(variant or "").strip()
+    if not title or not studio or len(title)>170 or len(studio)>120 or len(universe)>120 or len(variant)>160:
+        raise ValueError("Nome da legenda inválido")
+    with smart.db_open(db_path) as db:
+        setup(db)
+        row=db.execute("""SELECT p.status,p.title,p.revision,
+            a.original_topic,a.source_caption,a.source_relative
+            FROM name_proposals p JOIN assets a USING(message_id)
+            WHERE p.message_id=?""",(mid,)).fetchone()
+        if row is None:
+            raise ValueError("Mensagem não indexada")
+        caption=smart.normalize(row["source_caption"])
+        if not caption or smart.normalize(title) not in caption:
+            raise ValueError("Título proposto não consta na legenda original")
+        if variant and smart.normalize(variant) not in caption:
+            raise ValueError("Versão não consta na legenda original")
+        if universe and smart.normalize(universe) not in caption:
+            raise ValueError("Universo não consta na legenda original")
+        studio_n=smart.normalize(studio)
+        topic_n=smart.normalize(row["original_topic"])
+        if not studio_n or (studio_n not in topic_n and topic_n not in studio_n):
+            raise ValueError("Estúdio não corresponde ao tópico de origem")
+        if row["status"]!="revisar" or (row["title"] or "").strip():
+            return {"ok":False,"reason":"existing_proposal_or_review","message_id":mid}
+        filename=proposed_name({"title":title,"variant":variant},mid,row["source_relative"])
+        stamp=smart.utc()
+        note=("Título conferido na legenda original do Telegram; "
+              "identidade editorial e publicação oficial pendentes. "
+              +str(evidence_note or "").strip())[:500]
+        changed=db.execute("""UPDATE name_proposals SET
+            studio=?,title=?,universe=?,variant=?,filename=?,
+            status='provavel',confidence=0.72,
+            evidence_type='telegram_caption_curated',evidence_message_id=?,
+            notes=?,revision=revision+1,modified_at=?
+            WHERE message_id=? AND revision=? AND status='revisar'
+              AND TRIM(COALESCE(title,''))=''""",
+            (studio,title,universe,variant,filename,mid,note,
+             stamp,mid,row["revision"]))
+        if changed.rowcount!=1:
+            raise RuntimeError("Conflito de revisão")
+        db.execute("""INSERT INTO name_proposal_events
+            (message_id,event_type,evidence,occurred_at)
+            VALUES(?,?,?,?)""",
+            (mid,"telegram_caption_curated",SOURCE_C+str(mid),stamp))
+        db.commit()
+        return {"ok":True,"message_id":mid,"filename":filename,
+                "status":"provavel","revision":row["revision"]+1}
+
+
 def suggest_name_from_studio_catalog(db_path,message_id,title,studio,source_url,
                                     topic,universe="",variant="",evidence_note=""):
     """Sugere SEM CONFIRMAR nome visto no catálogo do modelador + inspeção local.
