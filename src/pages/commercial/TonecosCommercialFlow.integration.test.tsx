@@ -101,7 +101,11 @@ const model = {
   name: "Naruto",
 } as PublicCatalogModel;
 const DEFAULT_SEED_MODELS = [model];
-function SelectModel({ models = DEFAULT_SEED_MODELS }: { models?: PublicCatalogModel[] }) {
+function SelectModel({
+  models = DEFAULT_SEED_MODELS,
+}: {
+  models?: PublicCatalogModel[];
+}) {
   const { setSelectedModels } = useCatalogBrowsing();
   useEffect(() => {
     setSelectedModels(models);
@@ -114,7 +118,11 @@ type RouteEntry =
       pathname: string;
       state?: { recovered?: boolean; sent?: string };
     };
-function renderApp(entry: RouteEntry, seed = false, models?: PublicCatalogModel[]) {
+function renderApp(
+  entry: RouteEntry,
+  seed = false,
+  models?: PublicCatalogModel[],
+) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <HelmetProvider>
@@ -340,7 +348,11 @@ describe("TONART commercial screens: account → request → history → respons
     const fallback = screen.getByText("Ver e copiar texto do orçamento");
     fireEvent.click(fallback);
     expect(
-      (screen.getByLabelText("Texto completo para enviar ao estúdio") as HTMLTextAreaElement).value,
+      (
+        screen.getByLabelText(
+          "Texto completo para enviar ao estúdio",
+        ) as HTMLTextAreaElement
+      ).value,
     ).toContain("TC-NARUTO");
     expect(mocks.submit).not.toHaveBeenCalled();
   });
@@ -356,16 +368,26 @@ describe("TONART commercial screens: account → request → history → respons
       code: `TC-M${index + 1}-${"X".repeat(75)}`,
     }));
     renderApp("/solicitar-orcamento", true, selected);
-    const email = await screen.findByRole("link", { name: "Pedir orçamento por e-mail" });
+    const email = await screen.findByRole("link", {
+      name: "Pedir orçamento por e-mail",
+    });
     expect(email).toHaveAttribute("href", "mailto:atendimento@example.com");
     expect(email).toHaveClass("font-semibold");
-    expect(screen.getByText(/seleção é extensa para um link de e-mail preenchido/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/seleção é extensa para um link de e-mail preenchido/i),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByText("Ver e copiar texto do orçamento"));
-    const body = (screen.getByLabelText("Texto completo para enviar ao estúdio") as HTMLTextAreaElement).value;
+    const body = (
+      screen.getByLabelText(
+        "Texto completo para enviar ao estúdio",
+      ) as HTMLTextAreaElement
+    ).value;
     expect(body).toContain("TC-M1-");
     expect(body).toContain("TC-M50-");
     expect(body.match(/ — código /g)).toHaveLength(50);
-    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
