@@ -8,9 +8,6 @@ vi.mock("@/components/arcade/CoinCounter", () => ({
 const signup = vi.hoisted(() => ({
   status: "disabled" as "checking" | "enabled" | "disabled",
 }));
-vi.mock("@/hooks/auth/useTonecosSignupAvailability", () => ({
-  useTonecosSignupAvailability: vi.fn(() => signup.status),
-}));
 beforeEach(() => {
   signup.status = "disabled";
 });
@@ -20,7 +17,7 @@ import { ArcadeNavView } from "./ArcadeNavView";
 function renderNavigation(startPath: string, destination: string) {
   return render(
     <MemoryRouter initialEntries={[startPath]}>
-      <ArcadeNavView />
+      <ArcadeNavView signupEnabled={signup.status === "enabled"} />
       <Link to={destination}>Navegar fora do menu</Link>
     </MemoryRouter>,
   );
