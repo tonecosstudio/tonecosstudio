@@ -375,10 +375,14 @@ def suggest_name_from_studio_catalog(db_path,message_id,title,studio,source_url,
     parsed=urlparse(str(source_url or "").strip())
     if parsed.scheme!="https" or not parsed.hostname or parsed.username or parsed.password:
         raise ValueError("Fonte deve usar HTTPS")
-    domain=parsed.hostname.lower()
-    if domain not in {"cults3d.com","www.cults3d.com","patreon.com","www.patreon.com",
-                      "abe3d.gumroad.com","abe3660.artstation.com"}:
-        raise ValueError("Fonte do criador não homologada")
+    domain=parsed.hostname.lower().removeprefix("www.")
+    sources=official_sources(topic)
+    allowed={urlparse(profile["url"]).hostname.lower().removeprefix("www.")
+             for profile in sources}
+    if not allowed or domain not in allowed:
+        raise ValueError("Fonte não pertence a um provedor homologado para este tópico")
+    if studio not in {source["studio"] for source in sources}:
+        raise ValueError("Estúdio informado não corresponde ao catálogo do tópico")
     with smart.db_open(db_path) as db:
         setup(db)
         a=db.execute("""SELECT p.status,p.title,p.revision,a.source_relative,
