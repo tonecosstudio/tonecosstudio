@@ -242,6 +242,7 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unna
              args+[min_images]).fetchone()[0]
         rows=db.execute("""SELECT g.group_key,g.studio,g.title,g.universe,g.variant,
             g.state,g.confidence,g.revision,COUNT(DISTINCT m.message_id) image_count,
+            COUNT(DISTINCT COALESCE(NULLIF(TRIM(a.sha256),''),CAST(a.message_id AS TEXT))) unique_photo_count,
             MIN(m.message_id) sample_message
             FROM model_groups g JOIN model_group_members m USING(group_key)
             JOIN assets a USING(message_id) WHERE """+where+"""
