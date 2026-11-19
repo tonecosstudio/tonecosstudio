@@ -182,11 +182,15 @@ def list_names(db_path,page=1,limit=48,topic="",q="",status=""):
     where=" AND ".join(clause)
     with smart.db_open(db_path) as db:
         setup(db)
+        smart.setup(db)
         total=db.execute("""SELECT COUNT(*) FROM name_proposals p JOIN assets a
           USING(message_id) WHERE """+where,args).fetchone()[0]
         rows=db.execute("""SELECT p.message_id,p.studio,p.title,p.universe,p.variant,
             p.filename,p.status,p.confidence,p.evidence_type,p.evidence_message_id,
-            p.official_url,p.notes,p.revision,a.original_topic,a.source_caption,a.source_album
+            p.official_url,p.notes,p.revision,a.original_topic,a.source_caption,a.source_album,
+            (SELECT gm.group_key FROM model_group_members gm WHERE gm.message_id=p.message_id) AS gallery_key,
+            (SELECT COUNT(*) FROM model_group_members gm2 WHERE gm2.group_key=(
+              SELECT gm1.group_key FROM model_group_members gm1 WHERE gm1.message_id=p.message_id)) AS gallery_image_count
             FROM name_proposals p JOIN assets a USING(message_id) WHERE """+where+"""
             ORDER BY (p.status='revisar') DESC,p.message_id DESC LIMIT ? OFFSET ?""",
             args+[limit,(page-1)*limit]).fetchall()
