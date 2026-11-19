@@ -40,9 +40,9 @@ function savedQuotePostalCode(profile: CustomerProfile): string {
 }
 
 /** Public email contact uses the existing studio inbox, not an anonymous Supabase write. */
-function guestQuoteEmailHref(
+function guestQuoteEmailDraft(
   models: readonly PublicCatalogModel[],
-): string | null {
+): { href: string; body: string; prefilled: boolean } | null {
   const recipient = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   if (!recipient) return null;
   const references = models.map((model, index) => {
@@ -71,14 +71,15 @@ function guestQuoteEmailHref(
     encodeURIComponent("Orçamento TONART — consulta por e-mail") +
     "&body=" +
     encodeURIComponent(body);
-  // Long mailto URLs fail silently in some email clients. Never omit models.
-  return href.length <= 7000 ? href : null;
+  // Keep every model in the copyable body even when mailto URLs become too long.
+  const prefilled = href.length <= 7000;
+  return { href: prefilled ? href : recipient, body, prefilled };
 }
 
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
-  const guestEmailHref = guestQuoteEmailHref(selectedModels);
+  const guestEmailDraft = guestQuoteEmailDraft(selectedModels);
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
@@ -237,20 +238,20 @@ export default function TonecosQuoteRequestPage() {
         ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">
-              {guestEmailHref
+              {guestEmailDraft
                 ? "Você pode solicitar um orçamento por e-mail, sem criar conta. Para acompanhar pedidos em Meus Orçamentos, entre com sua conta existente."
                 : "Entre com sua conta para enviar a seleção e acompanhar a resposta da TONART Studio."}
               {signupAvailability === "disabled" &&
                 " Novos cadastros estão fechados nesta etapa."}
             </p>
             <div className="flex flex-wrap gap-3">
-              {guestEmailHref && (
-                <a className={actionClass} href={guestEmailHref}>
+              {guestEmailDraft && (
+                <a className={actionClass} href={guestEmailDraft.href}>
                   Pedir orçamento por e-mail
                 </a>
               )}
               <Link
-                className={guestEmailHref ? secondaryClass : actionClass}
+                className={guestEmailDraft ? secondaryClass : actionClass}
                 to={
                   TONECOS_COMMERCIAL_ROUTES.login +
                   "?next=" +
@@ -272,22 +273,38 @@ export default function TonecosQuoteRequestPage() {
                 </Link>
               )}
             </div>
-            {!guestEmailHref && selectedModels.length > 0 ? (
-              <p className="mt-4 text-xs leading-5 text-white/60">
-                Seleção extensa para e-mail automático. Reduza os modelos
-                selecionados ou
-                <Link className="ml-1 underline" to={PUBLIC_ROUTES.contact}>
-                  entre em contato diretamente
-                </Link>
-                .
-              </p>
-            ) : null}
-            {guestEmailHref && (
-              <p className="mt-4 text-xs leading-5 text-white/60">
-                Sem conta? O e-mail inclui as referências selecionadas e abre no
-                seu aplicativo de e-mail. Revise e envie a mensagem. A resposta
-                será por e-mail, sem protocolo em Meus Orçamentos.
-              </p>
+            {guestEmailDraft && (
+              <>
+                <p className="mt-4 text-xs leading-5 text-white/60">
+                  {guestEmailDraft.prefilled
+                    ? "O e-mail inclui as referências selecionadas. Revise e envie a mensagem no seu aplicativo de e-mail."
+                    : "A seleção é extensa para um link de e-mail preenchido. Abra seu aplicativo de e-mail e copie o texto completo abaixo; nenhuma referência será omitida."}
+                  {" "}A resposta será por e-mail, sem protocolo em Meus Orçamentos.
+                </p>
+                <details className="mt-4 border-t border-white/15 pt-4">
+                  <summary className="cursor-pointer text-sm text-white/80 underline-offset-4 hover:underline">
+                    Ver e copiar texto do orçamento
+                  </summary>
+                  <label
+                    htmlFor="tonart-guest-quote-copy"
+                    className="mt-4 block text-xs text-white/60"
+                  >
+                    Texto completo para enviar ao estúdio
+                  </label>
+                  <textarea
+                    id="tonart-guest-quote-copy"
+                    readOnly
+                    rows={8}
+                    value={guestEmailDraft.body}
+                    className={fieldClass + " mt-2 resize-y"}
+                  />
+                  <p className="mt-2 text-xs leading-5 text-white/60">
+                    Se seu aplicativo de e-mail não abrir, copie este texto e
+                    envie para {CONTACT.CONTACT_EMAIL}. Isso não envia a mensagem
+                    automaticamente.
+                  </p>
+                </details>
+              </>
             )}
           </div>
         ) : null}
