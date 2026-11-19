@@ -41,7 +41,7 @@ async function refreshAlbumCandidates(){
  for(const item of albumCandidates){
   const option=document.createElement("option");
   option.value=item.album_id;
-  option.textContent=item.image_count+" fotos · #"+item.message_ids[0]+(item.caption?" · "+item.caption.slice(0,35):"");
+  option.textContent=item.image_count+" livres / "+(item.album_image_count||item.image_count)+" fotos · #"+item.message_ids[0]+(item.caption?" · "+item.caption.slice(0,35):"");
   select.append(option);
  }
  if(albumCandidates.some(x=>x.album_id===previous))select.value=previous;
@@ -51,13 +51,20 @@ el("loadAlbumCandidate").onclick=()=>{
  if(!item||item.topic!==topic){notify("Selecione um álbum do estúdio antes de revisar.");return;}
  el("galleryIds").value=item.message_ids.join(", ");
  const root=el("albumCandidatePreview");root.replaceChildren();
- for(const mid of item.message_ids){
+ const already=new Map((item.already_grouped||[]).map(x=>[x.message_id,x]));
+ for(const mid of (item.all_message_ids||item.message_ids)){
   const a=document.createElement("a");a.href="/media/"+mid;a.target="_blank";a.rel="noopener noreferrer";
   const img=document.createElement("img");img.src="/media/"+mid;img.loading="lazy";
   img.alt="Mensagem "+mid;img.className="preview";
-  a.append(img);text(a,"div","#"+mid,"sub");root.append(a);
+  a.append(img);
+  const taken=already.get(mid);
+  text(a,"div","#"+mid+(taken?" · já agrupada"+(taken.variant?" · "+taken.variant:""):" · livre"),"sub");
+  root.append(a);
  }
- el("albumCandidateCaption").textContent=item.caption||"Álbum sem legenda: verifique as fotos antes de unir.";
+ const warning=item.grouped_images?
+   "\n"+item.grouped_images+" imagens já pertencem a outras fichas ou versões. Somente "+item.image_count+
+   " fotos livres foram selecionadas; não misture escalas nem substitua revisões anteriores.":"";
+ el("albumCandidateCaption").textContent=(item.caption||"Álbum sem legenda.")+warning;
  notify("IDs preenchidos. Confira se todas as imagens são da mesma escultura antes de criar a galeria.");
 };
 
