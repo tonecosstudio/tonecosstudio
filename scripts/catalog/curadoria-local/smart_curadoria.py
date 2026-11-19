@@ -117,7 +117,7 @@ def process_batch(db_path,limit=300):
         identified=0
         ungrouped=0
         for a in assets:
-            fp=hashlib.sha256(json.dumps([a["sha256"],a["original_topic"],
+            fp=hashlib.sha256(json.dumps(["group-policy-v2",a["sha256"],a["original_topic"],
                     a["source_caption"],a["source_album"],a["source_relative"]],
                     ensure_ascii=False).encode()).hexdigest()
             mid=a["message_id"]
@@ -136,7 +136,10 @@ def process_batch(db_path,limit=300):
                     result["confidence"]=0.68
                     derived=True
             if result:
-                key=result["group_key"]
+                # Nomes iguais não provam que se trata da MESMA estatueta.
+                # Somente álbum compartilhado ou conteúdo idêntico permitem fusão automática.
+                cluster=("album:"+str(a["source_album"])) if a["source_album"] else ("sha256:"+str(a["sha256"]))
+                key=hashlib.sha256(json.dumps([result["group_key"],cluster],ensure_ascii=False).encode()).hexdigest()[:24]
                 stamp=utc()
                 db.execute("""INSERT INTO model_groups(
                    group_key,studio,title,universe,variant,state,confidence,created_at,updated_at)
@@ -174,6 +177,10 @@ def process_batch(db_path,limit=300):
             changed+=1
             if changed>=limit:
                 break
+        db.execute("""DELETE FROM model_group_evidence WHERE group_key IN (
+              SELECT group_key FROM model_groups WHERE state='provavel'
+              AND NOT EXISTS (SELECT 1 FROM model_group_members m
+              WHERE m.group_key=model_groups.group_key))""")
         db.execute("""DELETE FROM model_groups
              WHERE state='provavel' AND NOT EXISTS
              (SELECT 1 FROM model_group_members m WHERE m.group_key=model_groups.group_key)""")
