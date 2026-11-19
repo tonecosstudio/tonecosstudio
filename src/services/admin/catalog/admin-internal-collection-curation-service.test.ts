@@ -24,6 +24,9 @@ import {
   verifyCatalogModelCharacterIdentity,
 } from "./admin-internal-collection-curation-service";
 
+const readRepositorySource = (filePath: string): string =>
+  readFileSync(resolve(filePath), "utf8").replace(/\r\n/g, "\n");
+
 const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
 const MODEL_ID = "22222222-2222-4222-8222-222222222222";
 const TAG_ID = "33333333-3333-4333-8333-333333333301";
@@ -34,10 +37,7 @@ describe("internal catalog curation service", () => {
   });
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
-    const gateway = readFileSync(
-      resolve("supabase/functions/admin-rpc/index.ts"),
-      "utf8",
-    );
+    const gateway = readRepositorySource("supabase/functions/admin-rpc/index.ts");
     const entries = (registry: string): string[] => {
       const start = gateway.indexOf(`const ${registry} = new Set([`);
       expect(start).toBeGreaterThanOrEqual(0);
@@ -98,7 +98,7 @@ describe("internal catalog curation service", () => {
       "supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
       "supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
     ];
-    const migrations = paths.map((path) => readFileSync(resolve(path), "utf8"));
+    const migrations = paths.map((path) => readRepositorySource(path));
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
