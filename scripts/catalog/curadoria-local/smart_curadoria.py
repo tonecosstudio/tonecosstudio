@@ -123,6 +123,22 @@ def process_batch(db_path,limit=300):
             mid=a["message_id"]
             if seen.get(mid)==fp:
                 continue
+            # Galerias revisadas visualmente têm prioridade sobre a sugestão
+            # automática baseada apenas em legenda / álbum. Uma mudança no
+            # downloader não deve desmontar ou sobrescrever a revisão humana.
+            reviewed=db.execute("""SELECT 1 FROM model_group_members
+                 WHERE message_id=? AND match_reason='reviewed_angles'
+                 LIMIT 1""",(mid,)).fetchone()
+            if reviewed:
+                db.execute("""INSERT INTO curation_seen(message_id,fingerprint,
+                     outcome,processed_at) VALUES(?,?,?,?)
+                     ON CONFLICT(message_id) DO UPDATE SET
+                     fingerprint=excluded.fingerprint,outcome=excluded.outcome,
+                     processed_at=excluded.processed_at""",
+                     (mid,fp,"reviewed_angles",utc()))
+                changed+=1
+                if changed>=limit:break
+                continue
             caption=a["source_caption"] or ""
             result=identify(a["original_topic"],caption)
             derived=False
@@ -202,7 +218,7 @@ def stats(db_path):
                 "images_waiting":total-processed,"model_groups":groups,
                 "model_states":by_state}
 
-def list_models(db_path,page=1,limit=48,topic="",q="",state=""):
+def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1):
     page=max(1,int(page)); limit=max(1,min(int(limit),120))
     clauses=["1=1"];args=[]
     if topic:
@@ -213,18 +229,24 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state=""):
     if state in VALID_STATE:
         clauses.append("g.state=?");args.append(state)
     where=" AND ".join(clauses)
+    min_images=max(1,min(40,int(min_images)))
     with db_open(db_path) as db:
         setup(db)
-        count=db.execute("""SELECT COUNT(DISTINCT g.group_key) FROM model_groups g
+        count=db.execute("""SELECT COUNT(*) FROM (
+             SELECT g.group_key FROM model_groups g
              JOIN model_group_members m USING(group_key) JOIN assets a USING(message_id)
-             WHERE """+where,args).fetchone()[0]
+             WHERE """+where+"""
+             GROUP BY g.group_key HAVING COUNT(DISTINCT m.message_id)>=?)""",
+             args+[min_images]).fetchone()[0]
         rows=db.execute("""SELECT g.group_key,g.studio,g.title,g.universe,g.variant,
             g.state,g.confidence,g.revision,COUNT(DISTINCT m.message_id) image_count,
             MIN(m.message_id) sample_message
             FROM model_groups g JOIN model_group_members m USING(group_key)
             JOIN assets a USING(message_id) WHERE """+where+"""
-            GROUP BY g.group_key ORDER BY image_count DESC,g.studio,g.title
-            LIMIT ? OFFSET ?""",args+[limit,(page-1)*limit]).fetchall()
+            GROUP BY g.group_key HAVING COUNT(DISTINCT m.message_id)>=?
+            ORDER BY MAX(CASE WHEN m.match_reason='reviewed_angles' THEN 1 ELSE 0 END) DESC,
+                     image_count DESC,g.studio,g.title
+            LIMIT ? OFFSET ?""",args+[min_images,limit,(page-1)*limit]).fetchall()
         return {"total":count,"page":page,"limit":limit,"items":[dict(r) for r in rows]}
 
 def model_detail(db_path,key):
