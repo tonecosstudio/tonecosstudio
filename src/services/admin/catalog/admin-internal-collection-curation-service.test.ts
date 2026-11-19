@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -34,7 +35,7 @@ describe("internal catalog curation service", () => {
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
     const gateway = readFileSync(
-      new URL("../../../../supabase/functions/admin-rpc/index.ts", import.meta.url),
+      resolve("supabase/functions/admin-rpc/index.ts"),
       "utf8",
     );
     const entries = (registry: string): string[] => {
@@ -94,10 +95,10 @@ describe("internal catalog curation service", () => {
 
   it("keeps both curation migrations atomic and the vocabulary RPC admin-only", () => {
     const paths = [
-      "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
-      "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
+      "supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
+      "supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
     ];
-    const migrations = paths.map((path) => readFileSync(new URL(path, import.meta.url), "utf8"));
+    const migrations = paths.map((path) => readFileSync(resolve(path), "utf8"));
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
