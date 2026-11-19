@@ -14,6 +14,7 @@ import {
   universeRoot,
 } from "./catalog-taxonomy-rules.mjs";
 import { defaultTelegramRoot, defaultTelegramWebpOutput } from "./telegram-paths.mjs";
+import { isPrivateCuradoriaRecord } from "./telegram-private-staging-gate.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -386,8 +387,8 @@ function acceptedConfidence(value) {
 
 function acceptedRecord(record) {
   const status = String(record.status || "");
-  if (status === "prepared_private") {
-    if (!PRIVATE_CURADORIA || record.private_staging_only !== true) return false;
+  if (isPrivateCuradoriaRecord(record)) {
+    if (!PRIVATE_CURADORIA || status !== "prepared_private") return false;
   } else if (!["copied", "already_cataloged"].includes(status)) return false;
   if (!record.source_name || !record.catalog_relpath) return false;
   const { category } = catalogRelParts(record);
@@ -538,7 +539,7 @@ function finalRecord(record, inputPath, relpaths, display, thumb) {
     built_at: new Date().toISOString(),
     profile_version: PROFILE.version,
     source_type: "telegram",
-    private_staging_only: record.private_staging_only === true,
+    private_staging_only: isPrivateCuradoriaRecord(record),
     source_name: record.source_name || null,
     message_id: record.message_id || null,
     source_sha256: record.sha256 || null,
