@@ -101,6 +101,7 @@ async function refreshModels(){
    text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
    const distinct=g.unique_photo_count===undefined?g.image_count:g.unique_photo_count;
    text(details,"span",distinct+" fotos únicas · "+g.image_count+" mensagens · "+g.state,"pill");
+   if(distinct===1&&g.image_count>1)text(details,"div","Mensagens com foto repetida — revisar","sub");
    b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
   }
   if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
@@ -145,6 +146,9 @@ async function openModel(key){
    cell.append(edit);imgs.append(cell);
   }
   const evidence=el("modelReviewEvidence");evidence.replaceChildren();
+  for(const conflict of (g.identity_conflicts||[])){
+   text(evidence,"p","Atenção: um mesmo arquivo possui nomes diferentes: "+conflict.titles+". Confirme a identidade pela fonte original antes de aprovar esta ficha.","sub");
+  }
   for(const e of g.evidence){
    const a=document.createElement("a");
    const url=new URL(e.source_url);if(url.protocol!=="https:")continue;
