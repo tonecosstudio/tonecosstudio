@@ -6,14 +6,11 @@ downloader database is always opened read-only.
 
 Integration contract (after PR #45 is present):
 
-1. Run name_curadoria.process_batch as usual, then apply_telegram_evidence
-   before the existing reviewed-gallery name propagation. The writer
-   preserves manual revisions and never confirms.
-2. Pass the downloader's already-authorized Telegram client to
-   recover_ignored_message_batch and/or an adapter implementing
-   fetch_history_page to scan_history_batch. Neither function starts a session
-   or downloads media. Exact reply and album IDs are the only automatic
-   relations; unlinked text stays unlinked.
+1. The adapter syncs the existing index, reads Telegram metadata from the
+   downloader DB read-only, recovers text with the existing authorized session,
+   then processes names, reviewed galleries, and remaining classifications.
+2. Exact reply and album IDs are the only automatic relations; unlinked text
+   stays unlinked. Missing messages keep the affected topic incomplete.
 3. Only after a complete, bounded Telegram history scan, call
    research_official_pending with the curated official_sources and a search
    adapter. References are cached in this same SQLite and never promote a
@@ -167,6 +164,7 @@ class OfficialSearchResult:
     pose: str = ""
     release_date: str = ""
     excerpt: str = ""
+    universe: str = ""
 
 
 def _now() -> str:
@@ -513,6 +511,13 @@ def ensure_schema(db: sqlite3.Connection) -> None:
         checked_at TEXT NOT NULL,
         PRIMARY KEY(query_fingerprint,source_key)
     );
+    CREATE TABLE IF NOT EXISTS telegram_identity_runs(
+        run_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        started_at TEXT NOT NULL,
+        finished_at TEXT NOT NULL,
+        status TEXT NOT NULL,
+        aggregate_json TEXT NOT NULL
+    );
     CREATE INDEX IF NOT EXISTS idx_telegram_history_links_asset
         ON telegram_history_links(source_chat_id,asset_message_id);
     CREATE INDEX IF NOT EXISTS idx_telegram_coverage_status
@@ -595,6 +600,31 @@ def read_recent_ignored_message_ids(
     return sorted(int(row[0]) for row in rows)
 
 
+def read_ignored_message_metadata(
+    source_db_path: str | Path,
+    source_chat_id: int,
+    message_ids: Sequence[int],
+) -> dict[int, tuple[int | None, str]]:
+    """Read topic metadata for a bounded set of ignored messages, read-only."""
+    mapping: dict[int, tuple[int | None, str]] = {}
+    values = sorted({int(value) for value in message_ids if int(value) > 0})
+    with _readonly_db(source_db_path) as source:
+        for start in range(0, len(values), 400):
+            batch = values[start:start + 400]
+            placeholders = ",".join("?" for _ in batch)
+            rows = source.execute(
+                "SELECT mensagem,topico_id,topico_nome FROM topicos_mensagens "
+                f"WHERE origem=? AND mensagem IN ({placeholders})",
+                [int(source_chat_id), *batch],
+            ).fetchall()
+            for row in rows:
+                mapping[int(row["mensagem"])] = (
+                    int(row["topico_id"]) if row["topico_id"] is not None else None,
+                    str(row["topico_nome"] or ""),
+                )
+    return mapping
+
+
 def register_asset_topics(
     source_db_path: str | Path,
     curadoria_db_path: str | Path,
@@ -603,9 +633,15 @@ def register_asset_topics(
     """Copy only topic IDs/names for indexed assets from the read-only source."""
     with _open_curadoria(curadoria_db_path) as db:
         message_ids = [
-            int(row[0]) for row in db.execute("SELECT message_id FROM assets ORDER BY message_id")
+            int(row[0]) for row in db.execute("""
+                SELECT a.message_id FROM assets a
+                JOIN telegram_identity_coverage c USING(message_id)
+                WHERE c.source_chat_id IS NULL ORDER BY a.message_id
+            """)
         ]
-    mapping: dict[int, tuple[int | None, str]] = {}
+    mapping: dict[int, tuple[int | None, str]] = {
+        message_id: (None, "") for message_id in message_ids
+    }
     with _readonly_db(source_db_path) as source:
         for start in range(0, len(message_ids), 400):
             batch = message_ids[start:start + 400]
@@ -631,7 +667,10 @@ def register_asset_topics(
                 WHERE message_id=?
             """, (int(source_chat_id), topic_id, topic_name, _now(), message_id))
         db.commit()
-    return {"assets_indexed": len(message_ids), "topics_recovered": len(mapping)}
+    return {
+        "assets_indexed": len(message_ids),
+        "topics_recovered": sum(topic_id is not None for topic_id, _ in mapping.values()),
+    }
 
 
 def _attr(value: Any, name: str, default: Any = None) -> Any:
@@ -666,7 +705,7 @@ def _to_history_message(raw: Any, source_chat_id: int, topic_name: str = "") -> 
         has_media=bool(_attr(raw, "media")),
         message_date=str(_attr(raw, "date", "") or ""),
         edit_date=str(_attr(raw, "edit_date", "") or ""),
-        fetch_status="fetched",
+        fetch_status=("not_returned" if raw.__class__.__name__ == "MessageEmpty" else "fetched"),
     )
 
 
@@ -825,17 +864,30 @@ async def recover_ignored_message_batch(
             WHERE source_chat_id=? AND scope=?
         """, (int(source_chat_id), scope)).fetchone()
         cursor = int(row[0]) if row else 0
-    new_ids = read_ignored_message_ids(
-        source_db_path, source_chat_id, after_id=cursor, limit=batch_size,
-    )
+    batch_size = max(1, min(int(batch_size), 2000))
+    pending_limit = max(1, batch_size // 4)
+    with _open_curadoria(curadoria_db_path) as db:
+        pending_ids = [int(row[0]) for row in db.execute("""
+            SELECT message_id FROM telegram_history_messages
+            WHERE source_chat_id=? AND fetch_status='not_returned'
+            ORDER BY fetched_at,message_id LIMIT ?
+        """, (int(source_chat_id), pending_limit))]
     tail_ids = read_recent_ignored_message_ids(
         source_db_path, source_chat_id, through_id=cursor, limit=max(0, int(overlap)),
     )
-    ids = sorted(set(tail_ids + new_ids))
+    capacity = max(0, batch_size - len(pending_ids))
+    new_ids = read_ignored_message_ids(
+        source_db_path, source_chat_id, after_id=cursor, limit=capacity,
+    ) if capacity else []
+    tail_ids = [message_id for message_id in tail_ids
+                if message_id not in pending_ids and message_id not in new_ids]
+    tail_ids = tail_ids[:max(0, min(int(overlap), 500))]
+    ids = sorted(set(pending_ids + tail_ids + new_ids))
     if not ids:
         return {
             "message_ids_requested": 0, "new_message_ids": 0,
-            "text_messages_recovered": 0, "verified_links": 0, "has_more": 0,
+            "text_messages_recovered": 0, "verified_links": 0,
+            "not_returned": 0, "has_more": 0,
         }
 
     response = authorized_client.get_messages(int(source_chat_id), ids=ids)
@@ -848,17 +900,30 @@ async def recover_ignored_message_batch(
         for item in (response or [])
         if _attr(item, "id", _attr(item, "message_id")) is not None
     }
+    metadata = read_ignored_message_metadata(source_db_path, source_chat_id, ids)
     recovered: list[TelegramHistoryMessage] = []
+    not_returned_ids: list[int] = []
     text_count = 0
+    not_returned = 0
     for message_id in ids:
         raw = by_id.get(message_id)
-        if raw is None:
+        if raw is None or raw.__class__.__name__ == "MessageEmpty":
+            topic_id, topic_name = metadata.get(message_id, (None, ""))
+            not_returned += 1
+            not_returned_ids.append(message_id)
             recovered.append(TelegramHistoryMessage(
-                source_chat_id=int(source_chat_id), message_id=message_id, topic_id=None,
-                topic_name="", text="", fetch_status="not_returned",
+                source_chat_id=int(source_chat_id), message_id=message_id,
+                topic_id=topic_id, topic_name=topic_name, text="",
+                fetch_status="not_returned",
             ))
             continue
         message = _to_history_message(raw, source_chat_id)
+        topic_id, topic_name = metadata.get(message_id, (None, ""))
+        if message.topic_id is None and topic_id is not None:
+            message = TelegramHistoryMessage(
+                **{**asdict(message), "topic_id": topic_id,
+                   "topic_name": message.topic_name or topic_name}
+            )
         text_count += bool(message.text.strip())
         recovered.append(message)
     result = ingest_history_messages(curadoria_db_path, source_chat_id, recovered)
@@ -873,13 +938,30 @@ async def recover_ignored_message_batch(
                 history_high_water_id=MAX(telegram_history_checkpoints.history_high_water_id,excluded.history_high_water_id),
                 complete=0,updated_at=excluded.updated_at
         """, (int(source_chat_id), scope, max_id, max_id, max(0, cursor - overlap), _now()))
+        if not_returned:
+            failed_topics = {metadata.get(mid, (None, ""))[0] for mid in not_returned_ids}
+            if None in failed_topics:
+                db.execute("""
+                    UPDATE telegram_identity_coverage SET coverage_status='partial',
+                        source_chat_id=?,reason='Mensagem ignorada não recuperada; cobertura incompleta.',
+                        updated_at=? WHERE source_chat_id=? OR source_chat_id IS NULL
+                """, (int(source_chat_id), _now(), int(source_chat_id)))
+            else:
+                failed_topics = sorted(int(topic_id) for topic_id in failed_topics)
+                placeholders = ",".join("?" for _ in failed_topics)
+                db.execute(f"""
+                    UPDATE telegram_identity_coverage SET coverage_status='partial',
+                        source_chat_id=?,reason='Mensagem ignorada não recuperada; cobertura incompleta.',
+                        updated_at=? WHERE topic_id IN ({placeholders})
+                """, [int(source_chat_id), _now(), *failed_topics])
         db.commit()
     return {
         "message_ids_requested": len(ids),
         "new_message_ids": len(new_ids),
         "text_messages_recovered": int(text_count),
         "verified_links": result["verified_links"],
-        "has_more": int(len(new_ids) == max(1, min(int(batch_size), 2000))),
+        "not_returned": int(not_returned),
+        "has_more": int(bool(pending_ids) or len(new_ids) == batch_size),
     }
 
 
@@ -921,10 +1003,15 @@ async def scan_history_batch(
         raise ValueError("Página Telegram fora do chat/tópico solicitado")
     if page.next_cursor < cursor:
         raise ValueError("Cursor Telegram regressivo")
-    messages = [
-        _to_history_message(raw, source_chat_id, topic_name)
-        for raw in page.messages
-    ]
+    messages = []
+    for raw in page.messages:
+        message = _to_history_message(raw, source_chat_id, topic_name)
+        if message.topic_id is None and topic_id is not None:
+            message = TelegramHistoryMessage(
+                **{**asdict(message), "topic_id": topic_id,
+                   "topic_name": message.topic_name or topic_name}
+            )
+        messages.append(message)
     ingestion = ingest_history_messages(curadoria_db_path, source_chat_id, messages, topic_name=topic_name)
     reached_high_water = (
         topic_id is not None
@@ -935,6 +1022,15 @@ async def scan_history_batch(
         and page.range_end_id >= int(page.history_high_water_id)
         and page.next_cursor >= cursor
     )
+    if reached_high_water:
+        with _open_curadoria(curadoria_db_path) as db:
+            unresolved = db.execute("""
+                SELECT 1 FROM telegram_history_messages
+                WHERE source_chat_id=? AND fetch_status='not_returned'
+                  AND (topic_id=? OR topic_id IS NULL)
+                LIMIT 1
+            """, (int(source_chat_id), topic_id)).fetchone()
+        reached_high_water = unresolved is None
     next_covered_from = covered_from if cursor else 0
     with _open_curadoria(curadoria_db_path) as db:
         db.execute("""
@@ -1235,6 +1331,7 @@ def _result_from_mapping(raw: OfficialSearchResult | Mapping[str, Any]) -> Offic
     else:
         result = OfficialSearchResult(
             title=str(raw.get("title", "")), url=str(raw.get("url", "")),
+            universe=str(raw.get("universe", "")),
             variant=str(raw.get("variant", "")), scale=str(raw.get("scale", "")),
             pose=str(raw.get("pose", "")), release_date=str(raw.get("release_date", "")),
             excerpt=str(raw.get("excerpt", ""))[:500],
@@ -1367,15 +1464,44 @@ def research_official_pending(
             ):
                 no_terms += 1
                 continue
-            eligible.append((entity_key, representative_row, query))
-
-        for entity_key, row, query in eligible[:max(1, min(int(limit), 1000))]:
-            topic = str(row["original_topic"] or "")
+            topic = str(representative_row["original_topic"] or "")
             try:
                 sources = [_source_from_mapping(item) for item in sources_for_topic(topic)]
             except Exception:
                 unavailable += 1
                 continue
+            missing_source = False
+            for source in sources:
+                parsed_profile = urlparse(source.profile_url)
+                source_key = "|".join((
+                    normalize_identity(source.studio), normalize_identity(source.provider),
+                    (parsed_profile.hostname or "").casefold(), source.profile_url.rstrip("/"),
+                ))
+                query_fingerprint = hashlib.sha256(json.dumps(
+                    [entity_key, source_key, normalize_identity(query)], ensure_ascii=False,
+                ).encode()).hexdigest()
+                if not db.execute("""
+                    SELECT 1 FROM telegram_official_search_cache
+                    WHERE query_fingerprint=? AND source_key=?
+                """, (query_fingerprint, source_key)).fetchone():
+                    missing_source = True
+            if not sources:
+                unavailable += 1
+                continue
+            if missing_source:
+                eligible.append((entity_key, representative_row, query, sources))
+
+        topic_priority: dict[str, int] = {}
+        for _, row, _, _ in eligible:
+            topic = str(row["original_topic"] or "")
+            topic_priority[topic] = topic_priority.get(topic, 0) + 1
+        eligible.sort(key=lambda item: (
+            -topic_priority.get(str(item[1]["original_topic"] or ""), 0),
+            str(item[1]["original_topic"] or "").casefold(),
+            int(item[1]["message_id"]),
+        ))
+
+        for entity_key, row, query, sources in eligible[:max(1, min(int(limit), 1000))]:
             for source in sources:
                 parsed_profile = urlparse(source.profile_url)
                 source_key = "|".join((
@@ -1383,7 +1509,7 @@ def research_official_pending(
                     (parsed_profile.hostname or "").casefold(), source.profile_url.rstrip("/"),
                 ))
                 query_fingerprint = hashlib.sha256(
-                    json.dumps([source_key, normalize_identity(query)], ensure_ascii=False).encode()
+                    json.dumps([entity_key, source_key, normalize_identity(query)], ensure_ascii=False).encode()
                 ).hexdigest()
                 cache = db.execute("""
                     SELECT status,results_json FROM telegram_official_search_cache
@@ -1401,11 +1527,19 @@ def research_official_pending(
                         result_rows = []
                         for raw_result in raw_results or ():
                             result = _result_from_mapping(raw_result)
+                            if not result.universe and row["universe"]:
+                                result = OfficialSearchResult(
+                                    title=result.title, url=result.url,
+                                    variant=result.variant, scale=result.scale,
+                                    pose=result.pose, release_date=result.release_date,
+                                    excerpt=result.excerpt, universe=str(row["universe"]),
+                                )
                             if _same_official_host(result.url, source.profile_url):
                                 result_rows.append(asdict(result))
                         identity_versions = {
                             (
                                 normalize_identity(item["title"]),
+                                normalize_identity(item["universe"]),
                                 normalize_identity(item["variant"]),
                                 normalize_identity(item["scale"]),
                                 normalize_identity(item["pose"]),
@@ -1437,6 +1571,7 @@ def research_official_pending(
                     _record_candidate_event(db, int(row["message_id"]), event, {
                         "entity_key": entity_key, "query": query,
                         "profile_url": source.profile_url, "provider": source.provider,
+                        "studio": source.studio,
                         "results": result_rows, "status": state,
                     })
         db.commit()
@@ -1468,10 +1603,25 @@ def status_counts(db_path: str | Path) -> dict[str, int]:
             "official_candidates": 0,
             "gallery_inherited_identifications": 0,
             "manual_confirmations": 0,
+            "free_form_captions_interpreted": 0,
+            "verified_message_links": 0,
+            "galleries_with_name_proposals": 0,
+            "truly_unidentified_models": 0,
+            "history_incomplete_assets": 0,
             "external_searches_avoided_by_telegram": db.execute("""
                 SELECT COUNT(*) FROM telegram_identity_coverage WHERE identity_status='telegram_found'
             """).fetchone()[0],
         }
+        counts["history_incomplete_assets"] = counts["telegram_not_verified"]
+        counts["verified_message_links"] = db.execute(
+            "SELECT COUNT(*) FROM telegram_history_links"
+        ).fetchone()[0]
+        if _table_exists(db, "name_proposal_events"):
+            counts["free_form_captions_interpreted"] = db.execute("""
+                SELECT COUNT(DISTINCT message_id) FROM name_proposal_events
+                WHERE event_type LIKE 'telegram_caption%'
+                   OR event_type IN ('telegram_reply_text','telegram_album_context')
+            """).fetchone()[0]
         if _table_exists(db, "telegram_official_search_cache"):
             for row in db.execute("""
                 SELECT results_json FROM telegram_official_search_cache WHERE status='candidate'
@@ -1484,7 +1634,68 @@ def status_counts(db_path: str | Path) -> dict[str, int]:
             counts["manual_confirmations"] = db.execute("""
                 SELECT COUNT(*) FROM name_proposals WHERE status='confirmado'
             """).fetchone()[0]
+            if _table_exists(db, "model_group_members"):
+                counts["galleries_with_name_proposals"] = db.execute("""
+                    SELECT COUNT(DISTINCT m.group_key)
+                    FROM model_group_members m JOIN name_proposals p USING(message_id)
+                    WHERE m.match_reason='reviewed_angles' AND TRIM(COALESCE(p.title,''))!=''
+                """).fetchone()[0]
+            unidentified = db.execute("""
+                SELECT c.message_id,m.group_key,m.match_reason
+                FROM telegram_identity_coverage c
+                LEFT JOIN name_proposals p USING(message_id)
+                LEFT JOIN model_group_members m USING(message_id)
+                WHERE c.coverage_status='exhausted'
+                  AND TRIM(COALESCE(p.title,''))=''
+                  AND c.identity_status IN ('unidentified','ambiguous')
+            """).fetchall()
+            entities = set()
+            for row in unidentified:
+                if row[1] and row[2] == "reviewed_angles":
+                    entities.add("gallery:" + str(row[1]))
+                else:
+                    entities.add("asset:" + str(row[0]))
+            counts["truly_unidentified_models"] = len(entities)
         return {key: int(value) for key, value in counts.items()}
+
+
+def record_cycle(
+    db_path: str | Path,
+    *,
+    started_at: str,
+    status: str,
+    aggregates: Mapping[str, Any],
+) -> None:
+    """Persist only aggregate run counters in the existing Curadoria SQLite."""
+    safe = {
+        str(key): int(value)
+        for key, value in aggregates.items()
+        if isinstance(value, (bool, int))
+    }
+    with _open_curadoria(db_path) as db:
+        db.execute("""
+            INSERT INTO telegram_identity_runs(started_at,finished_at,status,aggregate_json)
+            VALUES(?,?,?,?)
+        """, (started_at, _now(), str(status)[:40], json.dumps(safe, sort_keys=True)))
+        db.execute("""
+            DELETE FROM telegram_identity_runs
+            WHERE run_id NOT IN (SELECT run_id FROM telegram_identity_runs ORDER BY run_id DESC LIMIT 100)
+        """)
+        db.commit()
+
+
+def last_cycle_status(db_path: str | Path) -> dict[str, Any]:
+    with _open_curadoria(db_path) as db:
+        row = db.execute("""
+            SELECT started_at,finished_at,status,aggregate_json
+            FROM telegram_identity_runs ORDER BY run_id DESC LIMIT 1
+        """).fetchone()
+        if not row:
+            return {"status": "not_started", "aggregates": {}}
+        return {
+            "started_at": row["started_at"], "finished_at": row["finished_at"],
+            "status": row["status"], "aggregates": json.loads(row["aggregate_json"]),
+        }
 
 
 def list_telegram_findings(db_path: str | Path, message_id: int) -> dict[str, Any]:
@@ -1525,4 +1736,3 @@ def propagate_reviewed_gallery_names(
     if naming_module is None:
         import name_curadoria as naming_module  # supplied by the existing PR #45 application
     return naming_module.propagate_reviewed_gallery_names(db_path, limit=limit)
-

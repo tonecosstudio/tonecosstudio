@@ -303,6 +303,34 @@ class TelegramIdentityEngineTests(unittest.TestCase):
             ).fetchall()
         self.assertEqual(states, [("revisar", ""), ("revisar", "")])
 
+    def test_incremental_official_queue_advances_after_cached_gallery(self):
+        self.add_asset(605, "#Elektra")
+        self.add_asset(606, "#Mantis")
+        engine.apply_telegram_evidence(self.db_path)
+        self.set_coverage(605, identity="ambiguous")
+        self.set_coverage(606, identity="ambiguous")
+        search = FakeSearch([engine.OfficialSearchResult(
+            "Elektra Statue", "https://cults3d.com/en/3d-model/art/elektra-statue",
+            universe="Marvel",
+        )])
+
+        first = engine.research_official_pending(
+            self.db_path, self.source_registry, search, limit=1,
+        )
+        second = engine.research_official_pending(
+            self.db_path, self.source_registry, search, limit=1,
+        )
+        self.assertEqual(first["searches"], 1)
+        self.assertEqual(second["searches"], 1)
+        self.assertEqual([query for query, _ in search.calls], ["Elektra", "Mantis"])
+        with _test_db(self.db_path) as db:
+            rows = db.execute("""
+                SELECT entity_key,results_json FROM telegram_official_search_cache
+                ORDER BY query_text
+            """).fetchall()
+        self.assertEqual(len(rows), 2)
+        self.assertTrue(any('"universe": "Marvel"' in row[1] for row in rows))
+
     def test_same_character_in_separate_reviewed_galleries_is_not_merged(self):
         self.add_asset(610, "#HarleyQuinn")
         self.add_asset(611, "#HarleyQuinn")
@@ -510,7 +538,107 @@ class TelegramIdentityEngineTests(unittest.TestCase):
                 "SELECT coverage_status FROM telegram_identity_coverage WHERE message_id=900"
             ).fetchone()[0], "exhausted")
 
+    def test_unrecovered_ignored_message_keeps_topic_coverage_incomplete_and_retries(self):
+        self.add_asset(810)
+        source_path = self.root / "source-missing.sqlite3"
+        with _test_db(source_path) as db:
+            db.executescript("""
+                CREATE TABLE mensagens(
+                    origem INTEGER,mensagem INTEGER,status TEXT,hash TEXT,caminho TEXT,
+                    titulo TEXT,data_mensagem TEXT,referencia TEXT,erro TEXT,
+                    PRIMARY KEY(origem,mensagem)
+                );
+                CREATE TABLE topicos_mensagens(
+                    origem INTEGER,mensagem INTEGER,topico_id INTEGER,topico_nome TEXT,
+                    legenda TEXT,album_id TEXT
+                );
+            """)
+            db.execute(
+                "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
+                (SOURCE_CHAT, 811, "ignorado"),
+            )
+            db.execute(
+                "INSERT INTO topicos_mensagens VALUES(?,?,?,?,?,?)",
+                (SOURCE_CHAT, 811, 5, "Abe3D", "", ""),
+            )
+        with engine._open_curadoria(self.db_path) as db:
+            db.execute("""
+                UPDATE telegram_identity_coverage SET topic_id=5,topic_name='Abe3D'
+                WHERE message_id=810
+            """)
+            db.commit()
+
+        missing_client = FakeTelegramClient({})
+        missing = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, missing_client, SOURCE_CHAT,
+            batch_size=1, overlap=0,
+        ))
+        self.assertEqual(missing["not_returned"], 1)
+        with _test_db(self.db_path) as db:
+            row = db.execute("""
+                SELECT topic_id,fetch_status FROM telegram_history_messages
+                WHERE source_chat_id=? AND message_id=811
+            """, (SOURCE_CHAT,)).fetchone()
+        self.assertEqual(row, (5, "not_returned"))
+
+        complete_page = FakeHistorySource(engine.HistoryPage(
+            messages=[], source_chat_id=SOURCE_CHAT, topic_id=5, topic_name="Abe3D",
+            next_cursor=100, history_high_water_id=100, has_more=False,
+            coverage_verified=True, range_start_id=1, range_end_id=100,
+        ))
+        blocked = asyncio.run(engine.scan_history_batch(
+            self.db_path, complete_page, SOURCE_CHAT, 5, topic_name="Abe3D"
+        ))
+        self.assertEqual(blocked["coverage_status"], "partial")
+
+        retry_client = FakeTelegramClient({811: {
+            "id": 811, "message": "Title: Elektra", "topic_id": 5,
+        }})
+        retried = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, retry_client, SOURCE_CHAT,
+            batch_size=1, overlap=0,
+        ))
+        self.assertEqual(retried["text_messages_recovered"], 1)
+        recovered = asyncio.run(engine.scan_history_batch(
+            self.db_path, complete_page, SOURCE_CHAT, 5, topic_name="Abe3D"
+        ))
+        self.assertEqual(recovered["coverage_status"], "exhausted")
+
+    def test_telethon_message_empty_is_not_treated_as_recovered(self):
+        missing_message = type("MessageEmpty", (), {"id": 812})()
+        parsed = engine._to_history_message(missing_message, SOURCE_CHAT, "Abe3D")
+        self.assertEqual(parsed.fetch_status, "not_returned")
+
+    def test_unrecovered_retries_do_not_block_new_ignored_ids(self):
+        source_path = self.root / "source-backlog.sqlite3"
+        with _test_db(source_path) as db:
+            db.executescript("""
+                CREATE TABLE mensagens(
+                    origem INTEGER,mensagem INTEGER,status TEXT,hash TEXT,caminho TEXT,
+                    titulo TEXT,data_mensagem TEXT,referencia TEXT,erro TEXT,
+                    PRIMARY KEY(origem,mensagem)
+                );
+                CREATE TABLE topicos_mensagens(
+                    origem INTEGER,mensagem INTEGER,topico_id INTEGER,topico_nome TEXT,
+                    legenda TEXT,album_id TEXT
+                );
+            """)
+            db.executemany(
+                "INSERT INTO mensagens(origem,mensagem,status) VALUES(?,?,?)",
+                [(SOURCE_CHAT, mid, "ignorado") for mid in range(901, 907)],
+            )
+        client = FakeTelegramClient({})
+        first = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, client, SOURCE_CHAT,
+            batch_size=4, overlap=0,
+        ))
+        second = asyncio.run(engine.recover_ignored_message_batch(
+            source_path, self.db_path, client, SOURCE_CHAT,
+            batch_size=4, overlap=0,
+        ))
+        self.assertEqual((first["new_message_ids"], second["new_message_ids"]), (4, 2))
+        self.assertEqual(client.calls[1][1], (901, 905, 906))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
-
