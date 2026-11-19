@@ -397,9 +397,7 @@ describe("TONART commercial screens: account → request → history → respons
       value: { writeText },
     });
     try {
-      fireEvent.click(
-        screen.getByRole("button", { name: "Copiar mensagem" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
       await waitFor(() => expect(writeText).toHaveBeenCalledWith(body));
       expect(screen.getByRole("status")).toHaveTextContent(
         /não foi enviada automaticamente/,
@@ -435,9 +433,7 @@ describe("TONART commercial screens: account → request → history → respons
       const area = screen.getByLabelText(
         "Texto completo para enviar ao estúdio",
       ) as HTMLTextAreaElement;
-      fireEvent.click(
-        screen.getByRole("button", { name: "Copiar mensagem" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
       expect(screen.getByRole("status")).toHaveTextContent(
         /copie manualmente e envie por e-mail/i,
       );
