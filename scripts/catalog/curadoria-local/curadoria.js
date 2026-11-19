@@ -49,18 +49,34 @@ async function refreshAlbumCandidates(){
 el("loadAlbumCandidate").onclick=()=>{
  const item=albumCandidates.find(x=>x.album_id===el("albumCandidate").value);
  if(!item||item.topic!==topic){notify("Selecione um álbum do estúdio antes de revisar.");return;}
- el("galleryIds").value=item.message_ids.join(", ");
+ const selectedIds=new Set(item.message_ids);
+ const syncSelection=()=>{
+  const ids=item.message_ids.filter(mid=>selectedIds.has(mid));
+  el("galleryIds").value=ids.join(", ");
+  el("albumSelectionCount").textContent=ids.length+" de "+item.image_count+" fotos livres selecionadas. Confira se todas pertencem à mesma escultura.";
+ };
  const root=el("albumCandidatePreview");root.replaceChildren();
  const already=new Map((item.already_grouped||[]).map(x=>[x.message_id,x]));
  for(const mid of (item.all_message_ids||item.message_ids)){
+  const wrapper=document.createElement("div");
   const a=document.createElement("a");a.href="/media/"+mid;a.target="_blank";a.rel="noopener noreferrer";
   const img=document.createElement("img");img.src="/media/"+mid;img.loading="lazy";
   img.alt="Mensagem "+mid;img.className="preview";
   a.append(img);
   const taken=already.get(mid);
   text(a,"div","#"+mid+(taken?" · já agrupada"+(taken.variant?" · "+taken.variant:""):" · livre"),"sub");
-  root.append(a);
+  wrapper.append(a);
+  if(!taken){
+   const label=document.createElement("label");label.className="sub";
+   label.style.cssText="display:flex;gap:6px;align-items:center;margin:4px 0 8px";
+   const check=document.createElement("input");check.type="checkbox";check.checked=true;
+   check.style.width="auto";check.setAttribute("aria-label","Incluir foto #"+mid+" na galeria");
+   check.onchange=()=>{if(check.checked)selectedIds.add(mid);else selectedIds.delete(mid);syncSelection();};
+   label.append(check);text(label,"span","Incluir nesta galeria");wrapper.append(label);
+  }
+  root.append(wrapper);
  }
+ syncSelection();
  const warning=item.grouped_images?
    "\n"+item.grouped_images+" imagens já pertencem a outras fichas ou versões. Somente "+item.image_count+
    " fotos livres foram selecionadas; não misture escalas nem substitua revisões anteriores.":"";
