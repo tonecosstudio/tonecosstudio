@@ -73,6 +73,22 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
     profiles=m.official_sources("Sekai 3D Models")
     assert any("Sekai3DModels" in profile["url"] for profile in profiles)
     assert all(not profile["identity_matched"] for profile in profiles)
+    verified_topics={
+        "3DXM":{"patreon","cgtrader"},
+        "Bulkamancer":{"website","cults3d"},
+        "C27 Collectibles":{"website"},
+        "Kuton Sculpts":{"website"},
+        "MPPrints _ My Poke Prints":{"cults3d","patreon"},
+        "Momoji":{"cults3d","patreon"},
+        "StepanovSculpts":{"cgtrader","etsy"},
+        "Wicked":{"cults3d","patreon"},
+    }
+    for topic,expected in verified_topics.items():
+        sources=m.official_sources(topic)
+        assert {source["provider"] for source in sources}==expected,(topic,sources)
+        assert all(source["url"].startswith("https://") for source in sources)
+        assert all(not source["identity_matched"] for source in sources)
+    assert m.official_sources("Ydeval")==[]
     out=m.export_manifest(db,root/"manifesto-nomes.csv")
     assert out["exported"]==4,out
     assert (root/"manifesto-nomes.csv").exists()
