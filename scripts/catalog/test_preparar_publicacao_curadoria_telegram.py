@@ -157,6 +157,8 @@ def test_reconciliation_matrix():
             117: ("StudioA", "Hero", "Pose 1", "aprovado", "confirmado", None),
             118: ("StudioQ", "One", "", "aprovado", "confirmado", None),
             119: ("StudioQ", "Two", "", "aprovado", "confirmado", None),
+            120: ("StudioPending", "Future Model", "", "pendente", "provavel", None),
+            121: ("StudioA", "Hero", "Pose 1", "pendente", "provavel", None),
         }
         with closing(sqlite3.connect(db)) as con:
             con.executescript("""
@@ -206,6 +208,8 @@ def test_reconciliation_matrix():
                  "variant":"","sha256":hashes[110]},
                 {"model_id":"renamed-model","studio":"Elsewhere","model":"Different",
                  "variant":"","sha256":hashes[117]},
+                {"model_id":"pending-commercial","studio":"StudioPending","model":"Future Model",
+                 "variant":"","sha256":hashes[120]},
             ])
         rows, summary = m.build_plan(db,source,inventory)
         byid={r["message_id"]:r for r in rows}
@@ -225,7 +229,19 @@ def test_reconciliation_matrix():
         assert byid[117]["reason"]=="exact_sha_catalog_identity_conflict"
         assert all(byid[mid]["reason"]=="same_sha_across_distinct_galleries" for mid in (118,119))
         assert all(byid[mid]["reason"]=="group_variant_or_identity_conflict" for mid in (115,116))
-        assert summary["inventory"]["unique_models"]==3
+        assert byid[120]["action"]=="hold" and byid[120]["candidate_evidence"]=="unverified_sha256"
+        assert byid[120]["candidate_model_ids"]==["pending-commercial"]
+        assert byid[121]["action"]=="hold" and byid[121]["candidate_evidence"]=="name_only_review_required"
+        assert byid[121]["candidate_model_ids"]==["existing-hero"]
+        assert summary["unverified_exact_sha_candidate_images"]>=1
+        assert summary["inventory"]["unique_models"]==4
+        try:
+            m.build_plan(db,source,inventory,expected_model_count=3)
+            assert False,"Must reject incomplete commercial snapshot"
+        except ValueError as exc:
+            assert "contagem divergente" in str(exc)
+        _,complete=m.build_plan(db,source,inventory,expected_model_count=4)
+        assert complete["inventory_completeness_verified"]
         assert summary["candidate_additional_photos"]==1
         assert summary["duplicate_sha_groups_in_curadoria"]==2
         assert not summary["external_writes"]
