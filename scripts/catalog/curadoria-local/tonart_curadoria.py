@@ -22,6 +22,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import smart_curadoria as smart
 import name_curadoria as naming
+import visual_name_suggestions as visual
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -323,6 +324,15 @@ class Handler(BaseHTTPRequestHandler):
             if route.path=="/api/items":
                 sync()
                 return self.respond(get_items(parse_qs(route.query)))
+            if route.path=="/api/official-sources":
+                p=parse_qs(route.query)
+                return self.respond({"topic":p.get("topic",[""])[0][:120],
+                      "profiles":naming.official_sources(p.get("topic",[""])[0][:120]),
+                      "note":"Perfis oficiais não confirmam a identidade de cada imagem"})
+            if route.path.startswith("/api/visual-candidates/"):
+                mid=int(route.path.rsplit("/",1)[-1])
+                return self.respond({"message_id":mid,"candidates":visual.get_candidates(DB_PATH,mid),
+                    "note":"Semelhança visual: NÃO é confirmação de identidade"})
             if route.path=="/api/names":
                 p=parse_qs(route.query)
                 return self.respond(naming.list_names(DB_PATH,
