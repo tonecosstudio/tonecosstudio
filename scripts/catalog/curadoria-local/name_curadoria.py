@@ -413,3 +413,43 @@ def suggest_name_from_studio_catalog(db_path,message_id,title,studio,source_url,
         db.commit()
         return {"ok":True,"message_id":mid,"status":"provavel",
                 "filename":filename,"revision":a["revision"]+1}
+
+def attach_catalog_reference(db_path,message_id,expected_title,source_url,note=""):
+    """Vincula página de produto como referência; NÃO confirma nem muda status."""
+    mid=int(message_id)
+    u=urlparse(str(source_url or "").strip())
+    if u.scheme!="https" or not u.hostname or u.username or u.password:
+        raise ValueError("Referência exige HTTPS sem credenciais")
+    with smart.db_open(db_path) as db:
+        setup(db)
+        row=db.execute("""SELECT p.message_id,p.status,p.title,p.studio,p.revision,
+                    p.official_url,p.notes,a.original_topic FROM name_proposals p
+                    JOIN assets a USING(message_id) WHERE p.message_id=?""",(mid,)).fetchone()
+        if row is None or row["status"]!="provavel" or row["title"]!=expected_title:
+            raise ValueError("Só é possível vincular fonte a proposta correspondente não confirmada")
+        valid=[s for s in official_sources(row["original_topic"])
+               if s["studio"]==row["studio"]]
+        providers={urlparse(s["url"]).hostname.lower().removeprefix("www.")
+                   for s in valid}
+        if u.hostname.lower().removeprefix("www.") not in providers:
+            raise ValueError("Página não pertence à lista oficial do estúdio")
+        if row["official_url"]:
+            if row["official_url"]==source_url:
+                return {"ok":True,"changed":False,"message_id":mid,"status":"provavel"}
+            raise ValueError("Proposta já vinculada a outra página: revisão manual obrigatória")
+        stamp=smart.utc()
+        hint=(str(note or "").strip() or
+              "Publicação encontrada no catálogo do criador; verificar se o render corresponde")
+        notes=(row["notes"].rstrip()+"\n"+hint).strip()[:1000]
+        updated=db.execute("""UPDATE name_proposals SET official_url=?,notes=?,
+                        revision=revision+1,modified_at=?
+                        WHERE message_id=? AND revision=? AND status='provavel'
+                        AND official_url=''""",
+                        (source_url,notes,stamp,mid,row["revision"]))
+        if updated.rowcount!=1:raise RuntimeError("Revisão mudou; recarregue a imagem")
+        db.execute("""INSERT INTO name_proposal_events
+            (message_id,event_type,evidence,occurred_at) VALUES(?,?,?,?)""",
+            (mid,"reference_linked",source_url,stamp))
+        db.commit()
+        return {"ok":True,"changed":True,"message_id":mid,"status":"provavel"}
+
