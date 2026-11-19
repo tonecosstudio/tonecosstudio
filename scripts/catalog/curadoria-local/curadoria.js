@@ -90,7 +90,7 @@ el("saveModelReview").onclick=async()=>{
  }catch(e){notify(e.message)}
 };
 function setView(mode){
- viewMode=mode;currentPage=1;
+ viewMode=mode;currentPage=1;status="";el("statusFilter").value="";
  el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
  el("nameResults").hidden=mode!=="names";
@@ -202,3 +202,13 @@ el("search").addEventListener("input",()=>{
 });
 setView("names");
 setInterval(refreshNames,10000);
+
+el("materializeNames").onclick=async()=>{
+ try{
+  const result=await post("/api/materialize-confirmed-names",{});
+  el("exports").textContent="Biblioteca revisada: "+result.root+
+   " · novos "+fmt(result.created)+" · já existentes "+fmt(result.existing)+
+   " · originais ausentes "+fmt(result.missing_original);
+  notify("Somente nomes confirmados gerados. Originais mantidos.");
+ }catch(e){notify(e.message)}
+};
