@@ -13,6 +13,10 @@ const ORIGIN = /^[0-9]{1,30}$/;
 const BUCKET = "tonecos-catalogo-staging";
 const NAMESPACE = "telegram-studios/v1";
 const SOURCE_TYPE = "telegram";
+function topicKey(value) {
+  return String(value ?? "").normalize("NFKC").toLowerCase().replace(/\s+/gu, "");
+}
+const GENERAL_EXCLUDED = topicKey("Geral +50k");
 // O uploadador verifica SHA e bytes imediatamente antes de PUT/HEAD.
 const DEFER_LOCAL_HASH = process.argv.includes("--defer-local-hash");
 
@@ -35,7 +39,7 @@ function validRow(row) {
   required(row && typeof row === "object", "Registro Telegram invalido");
   required(row.source_type === SOURCE_TYPE, "Origem nao e Telegram");
   required(row.private_staging_only === true, "Somente staging privado e aceito");
-  required(String(row.original_topic || "").trim().toLowerCase() !== "geral + 50k",
+  required(topicKey(row.original_topic) !== GENERAL_EXCLUDED,
     "Tentativa de incluir o topico Geral");
   required(ORIGIN.test(String(row.telegram_origin_id || "")), "ID origem invalido");
   required(HASH.test(String(row.source_sha256 || "")), "SHA original invalido");
@@ -69,7 +73,7 @@ function parseAuthorization(text) {
         "Politica da origem deve comprovar armazenamento externo privado");
       const excludedTopics = row.excluded_topics;
       required(Array.isArray(excludedTopics) &&
-        excludedTopics.includes("Geral +50k"),
+        excludedTopics.some(x => topicKey(x) === GENERAL_EXCLUDED),
         "A politica deve preservar a exclusao do Geral +50k");
       required(excludedTopics.every(x => typeof x === "string" && x.trim()),
         "Topico excluido invalido");
@@ -78,7 +82,7 @@ function parseAuthorization(text) {
         excludedHashes.every(x => HASH.test(x)), "SHA excluido invalido");
       byOrigin.set(String(row.telegram_origin_id), {
         evidence: row.evidence_ref.trim(),
-        excludedTopics: new Set(excludedTopics.map(x => x.trim().toLowerCase())),
+        excludedTopics: new Set(excludedTopics.map(topicKey)),
         excludedHashes: new Set(excludedHashes),
       });
       continue;
@@ -104,7 +108,7 @@ function parseAuthorization(text) {
       const policy = byOrigin.get(String(group.row.telegram_origin_id));
       if (!policy || policy.excludedHashes.has(group.row.source_sha256)) return null;
       if ([...group.topics].some(topic =>
-        policy.excludedTopics.has(topic.trim().toLowerCase()))) return null;
+        policy.excludedTopics.has(topicKey(topic)))) return null;
       return policy.evidence;
     },
   };
