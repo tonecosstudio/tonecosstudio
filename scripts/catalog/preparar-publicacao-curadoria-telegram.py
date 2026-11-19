@@ -296,20 +296,36 @@ def build_plan(db: Path, source: Path, existing: Path | None):
         variants = {key(r["variant"]) for r in members if key(r["variant"])}
         studios = {key(r["studio"]) for r in members if key(r["studio"])}
         titles = {key(r["model"]) for r in members if key(r["model"])}
+        universes = {key(r["universe"]) for r in members if key(r["universe"])}
         known_ids = {r["existing_model_id"] for r in members if r["existing_model_id"]}
-        if len(variants) > 1 or len(studios) > 1 or len(titles) > 1:
+        if (len(variants) > 1 or len(studios) > 1 or len(titles) > 1
+                or len(universes) > 1):
             for r in members:
                 r["action"], r["reason"] = "hold", "group_variant_or_identity_conflict"
+        elif any(r["group_image_count"] != len(members) for r in members):
+            for r in members:
+                r["action"], r["reason"] = "hold", "group_membership_incomplete"
         elif len(known_ids) > 1:
             for r in members:
                 r["action"], r["reason"] = "hold", "group_matches_multiple_commercial_models"
-        elif all(r["action"] in {"reuse_existing_asset", "stage_new_asset",
-                                "skip_duplicate_source"} for r in members) and known_ids:
+        elif known_ids:
             model_id = next(iter(known_ids))
-            for r in members:
-                if r["action"] == "stage_new_asset":
-                    r["action"], r["reason"] = "append_existing_gallery", "confirmed_group_sha_anchor"
-                    r["existing_model_id"] = model_id
+            compatible = {"reuse_existing_asset", "stage_new_asset",
+                          "review_existing_model", "skip_duplicate_source"}
+            if (all(r["action"] in compatible for r in members)
+                    and all(not r["candidate_model_ids"] or
+                            model_id in r["candidate_model_ids"]
+                            for r in members)):
+                for r in members:
+                    if r["action"] in {"stage_new_asset", "review_existing_model"}:
+                        r["action"], r["reason"] = ("append_existing_gallery",
+                                                      "confirmed_group_sha_anchor")
+                        r["existing_model_id"] = model_id
+                        r["candidate_model_ids"] = []
+            elif any(r["action"] == "review_existing_model" and
+                     model_id not in r["candidate_model_ids"] for r in members):
+                for r in members:
+                    r["action"], r["reason"] = "hold", "group_catalog_candidate_conflict"
 
     # Qualquer membro pendente, variante conflitante ou candidato textual
     # impede publicar a galeria parcialmente.
