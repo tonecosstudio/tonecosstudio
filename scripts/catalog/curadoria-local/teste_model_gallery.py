@@ -67,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     with smart.db_open(db) as con:
         revision=con.execute("SELECT revision FROM name_proposals WHERE message_id=101").fetchone()[0]
     naming.review_name(db,101,revision,"Same Statue","Abe3D","","","revisar")
-    inherited=naming.propagate_reviewed_gallery_names(db)
+    inherited=naming.propagate_reviewed_gallery_names(db,group_key=g["group_key"])
     assert inherited["inherited_names"]==1,inherited
     assert naming.propagate_reviewed_gallery_names(db)["inherited_names"]==0
     with smart.db_open(db) as con:
