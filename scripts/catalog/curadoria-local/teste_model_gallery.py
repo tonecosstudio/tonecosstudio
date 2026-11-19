@@ -89,5 +89,22 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert naming.materialize_confirmed(db,source,root)["created"]==0
     assert all((source/f"msg_{mid}.jpg").read_bytes()==f"image-{mid}".encode()
                for mid in (101,102,103,104,105,106))
+    # Álbuns candidatos são só visualização: nunca fazer fusão automática.
+    with smart.db_open(db) as con:
+        for mid,album in [(107,"album-one"),(108,"album-one"),(109,"album-one"),
+                          (110,"album-two"),(111,"album-two"),(112,"album-two")]:
+            data=("image-"+str(mid)).encode()
+            (source/f"msg_{mid}.jpg").write_bytes(data)
+            con.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",
+                (mid,hashlib.sha256(data).hexdigest(),f"msg_{mid}.jpg",
+                 "Kuton Sculpts","",""+album,"2026-11-19",smart.utc()))
+    candidates=gallery.list_album_candidates(db,"Kuton Sculpts")
+    assert len(candidates["items"])==2,candidates
+    assert candidates["items"][0]["message_ids"]==[107,108,109],candidates
+    assert all(x["image_count"]==3 for x in candidates["items"])
+    gallery.register_visual_gallery(db,[110,111],"Kuton Sculpts")
+    after=gallery.list_album_candidates(db,"Kuton Sculpts")
+    assert len(after["items"])==1 and after["items"][0]["album_id"]=="album-one",after
+    assert gallery.list_album_candidates(db,"Abe3D")["items"]==[]
     print("E2E GALERIA APROVADO: múltiplos ângulos, idempotência, "
           "conflitos, metadados, nomes pendentes, integridade dos originais")
