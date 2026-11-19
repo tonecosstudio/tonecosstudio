@@ -417,7 +417,6 @@ describe("TONART commercial screens: account → request → history → respons
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
-
   it("keeps a selectable complete draft when clipboard access is unavailable", async () => {
     mocks.getUser.mockResolvedValue(null);
     mocks.signupAvailability.mockReturnValue("disabled");
