@@ -19,6 +19,8 @@ assert 'nameOpenGallery' in html
 assert 'min_images:2' in js
 assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js
+assert 'editGalleryPhotoName' in js
+assert 'Nomear esta foto' in js
 assert 'updateNameSourceLink' in js
 assert 'nameVisualSuggestions' in html
 assert 'showNameReferences' in js
