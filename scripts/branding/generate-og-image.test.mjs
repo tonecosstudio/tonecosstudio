@@ -29,6 +29,14 @@ test("official TONART Vercel preview uses only its own project hostname", () => 
   assert.equal(origin, "https://tonart-studio-public-gsy7ngw7i-jogo-brasils-projects.vercel.app");
 });
 
+test("dedicated TONART catalog preview has its own verified Vercel hostname", () => {
+  const origin = resolveSocialOrigin({
+    VERCEL_ENV: "preview",
+    VERCEL_URL: "tonart-catalogo-publico-a1b2c3d4-jogo-brasils-projects.vercel.app",
+  });
+  assert.equal(origin, "https://tonart-catalogo-publico-a1b2c3d4-jogo-brasils-projects.vercel.app");
+});
+
 test("preview rejects a hostname from another project or a forged authority", () => {
   for (const host of [
     "ordax-three.vercel.app",
