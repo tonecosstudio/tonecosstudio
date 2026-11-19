@@ -330,7 +330,10 @@ export default function TonecosQuoteRequestPage() {
                     Copiar mensagem
                   </button>
                   {guestCopyFeedback && (
-                    <p role="status" className="mt-2 text-xs leading-5 text-white/70">
+                    <p
+                      role="status"
+                      className="mt-2 text-xs leading-5 text-white/70"
+                    >
                       {guestCopyFeedback}
                     </p>
                   )}
