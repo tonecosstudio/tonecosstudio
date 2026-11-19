@@ -105,6 +105,24 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     gallery.register_visual_gallery(db,[110,111],"Kuton Sculpts")
     after=gallery.list_album_candidates(db,"Kuton Sculpts")
     assert len(after["items"])==1 and after["items"][0]["album_id"]=="album-one",after
+    # Quando restarem 2+ imagens livres no álbum parcialmente agrupado,
+    # mostrar TODAS para comparação, mas oferecer SOMENTE as livres.
+    with smart.db_open(db) as con:
+        for mid in (113,114):
+            data=("image-"+str(mid)).encode()
+            (source/f"msg_{mid}.jpg").write_bytes(data)
+            con.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",
+                (mid,hashlib.sha256(data).hexdigest(),f"msg_{mid}.jpg",
+                 "Kuton Sculpts","","album-two","2026-11-19",smart.utc()))
+    partial=gallery.list_album_candidates(db,"Kuton Sculpts")
+    second=next(x for x in partial["items"] if x["album_id"]=="album-two")
+    assert second["image_count"]==3 and second["album_image_count"]==5,second
+    assert second["grouped_images"]==2,second
+    assert second["message_ids"]==[112,113,114],second
+    assert second["all_message_ids"]==[110,111,112,113,114],second
+    assert [x["message_id"] for x in second["already_grouped"]]==[110,111]
+    assert [x["message_id"] for x in smart.model_detail(
+        db,gallery.register_visual_gallery(db,[110,111],"Kuton Sculpts")["group_key"])["images"]]==[110,111]
     assert gallery.list_album_candidates(db,"Abe3D")["items"]==[]
     print("E2E GALERIA APROVADO: múltiplos ângulos, idempotência, "
           "conflitos, metadados, nomes pendentes, integridade dos originais")
