@@ -38,7 +38,10 @@ def proposed_name(identity,mid,relative):
     if not identity: return ""
     core=slug(identity["title"])
     variation=slug(identity["variant"],25) if identity.get("variant") else ""
-    if variation and variation!=core: core+=("-"+variation)
+    if variation==core: variation=""
+    if variation and core.endswith("-"+variation.split("-")[0]):
+        variation="-".join(variation.split("-")[1:])
+    if variation: core+=("-"+variation)
     return f"{core[:103].rstrip('-')}-msg{int(mid)}{extension(relative)}"
 
 def setup(db):
@@ -282,3 +285,69 @@ def materialize_confirmed(db_path,source_root,app_root):
         created+=1
     return {"approved_images":len(rows),"created":created,"existing":existing,
         "missing_original":missing,"root":str(library)}
+
+# Catálogos oficiais verificados, como pistas de pesquisa, NÃO como identificação.
+# Tópicos agregados podem conter trabalhos de vários modeladores.
+OFFICIAL_STUDIO_PROFILES={
+ "Merge Project Figures _ Nostalgic Studios":[
+   ("Merge Project Figures","patreon","https://www.patreon.com/cw/MergeProject"),
+   ("Merge Project Figures","cults3d","https://cults3d.com/en/users/MergeProjectFigures/3d-models")],
+ "Uel Winner_ ilustrartuel":[
+   ("Uel Winner","artstation","https://uel.artstation.com/"),
+   ("Uel Winner","cults3d","https://cults3d.com/en/users/ilustrartuel/3d-models"),
+   ("Uel Winner","patreon","https://www.patreon.com/uelwinner3d")],
+ "Sekai 3D Models":[
+   ("Sekai 3D Models","cults3d","https://cults3d.com/en/users/Sekai3DModels/3d-models"),
+   ("Sekai 3D Models","patreon","https://www.patreon.com/cw/sekai3dmodels")],
+ "Nomnom Figures _ Edythe Cross 3D _ EllaArt":[
+   ("Nomnom Figures","patreon","https://www.patreon.com/cw/NomnomFigures")],
+ "Kaidan 3D":[
+   ("Kaidan 3D","cults3d","https://cults3d.com/en/users/kaidan3d/3d-models"),
+   ("Kaidan 3D","patreon","https://www.patreon.com/cw/kaidan3d")],
+ "3Dmoonn":[
+   ("3Dmoonn","cults3d","https://cults3d.com/en/users/3Dmoonn/3d-models"),
+   ("3Dmoonn","patreon","https://www.patreon.com/cw/3Dmoonn")]
+}
+
+def official_sources(topic):
+    """Perfis autênticos encontrados online, sem implicar autoria da imagem."""
+    return [{"studio":studio,"provider":provider,"url":url,
+             "identity_matched":False,"role":"studio_catalog_reference"}
+            for studio,provider,url in OFFICIAL_STUDIO_PROFILES.get(str(topic),[])]
+
+def suggest_name_from_embedded_text(db_path,message_id,title,studio,universe="",variant="",evidence_note=""):
+    """Nome visto no próprio cartaz, para revisão; não confirma publicação oficial."""
+    mid=int(message_id)
+    title=str(title or "").strip()
+    studio=str(studio or "").strip()
+    universe=str(universe or "").strip()
+    variant=str(variant or "").strip()
+    if not (title and studio) or max(map(len,(title,studio,universe,variant)))>170:
+        raise ValueError("Título de cartaz inválido")
+    with smart.db_open(db_path) as db:
+        setup(db)
+        row=db.execute("""SELECT p.status,p.title,p.revision,a.source_relative
+            FROM name_proposals p JOIN assets a USING(message_id)
+            WHERE p.message_id=?""",(mid,)).fetchone()
+        if row is None:raise ValueError("Mensagem sem indexação")
+        # Nunca sobrescrever qualquer proposta prévia ou nome confirmado.
+        if row["status"]!="revisar" or (row["title"] or "").strip():
+            return {"ok":False,"reason":"existing_proposal_or_review","message_id":mid}
+        filename=proposed_name({"title":title,"variant":variant},mid,row["source_relative"])
+        stamp=smart.utc()
+        updated=db.execute("""UPDATE name_proposals SET title=?,studio=?,universe=?,
+            variant=?,filename=?,status='provavel',confidence=0.75,
+            evidence_type='embedded_render_title',evidence_message_id=?,
+            notes=?,revision=revision+1,modified_at=?
+            WHERE message_id=? AND revision=? AND status='revisar'
+            AND TRIM(COALESCE(title,''))=''""",
+            (title,studio,universe,variant,filename,mid,
+             str(evidence_note)[:500] or "Título legível na imagem; validar publicação oficial",
+             stamp,mid,row["revision"]))
+        if updated.rowcount!=1:raise RuntimeError("Conflito de revisão")
+        db.execute("""INSERT INTO name_proposal_events
+          (message_id,event_type,evidence,occurred_at) VALUES(?,?,?,?)""",
+          (mid,"proposed_from_render",SOURCE_C+str(mid),stamp))
+        db.commit()
+        return {"ok":True,"message_id":mid,"filename":filename,
+                "status":"provavel","revision":row["revision"]+1}
