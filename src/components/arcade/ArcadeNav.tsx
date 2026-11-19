@@ -2,6 +2,7 @@
 import { useAuth } from "@/lib/auth";
 import { useCurrentUserIsAdmin } from "@/lib/roles";
 import { useCoinsBalance } from "@/hooks/coins/useCoinsBalance";
+import { useTonecosSignupAvailability } from "@/hooks/auth/useTonecosSignupAvailability";
 import { ArcadeNavView } from "./ArcadeNavView";
 
 const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
@@ -17,10 +18,14 @@ export function ArcadeNav() {
     visibleUser?.id,
     { enabled: !!visibleUser },
   );
+  const signupAvailability = useTonecosSignupAvailability(
+    !visibleUser && !PREVIEW_READ_ONLY,
+  );
   return <ArcadeNavView
     visibleUser={!!visibleUser}
     isAdmin={!!isAdmin}
     userBalance={balanceData?.balance ?? 0}
     balanceLoading={balanceLoading}
+    signupEnabled={signupAvailability === "enabled"}
   />;
 }
