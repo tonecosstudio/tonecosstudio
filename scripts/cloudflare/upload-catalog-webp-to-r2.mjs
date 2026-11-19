@@ -352,10 +352,22 @@ async function mainPrivate() {
   } catch (error) {
     if (error.code !== "ENOENT") throw error;
   }
+  const resume = argFlag("resume-checkpoint");
+  const verifiedInCheckpoint = (op) => {
+    const entry = journal.objects[op.storage_path];
+    return entry && (entry.status === "uploaded" || entry.status === "reused") &&
+      entry.sha256 === op.sha256 && entry.bytes === op.expected_bytes &&
+      entry.original_sha256 === op.original_sha256;
+  };
+  const pendingOperations = resume
+    ? operations.filter((op) => !verifiedInCheckpoint(op))
+    : operations;
+  report.checkpoint_verified = operations.length - pendingOperations.length;
+  report.pending = pendingOperations.length;
   const confirmed = [];
   const concurrency = Math.max(1, Math.min(8, Number(argValue("concurrency", "6")) || 6));
-  for (let pos = 0; pos < operations.length; pos += concurrency) {
-    const batch = operations.slice(pos, pos + concurrency);
+  for (let pos = 0; pos < pendingOperations.length; pos += concurrency) {
+    const batch = pendingOperations.slice(pos, pos + concurrency);
     const result = await Promise.all(batch.map(async (op) => {
       try { return { op, outcome: await privateOne(op) }; }
       catch (e) { return { op, error: e instanceof Error ? e.message : String(e) }; }
@@ -379,24 +391,30 @@ async function mainPrivate() {
         };
       }
     }
-    report.pending = operations.length - pos - batch.length;
+    report.pending = pendingOperations.length - pos - batch.length;
     if (EXECUTE) {
       journal.updated_at = new Date().toISOString();
       await privateAtomicJournal(checkpoint, journal);
       await writeReport(report);
     }
   }
-  if (EXECUTE && confirmed.length) {
-    const sample = [confirmed[0], confirmed[Math.floor(confirmed.length / 2)],
-      confirmed[confirmed.length - 1]];
+  if (EXECUTE && operations.length && report.failed === 0) {
+    // Sample the whole plan, including objects accepted from a verified checkpoint.
+    const sample = [operations[0], operations[Math.floor(operations.length / 2)],
+      operations[operations.length - 1]];
     for (const op of new Map(sample.map((x) => [x.storage_path, x])).values()) {
       try { await privateFullGet(op); report.remote_full_sha_verified++; }
       catch (error) {
         report.failed++;
+        delete journal.objects[op.storage_path];
         report.failures.push({ operation_id: op.operation_id,
           storage_path: op.storage_path,
           message: error instanceof Error ? error.message : String(error) });
       }
+    }
+    if (report.failed) {
+      journal.updated_at = new Date().toISOString();
+      await privateAtomicJournal(checkpoint, journal);
     }
   }
   report.pending = report.failed;
