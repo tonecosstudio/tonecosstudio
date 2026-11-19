@@ -39,11 +39,11 @@ python teste_ui.py
 
 O E2E usa um diretório temporário e uma imagem fictícia. Verifica edição, conflito de revisão, exportação por hardlink sem modificar a origem e preferência do Telegram para o mesmo SHA-256.
 
-## Fluxo obrigatório: nomear primeiro, agrupar depois
+## Nomeação e agrupamento em paralelo
 
 A etapa de **nomeação** foi implementada em `name_curadoria.py` e usa o **mesmo SQLite local** da Curadoria Visual, sem criar outro banco. Ela examina cada imagem independentemente, extrai estúdio, título, universo e variante das legendas estruturadas do Telegram e sugere nomes únicos como `deadpool-diorama-msg13588.jpg`. Caso uma imagem não tenha legenda, pode herdar o nome de um álbum somente quando todas as legendas válidas desse álbum concordam.
 
-Os nomes são preservados em `name_proposals` com evidência, confiança, estado, revisão e histórico em `name_proposal_events`. A etapa roda **antes** do agrupamento no ciclo incremental do aplicativo. As propostas não são nomes oficiais comprovados, nem aprovações comerciais.
+Os nomes são preservados em `name_proposals` com evidência, confiança, estado, revisão e histórico em `name_proposal_events`. A nomeação participa do ciclo incremental, mas não impede que uma galeria reúna imagens ainda sem nome. A revisão visual e a identificação podem avançar em paralelo no mesmo SQLite. As propostas não são nomes oficiais comprovados, nem aprovações comerciais.
 
 Abra a interface e use **1. Nomes propostos** para buscar, conferir a imagem, a legenda e a origem, corrigir o nome e registrar uma revisão. O estado **confirmado** exige nome, estúdio e um link HTTPS da publicação oficial conferida pelo revisor; nenhuma identificação textual recebe automaticamente esse estado.
 
@@ -108,6 +108,14 @@ A operação `attach_catalog_reference(db_path, message_id, expected_title, sour
 Na inspeção privada de 19/11/2026, foram transcritos 17 títulos claros do lote Merge Project/Nostalgic e ligadas cinco páginas específicas do criador no Cults3D (Gallantmon, Obelisk the Tormentor, Matt and MetalGarurumon, Peppercat e Rokusho). As correspondências **permanecem propostas**, não se tornando automaticamente catálogos públicos, arquivos aprovados ou licenças de comercialização. Os IDs locais, as fotos do Telegram e os scripts de ingestão de dados privados permanecem fora do GitHub.
 
 As regras de lançamento são invariantes: não alterar as fotos originais nem o downloader, não enviar o SQLite/manifesto privado para o repositório, não agrupar imagens apenas porque exibem o mesmo personagem, e não marcar `aprovado_para_publicacao=true` sem revisão de direitos de imagem e autorização comercial.
+
+### Selecionar álbuns pendentes sem digitar IDs
+
+Em **Galerias de modelos**, escolha um estúdio e use **Álbuns do Telegram ainda sem galeria**. A interface consulta `GET /api/album-candidates?topic=...`, apresenta apenas álbuns inteiramente fora de grupos (2 a 40 imagens) e permite pré-visualizar todas as fotos. **Pré-visualizar e preencher IDs** apenas preenche o formulário existente: o usuário precisa conferir a mesma escultura e clicar em **Criar galeria revisada**. Nenhuma fusão acontece na leitura ou por proximidade/mesmo personagem. Álbuns parcialmente agrupados são excluídos para preservar decisões anteriores.
+
+Legendas livres com títulos legíveis, mesmo sem os marcadores estruturados, podem gerar proposta auditável por `suggest_name_from_telegram_caption(...)`. O título, a versão e o universo informados devem aparecer na legenda original e o estúdio deve corresponder ao tópico. Essa função não sobrescreve nomes anteriores, registra a mensagem como evidência e mantém `status=provavel`; nunca confirma identidade ou autorização de venda. Uma proposta segura em imagem de galeria revisada pode ser herdada pelas demais vistas e atualizar o rótulo da ficha.
+
+O teste `teste_model_gallery.py` cobre os candidatos, exclusão de álbuns parcialmente agrupados e ausência de agrupamento implícito. `teste_name_curadoria.py` cobre legendas livres, conflitos e proteção contra reprocessamento. O conteúdo privado de álbuns e nomes permanece exclusivamente no SQLite/manifesto local.
 
 ## Galerias: reunir diferentes vistas da MESMA escultura (sem duplicar o produto)
 
