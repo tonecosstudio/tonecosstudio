@@ -123,22 +123,27 @@ def match(db_path,limit=10000):
     with smart.db_open(db_path) as db:
         setup(db)
         names.setup(db)
-        refs=db.execute("""SELECT f.message_id,f.dhash,f.ahash,f.width,f.height,p.title,p.studio
+        refs=db.execute("""SELECT f.message_id,f.dhash,f.ahash,f.width,f.height,p.title,p.studio,
+                   a.original_topic AS topic
             FROM visual_fingerprints f JOIN name_proposals p USING(message_id)
+            JOIN assets a USING(message_id)
             WHERE p.title!='' AND p.status IN ('provavel','confirmado')
               AND f.dhash IS NOT NULL AND f.method=?
               ORDER BY f.message_id""",(POLICY,)).fetchall()
-        missing=db.execute("""SELECT f.message_id,f.dhash,f.ahash,f.width,f.height
+        missing=db.execute("""SELECT f.message_id,f.dhash,f.ahash,f.width,f.height,
+                   a.original_topic AS topic
             FROM visual_fingerprints f JOIN name_proposals p USING(message_id)
+            JOIN assets a USING(message_id)
             WHERE p.title='' AND p.status='revisar' AND f.dhash IS NOT NULL AND f.method=?
             ORDER BY f.message_id LIMIT ?""",(POLICY,int(limit))).fetchall()
-        viable=[(r["message_id"],int(r["dhash"],16),int(r["ahash"],16),r["width"]/r["height"]) for r in refs]
+        viable=[(r["message_id"],int(r["dhash"],16),int(r["ahash"],16),r["width"]/r["height"],r["topic"]) for r in refs]
         updates=[]
         for a in missing:
             if not a["height"]:continue
             d,a_hash,ratio=int(a["dhash"],16),int(a["ahash"],16),a["width"]/a["height"]
             best=[]
-            for mid,ref_d,ref_a,ref_ratio in viable:
+            for mid,ref_d,ref_a,ref_ratio,ref_topic in viable:
+                if ref_topic!=a["topic"]:continue
                 aspect=abs(math.log(ratio/ref_ratio))
                 if aspect>0.25:continue
                 dd=(d^ref_d).bit_count()
