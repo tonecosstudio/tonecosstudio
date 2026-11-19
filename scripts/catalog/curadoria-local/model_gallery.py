@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""Galerias de diferentes vistas da MESMA estatueta, no SQLite canônico.
+
+Não nomeia personagens por semelhança, não modifica originais e não publica.
+"""
+from __future__ import annotations
+import hashlib
+import json
+import smart_curadoria as smart
+
+def register_visual_gallery(db_path,message_ids,topic,note=""):
+    """Agrupa apenas imagens da mesma escultura INSPECIONADAS visualmente."""
+    if not isinstance(message_ids,(list,tuple)) or not 2<=len(message_ids)<=40:
+        raise ValueError("Galeria exige 2 a 40 imagens")
+    ids=[int(x) for x in message_ids]
+    if len(set(ids))!=len(ids) or min(ids)<=0:raise ValueError("IDs repetidos ou inválidos")
+    ids.sort()
+    topic=str(topic or "").strip()
+    if not topic or len(topic)>120:raise ValueError("Tópico inválido")
+    group_key=hashlib.sha256(json.dumps(["visual-angles-v1",topic,ids[0]],
+        ensure_ascii=False).encode()).hexdigest()[:24]
+    stamp=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        rows=db.execute("""SELECT a.message_id,a.original_topic,
+            p.studio,p.title,p.universe,p.variant,
+            m.group_key AS previous_key,m.match_reason,g.state AS group_state
+            FROM assets a LEFT JOIN name_proposals p USING(message_id)
+            LEFT JOIN model_group_members m USING(message_id)
+            LEFT JOIN model_groups g ON g.group_key=m.group_key
+            WHERE a.message_id IN ("""+",".join("?" for _ in ids)+")",ids).fetchall()
+        if len(rows)!=len(ids) or any(r["original_topic"]!=topic for r in rows):
+            raise ValueError("Mensagem não encontrada ou mistura de tópicos")
+        names={(smart.normalize(r["studio"]),smart.normalize(r["title"]),
+                smart.normalize(r["universe"]),smart.normalize(r["variant"]))
+               for r in rows if (r["title"] or "").strip()}
+        if len(names)>1:
+            raise ValueError("Identidades ou variantes discordantes: não unir")
+        for r in rows:
+            if r["previous_key"]!=group_key and (
+                r["match_reason"]=="reviewed_angles" or r["group_state"]=="confirmado"):
+                raise ValueError("Imagem já pertence a outra galeria revisada ou confirmada")
+        named=next((r for r in rows if (r["title"] or "").strip()),None)
+        studio=named["studio"] if named else topic
+        title=named["title"] if named else "Modelo sem nome #"+str(ids[0])
+        universe=named["universe"] if named else ""
+        variant=named["variant"] if named else ""
+        old=db.execute("SELECT state FROM model_groups WHERE group_key=?",
+                       (group_key,)).fetchone()
+        if old and old["state"]=="confirmado":
+            raise ValueError("Galeria confirmada exige revisão explícita")
+        db.execute("""INSERT INTO model_groups(
+           group_key,studio,title,universe,variant,state,confidence,created_at,updated_at)
+           VALUES(?,?,?,?,?,'revisar',0.90,?,?)
+           ON CONFLICT(group_key) DO UPDATE SET
+           studio=excluded.studio,title=excluded.title,
+           universe=excluded.universe,variant=excluded.variant,
+           updated_at=excluded.updated_at
+           WHERE model_groups.state!='confirmado'""",
+           (group_key,studio,title,universe,variant,stamp,stamp))
+        for mid in ids:
+            db.execute("""INSERT INTO model_group_members
+                (message_id,group_key,match_reason,updated_at)
+                VALUES(?,?,'reviewed_angles',?)
+                ON CONFLICT(message_id) DO UPDATE SET
+                group_key=excluded.group_key,match_reason=excluded.match_reason,
+                updated_at=excluded.updated_at""",(mid,group_key,stamp))
+            db.execute("""INSERT OR IGNORE INTO model_group_evidence
+                 (group_key,source_url,source_type,description,recorded_at)
+                 VALUES(?,?,?,?,?)""",
+                 (group_key,smart.SOURCE_C+str(mid),"visual_review",
+                  (str(note or "").strip() or
+                   "Mesmo produto em ângulos diferentes; identidade e licença ainda não confirmadas")[:500],
+                  stamp))
+        if not old:
+            db.execute("""INSERT INTO curation_events
+                (group_key,event_type,detail,occurred_at)
+                VALUES(?,'reviewed_angles',?,?)""",
+                (group_key,"IDs "+",".join(map(str,ids)),stamp))
+        db.execute("""DELETE FROM model_group_evidence WHERE group_key IN (
+            SELECT g.group_key FROM model_groups g WHERE g.state='provavel'
+              AND NOT EXISTS(SELECT 1 FROM model_group_members m WHERE m.group_key=g.group_key))""")
+        db.execute("""DELETE FROM model_groups WHERE state='provavel'
+              AND NOT EXISTS(SELECT 1 FROM model_group_members m
+              WHERE m.group_key=model_groups.group_key)""")
+        db.commit()
+    return {"group_key":group_key,"image_count":len(ids),"title":title,
+            "studio":studio,"state":"revisar","created":old is None}
+
+def refresh_titles(db_path):
+    """Quando nomes chegam depois da reunião das fotos, atualiza só rótulos
+    provisórios sem alterar grupos revisados, membros ou fontes."""
+    updated=0
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        groups=db.execute("""SELECT g.group_key,g.title FROM model_groups g
+            WHERE g.state='revisar' AND g.title LIKE 'Modelo sem nome #%'
+              AND EXISTS(SELECT 1 FROM model_group_members m
+              WHERE m.group_key=g.group_key AND m.match_reason='reviewed_angles')""").fetchall()
+        for group in groups:
+            proposals=db.execute("""SELECT p.studio,p.title,p.universe,p.variant
+                FROM name_proposals p JOIN model_group_members m USING(message_id)
+                WHERE m.group_key=? AND TRIM(COALESCE(p.title,''))!=''""",
+                (group["group_key"],)).fetchall()
+            names={(smart.normalize(p["studio"]),smart.normalize(p["title"]),
+                    smart.normalize(p["universe"]),smart.normalize(p["variant"]))
+                   for p in proposals}
+            if len(names)!=1:continue
+            row=proposals[0]
+            result=db.execute("""UPDATE model_groups SET
+                studio=?,title=?,universe=?,variant=?,revision=revision+1,
+                updated_at=? WHERE group_key=? AND state='revisar'
+                AND title LIKE 'Modelo sem nome #%'""",
+                (row["studio"],row["title"],row["universe"],row["variant"],
+                 smart.utc(),group["group_key"]))
+            updated+=result.rowcount
+        db.commit()
+    return {"updated_titles":updated}
+
+def stats(db_path):
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        row=db.execute("""SELECT COUNT(*) n,COALESCE(SUM(count),0) photos
+            FROM (SELECT COUNT(*) count FROM model_group_members
+                 GROUP BY group_key HAVING COUNT(*)>=2)""").fetchone()
+        reviewed=db.execute("""SELECT COUNT(DISTINCT group_key)
+                 FROM model_group_members WHERE match_reason='reviewed_angles'""").fetchone()[0]
+        return {"galleries":row["n"],"photos_in_galleries":row["photos"],
+                "visually_reviewed_galleries":reviewed}
