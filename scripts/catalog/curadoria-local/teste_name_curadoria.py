@@ -26,6 +26,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
             caption=caption.replace("\\n","\n")
             cn.execute("INSERT INTO assets VALUES(?,?,?,?,?,?)",
                 (mid,sha,p.name,"Poke Studio",caption,album))
+    assert m.proposed_name({"title":"Zoro vs Mihawk Diorama","variant":"Diorama 1/10"},5739,"foo.jpg")=="zoro-vs-mihawk-diorama-1-10-msg5739.jpg"
     first=m.process_batch(db,50)
     assert first["images_processed"]==4,first
     assert first["names_proposed"]==3,first
@@ -66,6 +67,12 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
     assert target.is_file() and target.read_bytes()==(source/"msg_101.jpg").read_bytes()
     assert m.materialize_confirmed(db,source,root/"revisada")["existing"]==1
     assert m.safe_component("Nome: especial?")=="Nome_ especial_"
+    suggestion=m.suggest_name_from_embedded_text(db,104,"Eevee","Poke Studio","Pokémon",evidence_note="Cartaz sintético")
+    assert suggestion["ok"] and suggestion["status"]=="provavel",suggestion
+    assert not m.suggest_name_from_embedded_text(db,104,"Eevee","Poke Studio")["ok"]
+    profiles=m.official_sources("Sekai 3D Models")
+    assert any("Sekai3DModels" in profile["url"] for profile in profiles)
+    assert all(not profile["identity_matched"] for profile in profiles)
     out=m.export_manifest(db,root/"manifesto-nomes.csv")
     assert out["exported"]==4,out
     assert (root/"manifesto-nomes.csv").exists()
