@@ -125,3 +125,41 @@ da Curadoria (quando disponíveis), sem criar banco ou schema duplicado.
 - As verificações anteriores de identidade, integridade e inventário TONART **continuam obrigatórias**.
 
 A preparação preserva os originais e não publica ou altera o catálogo diretamente.
+
+
+## 9. Contrato de conciliação comercial — Missão 3
+
+A comparação utiliza o **mesmo pré-publicador canônico** em
+scripts/catalog/preparar-publicacao-curadoria-telegram.py; não há outro importador,
+backend, armazenamento ou tabela. As PRs #45 e #53 continuam como autoridades das
+galerias e evidências Telegram. Os dados originais não são modificados.
+
+O inventário CSV deve ser exportado em modo **SELECT somente leitura** do D1
+comercial ativo, incluir todas as fichas, inclusive as não publicadas, e ter
+model_id, model, variant e sha256 (uma linha por imagem, com model_id repetido).
+A consulta de referência para o schema comercial atual é:
+
+~~~sql
+SELECT m.id AS model_id, '' AS studio, m.name AS model,
+       m.variant_name AS variant, s.source_sha256 AS sha256
+FROM models m
+LEFT JOIN model_image_sources s ON s.model_id = m.id
+ AND s.gallery_version = m.gallery_version
+ORDER BY m.id, s.image_id;
+~~~
+
+A ausência do campo studio no D1 não é prova de correspondência por nome.
+Nomes iguais geram somente candidatos; variantes explicitamente contraditórias e
+um mesmo SHA pertencente a mais de um modelo comercial geram conflito.
+
+Execute o preflight com --existing-csv apontando para o CSV **privado fora do Git**
+e --expected-model-count igual ao total de modelos distintos medido nesse snapshot.
+Inventário sem model_id, contraditório ou com contagem divergente é bloqueado.
+
+As saídas privadas resumo.json, decisoes.csv, galerias_para_revisao.csv,
+lote_modelos_elegiveis.jsonl e operacoes_conciliadas.jsonl não publicam nada.
+Cada operação de galeria contém operation_id estável, hashes, IDs de mensagens,
+identidade e modelo existente (quando comprovado). Reexecuções e retomadas
+reutilizam a mesma identidade; fotos idênticas no grupo não geram transferência
+duplicada. O plano marca produção e direitos como **não autorizados** até a
+integração pelos serviços comerciais existentes.
