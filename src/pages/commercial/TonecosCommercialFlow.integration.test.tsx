@@ -100,11 +100,12 @@ const model = {
   code: "TC-NARUTO",
   name: "Naruto",
 } as PublicCatalogModel;
-function SelectModel() {
+const DEFAULT_SEED_MODELS = [model];
+function SelectModel({ models = DEFAULT_SEED_MODELS }: { models?: PublicCatalogModel[] }) {
   const { setSelectedModels } = useCatalogBrowsing();
   useEffect(() => {
-    setSelectedModels([model]);
-  }, [setSelectedModels]);
+    setSelectedModels(models);
+  }, [setSelectedModels, models]);
   return null;
 }
 type RouteEntry =
@@ -113,12 +114,12 @@ type RouteEntry =
       pathname: string;
       state?: { recovered?: boolean; sent?: string };
     };
-function renderApp(entry: RouteEntry, seed = false) {
+function renderApp(entry: RouteEntry, seed = false, models?: PublicCatalogModel[]) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <HelmetProvider>
         <CatalogBrowsingProvider>
-          {seed && <SelectModel />}
+          {seed && <SelectModel models={models} />}
           <Routes>
             <Route path="/login" element={<TonecosAccountPage />} />
             <Route
@@ -336,6 +337,35 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       screen.queryByRole("button", { name: "Enviar solicitação" }),
     ).not.toBeInTheDocument();
+    const fallback = screen.getByText("Ver e copiar texto do orçamento");
+    fireEvent.click(fallback);
+    expect(
+      (screen.getByLabelText("Texto completo para enviar ao estúdio") as HTMLTextAreaElement).value,
+    ).toContain("TC-NARUTO");
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("preserves 50 model references when the guest mailto body exceeds safe URL length", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    const selected = Array.from({ length: 50 }, (_, index) => ({
+      ...model,
+      id: `model-${index}`,
+      slug: `model-${index}`,
+      name: `Escultura ${index + 1} ${"N".repeat(90)}`,
+      code: `TC-M${index + 1}-${"X".repeat(75)}`,
+    }));
+    renderApp("/solicitar-orcamento", true, selected);
+    const email = await screen.findByRole("link", { name: "Pedir orçamento por e-mail" });
+    expect(email).toHaveAttribute("href", "mailto:atendimento@example.com");
+    expect(email).toHaveClass("font-semibold");
+    expect(screen.getByText(/seleção é extensa para um link de e-mail preenchido/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Ver e copiar texto do orçamento"));
+    const body = (screen.getByLabelText("Texto completo para enviar ao estúdio") as HTMLTextAreaElement).value;
+    expect(body).toContain("TC-M1-");
+    expect(body).toContain("TC-M50-");
+    expect(body.match(/ — código /g)).toHaveLength(50);
+    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
