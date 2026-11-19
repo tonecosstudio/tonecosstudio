@@ -1,6 +1,6 @@
 # TONART — Catálogo público separado e Telegram como origem prioritária
 
-**Estado:** contrato de implementação / pré-publicação. Não autoriza upload, publicação ou mudanças de DNS.
+**Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
 ## 1. Dois frontends, uma autoridade de catálogo
@@ -32,25 +32,23 @@ Não reutilizar o mesmo *build* comercial na origem `catalogo.`. O projeto `tona
 - **Curadoria = autoridade de proposta/revisão interna**: nomes sugeridos e confirmados, identidade do modelo, conjunto de imagens, provas e decisão humana. O banco local é privado.
 - **Catálogo/Worker e seu armazenamento existente = autoridade da publicação**: modelos, slugs canônicos, galeria pública, propriedade de storage, versões e regras de consulta pública.
 - Uma imagem importada antigamente pode continuar vinculada ao mesmo `model_id`; a preferência pelo Telegram **não cria um segundo modelo** ou uma segunda galeria.
-- **Direitos de uso:** acesso a um grupo privado, Patreon ou Cults3D não equivale automaticamente a licença para expor suas imagens comercialmente. Antes de publicar, registrar permissão, autoria e proveniência; também revisar marcas/personagens e termos das fontes.
 
 ## 3. Ciclo de vida de cada imagem
 
 1. **Ingestão**: downloader escreve em `Downloads/telegram-2370335738-images/<tópico>/msg_ID.*` e registra checkpoint em SQLite.
 2. **Identificação**: PR #45 trabalha no mesmo banco da Curadoria, com `assets`, `annotations`, `name_proposals`, `model_groups`. A UI pode mostrar imagens antes da aprovação, mas **não as publica**.
 3. **Gate de curadoria**: só entra no pré-publicador se `annotations.status=aprovado` **e** `name_proposals.status=confirmado`.
-4. **Gate de direitos**: cada `message_id`/SHA-256 deve constar num CSV privado de autorização de uso público, com URL HTTPS de evidência. Ausência, divergência ou ambiguidade = bloqueio.
-5. **Gate de integridade**: ler bytes do arquivo original sem modificá-lo; SHA-256 deve coincidir com o SQLite. Arquivo faltante, caminho fora da raiz ou divergência = bloqueio.
-6. **Reconciliação**: comparar com inventário canônico real. Mesmo SHA-256 = reutilizar ativo/identidade existente, preferindo proveniência Telegram; mesmo estúdio e modelo com hash diferente = revisão para vincular imagem adicional; totalmente novo = candidato a criar modelo.
-7. **Staging**: `scripts/catalog/preparar-publicacao-curadoria-telegram.py` produz apenas `decisoes.csv`, `resumo.json`, `lote_elegivel.jsonl`. **Nunca sobe imagens**.
-8. **Transformação e importação (fase posterior):** após revisão do lote, passar pelo pipeline WebP e pelas rotinas **existentes**:
+4. **Gate de integridade**: ler bytes do arquivo original sem modificá-lo; SHA-256 deve coincidir com o SQLite. Arquivo faltante, caminho fora da raiz ou divergência = bloqueio.
+5. **Reconciliação**: comparar com inventário canônico real. Mesmo SHA-256 = reutilizar ativo/identidade existente, preferindo proveniência Telegram; mesmo estúdio e modelo com hash diferente = revisão para vincular imagem adicional; totalmente novo = candidato a criar modelo.
+6. **Staging**: `scripts/catalog/preparar-publicacao-curadoria-telegram.py` produz apenas `decisoes.csv`, `resumo.json`, `lote_elegivel.jsonl`. **Nunca sobe imagens**.
+7. **Transformação e importação (fase posterior):** após revisão do lote, passar pelo pipeline WebP e pelas rotinas **existentes**:
    - `scripts/catalog/build-telegram-webp-site-import-plan.mjs`
    - `scripts/catalog/build-telegram-webp-storage-upload-plan.mjs`
    - `scripts/catalog/build-telegram-webp-db-import-plan.mjs`
    - `scripts/cloudflare/upload-catalog-webp-to-r2.mjs`
    - `scripts/cloudflare/import-r2-catalog-queue.mjs`
    Nunca fazer upload direto do app local ou criar D1/R2/Worker paralelos.
-9. **Publicação**: somente referências revisadas e assinadas pelo backend canônico ficam visíveis em `catalogo.`. Página pública não pode indexar pendentes nem importar diretórios de download. Preservar rollback e IDs permanentes.
+8. **Publicação**: somente referências revisadas e assinadas pelo backend canônico ficam visíveis em `catalogo.`. Página pública não pode indexar pendentes nem importar diretórios de download. Preservar rollback e IDs permanentes.
 
 ## 4. Comando de pré-publicação
 
@@ -67,21 +65,12 @@ python scripts/catalog/preparar-publicacao-curadoria-telegram.py `
 
 **Inventário TONART CSV:** colunas de SHA (`sha256`, `original_sha256` ou `image_hash`), `model_id`, `studio` e `model`. Extrair dos dados canônicos, sem inventar correspondências.
 
-**Direitos de imagens CSV** (mantido privado, nunca versionado):
-
-```csv
-message_id,sha256,public_use_authorized,evidence_url
-12345,aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,sim,https://exemplo.org/autorizacao/12345
-```
-
-O exemplo usa dados fictícios. **Não preencher permissões em massa sem evidência**.
-
-Sem inventário canônico ou sem autorização comprovada, o script permanece *fail-closed* e não inclui itens no lote elegível. No momento de criação deste documento, a Curadoria tinha apenas nomes prováveis e nenhuma imagem com aprovação dupla; o pré-publicador corretamente bloqueou todos os 3.808 registros observados. As contagens mudam conforme a coleta.
+O preparador utiliza o inventário do catálogo existente e a Curadoria. Não exige formulários ou manifestos de autorização. Os nomes confirmados no próprio render, com referência oficial, já podem ser encaminhados ao lote de publicação. Nomes incertos e álbuns inconsistentes permanecem para revisão.
 
 ## 5. Critérios para ativar catalogo.tonartstudio.com.br
 
 1. Build público isolado: sem código/rotas comerciais ou administrativa nas dependências, teste de bundle e segurança aprovado.
-2. Exposição somente de itens aprovados no Worker, com RLS, ACL e mídia com direitos confirmados.
+2. Exposição somente de itens identificados e validados no Worker, com as permissões do backend.
 3. Ficha, galeria, pesquisa, filtros, carregamento progressivo, SEO e mobile testados no domínio de staging; não exigir login para navegar.
 4. Processo de importação idempotente (hash, IDs canônicos, staging → revisão → commit, sem duplicar modelo ou bytes), testes de amostra e rollback.
 5. Conta/assinaturas continuam em desenvolvimento interno; o contato para orçamento pode usar fluxo de visitante já aprovado no projeto, sem inventar um segundo backend.
@@ -100,7 +89,7 @@ Sem inventário canônico ou sem autorização comprovada, o script permanece *f
 
 **Conversor único:** `scripts/catalog/build-telegram-webp-final.mjs` com Sharp já existente (perfil canônico: galeria até 900px e miniatura até 512px, qualidade 68). Nenhum segundo mecanismo de transcodificação foi criado. Para o Telegram atual, o adaptador `preparar-webp-curadoria-privada.py` gera um manifesto compatível com o conversor existente.
 
-**Importante:** nomes `provavel`/sugeridos autorizam **somente otimização local privada**, não disponibilização na Internet. Manifesto tem `status=prepared_private` e `private_staging_only=true`; o conversor só aceita esse tipo com `--private-curadoria`. O plano de publicação rejeita `private_staging_only` independentemente do nome/taxonomia. O fluxo público continua exigindo dupla aprovação, permissões documentadas, verificação do acervo e reconciliação com IDs já publicados.
+**Importante:** nomes `provavel`/sugeridos autorizam **somente otimização local privada**, não disponibilização na Internet. Manifesto tem `status=prepared_private` e `private_staging_only=true`; o conversor só aceita esse tipo com `--private-curadoria`. O plano de publicação rejeita `private_staging_only` independentemente do nome/taxonomia. O fluxo público exige identidade confirmada, integridade do acervo e reconciliação com IDs já publicados.
 
 No Windows com Node 24, Python 3.12 e dependências canônicas instaladas:
 
@@ -112,7 +101,7 @@ Entrada: SQLite da Curadoria (`assets`, `annotations`, `name_proposals`) e image
 
 **Prova no Windows em 19/11/2026:** 85 imagens com nome sugerido, geradas 85 galerias WebP + 85 miniaturas (sem falhas). Originais: 10.543.860 bytes; WebP completo: 4.438.106 bytes; **57,9% de redução**, sem perda nem alteração de originais. Ensaio do importador público: 0 elegíveis, 85 rejeitadas; zero operações externas. A porcentagem varia com o conteúdo das imagens.
 
-Upload de itens Telegram só inicia depois de seleção/homologação do primeiro lote elegível e prova de autorização. A TONART pode continuar servindo os modelos já aprovados do catálogo atual sem reenvio desnecessário.
+Upload de itens Telegram inicia depois da seleção do primeiro lote identificado e da reconciliação com o catálogo. A TONART pode continuar servindo os modelos já aprovados do catálogo atual sem reenvio desnecessário.
 
 
 ## 8. Reconciliação de álbuns como uma única estatueta
@@ -134,9 +123,6 @@ da Curadoria (quando disponíveis), sem criar banco ou schema duplicado.
   produtos separados nem forçar fusão pela coincidência de personagem.
 - Imagem não vinculada a grupo permanece individual (identidade
   `single:<message_id>`) até sua associação visual ser revisada.
-- Os gates anteriores de identificação, licença para uso público,
-  integridade e inventário TONART **continuam obrigatórios**.
+- As verificações anteriores de identidade, integridade e inventário TONART **continuam obrigatórias**.
 
-A operação permanece `read-only` nos originais e no catálogo público.
-Uma URL de Patreon/Cults comprova potencialmente o nome do produto,
-**não** o direito de reproduzir sua imagem comercialmente.
+A preparação preserva os originais e não publica ou altera o catálogo diretamente.
