@@ -388,8 +388,9 @@ def main():
         while True:
             try:
                 sync()
-                naming.process_batch(DB_PATH,600)
-                smart.process_batch(DB_PATH,400)
+                named=naming.process_batch(DB_PATH,600)
+                if named["images_waiting"]==0:
+                    smart.process_batch(DB_PATH,400)
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
