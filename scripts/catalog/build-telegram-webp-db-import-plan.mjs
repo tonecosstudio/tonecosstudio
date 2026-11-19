@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { defaultTelegramWebpOutput } from "./telegram-paths.mjs";
+import { isPrivateCuradoriaRecord } from "./telegram-private-staging-gate.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -649,7 +650,7 @@ async function main() {
   const sitePlan = JSON.parse(await fs.readFile(SITE_PLAN, "utf8"));
   const storagePlan = JSON.parse(await fs.readFile(STORAGE_PLAN, "utf8"));
   const uploadByImportId = buildUploadIndex(storagePlan);
-  const readyItems = (sitePlan.items || []).filter((item) => item.status === "ready_for_import");
+  const readyItems = (sitePlan.items || []).filter((item) => item.status === "ready_for_import" && !isPrivateCuradoriaRecord(item));
   const queueRows = readyItems.map((item) => buildQueueRow(item, uploadByImportId));
   const publishPayloads = queueRows.map(buildPublishPayload);
 

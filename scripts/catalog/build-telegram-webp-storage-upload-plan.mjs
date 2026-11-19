@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { defaultTelegramWebpOutput } from "./telegram-paths.mjs";
+import { isPrivateCuradoriaRecord } from "./telegram-private-staging-gate.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -176,7 +177,7 @@ async function writeCsv(filePath, items) {
 async function main() {
   const sitePlan = JSON.parse(await fs.readFile(SITE_PLAN, "utf8"));
   const items = Array.isArray(sitePlan.items) ? sitePlan.items : [];
-  const readyItems = items.filter((item) => item.status === "ready_for_import");
+  const readyItems = items.filter((item) => item.status === "ready_for_import" && !isPrivateCuradoriaRecord(item));
 
   const operations = [];
   for (const item of readyItems) {
