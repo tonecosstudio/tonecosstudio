@@ -54,8 +54,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     changed=m.process_batch(dbpath,100)
     assert changed["processed"]==1,changed
     assert changed["images_grouped"]==3,changed
-    assert changed["model_groups"]==1,changed
-    assert changed["model_states"]=={"confirmado":1},changed
+    assert changed["model_groups"]==2,changed
+    assert changed["model_states"]=={"confirmado":1,"provavel":1},changed
     for mid in [101,102,103,104]:
         p=source/("msg_%d.jpg"%mid)
         assert p.read_bytes()==("CONTENT_"+str(mid)).encode()
