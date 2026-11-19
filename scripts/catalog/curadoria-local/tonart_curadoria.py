@@ -23,6 +23,7 @@ from urllib.parse import parse_qs, urlparse
 import smart_curadoria as smart
 import name_curadoria as naming
 import visual_name_suggestions as visual
+import model_gallery as gallery
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -320,7 +321,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(data,ctype=mime)
             if route.path=="/api/stats":
                 sync()
-                return self.respond({**stats(),"smart":smart.stats(DB_PATH),"naming":naming.stats(DB_PATH)})
+                return self.respond({**stats(),"smart":smart.stats(DB_PATH),
+                       "naming":naming.stats(DB_PATH),"galleries":gallery.stats(DB_PATH)})
             if route.path=="/api/items":
                 sync()
                 return self.respond(get_items(parse_qs(route.query)))
@@ -344,7 +346,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(smart.list_models(DB_PATH,
                     page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
                     topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
-                    state=p.get("state",[""])[0][:20]))
+                    state=p.get("state",[""])[0][:20],
+                    min_images=p.get("min_images",["1"])[0]))
             if route.path.startswith("/api/model/"):
                 return self.respond(smart.model_detail(DB_PATH,route.path.split("/")[-1]))
             if route.path=="/api/candidates":
@@ -375,6 +378,10 @@ class Handler(BaseHTTPRequestHandler):
                     obj.get("universe",""),obj.get("variant",""),
                     obj.get("status","revisar"),obj.get("official_url",""),
                     obj.get("notes","")))
+            if self.path=="/api/create-gallery":
+                return self.respond(gallery.register_visual_gallery(DB_PATH,
+                    obj.get("message_ids",[]),obj.get("topic",""),
+                    obj.get("note","")))
             if self.path=="/api/review-model":
                 return self.respond(smart.review_model(DB_PATH,
                    obj.get("group_key",""),obj.get("revision",-1),
@@ -401,6 +408,7 @@ def main():
                 named=naming.process_batch(DB_PATH,600)
                 if named["images_waiting"]==0:
                     smart.process_batch(DB_PATH,400)
+                gallery.refresh_titles(DB_PATH)
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
