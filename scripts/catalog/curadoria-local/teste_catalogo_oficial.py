@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-creator-catalog-") as directory:
    sha256 TEXT NOT NULL, original_topic TEXT NOT NULL,
    source_caption TEXT NOT NULL, source_album TEXT NOT NULL,
    source_relative TEXT NOT NULL)""")
-  for mid,topic in [(101,"Abe3D"),(102,"Other Studio"),(103,"Abe3D"),(104,"Uel Winner_ ilustrartuel")]:
+  for mid,topic in [(101,"Abe3D"),(102,"Other Studio"),(103,"Abe3D"),(104,"Uel Winner_ ilustrartuel"),(105,"Abe3D")]:
    img=files/("msg_%d.jpg"%mid)
    img.write_bytes(("synthetic-%s"%mid).encode())
    sha=hashlib.sha256(img.read_bytes()).hexdigest()
@@ -56,6 +56,20 @@ with tempfile.TemporaryDirectory(prefix="tonart-creator-catalog-") as directory:
  uel=names.suggest_name_from_studio_catalog(db,104,"Magilla Gorilla","Uel Winner",
     "https://uel.artstation.com/","Uel Winner_ ilustrartuel","Hanna-Barbera")
  assert uel["ok"] and uel["status"]=="provavel"
+ # Uma página específica é uma referência, não uma confirmação da imagem.
+ draft=names.suggest_name_from_embedded_text(db,105,"Rogue","Abe3D","X-Men")
+ assert draft["ok"] and draft["status"]=="provavel",draft
+ linked=names.attach_catalog_reference(db,105,"Rogue",url,"Título encontrado no catálogo oficial")
+ assert linked["changed"] and linked["status"]=="provavel",linked
+ assert not names.attach_catalog_reference(db,105,"Rogue",url)["changed"]
+ for other_title,other_url in [("Outro",url),("Rogue","https://bad.example/rogue"),
+                               ("Rogue","https://cults3d.com/en/3d-model/art/other")]:
+  try:names.attach_catalog_reference(db,105,other_title,other_url)
+  except ValueError:pass
+  else:raise AssertionError("Vínculo divergente aceito")
+ with closing(names.smart.db_open(db)) as c:
+  row=c.execute("SELECT status,official_url FROM name_proposals WHERE message_id=105").fetchone()
+ assert row["status"]=="provavel" and row["official_url"]==url,dict(row)
  assert names.stats(db)["names_confirmed"]==0
  assert names.materialize_confirmed(db,files,root)["approved_images"]==0
  print("TESTE CATÁLOGO OFICIAL APROVADO: HTTPS, estúdio, idempotência, revisão manual e originais",flush=True)
