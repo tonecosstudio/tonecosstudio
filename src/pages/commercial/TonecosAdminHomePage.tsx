@@ -22,6 +22,7 @@ import {
 } from "@/services/admin/overview/tonart-admin-profiles-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
+import TonartTelegramDrafts from "./TonartTelegramDrafts";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
 import TonartCommercialOffersAdmin from "./TonartCommercialOffersAdmin";
 
@@ -1173,9 +1174,17 @@ export default function TonecosAdminHomePage() {
           )}
 
           {isCatalog && (
-            <section className={panelClass}>
-              <TonartAdminCatalogReview />
-            </section>
+            <div className="space-y-7">
+              <section className={panelClass}>
+                <TonartTelegramDrafts />
+              </section>
+              <section className={panelClass}>
+                <p className="mb-4 text-xs uppercase tracking-widest text-white/50">
+                  Acervo comercial anterior · preservado
+                </p>
+                <TonartAdminCatalogReview />
+              </section>
+            </div>
           )}
 
           {!selectedSubpage &&
