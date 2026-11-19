@@ -87,6 +87,41 @@ try {
   assert.equal(dryInfo.dry_run_ready, 2);
   assert.equal(dryInfo.uploaded, 0);
   assert.equal(dryInfo.reused, 0);
+  // A origem permite armazenamento privado, sem aprovar publicacao comercial.
+  const originPolicy = {
+    policy_type: "telegram_origin",
+    telegram_origin_id: row.telegram_origin_id,
+    bucket: "tonecos-catalogo-staging",
+    source_collection: "telegram_studios",
+    scope: "private_r2_storage",
+    external_storage_authorized: true,
+    evidence_ref: "synthetic-origin-evidence-test",
+    excluded_topics: ["Geral +50k"],
+    excluded_sha256: [],
+  };
+  fs.writeFileSync(authFile, JSON.stringify(originPolicy) + "\n");
+  assert.equal(run(["--authorizations", authFile]).status, 0);
+  assert.equal(plan().summary.ready_to_upload, 2);
+  assert.equal(plan().summary.public_release_authorized, false);
+  const withException = {
+    ...originPolicy, excluded_sha256: [row.source_sha256],
+  };
+  fs.writeFileSync(authFile, JSON.stringify(withException) + "\n");
+  assert.equal(run(["--authorizations", authFile]).status, 0);
+  assert.equal(plan().summary.ready_to_upload, 0);
+  assert.equal(plan().summary.blocked_missing_external_authorization, 2);
+  fs.writeFileSync(authFile, JSON.stringify(originPolicy) + "\n" +
+    JSON.stringify({
+      telegram_origin_id: row.telegram_origin_id,
+      source_sha256: row.source_sha256,
+      profile_version: row.profile_version,
+      bucket: "tonecos-catalogo-staging",
+      scope: "private_r2_storage",
+      external_storage_authorized: false,
+    }) + "\n");
+  assert.equal(run(["--authorizations", authFile]).status, 0);
+  assert.equal(plan().summary.ready_to_upload, 0);
+  fs.writeFileSync(authFile, JSON.stringify(originPolicy) + "\n");
   const repeat = run(["--authorizations", authFile]);
   assert.equal(repeat.status, 0, repeat.stderr);
   assert.deepEqual(plan().operations.map((x) => x.storage_path),
