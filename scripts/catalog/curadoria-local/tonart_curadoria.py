@@ -21,6 +21,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import smart_curadoria as smart
+import name_curadoria as naming
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -318,10 +319,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(data,ctype=mime)
             if route.path=="/api/stats":
                 sync()
-                return self.respond({**stats(),"smart":smart.stats(DB_PATH)})
+                return self.respond({**stats(),"smart":smart.stats(DB_PATH),"naming":naming.stats(DB_PATH)})
             if route.path=="/api/items":
                 sync()
                 return self.respond(get_items(parse_qs(route.query)))
+            if route.path=="/api/names":
+                p=parse_qs(route.query)
+                return self.respond(naming.list_names(DB_PATH,
+                   page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
+                   topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
+                   status=p.get("status",[""])[0][:20]))
             if route.path=="/api/models":
                 p=parse_qs(route.query)
                 return self.respond(smart.list_models(DB_PATH,
@@ -347,6 +354,17 @@ class Handler(BaseHTTPRequestHandler):
             n=int(self.headers.get("Content-Length","0"))
             if n<1 or n>21*1024*1024:return self.respond({"error":"tamanho invalido"},413)
             obj=json.loads(self.rfile.read(n))
+            if self.path=="/api/materialize-confirmed-names":
+                return self.respond(naming.materialize_confirmed(DB_PATH,SOURCE,APP_DIR))
+            if self.path=="/api/export-names":
+                return self.respond(naming.export_manifest(DB_PATH,APP_DIR/"manifesto-nomes-propostos.csv"))
+            if self.path=="/api/review-name":
+                return self.respond(naming.review_name(DB_PATH,
+                    obj.get("message_id",0),obj.get("revision",-1),
+                    obj.get("title",""),obj.get("studio",""),
+                    obj.get("universe",""),obj.get("variant",""),
+                    obj.get("status","revisar"),obj.get("official_url",""),
+                    obj.get("notes","")))
             if self.path=="/api/review-model":
                 return self.respond(smart.review_model(DB_PATH,
                    obj.get("group_key",""),obj.get("revision",-1),
@@ -370,6 +388,7 @@ def main():
         while True:
             try:
                 sync()
+                naming.process_batch(DB_PATH,600)
                 smart.process_batch(DB_PATH,400)
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
