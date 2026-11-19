@@ -34,6 +34,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert gallery.register_visual_gallery(db,[101,102],"Abe3D")["created"] is False
     assert gallery.stats(db)=={"galleries":1,"photos_in_galleries":2,"visually_reviewed_galleries":1}
     assert smart.list_models(db,min_images=2)["total"]==1
+    assert smart.list_models(db,min_images=2,unnamed_only=True)["total"]==1
     assert len(smart.model_detail(db,g["group_key"])["images"])==2
     manifest=naming.export_manifest(db,root/"nomes.csv")
     assert manifest["exported"]==6,manifest
@@ -82,6 +83,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert gallery.refresh_titles(db)["updated_titles"]==1
     assert gallery.refresh_titles(db)["updated_titles"]==0
     assert smart.model_detail(db,g["group_key"])["title"]=="Same Statue"
+    assert smart.list_models(db,min_images=2,unnamed_only=True)["total"]==0
     # Name still pending is valid; gallery itself does not approve a product.
     assert naming.stats(db)["names_confirmed"]==0
     assert naming.materialize_confirmed(db,source,root)["created"]==0
