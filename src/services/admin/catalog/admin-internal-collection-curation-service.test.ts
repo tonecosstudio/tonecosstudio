@@ -37,7 +37,9 @@ describe("internal catalog curation service", () => {
   });
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
-    const gateway = readRepositorySource("supabase/functions/admin-rpc/index.ts");
+    const gateway = readRepositorySource(
+      "supabase/functions/admin-rpc/index.ts",
+    );
     const entries = (registry: string): string[] => {
       const start = gateway.indexOf(`const ${registry} = new Set([`);
       expect(start).toBeGreaterThanOrEqual(0);
