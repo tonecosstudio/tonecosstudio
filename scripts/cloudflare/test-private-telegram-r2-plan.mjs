@@ -131,9 +131,12 @@ try {
   assert.equal(corrupt.status, 2, corrupt.stderr);
   assert.equal(plan().summary.local_integrity_failures, 1);
   assert.equal(plan().summary.ready_to_upload, 1);
-  const general = { ...row, message_id: 102, original_topic: "Geral + 50k" };
-  fs.writeFileSync(manifest, JSON.stringify(general) + "\n");
-  assert.equal(run().status, 1, "Geral must never enter private R2");
+  for (const topic of ["Geral+50k", "Geral +50k", "Geral + 50k",
+    "GERAL   +   50K", "Ｇｅｒａｌ ＋ ５０ｋ"]) {
+    const general = { ...row, message_id: 102, original_topic: topic };
+    fs.writeFileSync(manifest, JSON.stringify(general) + "\n");
+    assert.equal(run().status, 1, "Geral must never enter private R2: " + topic);
+  }
   console.log("R2 private staging: 6/6 assertions categories passed");
 } finally {
   fs.rmSync(tmp, { recursive: true, force: true });
