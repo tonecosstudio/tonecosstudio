@@ -65,10 +65,17 @@ def load_existing(path: Path | None):
     hashes, identities, titles = defaultdict(list), defaultdict(list), defaultdict(list)
     rows = read_csv(path)
     ids = set()
+    seen_models = {}
     for r in rows:
         model_id = (r.get("model_id") or r.get("id") or "").strip()
         if not model_id:
             raise ValueError("Inventario sem model_id: nao e seguro conciliar")
+        identity = (key(r.get("studio") or r.get("studio_name")),
+                    key(r.get("model") or r.get("title") or r.get("name")),
+                    key(r.get("variant")))
+        if model_id in seen_models and seen_models[model_id] != identity:
+            raise ValueError("Inventario contraditorio para model_id " + model_id)
+        seen_models[model_id] = identity
         ids.add(model_id)
         digest = (r.get("sha256") or r.get("original_sha256") or r.get("source_sha256")
                   or r.get("image_hash") or "").lower()
@@ -170,10 +177,12 @@ def ensure_private_output(out: Path, source: Path) -> None:
             raise ValueError("Saida nao pode ficar dentro de um repositorio Git")
 
 
-def build_plan(db: Path, source: Path, existing: Path | None):
+def build_plan(db: Path, source: Path, existing: Path | None, expected_model_count: int | None = None):
     """Somente leitura: identifica evidências, não decide por igualdade de nomes."""
     source = source.resolve()
     existing_hashes, existing_identities, existing_titles, inventory = load_existing(existing)
+    if expected_model_count is not None and inventory["unique_models"] != expected_model_count:
+        raise ValueError("Inventario comercial incompleto ou contagem divergente")
     all_rows = read_curation(db)
     records = []
     for a in all_rows:
@@ -343,6 +352,7 @@ def build_plan(db: Path, source: Path, existing: Path | None):
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "source_policy": "telegram-preferred; public catalog remains approved-only",
         "inventory_supplied": existing is not None,
+        "inventory_completeness_verified": expected_model_count is not None,
         "inventory": inventory,
         "total": len(records), "counts": counts, "reasons": reasons,
         "duplicate_sha_groups_in_curadoria": sum(len(x) > 1 for x in by_sha.values()),
@@ -451,6 +461,7 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
             "original_sha256": [r["original_sha256"] for r in media],
             "rights_verified": False, "production_write_authorized": False,
             "requires_commercial_integration": True,
+            "inventory_completeness_verified": summary["inventory_completeness_verified"],
         }
         batches.append(op)
         operations.append(op)
@@ -467,11 +478,12 @@ def main():
     parser.add_argument("--db", type=Path, default=DB_DEFAULT)
     parser.add_argument("--source-root", type=Path, default=SOURCE_DEFAULT)
     parser.add_argument("--existing-csv", type=Path)
+    parser.add_argument("--expected-model-count", type=int, help="Quantidade total de IDs da origem canônica, incluindo não publicados")
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
     args = parser.parse_args()
     source, out = args.source_root.resolve(), args.out.resolve()
     ensure_private_output(out, source)
-    rows, summary = build_plan(args.db, source, args.existing_csv)
+    rows, summary = build_plan(args.db, source, args.existing_csv, args.expected_model_count)
     write_plan(out, rows, summary)
     print(json.dumps({"out": str(out), "summary": summary}, ensure_ascii=False))
 
