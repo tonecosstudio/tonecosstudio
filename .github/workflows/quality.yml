@@ -278,6 +278,9 @@ jobs:
       - name: Test TONART admin continuous curation
         run: npx vitest run src/pages/commercial/TonartTelegramDrafts.test.tsx
 
+      - name: Test TONART index navigation contract
+        run: node --test scripts/catalog/tonart-telegram-navigation.test.mjs
+
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
 
