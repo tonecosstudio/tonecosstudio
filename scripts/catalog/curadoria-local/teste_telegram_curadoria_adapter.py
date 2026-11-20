@@ -91,7 +91,7 @@ class TelegramCuradoriaAdapterTests(unittest.TestCase):
             db = sqlite3.connect(db_path)
             try:
                 db.execute("CREATE TABLE assets(message_id INTEGER PRIMARY KEY)")
-                db.executemany("INSERT INTO assets(message_id) VALUES(?)", [(1,), (2,), (3,)])
+                db.executemany("INSERT INTO assets(message_id) VALUES(?)", [(1,), (2,), (3,), (4,)])
                 db.commit()
             finally:
                 db.close()
@@ -106,8 +106,23 @@ class TelegramCuradoriaAdapterTests(unittest.TestCase):
                     SET source_chat_id=99,topic_id=5,topic_name='Abe3D'
                     WHERE message_id=3
                 """)
+                db.execute("""
+                    INSERT OR REPLACE INTO telegram_identity_coverage (
+                        message_id,source_chat_id,topic_id,topic_name,
+                        coverage_status,identity_status,updated_at
+                    ) VALUES(4,99,21409,'Topico_21409',
+                             'needs_telegram_audit','not_evaluated','test')
+                """)
                 db.commit()
 
+            self.assertEqual(adapter._mark_topic_id_invalid(db_path, 99, 21409), 1)
+            with identity._open_curadoria(db_path) as db:
+                invalid = db.execute("""
+                    SELECT coverage_status,reason FROM telegram_identity_coverage
+                    WHERE message_id=4
+                """).fetchone()
+            self.assertEqual(invalid["coverage_status"], "partial")
+            self.assertIn("TOPIC_ID_INVALID", invalid["reason"])
             self.assertEqual(adapter._topic_to_scan(db_path, 99), (5, "Abe3D"))
 
         class CuratedNames:
