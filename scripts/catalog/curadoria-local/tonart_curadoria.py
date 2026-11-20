@@ -408,7 +408,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond({"error":str(exc)},500)
 
 def main():
-    sync()
+    manual_only = os.environ.get("TONART_CURADORIA_MANUAL_ONLY", "").strip() == "1"
+    if not manual_only:
+        sync()
     def background_curadoria():
         while True:
             try:
@@ -422,11 +424,12 @@ def main():
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
-    threading.Thread(target=background_curadoria,daemon=True,name="tonart-smart-curadoria").start()
+    if not manual_only:
+        threading.Thread(target=background_curadoria,daemon=True,name="tonart-smart-curadoria").start()
     with ThreadingHTTPServer((HOST,PORT),Handler) as srv:
         print(f"TONART CURADORIA | http://{HOST}:{PORT}",flush=True)
         print(f"Banco isolado: {DB_PATH}",flush=True)
-        print("Origem intocada; atualizacao ao carregar a biblioteca.",flush=True)
+        print("Revisao manual sem sincronizacao global." if manual_only else "Origem intocada; sincronizacao incremental ativa.",flush=True)
         srv.serve_forever()
 
 if __name__=="__main__":main()
