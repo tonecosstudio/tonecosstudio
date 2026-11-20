@@ -32,8 +32,18 @@ export type TelegramDraft = {
   imageCount: number;
   images: TelegramDraftImage[];
 };
-export type TelegramDraftSummary = Pick<TelegramDraft,
-  "id" | "name" | "studio" | "character" | "variant" | "reviewStatus" | "provisionalName" | "imageCount" | "revision">;
+export type TelegramDraftSummary = Pick<
+  TelegramDraft,
+  | "id"
+  | "name"
+  | "studio"
+  | "character"
+  | "variant"
+  | "reviewStatus"
+  | "provisionalName"
+  | "imageCount"
+  | "revision"
+>;
 export type TelegramDraftList = {
   total: number;
   offset: number;
@@ -51,14 +61,16 @@ export type TelegramDraftEdit = {
 };
 
 function base() {
-  if (!CANONICAL_CATALOG_API_BASE) throw new Error("catalog_gateway_not_configured");
+  if (!CANONICAL_CATALOG_API_BASE)
+    throw new Error("catalog_gateway_not_configured");
   return CANONICAL_CATALOG_API_BASE.replace(/\/+$/, "");
 }
 
 async function request(path: string, init?: RequestInit) {
   await requireTonecosAdminAccess();
   const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session?.access_token) throw new Error("admin_session_missing");
+  if (error || !data.session?.access_token)
+    throw new Error("admin_session_missing");
   const url = base() + path;
   const response = await fetch(url, {
     ...init,
@@ -71,29 +83,47 @@ async function request(path: string, init?: RequestInit) {
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
     throw new Error(
-      typeof payload?.error === "string" ? payload.error : "catalog_admin_unavailable",
+      typeof payload?.error === "string"
+        ? payload.error
+        : "catalog_admin_unavailable",
     );
   }
   return response;
 }
 
 export async function listTelegramDrafts(studio = "Abe3D", offset = 0) {
-  const query = new URLSearchParams({ studio, offset: String(offset), limit: "12" });
-  return (await (await request("/api/admin/telegram-drafts?" + query)).json()) as TelegramDraftList;
+  const query = new URLSearchParams({
+    studio,
+    offset: String(offset),
+    limit: "12",
+  });
+  return (await (
+    await request("/api/admin/telegram-drafts?" + query)
+  ).json()) as TelegramDraftList;
 }
 export async function getTelegramDraft(id: string) {
-  return (await (await request("/api/admin/telegram-drafts/" + encodeURIComponent(id))).json()) as TelegramDraft;
+  return (await (
+    await request("/api/admin/telegram-drafts/" + encodeURIComponent(id))
+  ).json()) as TelegramDraft;
 }
 export async function editTelegramDraft(id: string, values: TelegramDraftEdit) {
-  return (await (await request("/api/admin/telegram-drafts/" + encodeURIComponent(id), {
-    method: "PATCH", body: JSON.stringify(values),
-  })).json()) as TelegramDraft;
+  return (await (
+    await request("/api/admin/telegram-drafts/" + encodeURIComponent(id), {
+      method: "PATCH",
+      body: JSON.stringify(values),
+    })
+  ).json()) as TelegramDraft;
 }
 export async function getTelegramDraftImage(path: string) {
-  if (!/^\/api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/(display|thumb)$/.test(path)) {
+  if (
+    !/^\/api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/(display|thumb)$/.test(
+      path,
+    )
+  ) {
     throw new Error("invalid_private_media_path");
   }
   const res = await request(path);
-  if (!(res.headers.get("content-type") || "").startsWith("image/webp")) throw new Error("invalid_private_media");
+  if (!(res.headers.get("content-type") || "").startsWith("image/webp"))
+    throw new Error("invalid_private_media");
   return URL.createObjectURL(await res.blob());
 }
