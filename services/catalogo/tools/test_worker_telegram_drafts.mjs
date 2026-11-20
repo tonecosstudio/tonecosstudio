@@ -64,14 +64,15 @@ function setup() {
           },
           async run() {
             if (!sql.includes('UPDATE models')) throw Error('Unsafe SQL')
-            if (vals[8] !== id || vals[9] !== row.telegram_revision) {
+            if (vals[9] !== id || vals[10] !== row.telegram_revision) {
               return { meta: { changes: 0 } }
             }
             if (log.forceNoWrite) return { meta: { changes: 0 } }
             Object.assign(row, {
               name: vals[0], telegram_studio: vals[1], telegram_character: vals[2],
               variant_name: vals[3], telegram_review_status: vals[4],
-              telegram_gallery_order: vals[5], cover_storage_key: vals[6],
+              telegram_name_provisional: vals[5] === 'confirmed' ? 0 : row.telegram_name_provisional,
+              telegram_gallery_order: vals[6], cover_storage_key: vals[7],
               telegram_revision: row.telegram_revision + 1,
             })
             // D1 production counts extra FTS trigger writes (observed: changes=7).
@@ -206,6 +207,23 @@ test('authorized admin lists, opens, edits, persists and sees four private image
       { revision: 2, name: 'unsafe', published: true }), env)
     assert.equal(response.status, 409)
     assert.equal(row.published, 0)
+  } finally { restore() }
+})
+
+test('confirming an identity clears provisional name in D1 without publishing the model', async () => {
+  const { env, row, restore } = setup()
+  try {
+    const updated = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id, 'PATCH',
+      { revision: 0, name: 'Monica Rambeau', reviewStatus: 'confirmed' }), env)
+    assert.equal(updated.status, 200)
+    const body = await updated.json()
+    assert.equal(body.provisionalName, false)
+    assert.equal(body.reviewStatus, 'confirmed')
+    assert.equal(body.revision, 1)
+    assert.equal(body.published, false)
+    assert.equal(row.telegram_name_provisional, 0)
+    const persisted = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id), env)
+    assert.equal((await persisted.json()).provisionalName, false)
   } finally { restore() }
 })
 

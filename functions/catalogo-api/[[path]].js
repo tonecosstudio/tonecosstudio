@@ -101,7 +101,7 @@ function isBoundedPublicQuery(route, searchParams) {
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
   const routeKeys = route === "api/telegram-studios"
-    ? ["studio", "q", "offset", "limit"]
+    ? ["studio", "q", "provisional", "offset", "limit"]
     : route === "api/telegram-studios/studios" || /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(route)
       ? []
     : route === "api/catalog"
@@ -131,6 +131,8 @@ function isBoundedPublicQuery(route, searchParams) {
       if (!/^(0|[1-9][0-9]{0,4})$/.test(value)) return false;
     } else if (key === "studio") {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
+    } else if (key === "provisional") {
+      if (route !== "api/telegram-studios" || !/^[01]$/.test(value)) return false;
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;
     } else if (key === "v") {

@@ -268,10 +268,12 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
   const cover = `telegram-studios/v1/2370335738/telegram-webp-final-v1/${first.source_sha256.slice(0,2)}/${first.source_sha256}/display.webp`
   const stored = await env.DB.prepare(`UPDATE models SET
     name=?,telegram_studio=?,telegram_character=?,variant_name=?,
-    telegram_review_status=?,telegram_gallery_order=?,cover_storage_key=?,
+    telegram_review_status=?,
+    telegram_name_provisional=CASE WHEN ?='confirmed' THEN 0 ELSE telegram_name_provisional END,
+    telegram_gallery_order=?,cover_storage_key=?,
     telegram_revision=telegram_revision+1,search_text=?,updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND telegram_group_key IS NOT NULL AND published=0 AND telegram_revision=?`)
-    .bind(name.trim(),studio.trim(),character.trim(),variant.trim(),status,
+    .bind(name.trim(),studio.trim(),character.trim(),variant.trim(),status,status,
       JSON.stringify(order),cover,
       [studio.trim(),name.trim(),character.trim(),variant.trim()].filter(Boolean).join(' '),
       id,model.telegram_revision).run()

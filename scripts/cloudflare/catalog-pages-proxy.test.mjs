@@ -35,6 +35,28 @@ test("only same-origin public catalog GET is forwarded", async () => {
   }
 });
 
+test("Telegram provisional filter passes only bounded values through the same catalog proxy", async () => {
+  for (const suffix of ["?provisional=1", "?provisional=0", "?studio=3DXM&q=Chibi&provisional=1&limit=24"]) {
+    const io = mockFetch();
+    const route = "api/telegram-studios" + suffix;
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + route), io.fetcher,
+    );
+    assert.equal(response.status, 200, route);
+    assert.equal(io.calls.length, 1, route);
+    assert.equal(io.calls[0].url, WORKER + "/" + route);
+  }
+  for (const suffix of ["?provisional=2", "?provisional=true", "?provisional=1&provisional=0", "?provisional=1&extra=1"]) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/api/telegram-studios" + suffix),
+      io.fetcher,
+    );
+    assert.equal(response.status, 400, suffix);
+    assert.equal(io.calls.length, 0, suffix);
+  }
+});
+
 test("public media preserves encoded filenames and range", async () => {
   const io = mockFetch("file", 206, {
     "content-type": "image/webp",
