@@ -275,12 +275,9 @@ jobs:
         if: github.event.pull_request.number == 54
         run: npm run typecheck:app
 
-      - name: Format Telegram admin files for review (temporary)
+      - name: Check formatting of Telegram admin files
         if: github.event.pull_request.number == 54
-        run: |
-          npx prettier --write src/pages/commercial/TonartTelegramDrafts.tsx src/services/catalog/tonart-telegram-drafts.ts src/pages/commercial/TonecosAdminHomePage.tsx
-          node -e 'const fs=require("node:fs");const files=["src/pages/commercial/TonartTelegramDrafts.tsx","src/services/catalog/tonart-telegram-drafts.ts","src/pages/commercial/TonecosAdminHomePage.tsx"];files.forEach((p,i)=>{const s=fs.readFileSync(p,"utf8");for(let j=0,k=0;j<s.length;j+=1200,k++)console.log("TONART_FMT|"+i+"|"+k+"|"+JSON.stringify(s.slice(j,j+1200)))})'
-          exit 1
+        run: npx prettier --check src/pages/commercial/TonartTelegramDrafts.tsx src/services/catalog/tonart-telegram-drafts.ts src/pages/commercial/TonecosAdminHomePage.tsx
 
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
