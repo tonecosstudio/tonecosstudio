@@ -68,7 +68,7 @@ export async function importPrivateTelegramDraft(
   const variant = body.variant
   const group = body.groupKey
   const ids = body.images
-  if (body.originId !== sourceId || !present(studio, 120) ||
+  if (body.originId !== sourceId || typeof studio !== 'string' || !present(studio, 120) ||
       /geral\s*\+?\s*50k/i.test(studio) || !present(name, 160) ||
       !optional(universe, 160) || !optional(variant, 160) ||
       typeof group !== 'string' || !group24.test(group) ||
