@@ -1,6 +1,6 @@
 {
-  "version": 7,
-  "latestMigration": "0023_telegram_private_drafts.sql",
+  "version": 8,
+  "latestMigration": "0024_telegram_draft_gallery_order.sql",
   "requiredMigrations": [
     "0001_catalog.sql",
     "0002_keyset_pagination.sql",
@@ -24,7 +24,8 @@
     "0020_gallery_member_explicit_approvals.sql",
     "0021_quote_admin_audit_events.sql",
     "0022_catalog_height_filter_index.sql",
-    "0023_telegram_private_drafts.sql"
+    "0023_telegram_private_drafts.sql",
+    "0024_telegram_draft_gallery_order.sql"
   ],
   "requiredObjects": {
     "tables": [
@@ -91,7 +92,8 @@
         "telegram_review_status",
         "telegram_name_provisional",
         "telegram_rights_status",
-        "telegram_revision"
+        "telegram_revision",
+        "telegram_gallery_order"
       ],
       "model_gallery_member_approvals": [
         "source_model_id",
