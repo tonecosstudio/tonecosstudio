@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { onRequest, proxyCatalogRequest, proxyTelegramAdminRequest } from "../../functions/catalogo-api/[[path]].js";
+import vercelCatalogHandler, { isStandaloneTelegramCatalogHost, isAllowedStandaloneTelegramRoute } from "../../api/catalogo-proxy.js";
 
 const SITE = "https://tonecosstudio.pages.dev";
 const WORKER = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
@@ -583,4 +584,42 @@ test("private group ingestion uses the same first-party catalog Worker, never pu
   }),io.fetcher);
   assert.equal(anon.status,403);
   assert.equal(io.calls.length,1);
+});
+
+
+test("the standalone Telegram catalog never exposes commercial or admin API routes", async () => {
+  const hosts = [
+    "catalogo.tonartstudio.com.br",
+    "tonart-catalogo-publico.vercel.app",
+    "tonart-catalogo-publico-git-main-jogo-brasils-projects.vercel.app",
+  ];
+  const publicModel = "api/telegram-studios/tg_" + "a".repeat(24);
+  for (const host of hosts) {
+    assert.equal(isStandaloneTelegramCatalogHost(host), true);
+    for (const route of ["api/catalog", "api/categories", "api/models/model-one", "media/images/demo.webp", "api/admin/telegram-drafts"]) {
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "GET"), false, host + " " + route);
+    }
+    for (const route of ["api/telegram-studios", "api/telegram-studios/studios", publicModel, publicModel + "/media/" + "b".repeat(64) + "/thumb"]) {
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "GET"), true, host + " " + route);
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "POST"), false, host + " " + route);
+    }
+  }
+  assert.equal(isStandaloneTelegramCatalogHost("tonartstudio.com.br"), false);
+  assert.equal(isAllowedStandaloneTelegramRoute("tonartstudio.com.br", "api/catalog", "GET"), true);
+
+  const res = {
+    statusCode: 200,
+    headers: new Map(),
+    body: "",
+    setHeader(name, value) { this.headers.set(name, value); },
+    end(body) { this.body = body; },
+  };
+  await vercelCatalogHandler({
+    method: "GET",
+    headers: { host: "catalogo.tonartstudio.com.br" },
+    query: { path: "api/catalog" },
+    url: "/api/catalogo-proxy?path=api/catalog",
+  }, res);
+  assert.equal(res.statusCode, 404);
+  assert.equal(res.body, "Not found");
 });
