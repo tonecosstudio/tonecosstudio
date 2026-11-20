@@ -60,6 +60,7 @@ export default function TonartTelegramDrafts() {
   const [lightbox, setLightbox] = useState(false);
   const [fullImage, setFullImage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [saved, setSaved] = useState(false);
   const [editorError, setEditorError] = useState("");
   const dirty = useMemo(() => hasChanges(selected, form), [selected, form]);
@@ -69,8 +70,11 @@ export default function TonartTelegramDrafts() {
   const editorRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const selectedIndex = page?.items.findIndex((item) => item.id === selectedId) ?? -1;
-  const previousId = selectedIndex > 0 ? page?.items[selectedIndex - 1]?.id : undefined;
-  const nextId = selectedIndex >= 0 ? page?.items[selectedIndex + 1]?.id : undefined;
+  const hasPrevious = selectedIndex > 0 ||
+    (selectedIndex === 0 && offset > 0);
+  const hasNext = selectedIndex >= 0 && !!page && (
+    selectedIndex < page.items.length - 1 || offset + page.limit < page.total
+  );
 
   useEffect(() => {
     let live = true;
@@ -232,7 +236,7 @@ export default function TonartTelegramDrafts() {
 
   useEffect(() => {
     if (selectedId) {
-      editorRef.current?.scrollTo({ top: 0, behavior: "auto" });
+      editorRef.current?.scrollTo?.({ top: 0, behavior: "auto" });
       if (!window.matchMedia("(min-width: 1280px)").matches) {
         editorRef.current?.focus();
       }
@@ -257,20 +261,64 @@ export default function TonartTelegramDrafts() {
       } else if (event.key === "Escape" && selectedId) {
         event.preventDefault();
         choose(null);
-      } else if (event.key.toLowerCase() === "j" && nextId) {
+      } else if (event.key.toLowerCase() === "j" && hasNext) {
         event.preventDefault();
-        choose(nextId);
-      } else if (event.key.toLowerCase() === "k" && previousId) {
+        void navigate(1);
+      } else if (event.key.toLowerCase() === "k" && hasPrevious) {
         event.preventDefault();
-        choose(previousId);
+        void navigate(-1);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId, nextId, previousId, saving, dirty, lightbox]);
+  }, [selectedId, hasNext, hasPrevious, saving, dirty, lightbox,
+      navigating, page, offset, studio, query, loading]);
+
+  // Resolve neighbors on the current page first, then ask the same canonical
+  // index for the adjacent page. Never skip a model at page 24/25.
+  async function resolveNeighbor(direction: -1 | 1) {
+    if (!page || selectedIndex < 0) return null;
+    const samePage = page.items[selectedIndex + direction];
+    if (samePage) return { id: samePage.id, newPage: null, newOffset: offset };
+    const newOffset = offset + direction * page.limit;
+    if (newOffset < 0 || newOffset >= page.total) return null;
+    const newPage = await searchTelegramStudioIndex(studio, query, newOffset);
+    if (!newPage.items.length || newPage.offset !== newOffset) {
+      throw new Error("adjacent_page_unavailable");
+    }
+    const destination = direction === 1
+      ? newPage.items[0]
+      : newPage.items[newPage.items.length - 1];
+    return { id: destination.id, newPage, newOffset };
+  }
+
+  function openNeighbor(target: {
+    id: string; newPage: TelegramStudioIndexPage | null; newOffset: number;
+  }) {
+    if (target.newPage) {
+      setPage(target.newPage);
+      setOffset(target.newOffset);
+    }
+    setSelectedId(target.id);
+  }
+
+  async function navigate(direction: -1 | 1) {
+    if (saving || navigating || loading || !selectedId || selectedIndex < 0) return;
+    if (dirty && !window.confirm("Existem alterações não salvas. Descartar e continuar?")) return;
+    setNavigating(true);
+    setEditorError("");
+    try {
+      const target = await resolveNeighbor(direction);
+      if (target) openNeighbor(target);
+    } catch {
+      setEditorError("A página seguinte não pôde ser carregada. A ficha atual foi mantida.");
+    } finally {
+      setNavigating(false);
+    }
+  }
 
   function choose(id: string | null) {
-    if (saving) return;
+    if (saving || navigating) return;
     if (id === selectedId) return;
     if (dirty && !window.confirm("Existem alterações não salvas. Descartar e continuar?")) return;
     if (id && !selectedId && document.activeElement instanceof HTMLElement) {
@@ -296,7 +344,7 @@ export default function TonartTelegramDrafts() {
     const submittedBy = (event.nativeEvent as SubmitEvent).submitter;
     const advance = submittedBy instanceof HTMLElement &&
       submittedBy.getAttribute("data-advance") === "true";
-    const followingId = advance ? nextId : undefined;
+    const shouldAdvance = advance && hasNext;
     setSaving(true);
     setSaved(false);
     setEditorError("");
@@ -332,9 +380,24 @@ export default function TonartTelegramDrafts() {
         reviewStatus: persisted.reviewStatus,
         imageOrder: persisted.images.map((x) => x.messageId),
       });
-      setSaved(!followingId);
+      setSaved(true);
       setRefresh((x) => x + 1);
-      if (followingId) setSelectedId(followingId);
+      if (shouldAdvance) {
+        setNavigating(true);
+        try {
+          const next = await resolveNeighbor(1);
+          if (next) {
+            openNeighbor(next);
+            setSaved(false);
+          }
+        } catch {
+          // Saving already succeeded; retain the saved model and report only
+          // that navigation failed. Never suggest the D1 update was lost.
+          setEditorError("Ficha salva e verificada, mas a próxima página não carregou. Você pode continuar nesta ficha.");
+        } finally {
+          setNavigating(false);
+        }
+      }
     } catch {
       setEditorError("A gravação não pôde ser reconfirmada. Reabra a ficha antes de tentar novamente.");
     } finally {
@@ -538,16 +601,19 @@ export default function TonartTelegramDrafts() {
               <>
                 <div className="space-y-5 p-4 sm:p-5">
                   <div className="flex items-center justify-between gap-2 rounded-md border border-[#55412f] bg-[#211a14] p-2">
-                    <button type="button" className={outlineButton} disabled={!previousId || saving}
-                      onClick={() => previousId && choose(previousId)} aria-label="Abrir ficha anterior">
+                    <button type="button" className={outlineButton}
+                      disabled={!hasPrevious || saving || navigating || loading}
+                      onClick={() => void navigate(-1)} aria-label="Abrir ficha anterior">
                       ← Anterior
                     </button>
-                    <span className="text-center text-[11px] text-[#c8b199]">
-                      {selectedIndex < 0 ? "Ficha do acervo" :
-                        "Ficha " + (selectedIndex + 1) + " de " + page?.items.length + " nesta página"}
+                    <span className="text-center text-[11px] text-[#c8b199]" role="status">
+                      {navigating ? "Carregando..." : selectedIndex < 0 || !page ? "Ficha do acervo" :
+                        "Ficha " + integer.format(offset + selectedIndex + 1) + " de " +
+                        integer.format(page.total) + " nesta seleção"}
                     </span>
-                    <button type="button" className={outlineButton} disabled={!nextId || saving}
-                      onClick={() => nextId && choose(nextId)} aria-label="Abrir próxima ficha">
+                    <button type="button" className={outlineButton}
+                      disabled={!hasNext || saving || navigating || loading}
+                      onClick={() => void navigate(1)} aria-label="Abrir próxima ficha">
                       Próxima →
                     </button>
                   </div>
@@ -666,7 +732,7 @@ export default function TonartTelegramDrafts() {
                       {saving ? "Salvando e conferindo..." : dirty ? "Salvar alterações" : "Ficha atualizada"}
                     </button>
                     <button type="submit" data-advance="true" className={outlineButton + " w-full"}
-                      disabled={saving || !dirty || !nextId}>
+                      disabled={saving || navigating || loading || !dirty || !hasNext}>
                       Salvar e abrir próxima ficha →
                     </button>
                     <p className="text-center text-[11px] text-[#978775]">
