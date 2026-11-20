@@ -31,10 +31,15 @@ const draft = (n: number) => ({
     role: "cover" as const, position: 0, thumbPath: "/thumb", displayPath: "/display",
   }],
 });
-const page = (offset: number) => ({
-  total: 25, limit: 24, offset,
-  items: offset === 0 ? Array.from({ length: 24 }, (_, i) => indexed(i + 1)) : [indexed(25)],
-});
+const page = (offset: number, onlyProvisional = false) => {
+  const available = Array.from({ length: 25 }, (_, i) => i + 1).filter(
+    (number) => !onlyProvisional || current.get(id(number))?.provisionalName,
+  );
+  return {
+    total: available.length, limit: 24, offset,
+    items: available.slice(offset, offset + 24).map(indexed),
+  };
+};
 let current: Map<string, ReturnType<typeof draft>>;
 const editor = () => within(screen.getByRole("dialog", { name: "Editor de estatueta Telegram" }));
 
@@ -45,18 +50,22 @@ beforeEach(() => {
     return [model.id, model];
   }));
   mocks.listStudios.mockResolvedValue({ studios: [{ studio: "Wicked", total: 25 }] });
-  mocks.searchIndex.mockImplementation(async (_s: string, _q: string, offset: number) => page(offset));
+  mocks.searchIndex.mockImplementation(
+    async (_s: string, _q: string, offset: number, onlyProvisional = false) =>
+      page(offset, onlyProvisional),
+  );
   mocks.getDraft.mockImplementation(async (key: string) => current.get(key));
   mocks.getImage.mockRejectedValue(new Error("private media unavailable in isolated test"));
   mocks.editDraft.mockImplementation(async (key: string, form: {
     name: string; studio: string; character: string; variant: string;
-    reviewStatus: "pending"; revision: number;
+    reviewStatus: "pending" | "reviewing" | "confirmed" | "rejected"; revision: number;
   }) => {
     const old = current.get(key)!;
     const next = {
       ...old, name: form.name.trim(), studio: form.studio.trim(),
       character: form.character.trim(), variant: form.variant.trim(),
       reviewStatus: form.reviewStatus, revision: old.revision + 1,
+      provisionalName: form.reviewStatus === "confirmed" ? false : old.provisionalName,
     };
     current.set(key, next);
     return next;
@@ -112,6 +121,23 @@ describe("TONART: curadoria contínua em lotes de 24", () => {
     ));
     expect(editor().getByRole("heading", { name: "Modelo 24" })).toBeInTheDocument();
     expect(mocks.searchIndex).not.toHaveBeenCalledWith("", "", 24);
+  });
+
+  it("filters provisional identities and advances correctly when confirmation removes model 24", async () => {
+    render(<TonartTelegramDrafts />);
+    fireEvent.click(screen.getByRole("button", { name: /Somente identidades provisórias/ }));
+    await waitFor(() => expect(mocks.searchIndex).toHaveBeenCalledWith("", "", 0, true));
+    fireEvent.click(await screen.findByRole("button", { name: /Modelo 24/ }));
+    expect(await editor().findByRole("heading", { name: "Modelo 24" })).toBeInTheDocument();
+    fireEvent.change(editor().getByLabelText("Estado da revisão"), {
+      target: { value: "confirmed" },
+    });
+    fireEvent.click(editor().getByRole("button", { name: "Salvar e abrir próxima ficha →" }));
+    expect(await editor().findByRole("heading", { name: "Modelo 25" })).toBeInTheDocument();
+    expect(current.get(id(24))?.provisionalName).toBe(false);
+    expect(current.get(id(24))?.reviewStatus).toBe("confirmed");
+    expect(mocks.searchIndex).toHaveBeenCalledWith("", "", 0, true);
+    expect(editor().getByText("Ficha 24 de 24 nesta seleção")).toBeInTheDocument();
   });
 
   it("reports a navigation failure without falsely reversing a saved model", async () => {
