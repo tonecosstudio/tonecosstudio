@@ -271,6 +271,14 @@ jobs:
       - name: Verify monorepo ownership and Git blobs
         run: npm run catalog:monorepo:check
 
+      - name: Typecheck TONART admin editor
+        if: github.event.pull_request.number == 54
+        run: npm run typecheck:app
+
+      - name: Check formatting of Telegram admin files
+        if: github.event.pull_request.number == 54
+        run: npx prettier --check src/pages/commercial/TonartTelegramDrafts.tsx src/services/catalog/tonart-telegram-drafts.ts src/pages/commercial/TonecosAdminHomePage.tsx
+
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
 

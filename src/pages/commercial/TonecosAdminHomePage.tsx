@@ -22,6 +22,7 @@ import {
 } from "@/services/admin/overview/tonart-admin-profiles-service";
 import { panelClass, secondaryClass } from "./CommercialPage";
 import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
+import TonartTelegramDrafts from "./TonartTelegramDrafts";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
 import TonartCommercialOffersAdmin from "./TonartCommercialOffersAdmin";
 
@@ -55,26 +56,98 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 };
 
 const originalAdminSubpages = [
-  { parent: "catalog-hub", path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers, label: "Ofertas comerciais TONART" },
-  { parent: "catalog-hub", path: ADMIN_ROUTES.catalogCollections, label: "Coleções do catálogo" },
-  { parent: "production-dashboard", path: ADMIN_ROUTES.productionKanban, label: "Quadro de produção" },
-  { parent: "production-dashboard", path: ADMIN_ROUTES.productionList, label: "Lista de produção" },
-  { parent: "production-dashboard", path: ADMIN_ROUTES.productionCalendar, label: "Calendário de produção" },
-  { parent: "production-dashboard", path: ADMIN_ROUTES.productionAnalytics, label: "Análises de produção" },
-  { parent: "production-dashboard", path: ADMIN_ROUTES.productionChoices, label: "Escolhas de produção" },
-  { parent: "financial-hub", path: ADMIN_ROUTES.financialCollections, label: "Financeiro de coleções" },
+  {
+    parent: "catalog-hub",
+    path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers,
+    label: "Ofertas comerciais TONART",
+  },
+  {
+    parent: "catalog-hub",
+    path: ADMIN_ROUTES.catalogCollections,
+    label: "Coleções do catálogo",
+  },
+  {
+    parent: "production-dashboard",
+    path: ADMIN_ROUTES.productionKanban,
+    label: "Quadro de produção",
+  },
+  {
+    parent: "production-dashboard",
+    path: ADMIN_ROUTES.productionList,
+    label: "Lista de produção",
+  },
+  {
+    parent: "production-dashboard",
+    path: ADMIN_ROUTES.productionCalendar,
+    label: "Calendário de produção",
+  },
+  {
+    parent: "production-dashboard",
+    path: ADMIN_ROUTES.productionAnalytics,
+    label: "Análises de produção",
+  },
+  {
+    parent: "production-dashboard",
+    path: ADMIN_ROUTES.productionChoices,
+    label: "Escolhas de produção",
+  },
+  {
+    parent: "financial-hub",
+    path: ADMIN_ROUTES.financialCollections,
+    label: "Financeiro de coleções",
+  },
   { parent: "payments", path: ADMIN_ROUTES.preorders, label: "Pré-vendas" },
-  { parent: "payments", path: ADMIN_ROUTES.paymentMethods, label: "Métodos de pagamento" },
-  { parent: "payments", path: ADMIN_ROUTES.paymentKeys, label: "Chaves de pagamento" },
-  { parent: "payments", path: ADMIN_ROUTES.paymentCalculator, label: "Calculadora financeira" },
-  { parent: "communication", path: ADMIN_ROUTES.communicationQuickReplies, label: "Respostas rápidas" },
-  { parent: "communication", path: ADMIN_ROUTES.communicationTemplates, label: "Modelos de mensagem" },
-  { parent: "communication", path: ADMIN_ROUTES.communicationNotifications, label: "Configuração de notificações" },
-  { parent: "communication", path: ADMIN_ROUTES.communicationHistory, label: "Histórico de comunicações" },
-  { parent: "system", path: ADMIN_ROUTES.settingsOperational, label: "Configuração operacional" },
+  {
+    parent: "payments",
+    path: ADMIN_ROUTES.paymentMethods,
+    label: "Métodos de pagamento",
+  },
+  {
+    parent: "payments",
+    path: ADMIN_ROUTES.paymentKeys,
+    label: "Chaves de pagamento",
+  },
+  {
+    parent: "payments",
+    path: ADMIN_ROUTES.paymentCalculator,
+    label: "Calculadora financeira",
+  },
+  {
+    parent: "communication",
+    path: ADMIN_ROUTES.communicationQuickReplies,
+    label: "Respostas rápidas",
+  },
+  {
+    parent: "communication",
+    path: ADMIN_ROUTES.communicationTemplates,
+    label: "Modelos de mensagem",
+  },
+  {
+    parent: "communication",
+    path: ADMIN_ROUTES.communicationNotifications,
+    label: "Configuração de notificações",
+  },
+  {
+    parent: "communication",
+    path: ADMIN_ROUTES.communicationHistory,
+    label: "Histórico de comunicações",
+  },
+  {
+    parent: "system",
+    path: ADMIN_ROUTES.settingsOperational,
+    label: "Configuração operacional",
+  },
   { parent: "system", path: ADMIN_ROUTES.settingsHolidays, label: "Feriados" },
-  { parent: "system", path: ADMIN_ROUTES.settingsLegal, label: "Conformidade legal" },
-  { parent: "users", path: ADMIN_ROUTES.groupDetails, label: "Grupos de usuários" },
+  {
+    parent: "system",
+    path: ADMIN_ROUTES.settingsLegal,
+    label: "Conformidade legal",
+  },
+  {
+    parent: "users",
+    path: ADMIN_ROUTES.groupDetails,
+    label: "Grupos de usuários",
+  },
 ].filter((section) => !section.path.includes(":"));
 
 function moduleState(id: string): "active" | "read-only" | "off" {
@@ -152,7 +225,9 @@ export default function TonecosAdminHomePage() {
     );
   const allItems = adminGroups.flatMap((section) => section.items);
   const pathname = location.pathname.replace(/\/+$/, "") || "/";
-  const selectedSubpage = originalAdminSubpages.find((item) => item.path === pathname);
+  const selectedSubpage = originalAdminSubpages.find(
+    (item) => item.path === pathname,
+  );
   const activeItem = allItems.find(
     (item) => item.path === pathname || item.id === selectedSubpage?.parent,
   );
@@ -264,7 +339,9 @@ export default function TonecosAdminHomePage() {
   // Only use the existing protected overview. Never treat this bounded list
   // as the full queue or an independent source of quote state.
   const attentionQuotes = (overview?.recentQuotes ?? [])
-    .filter((quote) => quote.status === "pending" || quote.status === "reviewing")
+    .filter(
+      (quote) => quote.status === "pending" || quote.status === "reviewing",
+    )
     .sort(
       (left, right) =>
         (left.status === "pending" ? 0 : 1) -
@@ -398,22 +475,34 @@ export default function TonecosAdminHomePage() {
             )}
           </div>
 
-          {activeItem && originalAdminSubpages.some((item) => item.parent === activeItem.id) && (
-            <nav aria-label="Páginas do módulo administrativo" className="mb-5 flex flex-wrap gap-2">
-              {originalAdminSubpages
-                .filter((item) => item.parent === activeItem.id && item.path !== activeItem.path)
-                .map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    aria-current={selectedSubpage?.path === item.path ? "page" : undefined}
-                    className={secondaryClass}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-            </nav>
-          )}
+          {activeItem &&
+            originalAdminSubpages.some(
+              (item) => item.parent === activeItem.id,
+            ) && (
+              <nav
+                aria-label="Páginas do módulo administrativo"
+                className="mb-5 flex flex-wrap gap-2"
+              >
+                {originalAdminSubpages
+                  .filter(
+                    (item) =>
+                      item.parent === activeItem.id &&
+                      item.path !== activeItem.path,
+                  )
+                  .map((item) => (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      aria-current={
+                        selectedSubpage?.path === item.path ? "page" : undefined
+                      }
+                      className={secondaryClass}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+              </nav>
+            )}
           {requiresOverview && error && (
             <div
               role="alert"
@@ -428,8 +517,9 @@ export default function TonecosAdminHomePage() {
             </p>
           )}
 
-          {selectedSubpage && (
-            selectedSubpage.path === TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
+          {selectedSubpage &&
+            (selectedSubpage.path ===
+            TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
               <TonartCommercialOffersAdmin />
             ) : (
               <TonartAdminOriginalSection
@@ -439,13 +529,14 @@ export default function TonecosAdminHomePage() {
                 quotesEnabled={quotesEnabled}
                 parentPath={activeItem?.path ?? ADMIN_ROUTES.home}
               />
-            )
-          )}
+            ))}
           {(isProduction || isAnalytics) && (
             <TonartAdminOriginalSection
               section={{
                 parent: isProduction ? "production-dashboard" : "financial-hub",
-                path: isProduction ? ADMIN_ROUTES.production : ADMIN_ROUTES.analytics,
+                path: isProduction
+                  ? ADMIN_ROUTES.production
+                  : ADMIN_ROUTES.analytics,
                 label: isProduction ? "Produção" : "Análises de orçamentos",
               }}
               overview={overview}
@@ -476,7 +567,8 @@ export default function TonecosAdminHomePage() {
                   label="Em atendimento"
                   value={
                     overview
-                      ? overview.pendingQuoteCount + overview.reviewingQuoteCount
+                      ? overview.pendingQuoteCount +
+                        overview.reviewingQuoteCount
                       : undefined
                   }
                   detail="Aguardando resposta ou em análise"
@@ -552,8 +644,8 @@ export default function TonecosAdminHomePage() {
                       )}
                       {attentionQuotes.length > 0 && (
                         <p className="mt-3 text-xs text-white/50">
-                          Esta lista usa somente as 25 solicitações mais recentes;
-                          consulte a fila completa para ver todas.
+                          Esta lista usa somente as 25 solicitações mais
+                          recentes; consulte a fila completa para ver todas.
                         </p>
                       )}
                     </div>
@@ -573,30 +665,35 @@ export default function TonecosAdminHomePage() {
                     )}
                   </div>
                 </section>
-                {coinsEnabled && <section className={panelClass}>
-                  <h3 className="text-lg font-semibold">Coins · Moedas</h3>
-                  <p className="mt-2 text-sm text-white/60">
-                    A estrutura de créditos permanece preservada. Não há
-                    liberação automática de compra, conversão ou emissão.
-                  </p>
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <Link to={ADMIN_ROUTES.credits} className={secondaryClass}>
-                      Consultar movimentações
-                    </Link>
-                    {coinsEnabled ? (
+                {coinsEnabled && (
+                  <section className={panelClass}>
+                    <h3 className="text-lg font-semibold">Coins · Moedas</h3>
+                    <p className="mt-2 text-sm text-white/60">
+                      A estrutura de créditos permanece preservada. Não há
+                      liberação automática de compra, conversão ou emissão.
+                    </p>
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
                       <Link
-                        to={TONECOS_COMMERCIAL_ROUTES.adminCoins}
+                        to={ADMIN_ROUTES.credits}
                         className={secondaryClass}
                       >
-                        Operações autorizadas
+                        Consultar movimentações
                       </Link>
-                    ) : (
-                      <span className="text-xs text-white/50">
-                        Emissão e utilização desativadas
-                      </span>
-                    )}
-                  </div>
-                </section>}
+                      {coinsEnabled ? (
+                        <Link
+                          to={TONECOS_COMMERCIAL_ROUTES.adminCoins}
+                          className={secondaryClass}
+                        >
+                          Operações autorizadas
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-white/50">
+                          Emissão e utilização desativadas
+                        </span>
+                      )}
+                    </div>
+                  </section>
+                )}
               </div>
               <section className={panelClass + " mt-6"}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -640,7 +737,9 @@ export default function TonecosAdminHomePage() {
             <section className={panelClass}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-semibold">Usuários cadastrados</h3>
+                  <h3 className="text-lg font-semibold">
+                    Usuários cadastrados
+                  </h3>
                   <p className="mt-2 max-w-2xl text-sm text-white/60">
                     Consulta administrativa paginada à base completa de perfis.
                     Não cria contas e não altera permissões.
@@ -723,7 +822,10 @@ export default function TonecosAdminHomePage() {
                       </thead>
                       <tbody>
                         {userDirectory.rows.map((profile) => (
-                          <tr key={profile.id} className="border-b border-white/10">
+                          <tr
+                            key={profile.id}
+                            className="border-b border-white/10"
+                          >
                             <td className="py-3 pr-3">
                               {profile.fullName || "Não informado"}
                             </td>
@@ -992,8 +1094,9 @@ export default function TonecosAdminHomePage() {
               </h3>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
                 Valores extraídos das respostas a orçamentos, não de vendas. Não
-                representam caixa ou receita realizada. Os pagamentos de pré-venda
-                são acompanhados separadamente no fluxo de pedidos e comprovantes.
+                representam caixa ou receita realizada. Os pagamentos de
+                pré-venda são acompanhados separadamente no fluxo de pedidos e
+                comprovantes.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-3">
                 <div className="border border-white/15 p-5">
@@ -1053,9 +1156,10 @@ export default function TonecosAdminHomePage() {
             <section className={panelClass}>
               <h3 className="text-lg font-semibold">Central de Comunicação</h3>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/65">
-                Acompanhamento das solicitações do catálogo usando a própria fila
-                de orçamentos. A resposta comercial e o valor ficam registrados no
-                orçamento e no histórico; esta página não cria uma caixa paralela.
+                Acompanhamento das solicitações do catálogo usando a própria
+                fila de orçamentos. A resposta comercial e o valor ficam
+                registrados no orçamento e no histórico; esta página não cria
+                uma caixa paralela.
               </p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                 <Metric
@@ -1088,9 +1192,9 @@ export default function TonecosAdminHomePage() {
                 )}
               </div>
               <p className="mt-2 text-xs text-white/50">
-                Exibindo solicitações pendentes, em análise ou respondidas entre as
-                25 solicitações recentes. As quantidades acima consideram a base
-                completa.
+                Exibindo solicitações pendentes, em análise ou respondidas entre
+                as 25 solicitações recentes. As quantidades acima consideram a
+                base completa.
               </p>
               {overview &&
                 overview.recentQuotes.filter(
@@ -1100,7 +1204,8 @@ export default function TonecosAdminHomePage() {
                     q.status === "answered",
                 ).length === 0 && (
                   <p className="mt-5 text-sm text-white/60">
-                    Não há atividade recente de orçamento entre as últimas solicitações.
+                    Não há atividade recente de orçamento entre as últimas
+                    solicitações.
                   </p>
                 )}
               {overview?.recentQuotes
@@ -1167,15 +1272,24 @@ export default function TonecosAdminHomePage() {
               <p className="mt-6 text-xs text-white/45">
                 Preparar e-mail abre o aplicativo de correio do dispositivo e é
                 opcional. A resposta comercial canônica deve ser registrada no
-                próprio orçamento para permanecer visível ao cliente e no histórico.
+                próprio orçamento para permanecer visível ao cliente e no
+                histórico.
               </p>
             </section>
           )}
 
           {isCatalog && (
-            <section className={panelClass}>
-              <TonartAdminCatalogReview />
-            </section>
+            <div className="space-y-7">
+              <section className={panelClass}>
+                <TonartTelegramDrafts />
+              </section>
+              <section className={panelClass}>
+                <p className="mb-4 text-xs uppercase tracking-widest text-white/50">
+                  Acervo comercial anterior · preservado
+                </p>
+                <TonartAdminCatalogReview />
+              </section>
+            </div>
           )}
 
           {!selectedSubpage &&
@@ -1204,17 +1318,17 @@ export default function TonecosAdminHomePage() {
             )}
           {(sectionId === "unknown" ||
             (!coinsEnabled && sectionId === "credits-hub")) && (
-              <section className={panelClass}>
-                <h3 className="text-lg font-semibold">{displayName}</h3>
-                <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
-                  Esta página não está disponível na implantação comercial atual.
-                  Nenhuma operação foi executada.
-                </p>
-                <Link className={secondaryClass + " mt-5"} to={ADMIN_ROUTES.home}>
-                  Voltar ao painel
-                </Link>
-              </section>
-            )}
+            <section className={panelClass}>
+              <h3 className="text-lg font-semibold">{displayName}</h3>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
+                Esta página não está disponível na implantação comercial atual.
+                Nenhuma operação foi executada.
+              </p>
+              <Link className={secondaryClass + " mt-5"} to={ADMIN_ROUTES.home}>
+                Voltar ao painel
+              </Link>
+            </section>
+          )}
         </main>
       </div>
     </section>
