@@ -250,6 +250,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 2
 
       - name: Use Node.js 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -271,13 +272,37 @@ jobs:
       - name: Verify monorepo ownership and Git blobs
         run: npm run catalog:monorepo:check
 
-      - name: Typecheck TONART admin editor
-        if: github.event.pull_request.number == 54
-        run: npm run typecheck:app
+      # Only typecheck the app when this PR changes the canonical admin editor.
+      # The simulated PR merge has its base as HEAD^1 (checkout depth 2).
+      - name: Typecheck TONART admin changes
+        run: |
+          if git diff --name-only HEAD^1 HEAD | grep -Eq '^src/pages/commercial/(TonartTelegramDrafts|TonecosAdminHomePage)\.tsx$|^src/services/catalog/tonart-telegram-drafts\.ts
+      - name: Typecheck Worker
+        run: npm run catalog:worker:typecheck
 
-      - name: Check formatting of Telegram admin files
-        if: github.event.pull_request.number == 54
-        run: npx prettier --check src/pages/commercial/TonartTelegramDrafts.tsx src/services/catalog/tonart-telegram-drafts.ts src/pages/commercial/TonecosAdminHomePage.tsx
+      - name: Test Worker runtime offline
+        run: npm run catalog:worker:test
+
+      - name: Test catalog search and SQLite locally
+        run: npm run catalog:worker:search:test
+
+      - name: Test Pages proxy offline
+        run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/vercel/catalog-proxy.test.mjs
+
+      - name: Validate cutover gate fail-closed without network
+        run: node --test scripts/catalog/cutover-readiness.test.mjs
+
+      # The canonical TONART launch PR requires release:verify before a
+      # production promotion. Reuse this existing PR job instead of creating
+      # additional workflows or running the full suite on unrelated PRs.
+      - name: Verify canonical TONART release candidate
+        if: github.event.pull_request.number == 4 && github.head_ref == 'integration/tonecosstudio-canonical-20261101'
+        run: npm run release:verify
+; then
+            npm run typecheck:app
+          else
+            echo "Editor administrativo não alterado; typecheck de app dispensado."
+          fi
 
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
