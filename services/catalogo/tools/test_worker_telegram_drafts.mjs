@@ -235,16 +235,32 @@ function draftImportFixture() {
       },
       async batch(statements) {
         batches++
-        assert.equal(statements.length, 3)
-        assert.match(statements[0].sql,/INSERT INTO models/)
-        assert.equal(statements[0].values[10],0,'new drafts cannot be published')
-        stored = {
-          id:'tg_'+key, name:input.name, published:0,
-          photos: statements.slice(1).map(x=>({
-            image_id:x.values[1],source_sha256:x.values[4],
-          })),
+        if (statements[0].sql.includes('INSERT INTO models')) {
+          assert.equal(statements.length, 3)
+          assert.equal(statements[0].values[10],0,'new drafts cannot be published')
+          stored = {
+            id:'tg_'+key, name:input.name, published:0,
+            image_count:2,telegram_revision:0,telegram_gallery_order:JSON.stringify([17278,17279]),
+            photos:statements.slice(1).map(x=>({
+              image_id:x.values[1],position:x.values[2],source_sha256:x.values[4],
+            })),
+          }
+        } else {
+          assert.match(statements[0].sql,/UPDATE models/)
+          assert.equal(statements.length,2)
+          assert.equal(statements[0].values[3],stored.image_count)
+          assert.equal(statements[0].values[4],stored.telegram_revision)
+          stored.image_count=statements[0].values[0]
+          stored.telegram_gallery_order=statements[0].values[1]
+          stored.telegram_revision++
+          for(const statement of statements.slice(1)){
+            stored.photos.push({
+              image_id:statement.values[1],position:statement.values[2],
+              source_sha256:statement.values[4],
+            })
+          }
         }
-        return statements.map(()=>({success:true}))
+        return statements.map(()=>({success:true,meta:{changes:1}}))
       },
     },
     PRIVATE_TELEGRAM: {
@@ -307,4 +323,37 @@ test('missing private WebP blocks draft import atomically',async()=>{
   assert.equal(r.status,409)
   assert.equal(r.data.error,'r2_manifest_incomplete')
   assert.equal(x.getBatches(),0)
+})
+
+
+test('incremental curation appends only new private images and preserves edited metadata',async()=>{
+  const x=draftImportFixture()
+  const created=await x.run(x.input)
+  assert.equal(created.status,201)
+  const next={...x.input,name:'Name revised by admin',
+    images:[...x.input.images,{messageId:17280,sha256:'3'.repeat(64)}]}
+  const appended=await x.run(next)
+  assert.equal(appended.status,200)
+  assert.equal(appended.data.reused,true)
+  assert.equal(appended.data.created,false)
+  assert.equal(appended.data.appended,1)
+  assert.equal(appended.data.name,x.input.name)
+  assert.equal(appended.data.imageCount,3)
+  assert.equal(x.heads.length,6,'only new WebP files are HEAD-checked')
+  assert.equal(x.getBatches(),2)
+  const replay=await x.run(next)
+  assert.equal(replay.status,200)
+  assert.equal(replay.data.appended,0)
+  assert.equal(x.getBatches(),2,'reimport never duplicates the appended photo')
+  assert.equal(x.heads.length,6)
+})
+
+test('partial replay cannot silently delete a previously indexed image',async()=>{
+  const x=draftImportFixture()
+  assert.equal((await x.run(x.input)).status,201)
+  const wrong={...x.input,images:[x.input.images[0]]}
+  const r=await x.run(wrong)
+  assert.equal(r.status,409)
+  assert.equal(r.data.error,'gallery_changed_requires_reconciliation')
+  assert.equal(x.getBatches(),1)
 })
