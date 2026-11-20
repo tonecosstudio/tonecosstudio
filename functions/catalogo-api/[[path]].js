@@ -12,6 +12,8 @@ const PUBLIC_LIST_ROUTES = new Set([
   "api/franchises",
   "api/folders",
   "api/recent",
+  "api/telegram-studios",
+  "api/telegram-studios/studios",
 ]);
 
 // The external publisher cannot set arbitrary headers on our first-party site.
@@ -86,6 +88,7 @@ function isCompleteMediaRange(contentRange) {
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
+    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(path) ||
     isSafeMediaPath(path);
 }
 
@@ -97,7 +100,11 @@ function isBoundedPublicQuery(route, searchParams) {
   // Media keys are immutable; irrelevant query arguments merely fragment
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
-  const routeKeys = route === "api/catalog"
+  const routeKeys = route === "api/telegram-studios"
+    ? ["studio", "q", "offset", "limit"]
+    : route === "api/telegram-studios/studios" || /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(route)
+      ? []
+    : route === "api/catalog"
     ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
     : route === "api/franchises"
       ? ["category", "q", "limit"]
@@ -118,8 +125,12 @@ function isBoundedPublicQuery(route, searchParams) {
         value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false;
     seen.add(key);
     if (key === "limit") {
-      const max = route === "api/recent" ? 24 : route === "api/franchises" ? 48 : 60;
+      const max = route === "api/recent" ? 24 : route === "api/franchises" || route === "api/telegram-studios" ? 48 : 60;
       if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false;
+    } else if (key === "offset") {
+      if (!/^(0|[1-9][0-9]{0,4})$/.test(value)) return false;
+    } else if (key === "studio") {
+      if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;
     } else if (key === "v") {
