@@ -11,7 +11,7 @@ type Statement = {
 }
 type D1 = {
   prepare(sql: string): Statement
-  batch(statements: Statement[]): Promise<Array<{ success: boolean }>>
+  batch(statements: Statement[]): Promise<Array<{ success: boolean; meta?: { changes?: number } }>>
 }
 type PrivateBucket = { head(key: string): Promise<unknown | null> }
 export type DraftImportEnv = {
@@ -94,21 +94,77 @@ export async function importPrivateTelegramDraft(
   if (!env.PRIVATE_TELEGRAM?.head) return error(503, 'private_storage_unavailable')
   const id = 'tg_' + group
   const already = await env.DB.prepare(
-    'SELECT id,name,published FROM models WHERE telegram_origin_id=? AND telegram_group_key=? LIMIT 1',
-  ).bind(sourceId, group).first<{ id: string; name: string; published: number }>()
+    'SELECT id,name,published,image_count,telegram_revision,telegram_gallery_order FROM models WHERE telegram_origin_id=? AND telegram_group_key=? LIMIT 1',
+  ).bind(sourceId, group).first<{
+    id: string; name: string; published: number; image_count: number;
+    telegram_revision: number; telegram_gallery_order: string
+  }>()
   if (already) {
     if (already.id !== id || already.published !== 0) return error(409, 'group_identity_conflict')
     const stored = (await env.DB.prepare(
-      'SELECT image_id,source_sha256 FROM model_image_sources WHERE model_id=? AND gallery_version=1 ORDER BY image_id',
-    ).bind(id).all<{ image_id: string; source_sha256: string }>()).results
-    const a = stored.map(x => x.image_id + ':' + x.source_sha256).sort()
-    const b = images.map(x => 'tg:' + x.messageId + ':' + x.sha256).sort()
-    if (a.length !== b.length || a.some((x, i) => x !== b[i])) {
+      'SELECT image_id,source_sha256,position FROM model_image_sources WHERE model_id=? AND gallery_version=1 ORDER BY position',
+    ).bind(id).all<{ image_id: string; source_sha256: string; position: number }>()).results
+    if (stored.length !== already.image_count || !stored.length) return error(409, 'gallery_integrity_conflict')
+    const known = new Map(stored.map(x => [x.image_id, x.source_sha256]))
+    const submitted = new Map(images.map(x => ['tg:' + x.messageId, x.sha256]))
+    if (Array.from(known).some(([k, v]) => submitted.get(k) !== v)) {
       return error(409, 'gallery_changed_requires_reconciliation')
     }
-    // Never overwrite a manually corrected name or a reviewed gallery.
-    return { status: 200, data: { id, created: false, reused: true, imageCount: stored.length,
-      published: false, name: already.name } }
+    const fresh = images.filter(x => !known.has('tg:' + x.messageId))
+    if (!fresh.length) {
+      // Never overwrite a manually corrected name or a reviewed gallery on replay.
+      return { status: 200, data: { id, created: false, reused: true,
+        appended: 0, imageCount: stored.length, published: false, name: already.name } }
+    }
+    const placeholders = fresh.map(() => '?').join(',')
+    const otherOwner = (await env.DB.prepare(
+      'SELECT model_id,source_sha256 FROM model_image_sources WHERE source_sha256 IN (' +
+      placeholders + ') LIMIT 1',
+    ).bind(...fresh.map(x => x.sha256)).all()).results
+    if (otherOwner.length) return error(409, 'existing_image_collision')
+    for (const photo of fresh) {
+      for (const role of ['display', 'thumb'] as const) {
+        if (!await env.PRIVATE_TELEGRAM.head(key(photo.sha256, role))) {
+          return error(409, 'r2_manifest_incomplete')
+        }
+      }
+    }
+    const knownIds = stored.map(x => Number(x.image_id.replace(/^tg:/, '')))
+    let previousOrder = knownIds
+    try {
+      const encoded: unknown = JSON.parse(already.telegram_gallery_order || '[]')
+      if (Array.isArray(encoded) && encoded.length === knownIds.length &&
+          encoded.every(x => Number.isSafeInteger(x) && knownIds.includes(x)) &&
+          new Set(encoded).size === knownIds.length) {
+        previousOrder = encoded as number[]
+      }
+    } catch { /* The original source order remains authoritative on malformed metadata. */ }
+    const nextOrder = [...previousOrder, ...fresh.map(x => x.messageId)]
+    const newCount = stored.length + fresh.length
+    const nextRevision = already.telegram_revision + 1
+    const encodedOrder = JSON.stringify(nextOrder)
+    const append: Statement[] = [
+      env.DB.prepare(
+        'UPDATE models SET image_count=?,telegram_gallery_order=?,' +
+        'telegram_revision=telegram_revision+1,updated_at=CURRENT_TIMESTAMP' +
+        ' WHERE id=? AND published=0 AND image_count=? AND telegram_revision=?',
+      ).bind(newCount, encodedOrder, id, stored.length, already.telegram_revision),
+      ...fresh.map((photo, i) => env.DB.prepare(
+        'INSERT INTO model_image_sources(model_id,image_id,position,role,source_sha256,gallery_version)' +
+        ' SELECT ?,?,?,?,?,1 WHERE EXISTS (SELECT 1 FROM models WHERE id=? AND published=0' +
+        ' AND image_count=? AND telegram_revision=? AND telegram_gallery_order=?)',
+      ).bind(id, 'tg:' + photo.messageId, stored.length + i, 'gallery', photo.sha256,
+        id, newCount, nextRevision, encodedOrder)),
+    ]
+    try {
+      const applied = await env.DB.batch(append)
+      if (applied.length !== append.length || applied.some(x => !x.success) ||
+          applied.some(x => x.meta?.changes !== 1)) {
+        return error(409, 'catalog_import_conflict')
+      }
+    } catch { return error(409, 'catalog_import_conflict') }
+    return { status: 200, data: { id, created: false, reused: true,
+      appended: fresh.length, imageCount: newCount, published: false, name: already.name } }
   }
   const existingSameId = await env.DB.prepare(
     'SELECT id FROM models WHERE id=? LIMIT 1',
