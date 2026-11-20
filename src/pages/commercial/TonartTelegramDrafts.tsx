@@ -67,10 +67,21 @@ export default function TonartTelegramDrafts() {
       setForm({
         revision: data.revision, name: data.name, studio: data.studio,
         character: data.character, variant: data.variant, reviewStatus: data.reviewStatus,
+        imageOrder: data.images.map(x => x.messageId),
       });
     } catch {
       setError("Falha ao abrir esta ficha; nada foi alterado.");
     }
+  }
+
+  function movePhoto(index: number, direction: -1 | 1) {
+    if (!form) return;
+    const target = index + direction;
+    if (target < 0 || target >= form.imageOrder.length) return;
+    const order = [...form.imageOrder];
+    [order[index], order[target]] = [order[target], order[index]];
+    setForm({...form, imageOrder: order});
+    setSaved(false);
   }
 
   async function save(event: FormEvent) {
@@ -84,13 +95,15 @@ export default function TonartTelegramDrafts() {
       if (persisted.revision !== updated.revision ||
           persisted.name !== form.name.trim() ||
           persisted.groupKey !== selected.groupKey ||
-          persisted.imageCount !== selected.imageCount) {
+          persisted.imageCount !== selected.imageCount ||
+          persisted.images.some((x,i) => x.messageId !== form.imageOrder[i])) {
         throw new Error("persisted_draft_mismatch");
       }
       setSelected(persisted);
       setForm({
         revision: persisted.revision, name: persisted.name, studio: persisted.studio,
         character: persisted.character, variant: persisted.variant, reviewStatus: persisted.reviewStatus,
+        imageOrder: persisted.images.map(x => x.messageId),
       });
       setSaved(true);
       const next = await listTelegramDrafts(studio, offset);
@@ -160,10 +173,25 @@ export default function TonartTelegramDrafts() {
             <p className="mt-1 text-xs text-white/60">ID comercial estável: {selected.id} · Revisão {selected.revision}</p>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Galeria privada WebP">
-            {previews.map(image => (
-              <img key={image.messageId} src={image.url} alt={"Fotografia Telegram " + image.messageId}
-                className="aspect-square w-full rounded-sm border border-white/20 object-contain" loading="lazy" />
-            ))}
+            {form.imageOrder.map((messageId,index) => {
+              const image = previews.find(x => x.messageId === messageId);
+              return (
+                <div key={messageId} className="space-y-2 border border-white/15 p-2">
+                  {image ? <img src={image.url} alt={"Fotografia Telegram " + messageId}
+                    className="aspect-square w-full object-contain" loading="lazy" /> :
+                    <div className="aspect-square w-full bg-white/5" aria-label="Carregando foto" />}
+                  <p className="text-xs text-white/60">{index===0 ? "Capa da galeria" : "Imagem "+(index+1)} · #{messageId}</p>
+                  <div className="flex gap-2">
+                    <button type="button" className={secondaryClass}
+                      disabled={index===0} onClick={() => movePhoto(index,-1)}
+                      aria-label={"Mover foto "+messageId+" para antes"}>↑</button>
+                    <button type="button" className={secondaryClass}
+                      disabled={index===form.imageOrder.length-1} onClick={() => movePhoto(index,1)}
+                      aria-label={"Mover foto "+messageId+" para depois"}>↓</button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           {!previews.length && <p className="text-xs text-white/50">Carregando miniaturas por acesso autorizado...</p>}
           <form className="grid gap-4 md:grid-cols-2" onSubmit={e => void save(e)}>
