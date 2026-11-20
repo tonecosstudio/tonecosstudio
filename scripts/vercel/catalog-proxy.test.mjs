@@ -461,3 +461,134 @@ test("public catalog build keeps read-only gates without requiring blanket image
   assert.equal(run({ VITE_PUBLIC_CATALOG_MVP: "false" }).status, 0);
   assert.equal(run({ ...base, VITE_PREVIEW_READ_ONLY: "false" }).status, 1);
 });
+
+
+const TELEGRAM_ID = "tg_04e28eadb6e1811af4f37845";
+const TELEGRAM_PATH = "api/admin/telegram-drafts";
+const TELEGRAM_AUTH = "Bearer " + "a".repeat(100);
+
+test("Vercel sends authenticated Telegram draft GET to the existing Worker with private cache only", async () => {
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return Response.json({ total: 8, items: [{ id: TELEGRAM_ID, name: "Monica Rambeau" }] }, {
+      headers: { "Cache-Control": "public, max-age=600", "Set-Cookie": "unsafe=1" },
+    });
+  };
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=api%2Fadmin%2Ftelegram-drafts",
+      query: { path: TELEGRAM_PATH, studio: "Abe3D" },
+      headers: { authorization: TELEGRAM_AUTH, cookie: "private=not-forwarded" },
+    }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(JSON.parse(res.body.toString()).total, 8);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url,
+      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/telegram-drafts?studio=Abe3D");
+    assert.equal(calls[0].init.method, "GET");
+    assert.equal(calls[0].init.headers.get("authorization"), TELEGRAM_AUTH);
+    assert.equal(calls[0].init.headers.has("cookie"), false);
+    assert.equal(res.headers.get("cache-control"), "private, no-store");
+    assert.equal(res.headers.get("vercel-cdn-cache-control"), "private, no-store");
+    assert.equal(res.headers.has("set-cookie"), false);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("Vercel forwards parsed Telegram edit and import only with admin bearer and no public writes", async () => {
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return Response.json({ id: TELEGRAM_ID, revision: 1, published: false }, {
+      status: init.method === "POST" ? 201 : 200,
+      headers: { "Cache-Control": "no-store" },
+    });
+  };
+  try {
+    const patch = responseSink();
+    const edit = {
+      revision: 0, name: "Monica Rambeau corrigida", studio: "Abe3D",
+      character: "Monica Rambeau", variant: "", reviewStatus: "reviewing",
+      imageOrder: [21448, 21449, 21450, 21451],
+    };
+    await handler({
+      method: "PATCH",
+      url: "/api/catalogo-proxy?path=api%2Fadmin%2Ftelegram-drafts%2F" + TELEGRAM_ID,
+      query: { path: TELEGRAM_PATH + "/" + TELEGRAM_ID },
+      headers: { authorization: TELEGRAM_AUTH, "content-type": "application/json" },
+      body: edit,
+    }, patch);
+    assert.equal(patch.statusCode, 200);
+    assert.equal(calls[0].init.method, "PATCH");
+    assert.deepEqual(JSON.parse(calls[0].init.body), edit);
+
+    const importBody = {
+      originId: "2370335738", studio: "Abe3D", groupKey: "b2b99222c387716d35aba4c3",
+      name: "Bowsette", universe: "Super Mario", variant: "", franchiseId: 197,
+      images: [{ messageId: 17278, sha256: "1".repeat(64) }],
+    };
+    const ingest = responseSink();
+    await handler({
+      method: "POST",
+      url: "/api/catalogo-proxy?path=api%2Fadmin%2Ftelegram-drafts%2Fimport",
+      query: { path: TELEGRAM_PATH + "/import" },
+      headers: { authorization: TELEGRAM_AUTH, "content-type": "application/json" },
+      body: importBody,
+    }, ingest);
+    assert.equal(ingest.statusCode, 201);
+    assert.equal(calls[1].init.method, "POST");
+    assert.deepEqual(JSON.parse(calls[1].init.body), importBody);
+
+    const denied = responseSink();
+    await handler({
+      method: "POST",
+      url: "/api/catalogo-proxy?path=api%2Fadmin%2Ftelegram-drafts%2Fimport",
+      query: { path: TELEGRAM_PATH + "/import" },
+      headers: { "content-type": "application/json" },
+      body: importBody,
+    }, denied);
+    assert.equal(denied.statusCode, 403);
+    assert.equal(calls.length, 2);
+
+    const publicWrite = responseSink();
+    await handler({
+      method: "POST", url: "/api/catalogo-proxy?path=api%2Fcatalog",
+      query: { path: "api/catalog" }, headers: { authorization: TELEGRAM_AUTH },
+    }, publicWrite);
+    assert.equal(publicWrite.statusCode, 405);
+    assert.equal(calls.length, 2);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("Vercel private Telegram WebP response remains non-cacheable and strips upstream cookies", async () => {
+  const original = globalThis.fetch;
+  const sha = "3c7f50718e6cab3787df0443404f01a9b5e5976036a542c13daff9e51e4884e7";
+  const path = TELEGRAM_PATH + "/" + TELEGRAM_ID + "/media/" + sha + "/thumb";
+  globalThis.fetch = async () => new Response(new Uint8Array([0x52,0x49,0x46,0x46]), {
+    headers: { "Content-Type": "image/webp", "Set-Cookie": "private=leak" },
+  });
+  try {
+    const res = responseSink();
+    await handler({
+      method: "GET",
+      url: "/api/catalogo-proxy?path=" + encodeURIComponent(path),
+      query: { path }, headers: { authorization: TELEGRAM_AUTH, accept: "image/webp" },
+    }, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers.get("content-type"), "image/webp");
+    assert.equal(res.headers.get("cache-control"), "private, no-store");
+    assert.equal(res.headers.get("vercel-cdn-cache-control"), "private, no-store");
+    assert.equal(res.headers.has("set-cookie"), false);
+    assert.equal(res.body.length, 4);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
