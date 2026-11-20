@@ -139,10 +139,20 @@ export default function TonartTelegramDrafts() {
       // Read again from the catalog authority: state must survive a new request.
       const persisted = await getTelegramDraft(updated.id);
       if (
+        persisted.id !== selected.id ||
+        persisted.revision !== form.revision + 1 ||
         persisted.revision !== updated.revision ||
         persisted.name !== form.name.trim() ||
+        persisted.studio !== form.studio.trim() ||
+        persisted.character !== form.character.trim() ||
+        persisted.variant !== form.variant.trim() ||
+        persisted.reviewStatus !== form.reviewStatus ||
         persisted.groupKey !== selected.groupKey ||
+        persisted.originId !== selected.originId ||
+        persisted.rightsStatus !== selected.rightsStatus ||
+        persisted.published !== false ||
         persisted.imageCount !== selected.imageCount ||
+        persisted.images.length !== form.imageOrder.length ||
         persisted.images.some((x, i) => x.messageId !== form.imageOrder[i])
       ) {
         throw new Error("persisted_draft_mismatch");
