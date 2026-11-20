@@ -110,11 +110,31 @@ def _topic_to_scan(curadoria_db_path: str | Path, source_chat_id: int):
              AND p.scope='topic:' || CAST(c.topic_id AS TEXT)
             WHERE c.source_chat_id=? AND c.topic_id IS NOT NULL
               AND lower(replace(replace(trim(c.topic_name),' ',''),'+',''))!='geral50k'
+              AND COALESCE(c.reason,'') NOT LIKE 'Telegram retornou TOPIC_ID_INVALID%'
             GROUP BY c.topic_id
             ORDER BY incomplete DESC,checkpoint_at ASC,c.topic_id ASC
             LIMIT 1
         """, (int(source_chat_id),)).fetchone()
         return (int(row["topic_id"]), str(row["topic_name"] or "")) if row else None
+
+
+def _mark_topic_id_invalid(
+    curadoria_db_path: str | Path, source_chat_id: int, topic_id: int,
+) -> int:
+    """Keep invalid Telegram topic IDs partial and out of future scans."""
+    reason = (
+        f"Telegram retornou TOPIC_ID_INVALID para topic_id={int(topic_id)}; "
+        "ID ausente do índice canônico do fórum. Tópico sem cobertura verificável."
+    )
+    with identity._open_curadoria(curadoria_db_path) as db:
+        db.execute("BEGIN IMMEDIATE")
+        result = db.execute("""
+            UPDATE telegram_identity_coverage SET coverage_status='partial',
+                reason=?,updated_at=?
+            WHERE source_chat_id=? AND topic_id=?
+        """, (reason, _now(), int(source_chat_id), int(topic_id)))
+        db.commit()
+    return int(result.rowcount)
 
 
 class TelethonHistorySource:
@@ -215,12 +235,21 @@ async def _telegram_pass(
                 "verified_links": 0}
         if topic:
             topic_id, topic_name = topic
-            scan = await identity.scan_history_batch(
-                curadoria_db_path,
-                TelethonHistorySource(client, entity, source_chat_id, topic_id, topic_name),
-                source_chat_id, topic_id, topic_name=topic_name,
-                limit=history_page_size,
-            )
+            try:
+                scan = await identity.scan_history_batch(
+                    curadoria_db_path,
+                    TelethonHistorySource(client, entity, source_chat_id, topic_id, topic_name),
+                    source_chat_id, topic_id, topic_name=topic_name,
+                    limit=history_page_size,
+                )
+            except Exception as exc:
+                if "TOPIC_ID_INVALID" not in str(exc).upper():
+                    raise
+                _mark_topic_id_invalid(curadoria_db_path, source_chat_id, topic_id)
+                scan = {
+                    "coverage_status": "invalid_topic", "messages_fetched": 0,
+                    "verified_links": 0, "invalid_topic_ids": 1,
+                }
         return {"status": "session_ok", "recovery": recovered, "history": scan}
 
 
