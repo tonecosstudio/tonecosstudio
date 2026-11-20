@@ -33,6 +33,7 @@ type Draft = {
   telegram_rights_status: string
   telegram_name_provisional: number
   telegram_revision: number
+  telegram_gallery_order: string
   published: number
   image_count: number
   collection: string | null
@@ -92,7 +93,7 @@ async function verifyAdmin(request: Request, env: TelegramDraftEnv): Promise<boo
 const FIELDS = `m.id,m.name,m.variant_name,m.collection,m.published,m.image_count,
   m.telegram_group_key,m.telegram_origin_id,m.telegram_studio,m.telegram_character,
   m.telegram_review_status,m.telegram_rights_status,m.telegram_name_provisional,
-  m.telegram_revision`
+  m.telegram_revision,m.telegram_gallery_order`
 async function findDraft(db: Database, id: string): Promise<Draft | null> {
   return db.prepare(`SELECT ${FIELDS} FROM models m
     WHERE m.id=? AND m.telegram_group_key IS NOT NULL AND m.published=0 LIMIT 1`)
@@ -104,6 +105,17 @@ async function sources(db: Database, id: string) {
     ORDER BY position,image_id LIMIT 80`).bind(id).all<Source>()).results
 }
 function detail(draft: Draft, images: Source[]) {
+  let ordered = images
+  try {
+    const requested = JSON.parse(draft.telegram_gallery_order || "[]") as unknown
+    if (Array.isArray(requested) && requested.length === images.length) {
+      const byId = new Map(images.map(x => [Number(x.image_id.replace(/^tg:/, '')), x]))
+      const ids = requested.map(Number)
+      if (new Set(ids).size === images.length && ids.every(id => byId.has(id))) {
+        ordered = ids.map(id => byId.get(id)!)
+      }
+    }
+  } catch { /* Invalid legacy metadata cannot change source membership. */ }
   return {
     id: draft.id,
     source: 'telegram_studios',
@@ -119,12 +131,12 @@ function detail(draft: Draft, images: Source[]) {
     rightsStatus: draft.telegram_rights_status,
     revision: draft.telegram_revision,
     published: false,
-    imageCount: images.length,
-    images: images.map(s => ({
+    imageCount: ordered.length,
+    images: ordered.map((s, index) => ({
       messageId: Number(s.image_id.replace(/^tg:/, '')),
       sha256: s.source_sha256,
-      position: s.position,
-      role: s.role,
+      position: index,
+      role: index === 0 ? 'cover' : 'gallery',
       thumbPath: `${PREFIX}/${encodeURIComponent(draft.id)}/media/${s.source_sha256}/thumb`,
       displayPath: `${PREFIX}/${encodeURIComponent(draft.id)}/media/${s.source_sha256}/display`,
     })),
@@ -208,7 +220,7 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
     return result(request, env, { error: 'invalid_body' }, 400)
   }
   const body = input as Record<string, unknown>
-  const accepted = new Set(['revision','name','studio','character','variant','reviewStatus'])
+  const accepted = new Set(['revision','name','studio','character','variant','reviewStatus','imageOrder'])
   if (Object.keys(body).some(x => !accepted.has(x)) || !Number.isSafeInteger(body.revision) ||
       body.revision !== model.telegram_revision ||
       !Object.keys(body).some(x => x !== 'revision')) {
@@ -224,12 +236,27 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
       typeof status !== 'string' || !REVIEW.has(status)) {
     return result(request, env, { error: 'invalid_field_values' }, 400)
   }
+  const images = await sources(env.DB, id)
+  const current = detail(model, images).images
+  const ids = current.map(x => x.messageId)
+  const requested = body.imageOrder
+  const validOrder = requested === undefined || (
+    Array.isArray(requested) && requested.length === ids.length &&
+    requested.every(x => Number.isSafeInteger(x) && ids.includes(x)) &&
+    new Set(requested).size === ids.length
+  )
+  if (!validOrder) return result(request, env, { error: 'invalid_gallery_order' }, 400)
+  const order = requested === undefined ? ids : requested as number[]
+  const first = images.find(x => Number(x.image_id.replace(/^tg:/, '')) === order[0])
+  if (!first) return result(request, env, { error: 'empty_gallery' }, 409)
+  const cover = `telegram-studios/v1/2370335738/telegram-webp-final-v1/${first.source_sha256.slice(0,2)}/${first.source_sha256}/display.webp`
   const stored = await env.DB.prepare(`UPDATE models SET
     name=?,telegram_studio=?,telegram_character=?,variant_name=?,
-    telegram_review_status=?,telegram_revision=telegram_revision+1,
-    search_text=?,updated_at=CURRENT_TIMESTAMP
+    telegram_review_status=?,telegram_gallery_order=?,cover_storage_key=?,
+    telegram_revision=telegram_revision+1,search_text=?,updated_at=CURRENT_TIMESTAMP
     WHERE id=? AND telegram_group_key IS NOT NULL AND published=0 AND telegram_revision=?`)
     .bind(name.trim(),studio.trim(),character.trim(),variant.trim(),status,
+      JSON.stringify(order),cover,
       [studio.trim(),name.trim(),character.trim(),variant.trim()].filter(Boolean).join(' '),
       id,model.telegram_revision).run()
   if (stored.meta?.changes !== 1) return result(request, env, { error: 'revision_conflict' }, 409)
