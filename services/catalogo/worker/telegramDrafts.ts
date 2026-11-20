@@ -3,15 +3,18 @@
  * No anonymous route can list drafts or read the separate Telegram R2 binding.
  * Supabase Auth and the canonical is_tonecos_admin RPC remain the authority.
  */
+import { importPrivateTelegramDraft, type DraftImportEnv } from './telegramDraftImport'
+
 type Statement = {
   bind(...values: unknown[]): Statement
   first<T = unknown>(): Promise<T | null>
   all<T = unknown>(): Promise<{ results: T[] }>
   run(): Promise<{ meta?: { changes?: number } }>
 }
-type Database = { prepare(sql: string): Statement }
+type Database = { prepare(sql: string): Statement; batch(statements: Statement[]): Promise<Array<{ success: boolean }>> }
 type PrivateR2 = {
   get(key: string): Promise<{ body: ReadableStream | null } | null>
+  head(key: string): Promise<unknown | null>
 }
 export type TelegramDraftEnv = {
   DB: Database
@@ -56,7 +59,7 @@ function headers(request: Request, env: TelegramDraftEnv) {
   if (origin && allowed.has(origin)) {
     headers['access-control-allow-origin'] = origin
     headers['access-control-allow-headers'] = 'authorization, content-type'
-    headers['access-control-allow-methods'] = 'GET, PATCH, OPTIONS'
+    headers['access-control-allow-methods'] = 'GET, PATCH, POST, OPTIONS'
     headers['access-control-max-age'] = '600'
   }
   return headers
@@ -155,10 +158,16 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
       ? new Response(null, { status: 204, headers: headers(request, env) })
       : new Response(null, { status: 403 })
   }
-  if (!['GET', 'PATCH'].includes(request.method)) return result(request, env, { error: 'method_not_allowed' }, 405)
+  if (!['GET', 'PATCH', 'POST'].includes(request.method)) return result(request, env, { error: 'method_not_allowed' }, 405)
   const auth = await verifyAdmin(request, env)
   if (auth === null) return result(request, env, { error: 'admin_auth_unconfigured' }, 503)
   if (!auth) return result(request, env, { error: 'admin_required' }, 403)
+  if (url.pathname === PREFIX + '/import') {
+    if (request.method !== 'POST') return result(request, env, { error: 'method_not_allowed' }, 405)
+    const output = await importPrivateTelegramDraft(request, env as unknown as DraftImportEnv)
+    return result(request, env, output.data, output.status)
+  }
+  if (request.method === 'POST') return result(request, env, { error: 'method_not_allowed' }, 405)
   if (url.pathname === PREFIX && request.method === 'GET') {
     const studio = url.searchParams.get('studio')?.trim() || ''
     const limit = Math.min(30, Math.max(1, Number(url.searchParams.get('limit')) || 12))
