@@ -1,5 +1,6 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
 import { routeTelegramDrafts, type TelegramDraftEnv } from './telegramDrafts'
+import { routeTelegramStudioShowcase, type TelegramPublicEnv } from './telegramPublic'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
 import { type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
@@ -592,6 +593,10 @@ async function createQuote(request: Request, env: Env) {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url)
+    // The standalone studio catalog never queries the legacy published model inventory.
+    if (url.pathname === '/api/telegram-studios' || url.pathname.startsWith('/api/telegram-studios/')) {
+      return routeTelegramStudioShowcase(request, env as unknown as TelegramPublicEnv)
+    }
     // Protect private drafts and R2 before any public route or public CORS.
     if (url.pathname === '/api/admin/telegram-drafts' ||
         url.pathname.startsWith('/api/admin/telegram-drafts/')) {

@@ -1,5 +1,5 @@
 /** Public catalog entry. Commercial modules must remain unreachable in this build. */
-import { CatalogMvpShell } from "@/CatalogMvpShell";
+import TelegramStudioCatalog from "@/TelegramStudioCatalog";
 import { isCatalogPublicMvpEnabled, isCatalogMvpReadOnlyConfigurationSafe } from "@/config/catalog-public-mvp";
 import { isPreviewReadOnly } from "@/config/supabase-environment";
 
@@ -9,5 +9,5 @@ export default function PublicCatalogApp() {
       import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true") {
     throw new Error("MVP público exige configuração somente leitura.");
   }
-  return <CatalogMvpShell />;
+  return <TelegramStudioCatalog />;
 }

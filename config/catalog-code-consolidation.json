@@ -208,8 +208,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "cf8cb2cd16b62a52e8e8d235e352b79f82333987",
-        "reason": "Reviewed Tonecos-local administrative Telegram draft route, with existing public Worker unchanged until explicit source publisher cutover; immutable origin pin preserved"
+        "localBlob": "d9d6f23a292effae707c27f35506a10f88bc2a1e",
+        "reason": "Reviewed local overlay: route Telegram studios through existing catalog Worker and D1 without touching immutable imported source pins; production Worker cutover remains blocked until source writer is disabled and release gate is authorized."
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
