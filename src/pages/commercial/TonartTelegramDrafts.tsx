@@ -45,6 +45,8 @@ export default function TonartTelegramDrafts() {
   const [studio, setStudio] = useState("");
   const [searchText, setSearchText] = useState("");
   const [query, setQuery] = useState("");
+  const [onlyProvisional, setOnlyProvisional] = useState(false);
+  const [notice, setNotice] = useState("");
   const [offset, setOffset] = useState(0);
   const [layout, setLayout] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState<TelegramStudioIndexPage | null>(null);
@@ -95,7 +97,7 @@ export default function TonartTelegramDrafts() {
     let live = true;
     setLoading(true);
     setError("");
-    searchTelegramStudioIndex(studio, query, offset)
+    searchTelegramStudioIndex(studio, query, offset, onlyProvisional)
       .then((result) => { if (live) setPage(result); })
       .catch(() => {
         if (live) {
@@ -105,7 +107,7 @@ export default function TonartTelegramDrafts() {
       })
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
-  }, [studio, query, offset, refresh]);
+  }, [studio, query, offset, refresh, onlyProvisional]);
 
   useEffect(() => {
     let live = true;
@@ -270,14 +272,14 @@ export default function TonartTelegramDrafts() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedId, hasNext, hasPrevious, saving, dirty, lightbox,
-      navigating, page, offset, studio, query, loading]);
+      navigating, page, offset, studio, query, onlyProvisional, loading]);
 
   // Resolve neighbors on the current page first, then ask the same canonical
   // index for the adjacent page. Never skip a model at page 24/25.
   async function resolveNeighbor(direction: -1 | 1) {
     if (!page || !selectedId) return null;
     return resolveTelegramIndexNeighbor(page, selectedId, direction, (nextOffset) =>
-      searchTelegramStudioIndex(studio, query, nextOffset),
+      searchTelegramStudioIndex(studio, query, nextOffset, onlyProvisional),
     );
   }
 
@@ -306,6 +308,15 @@ export default function TonartTelegramDrafts() {
     }
   }
 
+  function toggleProvisional() {
+    if (saving || navigating) return;
+    if (dirty && !window.confirm("Existem alterações não salvas. Descartar e alterar a fila?")) return;
+    setSelectedId(null);
+    setOffset(0);
+    setOnlyProvisional((value) => !value);
+    setNotice("");
+  }
+
   function choose(id: string | null) {
     if (saving || navigating) return;
     if (id === selectedId) return;
@@ -313,6 +324,7 @@ export default function TonartTelegramDrafts() {
     if (id && !selectedId && document.activeElement instanceof HTMLElement) {
       previousFocusRef.current = document.activeElement;
     }
+    if (id) setNotice("");
     setSelectedId(id);
   }
 
@@ -349,6 +361,7 @@ export default function TonartTelegramDrafts() {
         persisted.character !== form.character.trim() ||
         persisted.variant !== form.variant.trim() ||
         persisted.reviewStatus !== form.reviewStatus ||
+        persisted.provisionalName !== (form.reviewStatus === "confirmed" ? false : selected.provisionalName) ||
         persisted.groupKey !== selected.groupKey ||
         persisted.originId !== selected.originId ||
         persisted.rightsStatus !== selected.rightsStatus ||
@@ -370,21 +383,60 @@ export default function TonartTelegramDrafts() {
         imageOrder: persisted.images.map((x) => x.messageId),
       });
       setSaved(true);
-      setRefresh((x) => x + 1);
-      if (shouldAdvance) {
+      const completedInFilteredQueue =
+        onlyProvisional && selected.provisionalName && !persisted.provisionalName;
+      if (completedInFilteredQueue) {
         setNavigating(true);
         try {
-          const next = await resolveNeighbor(1);
-          if (next) {
-            openNeighbor(next);
-            setSaved(false);
+          // Confirmation removes the model from this filter. Refresh the SAME
+          // canonical D1 queue before resolving the next position: at 24/25,
+          // the former #25 becomes #24 instead of being skipped.
+          let refreshed = await searchTelegramStudioIndex(studio, query, offset, true);
+          if (refreshed.total > 0 && refreshed.items.length === 0 && offset > 0) {
+            refreshed = await searchTelegramStudioIndex(
+              studio, query, Math.max(0, offset - (page?.limit ?? 24)), true,
+            );
+          }
+          setPage(refreshed);
+          setOffset(refreshed.offset);
+          if (shouldAdvance) {
+            const oldNextId = page?.items[selectedIndex + 1]?.id;
+            const target = refreshed.items.find((item) => item.id === oldNextId) ??
+              refreshed.items[Math.min(Math.max(selectedIndex, 0), refreshed.items.length - 1)];
+            if (target) {
+              setSelectedId(target.id);
+              setSaved(false);
+            } else {
+              setSelectedId(null);
+              setNotice("Identidade confirmada; a fila de revisão foi concluída.");
+            }
+          } else {
+            setSelectedId(null);
+            setNotice("Identidade confirmada e retirada da fila de revisão.");
           }
         } catch {
-          // Saving already succeeded; retain the saved model and report only
-          // that navigation failed. Never suggest the D1 update was lost.
-          setEditorError("Ficha salva e verificada, mas a próxima página não carregou. Você pode continuar nesta ficha.");
+          setEditorError("Ficha salva e verificada, mas a fila não pôde ser atualizada. Atualize a pesquisa para continuar.");
+          setRefresh((value) => value + 1);
         } finally {
           setNavigating(false);
+        }
+      } else {
+        setRefresh((x) => x + 1);
+        if (shouldAdvance) {
+          setNavigating(true);
+          try {
+            const next = await resolveNeighbor(1);
+            if (next) {
+              openNeighbor(next);
+              setSaved(false);
+            }
+          } catch {
+            // Saving already succeeded; retain the saved model and report only
+            // that navigation failed. Never suggest the D1 update was lost.
+            setEditorError("Ficha salva e verificada, mas a próxima página não carregou. Você pode continuar nesta ficha.");
+          } finally {
+            setNavigating(false);
+          }
         }
       }
     } catch {
@@ -446,6 +498,17 @@ export default function TonartTelegramDrafts() {
               </button>
             ))}
           </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button type="button" aria-pressed={onlyProvisional}
+              onClick={toggleProvisional}
+              className={"inline-flex min-h-10 items-center gap-2 rounded-md border px-4 text-xs font-semibold transition " +
+                (onlyProvisional ? "border-[#d8b47c] bg-[#3e2e1e] text-[#f3d5aa]" :
+                  "border-[#594737] bg-[#1d1712] text-[#d1bca5] hover:border-[#d8b47c]")}>
+              <span aria-hidden="true">{onlyProvisional ? "✓" : "○"}</span>
+              Somente identidades provisórias
+            </button>
+            <p className="text-xs text-[#ac9b87]">Ao confirmar uma identidade, ela sai desta fila.</p>
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <form className="flex min-w-0 flex-1 items-center gap-2" onSubmit={(event) => {
               event.preventDefault();
@@ -482,12 +545,14 @@ export default function TonartTelegramDrafts() {
               {loading ? "Consultando o acervo..." :
                 page ? integer.format(page.total) + " esculturas encontradas" : "Índice indisponível"}
               {query ? " para “" + query + "”" : ""}
+              {onlyProvisional ? " · aguardando confirmação editorial" : ""}
             </p>
             <span>Uma ficha por modelo · J/K navegam entre fichas · / busca</span>
           </div>
         </div>
       </div>
 
+      {notice && <p role="status" className="rounded-lg border border-[#68805d] bg-[#1d281a] px-4 py-3 text-sm text-[#d4edc9]">{notice}</p>}
       {error && (
         <p role="alert" className="rounded-lg border border-[#9c5f53] bg-[#321d1b] p-4 text-sm text-[#ffd1c8]">{error}</p>
       )}
