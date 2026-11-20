@@ -52,8 +52,8 @@ def fingerprint(path):
         if width<=0 or height<=0: raise ValueError("Dimensões inválidas")
         grayscale=image.convert("L")
         from PIL.Image import Resampling
-        dh=list(grayscale.resize((9,8),Resampling.LANCZOS).get_flattened_data())
-        ah=list(grayscale.resize((8,8),Resampling.LANCZOS).get_flattened_data())
+        dh=list(grayscale.resize((9,8),Resampling.LANCZOS).tobytes())
+        ah=list(grayscale.resize((8,8),Resampling.LANCZOS).tobytes())
         avg=sum(ah)/64
         d=bits(dh[row*9+col]>dh[row*9+col+1] for row in range(8) for col in range(8))
         a=bits(x>=avg for x in ah)
