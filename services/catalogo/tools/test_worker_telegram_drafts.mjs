@@ -23,7 +23,7 @@ const gallery = [
   { image_id: 'tg:21451', position: 3, role: 'gallery', source_sha256: 'd'.repeat(64) },
 ]
 function setup() {
-  const log = { queries: [], privateReads: [], authCalls: [] }
+  const log = { queries: [], privateReads: [], authCalls: [], forceNoWrite: false }
   const row = {
     id, name: 'Monica Rambeau', variant_name: '', collection: 'Telegram Studios · Rascunhos',
     published: 0, image_count: 4, telegram_group_key: '04e28eadb6e1811af4f37845',
@@ -60,13 +60,15 @@ function setup() {
             if (vals[8] !== id || vals[9] !== row.telegram_revision) {
               return { meta: { changes: 0 } }
             }
+            if (log.forceNoWrite) return { meta: { changes: 0 } }
             Object.assign(row, {
               name: vals[0], telegram_studio: vals[1], telegram_character: vals[2],
               variant_name: vals[3], telegram_review_status: vals[4],
               telegram_gallery_order: vals[5], cover_storage_key: vals[6],
               telegram_revision: row.telegram_revision + 1,
             })
-            return { meta: { changes: 1 } }
+            // D1 production counts extra FTS trigger writes (observed: changes=7).
+            return { meta: { changes: 7 } }
           },
         }
       },
@@ -101,6 +103,18 @@ function request(path, method = 'GET', data, authorize = true) {
     ...(data ? { body: JSON.stringify(data) } : {}),
   })
 }
+
+test('a zero-row D1 update remains a conflict even when the editor is authenticated', async () => {
+  const { env, log, row, restore } = setup()
+  try {
+    log.forceNoWrite = true
+    const response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id, 'PATCH',
+      { revision: 0, name: 'Should not persist' }), env)
+    assert.equal(response.status, 409)
+    assert.equal(row.name, 'Monica Rambeau')
+    assert.equal(row.telegram_revision, 0)
+  } finally { restore() }
+})
 
 test('private draft never authenticates from UI alone and fails closed', async () => {
   const { env, log, restore } = setup()

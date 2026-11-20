@@ -268,8 +268,14 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
       JSON.stringify(order),cover,
       [studio.trim(),name.trim(),character.trim(),variant.trim()].filter(Boolean).join(' '),
       id,model.telegram_revision).run()
-  if (stored.meta?.changes !== 1) return result(request, env, { error: 'revision_conflict' }, 409)
+  // D1 counts FTS maintenance triggers in meta.changes; one matched model can report >1.
+  if (!Number.isInteger(stored.meta?.changes) || (stored.meta?.changes ?? 0) < 1) {
+    return result(request, env, { error: 'revision_conflict' }, 409)
+  }
   const latest = await findDraft(env.DB,id)
   if (!latest) return result(request, env, { error: 'draft_not_found' }, 404)
+  if (latest.telegram_revision !== model.telegram_revision + 1) {
+    return result(request, env, { error: 'revision_conflict' }, 409)
+  }
   return result(request, env, detail(latest, await sources(env.DB,id)))
 }
