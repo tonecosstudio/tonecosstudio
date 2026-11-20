@@ -258,7 +258,7 @@ export async function proxyCatalogRequest(request, fetcher) {
 // Pages → CATALOG_WORKER binding; public routes retain the read-only proxy.
 // Never forward browser cookies, custom headers, unknown methods or public caches.
 const PRIVATE_DRAFT_ROUTE =
-  /^api\/admin\/telegram-drafts(?:\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
+  /^api\/admin\/telegram-drafts(?:\/import|\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
 const BEARER_TOKEN = /^Bearer [A-Za-z0-9._~-]{60,8192}$/;
 
 export async function proxyTelegramAdminRequest(request, fetcher) {
@@ -273,12 +273,14 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
     return new Response("Not found", { status: 404 });
   }
   const method = request.method;
-  if (!["GET", "PATCH"].includes(method)) {
+  if (!["GET", "PATCH", "POST"].includes(method)) {
     return new Response("Method not allowed", { status: 405,
-      headers: { Allow: "GET, PATCH", "Cache-Control": "no-store" } });
+      headers: { Allow: "GET, PATCH, POST", "Cache-Control": "no-store" } });
   }
   const targetIsModel = /^api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}$/.test(route);
-  if (method === "PATCH" && (incoming.search || !targetIsModel)) {
+  if ((method === "PATCH" && (incoming.search || !targetIsModel)) ||
+      (method === "POST" && (incoming.search || route !== "api/admin/telegram-drafts/import")) ||
+      (method === "GET" && route === "api/admin/telegram-drafts/import")) {
     return new Response("Not found", { status: 404 });
   }
   const authorization = request.headers.get("authorization") || "";
@@ -290,12 +292,12 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
   const headers = new Headers({ Authorization: authorization,
     Accept: request.headers.get("Accept") || "application/json" });
   let body;
-  if (method === "PATCH") {
+  if (method === "PATCH" || method === "POST") {
     if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) {
       return new Response("Invalid body", { status: 400 });
     }
     body = await request.text();
-    if (!body || body.length > 8192) return new Response("Invalid body", { status: 400 });
+    if (!body || body.length > (method === "POST" ? 20000 : 8192)) return new Response("Invalid body", { status: 400 });
     headers.set("Content-Type", "application/json");
   }
   try {
