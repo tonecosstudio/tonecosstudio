@@ -47,6 +47,7 @@ export type TelegramDraftEdit = {
   character: string;
   variant: string;
   reviewStatus: TelegramDraft["reviewStatus"];
+  imageOrder: number[];
 };
 
 function base() {
