@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   editTelegramDraft,
   getTelegramDraft,
@@ -65,6 +65,12 @@ export default function TonartTelegramDrafts() {
   const dirty = useMemo(() => hasChanges(selected, form), [selected, form]);
   const activeMessageId = form?.imageOrder[activePhoto];
   const activePreview = previews.find((x) => x.messageId === activeMessageId)?.url;
+  const searchRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const selectedIndex = page?.items.findIndex((item) => item.id === selectedId) ?? -1;
+  const previousId = selectedIndex > 0 ? page?.items[selectedIndex - 1]?.id : undefined;
+  const nextId = selectedIndex >= 0 ? page?.items[selectedIndex + 1]?.id : undefined;
 
   useEffect(() => {
     let live = true;
@@ -205,10 +211,71 @@ export default function TonartTelegramDrafts() {
     return () => window.removeEventListener("keydown", handler);
   }, [lightbox, form?.imageOrder.length]);
 
+  // On mobile the editor is a full-screen workspace. Prevent background
+  // scrolling and restore keyboard focus when the workspace is dismissed.
+  useEffect(() => {
+    if (!selectedId && !lightbox) return;
+    const before = document.body.style.overflow;
+    const desktop = window.matchMedia("(min-width: 1280px)");
+    const updateLock = () => {
+      document.body.style.overflow = lightbox || (selectedId && !desktop.matches)
+        ? "hidden"
+        : before;
+    };
+    updateLock();
+    desktop.addEventListener("change", updateLock);
+    return () => {
+      desktop.removeEventListener("change", updateLock);
+      document.body.style.overflow = before;
+    };
+  }, [selectedId, lightbox]);
+
+  useEffect(() => {
+    if (selectedId) {
+      editorRef.current?.scrollTo({ top: 0, behavior: "auto" });
+      if (!window.matchMedia("(min-width: 1280px)").matches) {
+        editorRef.current?.focus();
+      }
+    } else if (previousFocusRef.current?.isConnected) {
+      previousFocusRef.current.focus();
+      previousFocusRef.current = null;
+    }
+  }, [selectedId]);
+
+  // J/K traverse the currently visible batch; / focuses the global search.
+  // Typing in an input never triggers gallery navigation.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (lightbox || event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target;
+      const editing = target instanceof HTMLElement &&
+        !!target.closest("input, textarea, select, [contenteditable='true']");
+      if (editing) return;
+      if (event.key === "/" && !selectedId) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      } else if (event.key === "Escape" && selectedId) {
+        event.preventDefault();
+        choose(null);
+      } else if (event.key.toLowerCase() === "j" && nextId) {
+        event.preventDefault();
+        choose(nextId);
+      } else if (event.key.toLowerCase() === "k" && previousId) {
+        event.preventDefault();
+        choose(previousId);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selectedId, nextId, previousId, saving, dirty, lightbox]);
+
   function choose(id: string | null) {
     if (saving) return;
     if (id === selectedId) return;
     if (dirty && !window.confirm("Existem alterações não salvas. Descartar e continuar?")) return;
+    if (id && !selectedId && document.activeElement instanceof HTMLElement) {
+      previousFocusRef.current = document.activeElement;
+    }
     setSelectedId(id);
   }
 
@@ -226,6 +293,10 @@ export default function TonartTelegramDrafts() {
   async function save(event: FormEvent) {
     event.preventDefault();
     if (!selected || !form || saving || !dirty) return;
+    const submittedBy = (event.nativeEvent as SubmitEvent).submitter;
+    const advance = submittedBy instanceof HTMLElement &&
+      submittedBy.getAttribute("data-advance") === "true";
+    const followingId = advance ? nextId : undefined;
     setSaving(true);
     setSaved(false);
     setEditorError("");
@@ -261,8 +332,9 @@ export default function TonartTelegramDrafts() {
         reviewStatus: persisted.reviewStatus,
         imageOrder: persisted.images.map((x) => x.messageId),
       });
-      setSaved(true);
+      setSaved(!followingId);
       setRefresh((x) => x + 1);
+      if (followingId) setSelectedId(followingId);
     } catch {
       setEditorError("A gravação não pôde ser reconfirmada. Reabra a ficha antes de tentar novamente.");
     } finally {
@@ -297,7 +369,7 @@ export default function TonartTelegramDrafts() {
               <p className="mt-1 text-3xl font-semibold tabular-nums text-[#ecd0a6]">
                 {page ? integer.format(page.total) : "—"}
               </p>
-              <p className="mt-1 text-xs text-[#b9ad9c]">Índice D1 · consulta em tempo real</p>
+              <p className="mt-1 text-xs text-[#b9ad9c]">{studio || query ? "Nesta seleção" : "Acervo completo"} · D1</p>
             </div>
           </div>
         </div>
@@ -331,7 +403,7 @@ export default function TonartTelegramDrafts() {
               <label htmlFor="tonart-studio-search" className="sr-only">Buscar em todos os modelos</label>
               <div className="relative min-w-0 flex-1">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#aa967f]" aria-hidden="true">⌕</span>
-                <input id="tonart-studio-search" className={inputClass + " pl-9 pr-10"}
+                <input ref={searchRef} id="tonart-studio-search" className={inputClass + " pl-9 pr-10"}
                   type="search" maxLength={80} value={searchText}
                   onChange={(event) => setSearchText(event.target.value)}
                   placeholder="Buscar no acervo inteiro por nome, personagem ou variante"
@@ -359,7 +431,7 @@ export default function TonartTelegramDrafts() {
                 page ? integer.format(page.total) + " esculturas encontradas" : "Índice indisponível"}
               {query ? " para “" + query + "”" : ""}
             </p>
-            <span>Uma ficha por modelo · fotografias agrupadas</span>
+            <span>Uma ficha por modelo · J/K navegam entre fichas · / busca</span>
           </div>
         </div>
       </div>
@@ -444,7 +516,7 @@ export default function TonartTelegramDrafts() {
         </div>
 
         {selectedId && (
-          <aside aria-label="Editor de estatueta Telegram"
+          <aside ref={editorRef} tabIndex={-1} role="dialog" aria-label="Editor de estatueta Telegram"
             className="fixed inset-0 z-50 overflow-y-auto border-l border-[#71563a] bg-[#17120f] shadow-2xl xl:sticky xl:top-4 xl:z-auto xl:max-h-[calc(100vh-2rem)] xl:rounded-xl xl:border xl:border-[#6b5138]">
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-[#584431] bg-[#231b15] px-4 py-3">
               <div className="min-w-0">
@@ -465,6 +537,20 @@ export default function TonartTelegramDrafts() {
             ) : (
               <>
                 <div className="space-y-5 p-4 sm:p-5">
+                  <div className="flex items-center justify-between gap-2 rounded-md border border-[#55412f] bg-[#211a14] p-2">
+                    <button type="button" className={outlineButton} disabled={!previousId || saving}
+                      onClick={() => previousId && choose(previousId)} aria-label="Abrir ficha anterior">
+                      ← Anterior
+                    </button>
+                    <span className="text-center text-[11px] text-[#c8b199]">
+                      {selectedIndex < 0 ? "Ficha do acervo" :
+                        "Ficha " + (selectedIndex + 1) + " de " + page?.items.length + " nesta página"}
+                    </span>
+                    <button type="button" className={outlineButton} disabled={!nextId || saving}
+                      onClick={() => nextId && choose(nextId)} aria-label="Abrir próxima ficha">
+                      Próxima →
+                    </button>
+                  </div>
                   <div>
                     <h4 className="font-serif text-2xl leading-tight text-[#f3e2c9]">{selected.name}</h4>
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -579,7 +665,13 @@ export default function TonartTelegramDrafts() {
                     <button type="submit" className={actionClass + " w-full"} disabled={saving || !dirty}>
                       {saving ? "Salvando e conferindo..." : dirty ? "Salvar alterações" : "Ficha atualizada"}
                     </button>
-                    <p className="text-center text-[11px] text-[#978775]">Ctrl + Enter para salvar · nenhuma edição publica automaticamente</p>
+                    <button type="submit" data-advance="true" className={outlineButton + " w-full"}
+                      disabled={saving || !dirty || !nextId}>
+                      Salvar e abrir próxima ficha →
+                    </button>
+                    <p className="text-center text-[11px] text-[#978775]">
+                      Ctrl + Enter salva · J/K navegam · nenhuma edição publica automaticamente
+                    </p>
                   </form>
                   <div className="border-t border-[#51402f] pt-3 text-[11px] leading-relaxed text-[#9e8d79]">
                     <p>ID estável: {selected.id}</p>
