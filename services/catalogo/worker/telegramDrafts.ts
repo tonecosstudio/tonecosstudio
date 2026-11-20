@@ -71,7 +71,7 @@ async function verifyAdmin(request: Request, env: TelegramDraftEnv): Promise<boo
   const apikey = env.ADMIN_SUPABASE_ANON_KEY
   if (!base || !apikey || !/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(base)) return null
   const authorization = request.headers.get('authorization') || ''
-  if (!/^Bearer [A-Za-z0-9._~+/-]{60,8192}={0,2}$/.test(authorization)) return false
+  if (!/^Bearer [A-Za-z0-9._~-]{60,8192}$/.test(authorization)) return false
   const h = { apikey, authorization, 'content-type': 'application/json' }
   try {
     const user = await fetch(base.replace(/\/$/, '') + '/auth/v1/user', {
