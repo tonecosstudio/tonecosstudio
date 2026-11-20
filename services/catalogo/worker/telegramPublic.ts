@@ -52,19 +52,28 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
     if (url.pathname === ROOT) {
       const studio = url.searchParams.get('studio') ?? ''
       const q = url.searchParams.get('q')?.trim() ?? ''
+      const provisional = url.searchParams.get('provisional')
       const rawOffset = url.searchParams.get('offset') ?? '0'
       const rawLimit = url.searchParams.get('limit') ?? '24'
-      const allowed = new Set(['studio', 'q', 'offset', 'limit'])
+      const allowed = new Set(['studio', 'q', 'provisional', 'offset', 'limit'])
       if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
           studio.length > 120 || /[\u0000-\u001f\u007f]/.test(studio) ||
           q.length > 80 || /[\u0000-\u001f\u007f]/.test(q) ||
+          (provisional !== null && provisional !== '0' && provisional !== '1') ||
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
           !/^[1-9]\d?$/.test(rawLimit) || Number(rawLimit) > 48)
         return json({ error: 'invalid_query' }, 400)
       const where = [VISIBLE]
       const values: unknown[] = []
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
-      if (q) { where.push('m.name LIKE ?'); values.push('%' + q.replace(/[%_\\]/g, '') + '%') }
+      if (provisional !== null) {
+        where.push('m.telegram_name_provisional=' + (provisional === '1' ? '1' : '0'))
+      }
+      if (q) {
+        const term = '%' + q.replace(/[%_\\]/g, '') + '%'
+        where.push("(m.name LIKE ? OR m.telegram_character LIKE ? OR COALESCE(m.variant_name,'') LIKE ?)")
+        values.push(term, term, term)
+      }
       const condition = where.join(' AND ')
       const count = await env.DB.prepare('SELECT COUNT(*) AS total FROM models m WHERE ' + condition)
         .bind(...values).first<{ total: number }>()
