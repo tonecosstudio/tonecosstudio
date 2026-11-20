@@ -168,6 +168,13 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
     return result(request, env, output.data, output.status)
   }
   if (request.method === 'POST') return result(request, env, { error: 'method_not_allowed' }, 405)
+  if (url.pathname === PREFIX + '/studios' && request.method === 'GET') {
+    const studios = (await env.DB.prepare(`SELECT telegram_studio AS studio,COUNT(*) AS total
+      FROM models WHERE telegram_group_key IS NOT NULL AND published=0
+      GROUP BY telegram_studio ORDER BY telegram_studio COLLATE NOCASE`)
+      .all<{ studio: string; total: number }>()).results
+    return result(request, env, { studios })
+  }
   if (url.pathname === PREFIX && request.method === 'GET') {
     const studio = url.searchParams.get('studio')?.trim() || ''
     const limit = Math.min(30, Math.max(1, Number(url.searchParams.get('limit')) || 12))

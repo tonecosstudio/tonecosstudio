@@ -4,6 +4,7 @@ import {
   getTelegramDraft,
   getTelegramDraftImage,
   listTelegramDrafts,
+  listTelegramDraftStudios,
   type TelegramDraft,
   type TelegramDraftEdit,
   type TelegramDraftList,
@@ -23,7 +24,8 @@ const reviewStates: Array<{
 ];
 
 export default function TonartTelegramDrafts() {
-  const [studio, setStudio] = useState("Abe3D");
+  const [studio, setStudio] = useState("");
+  const [studios, setStudios] = useState<Array<{ studio: string; total: number }>>([]);
   const [page, setPage] = useState<TelegramDraftList | null>(null);
   const [offset, setOffset] = useState(0);
   const [selected, setSelected] = useState<TelegramDraft | null>(null);
@@ -35,6 +37,14 @@ export default function TonartTelegramDrafts() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    listTelegramDraftStudios()
+      .then((data) => { if (active) setStudios(data.studios); })
+      .catch(() => { if (active) setStudios([]); });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -187,9 +197,10 @@ export default function TonartTelegramDrafts() {
             }}
             className={field}
           >
-            <option value="Abe3D">Abe3D</option>
-            <option value="Luftmensch">Luftmensch</option>
             <option value="">Todos os estúdios</option>
+            {studios.map(({ studio: name, total }) => (
+              <option key={name} value={name}>{name} ({total})</option>
+            ))}
           </select>
         </label>
         <p className="text-sm text-white/60" role="status">

@@ -91,7 +91,15 @@ async function request(path: string, init?: RequestInit) {
   return response;
 }
 
-export async function listTelegramDrafts(studio = "Abe3D", offset = 0) {
+export type TelegramDraftStudio = { studio: string; total: number };
+
+export async function listTelegramDraftStudios() {
+  return (await (
+    await request("/api/admin/telegram-drafts/studios")
+  ).json()) as { studios: TelegramDraftStudio[] };
+}
+
+export async function listTelegramDrafts(studio = "", offset = 0) {
   const query = new URLSearchParams({
     studio,
     offset: String(offset),
