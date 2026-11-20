@@ -158,6 +158,7 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
   // pinned Tonecos-local changes while cutover remains blocked.
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
+    'config/catalog-schema-contract.json',
     'tools/test_worker_folder_counts.mjs',
     'worker/index.ts',
     'wrangler.jsonc',
