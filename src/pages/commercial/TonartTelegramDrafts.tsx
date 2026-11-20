@@ -137,20 +137,26 @@ export default function TonartTelegramDrafts() {
     const urls: string[] = [];
     setPreviews([]);
     if (!selected) return;
-    Promise.allSettled(
-      selected.images.map(async (photo) => {
-        const url = await getTelegramDraftImage(photo.thumbPath);
-        urls.push(url);
-        return { messageId: photo.messageId, url };
-      }),
-    ).then((results) => {
-      if (live) {
-        setPreviews(
-          results.filter((x): x is PromiseFulfilledResult<{ messageId: number; url: string }> =>
-            x.status === "fulfilled").map((x) => x.value),
-        );
+    // Limit authenticated media requests: large galleries must not create a burst
+    // of Supabase admin checks or Worker/R2 requests.
+    let cursor = 0;
+    const load = async () => {
+      while (live && cursor < selected.images.length) {
+        const photo = selected.images[cursor++];
+        try {
+          const url = await getTelegramDraftImage(photo.thumbPath);
+          if (live) {
+            urls.push(url);
+            setPreviews((current) => [...current, { messageId: photo.messageId, url }]);
+          } else {
+            URL.revokeObjectURL(url);
+          }
+        } catch {
+          // One unavailable private image must not hide the rest of the gallery.
+        }
       }
-    });
+    };
+    void Promise.all(Array.from({ length: Math.min(4, selected.images.length) }, load));
     return () => {
       live = false;
       urls.forEach((url) => URL.revokeObjectURL(url));
@@ -207,7 +213,7 @@ export default function TonartTelegramDrafts() {
   }
 
   function movePhoto(index: number, direction: -1 | 1) {
-    if (!form) return;
+    if (!form || saving) return;
     const target = index + direction;
     if (target < 0 || target >= form.imageOrder.length) return;
     const imageOrder = [...form.imageOrder];
@@ -507,10 +513,10 @@ export default function TonartTelegramDrafts() {
                             </button>
                             <div className="flex items-center justify-center gap-1 border-t border-[#574534] p-1">
                               <button type="button" className="min-h-8 min-w-8 rounded border border-[#6e563c] text-sm disabled:opacity-20"
-                                disabled={index === 0} onClick={() => movePhoto(index, -1)}
+                                disabled={saving || index === 0} onClick={() => movePhoto(index, -1)}
                                 aria-label={"Mover foto " + (index + 1) + " para a esquerda"}>←</button>
                               <button type="button" className="min-h-8 min-w-8 rounded border border-[#6e563c] text-sm disabled:opacity-20"
-                                disabled={index === form.imageOrder.length - 1}
+                                disabled={saving || index === form.imageOrder.length - 1}
                                 onClick={() => movePhoto(index, 1)}
                                 aria-label={"Mover foto " + (index + 1) + " para a direita"}>→</button>
                             </div>
@@ -531,28 +537,28 @@ export default function TonartTelegramDrafts() {
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                       <label className="block space-y-1.5 text-xs text-[#d7c1aa]">
                         Nome da escultura
-                        <input className={inputClass} maxLength={160} required value={form.name}
+                        <input disabled={saving} className={inputClass} maxLength={160} required value={form.name}
                           onChange={(event) => { setForm({ ...form, name: event.target.value }); setSaved(false); }} />
                       </label>
                       <label className="block space-y-1.5 text-xs text-[#d7c1aa]">
                         Estúdio
-                        <input className={inputClass} maxLength={120} required value={form.studio}
+                        <input disabled={saving} className={inputClass} maxLength={120} required value={form.studio}
                           onChange={(event) => { setForm({ ...form, studio: event.target.value }); setSaved(false); }} />
                       </label>
                       <label className="block space-y-1.5 text-xs text-[#d7c1aa]">
                         Personagem
-                        <input className={inputClass} maxLength={160} value={form.character}
+                        <input disabled={saving} className={inputClass} maxLength={160} value={form.character}
                           onChange={(event) => { setForm({ ...form, character: event.target.value }); setSaved(false); }} />
                       </label>
                       <label className="block space-y-1.5 text-xs text-[#d7c1aa]">
                         Variante
-                        <input className={inputClass} maxLength={160} value={form.variant}
+                        <input disabled={saving} className={inputClass} maxLength={160} value={form.variant}
                           onChange={(event) => { setForm({ ...form, variant: event.target.value }); setSaved(false); }} />
                       </label>
                     </div>
                     <label className="block space-y-1.5 text-xs text-[#d7c1aa]">
                       Estado da revisão
-                      <select className={inputClass} value={form.reviewStatus}
+                      <select disabled={saving} className={inputClass} value={form.reviewStatus}
                         onChange={(event) => {
                           setForm({ ...form, reviewStatus: event.target.value as TelegramDraft["reviewStatus"] });
                           setSaved(false);
