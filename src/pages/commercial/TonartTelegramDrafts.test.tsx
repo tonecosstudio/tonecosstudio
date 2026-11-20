@@ -5,6 +5,13 @@ const mocks = vi.hoisted(() => ({
   listStudios: vi.fn(), searchIndex: vi.fn(), getDraft: vi.fn(),
   editDraft: vi.fn(), getImage: vi.fn(),
 }));
+// Keep this unit suite focused on the editor; CommercialPage imports the
+// complete backoffice and is not needed to exercise its form or navigation.
+vi.mock("./CommercialPage", () => ({
+  actionClass: "btn-primary",
+  secondaryClass: "btn-secondary",
+}));
+
 vi.mock("@/services/catalog/tonart-telegram-drafts", () => ({
   listTelegramDraftStudios: mocks.listStudios,
   searchTelegramStudioIndex: mocks.searchIndex,
