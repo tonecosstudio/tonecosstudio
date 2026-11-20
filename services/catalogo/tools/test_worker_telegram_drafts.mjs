@@ -51,6 +51,13 @@ function setup() {
             return null
           },
           async all() {
+            if (sql.includes('GROUP BY telegram_studio')) return {
+              results: [
+                { studio: 'Abe3D', total: 72 },
+                { studio: '3DXM', total: 271 },
+                { studio: 'Ydeval', total: 444 },
+              ],
+            }
             if (sql.includes('FROM model_image_sources')) return { results: [...gallery] }
             if (sql.includes('FROM models m')) return { results: [{ ...row }] }
             throw Error('Unexpected SQL')
@@ -113,6 +120,23 @@ test('a zero-row D1 update remains a conflict even when the editor is authentica
     assert.equal(response.status, 409)
     assert.equal(row.name, 'Monica Rambeau')
     assert.equal(row.telegram_revision, 0)
+  } finally { restore() }
+})
+
+test('authorized catalog admin discovers studios dynamically without exposing media', async () => {
+  const { env, log, restore } = setup()
+  try {
+    const response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/studios'), env)
+    assert.equal(response.status, 200)
+    assert.deepEqual((await response.json()).studios, [
+      { studio: 'Abe3D', total: 72 },
+      { studio: '3DXM', total: 271 },
+      { studio: 'Ydeval', total: 444 },
+    ])
+    assert.equal(log.privateReads.length, 0)
+    assert.ok(log.queries.some(sql => sql.includes('GROUP BY telegram_studio')))
+    const denied = await routeTelegramDrafts(request('/api/admin/telegram-drafts/studios', 'GET', undefined, false), env)
+    assert.equal(denied.status, 403)
   } finally { restore() }
 })
 
