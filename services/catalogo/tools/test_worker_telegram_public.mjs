@@ -6,11 +6,11 @@ const built = await esbuild.build({entryPoints:[entry], bundle:true, platform:"b
 const {routeTelegramStudioShowcase} = await import("data:text/javascript;base64,"+Buffer.from(built.outputFiles[0].text).toString("base64"));
 const id="tg_abcdef0123456789abcdef01",sha="a".repeat(64),base="https://worker.test/api/telegram-studios";
 function fixture(){
- const queries=[],keys=[];
+ const queries=[],keys=[],bindings=[];
  const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,image_count:1,cover_sha:sha};
- return {queries,keys,env:{
+ return {queries,keys,bindings,env:{
   DB:{prepare(sql){queries.push(sql);let params=[];return {
-   bind(...v){params=v;return this},
+   bind(...v){params=v;bindings.push({sql,values:v});return this},
    async first(){if(sql.includes("COUNT(*)"))return {total:1};if(sql.includes("s.source_sha256")&&params[1]===sha)return {source_sha256:sha};if(sql.includes("FROM models m")&&params[0]===id)return row;return null},
    async all(){if(sql.includes("GROUP BY"))return {results:[{studio:"Studio A",total:1}]};if(sql.includes("SELECT m.id"))return {results:[row]};if(sql.includes("FROM model_image_sources"))return {results:[{image_id:"tg:1212",source_sha256:sha,position:0}]};return {results:[row]}}
   }}},
@@ -30,6 +30,27 @@ test("lists only Telegram D1 and studio counts",async()=>{
  assert.equal(keys.length,0);
  const studios=await routeTelegramStudioShowcase(request("/studios"),env);
  assert.deepEqual((await studios.json()).studios,[{studio:"Studio A",total:1}]);
+});
+test("global index search checks name, character and variant with bound values",async()=>{
+ const {env,queries,bindings}=fixture();
+ const response=await routeTelegramStudioShowcase(request("?studio=Studio%20A&q=Chibi&limit=24"),env);
+ assert.equal(response.status,200);
+ const sql=queries.find(x=>x.includes("ORDER BY m.telegram_studio COLLATE NOCASE"));
+ assert.match(sql,/m.name LIKE \?/);
+ assert.match(sql,/m.telegram_character LIKE \?/);
+ assert.match(sql,/COALESCE\(m.variant_name/);
+ const bound=bindings.find(x=>x.sql===sql);
+ assert.deepEqual(bound.values,["Studio A","%Chibi%","%Chibi%","%Chibi%",24,0]);
+});
+
+test("provisional filter is server-side and rejects unexpected values",async()=>{
+ const {env,queries}=fixture();
+ const filtered=await routeTelegramStudioShowcase(request("?provisional=1&limit=24"),env);
+ assert.equal(filtered.status,200);
+ assert.ok(queries.some(x=>x.includes("m.telegram_name_provisional=1")));
+ assert.equal((await routeTelegramStudioShowcase(request("?provisional=2"),env)).status,400);
+ assert.equal((await routeTelegramStudioShowcase(request("?provisional=1&provisional=0"),env)).status,400);
+ assert.equal((await routeTelegramStudioShowcase(request("?provisional=true"),env)).status,400);
 });
 test("detail and gallery are bound to mapped model SHA",async()=>{
  const {env,keys}=fixture();
