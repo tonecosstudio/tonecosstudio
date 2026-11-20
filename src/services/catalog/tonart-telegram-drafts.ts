@@ -91,6 +91,54 @@ async function request(path: string, init?: RequestInit) {
   return response;
 }
 
+/**
+ * Read-only, public projection of the SAME Cloudflare D1 catalog.
+ * Reuse its indexed global search and gallery covers in the private workbench;
+ * every edit is still re-read and written through the protected draft API.
+ */
+export type TelegramStudioIndexItem = {
+  id: string;
+  name: string;
+  studio: string;
+  character: string;
+  variant: string;
+  imageCount: number;
+  provisional: boolean;
+  cover: string | null;
+};
+export type TelegramStudioIndexPage = {
+  total: number;
+  offset: number;
+  limit: number;
+  items: TelegramStudioIndexItem[];
+};
+
+export async function searchTelegramStudioIndex(
+  studio = "",
+  q = "",
+  offset = 0,
+) {
+  await requireTonecosAdminAccess();
+  const query = new URLSearchParams({
+    limit: "24",
+    offset: String(offset),
+  });
+  if (studio) query.set("studio", studio);
+  if (q) query.set("q", q);
+  const response = await fetch(base() + "/api/telegram-studios?" + query, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("catalog_search_unavailable");
+  return (await response.json()) as TelegramStudioIndexPage;
+}
+
+export function telegramStudioCoverUrl(path: string | null) {
+  return path &&
+    /^\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/thumb$/.test(path)
+    ? base() + path
+    : undefined;
+}
+
 export type TelegramDraftStudio = { studio: string; total: number };
 
 export async function listTelegramDraftStudios() {
