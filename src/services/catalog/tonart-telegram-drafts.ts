@@ -117,6 +117,7 @@ export async function searchTelegramStudioIndex(
   studio = "",
   q = "",
   offset = 0,
+  onlyProvisional = false,
 ) {
   await requireTonecosAdminAccess();
   const query = new URLSearchParams({
@@ -125,6 +126,7 @@ export async function searchTelegramStudioIndex(
   });
   if (studio) query.set("studio", studio);
   if (q) query.set("q", q);
+  if (onlyProvisional) query.set("provisional", "1");
   const response = await fetch(base() + "/api/telegram-studios?" + query, {
     cache: "no-store",
   });
