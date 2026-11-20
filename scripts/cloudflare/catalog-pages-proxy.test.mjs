@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { onRequest, proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
+import { onRequest, proxyCatalogRequest, proxyTelegramAdminRequest } from "../../functions/catalogo-api/[[path]].js";
 
 const SITE = "https://tonecosstudio.pages.dev";
 const WORKER = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
@@ -454,4 +454,75 @@ test("Pages blocks confirmed SpecialSTL media but forwards unrelated images", as
   });
   assert.equal(visible.status, 200);
   assert.equal(workerCalls, 1);
+});
+
+
+const DRAFT_ID = 'tg_04e28eadb6e1811af4f37845';
+const DRAFT_PREFIX = '/catalogo-api/api/admin/telegram-drafts';
+
+test("private Pages draft gateway rejects anonymous requests before the Worker", async () => {
+  for (const method of ['GET', 'PATCH']) {
+    const io = mockFetch('{}', 200, { 'content-type':'application/json' });
+    const r = await proxyTelegramAdminRequest(
+      new Request(SITE + DRAFT_PREFIX, {
+        method, ...(method === 'PATCH' ? { body:'{}',headers:{'content-type':'application/json'} } : {}),
+      }), io.fetcher);
+    assert.equal(r.status, method === 'PATCH' ? 404 : 403);
+    assert.equal(io.calls.length,0);
+  }
+});
+
+test("authenticated draft reads traverse the existing binding with no cookies or public cache", async () => {
+  const auth = 'Bearer ' + 'a'.repeat(100);
+  const io = mockFetch(JSON.stringify({ id:DRAFT_ID, imageCount:4 }),200, {
+    'content-type':'application/json', 'set-cookie':'foreign=secret', 'cache-control':'public,max-age=900',
+  });
+  const request = new Request(SITE + DRAFT_PREFIX + '/' + DRAFT_ID, {
+    headers:{ authorization:auth,cookie:'session=secret','x-draft-actor':'ignored' },
+  });
+  const r = await proxyTelegramAdminRequest(request,io.fetcher);
+  assert.equal(r.status,200);
+  assert.equal((await r.json()).imageCount,4);
+  assert.equal(io.calls.length,1);
+  assert.equal(io.calls[0].url, WORKER+'/api/admin/telegram-drafts/'+DRAFT_ID);
+  assert.equal(io.calls[0].options.headers.get('authorization'),auth);
+  assert.equal(io.calls[0].options.headers.has('cookie'),false);
+  assert.equal(io.calls[0].options.headers.has('x-draft-actor'),false);
+  assert.equal(r.headers.get('cache-control'),'private, no-store');
+  assert.equal(r.headers.has('set-cookie'),false);
+});
+
+test("authenticated draft edits remain scoped; public catalog mutations still blocked", async () => {
+  const auth = 'Bearer ' + 'b'.repeat(100);
+  const body = {revision:0,name:'Monica Rambeau — revisão',studio:'Abe3D',character:'Monica Rambeau',variant:'',reviewStatus:'reviewing'};
+  const io=mockFetch(JSON.stringify({ id:DRAFT_ID,revision:1,name:body.name }),200,{'content-type':'application/json'});
+  const request = new Request(SITE + DRAFT_PREFIX + '/' + DRAFT_ID,{
+    method:'PATCH',headers:{authorization:auth,'content-type':'application/json'},
+    body:JSON.stringify(body),
+  });
+  const response = await proxyTelegramAdminRequest(request,io.fetcher);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).revision,1);
+  assert.equal(io.calls[0].options.method,'PATCH');
+  assert.equal(io.calls[0].options.body,JSON.stringify(body));
+  assert.equal(io.calls[0].options.headers.get('authorization'),auth);
+  const bad=await proxyTelegramAdminRequest(new Request(SITE+DRAFT_PREFIX,{method:'PUT',headers:{authorization:auth}}),io.fetcher);
+  assert.equal(bad.status,405);
+  assert.equal(io.calls.length,1);
+  const publicCall=await proxyCatalogRequest(new Request(SITE+'/catalogo-api/api/catalog',{method:'PATCH',headers:{authorization:auth},body:'{}'}),io.fetcher);
+  assert.equal(publicCall.status,405);
+  assert.equal(io.calls.length,1);
+});
+
+test("private media is exact-key scoped and only image/webp is allowed",async()=>{
+  const auth='Bearer '+'c'.repeat(100);
+  const sha='3c7f50718e6cab3787df0443404f01a9b5e5976036a542c13daff9e51e4884e7';
+  const io=mockFetch('RIFF____WEBP',200,{'content-type':'image/webp'});
+  const path=DRAFT_PREFIX+'/'+DRAFT_ID+'/media/'+sha+'/thumb';
+  const r=await proxyTelegramAdminRequest(new Request(SITE+path,{headers:{authorization:auth}}),io.fetcher);
+  assert.equal(r.status,200);
+  assert.equal(r.headers.get('content-type'),'image/webp');
+  const bad=await proxyTelegramAdminRequest(new Request(SITE+DRAFT_PREFIX+'/'+DRAFT_ID+'/media/'+sha+'/../thumb',{headers:{authorization:auth}}),io.fetcher);
+  assert.equal(bad.status,404);
+  assert.equal(io.calls.length,1);
 });
