@@ -62,6 +62,12 @@ def setup(db):
     CREATE TABLE IF NOT EXISTS curation_events(
       event_id INTEGER PRIMARY KEY AUTOINCREMENT, group_key TEXT, message_id INTEGER,
       event_type TEXT NOT NULL, detail TEXT NOT NULL, occurred_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS idx_curation_events_type_id
+      ON curation_events(event_type, event_id);
+    CREATE INDEX IF NOT EXISTS idx_curation_events_message_id
+      ON curation_events(message_id);
+    CREATE INDEX IF NOT EXISTS idx_curation_events_group_key
+      ON curation_events(group_key);
     """)
 
 def normalize(s):
