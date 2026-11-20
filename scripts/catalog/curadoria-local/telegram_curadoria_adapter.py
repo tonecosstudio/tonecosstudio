@@ -112,6 +112,7 @@ def _topic_to_scan(curadoria_db_path: str | Path, source_chat_id: int):
               AND lower(replace(replace(trim(c.topic_name),' ',''),'+',''))!='geral50k'
               AND COALESCE(c.reason,'') NOT LIKE 'Telegram retornou TOPIC_ID_INVALID%'
             GROUP BY c.topic_id
+            HAVING SUM(CASE WHEN c.coverage_status!='exhausted' THEN 1 ELSE 0 END)>0
             ORDER BY incomplete DESC,checkpoint_at ASC,c.topic_id ASC
             LIMIT 1
         """, (int(source_chat_id),)).fetchone()
