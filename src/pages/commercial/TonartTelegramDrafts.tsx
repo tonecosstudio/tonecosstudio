@@ -75,7 +75,7 @@ export default function TonartTelegramDrafts() {
     let urls: string[] = [];
     setPreviews([]);
     if (!selected) return;
-    const photos = selected.images.slice(0, 12);
+    const photos = selected.images;
     Promise.all(
       photos.map(async (image) => {
         const url = await getTelegramDraftImage(image.thumbPath);
