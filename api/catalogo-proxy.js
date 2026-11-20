@@ -8,6 +8,23 @@ import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public
 const PUBLIC_MODEL_METADATA_ROUTE = /^(?:api\/catalog|api\/recent|api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?)$/;
 const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
 
+/** Host-scoped public gallery policy; commercial domains retain their own routes. */
+export function isStandaloneTelegramCatalogHost(host) {
+  if (typeof host !== "string") return false;
+  const hostname = host.toLowerCase().split(":")[0];
+  return hostname === "catalogo.tonartstudio.com.br" ||
+    hostname === "tonart-catalogo-publico.vercel.app" ||
+    /^tonart-catalogo-publico-[a-z0-9-]+\.vercel\.app$/.test(hostname);
+}
+
+export function isAllowedStandaloneTelegramRoute(host, path, method) {
+  if (!isStandaloneTelegramCatalogHost(host)) return true;
+  if (method !== "GET") return false;
+  return path === "api/telegram-studios" ||
+    path === "api/telegram-studios/studios" ||
+    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(path);
+}
+
 /**
  * Vercel rewrites expose destination/client query parameters through
  * request.query. req.url may contain runtime/rewrite transport metadata that
@@ -56,6 +73,13 @@ export default async function handler(req, res) {
     typeof candidate === "string" &&
     (candidate === "api/admin/telegram-drafts" ||
       candidate.startsWith("api/admin/telegram-drafts/"));
+  // Separate public Telegram catalog: do not proxy the legacy commercial
+  // catalog, nor admin draft endpoints, on the dedicated public hostname.
+  if (!isAllowedStandaloneTelegramRoute(req.headers?.host, candidate, req.method)) {
+    res.statusCode = 404;
+    res.end("Not found");
+    return;
+  }
   if (req.method !== "GET" && !isTelegramPrivate) {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
