@@ -10,6 +10,7 @@ import {
   type TelegramDraftEdit,
   type TelegramStudioIndexPage,
 } from "@/services/catalog/tonart-telegram-drafts";
+import { canNavigateTelegramIndex, resolveTelegramIndexNeighbor } from "@/services/catalog/tonart-telegram-navigation";
 import { actionClass, secondaryClass } from "./CommercialPage";
 
 const inputClass =
@@ -70,11 +71,8 @@ export default function TonartTelegramDrafts() {
   const editorRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
   const selectedIndex = page?.items.findIndex((item) => item.id === selectedId) ?? -1;
-  const hasPrevious = selectedIndex > 0 ||
-    (selectedIndex === 0 && offset > 0);
-  const hasNext = selectedIndex >= 0 && !!page && (
-    selectedIndex < page.items.length - 1 || offset + page.limit < page.total
-  );
+  const hasPrevious = canNavigateTelegramIndex(page, selectedId, -1);
+  const hasNext = canNavigateTelegramIndex(page, selectedId, 1);
 
   useEffect(() => {
     let live = true;
@@ -277,19 +275,10 @@ export default function TonartTelegramDrafts() {
   // Resolve neighbors on the current page first, then ask the same canonical
   // index for the adjacent page. Never skip a model at page 24/25.
   async function resolveNeighbor(direction: -1 | 1) {
-    if (!page || selectedIndex < 0) return null;
-    const samePage = page.items[selectedIndex + direction];
-    if (samePage) return { id: samePage.id, newPage: null, newOffset: offset };
-    const newOffset = offset + direction * page.limit;
-    if (newOffset < 0 || newOffset >= page.total) return null;
-    const newPage = await searchTelegramStudioIndex(studio, query, newOffset);
-    if (!newPage.items.length || newPage.offset !== newOffset) {
-      throw new Error("adjacent_page_unavailable");
-    }
-    const destination = direction === 1
-      ? newPage.items[0]
-      : newPage.items[newPage.items.length - 1];
-    return { id: destination.id, newPage, newOffset };
+    if (!page || !selectedId) return null;
+    return resolveTelegramIndexNeighbor(page, selectedId, direction, (nextOffset) =>
+      searchTelegramStudioIndex(studio, query, nextOffset),
+    );
   }
 
   function openNeighbor(target: {
