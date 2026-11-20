@@ -159,7 +159,7 @@ export async function importPrivateTelegramDraft(
     try {
       const applied = await env.DB.batch(append)
       if (applied.length !== append.length || applied.some(x => !x.success) ||
-          applied.some(x => x.meta?.changes !== 1)) {
+          applied.some(x => !Number.isInteger(x.meta?.changes) || (x.meta?.changes ?? 0) < 1)) {
         return error(409, 'catalog_import_conflict')
       }
     } catch { return error(409, 'catalog_import_conflict') }
