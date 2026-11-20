@@ -275,6 +275,9 @@ jobs:
       - name: Typecheck TONART admin editor
         run: npm run typecheck:app
 
+      - name: Test TONART admin continuous curation
+        run: npx vitest run src/pages/commercial/TonartTelegramDrafts.test.tsx
+
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
 
