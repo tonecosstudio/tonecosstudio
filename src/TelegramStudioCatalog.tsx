@@ -64,6 +64,7 @@ export default function TelegramStudioCatalog() {
   const [page, setPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
   const [listError, setListError] = useState("");
+  const [reloadVersion, setReloadVersion] = useState(0);
   const [searchError, setSearchError] = useState("");
   const [detail, setDetail] = useState<Detail | null>(null);
   const [detailError, setDetailError] = useState("");
@@ -110,7 +111,7 @@ export default function TelegramStudioCatalog() {
       .catch(() => { if (!c.signal.aborted) setListError("Não foi possível carregar os modelos. Tente novamente."); })
       .finally(() => { if (!c.signal.aborted) setLoading(false); });
     return () => c.abort();
-  }, [studio, query, offset]);
+  }, [studio, query, offset, reloadVersion]);
 
   useEffect(() => {
     const c = new AbortController();
@@ -155,7 +156,7 @@ export default function TelegramStudioCatalog() {
       if (event.key === "Tab" && dialogRef.current) {
         const buttons = Array.from(dialogRef.current.querySelectorAll<HTMLButtonElement>("button:not(:disabled)"));
         if (!buttons.length) return;
-        if (event.shiftKey && document.activeElement === buttons[0]) {
+        if (event.shiftKey && (document.activeElement === buttons[0] || document.activeElement === dialogRef.current)) {
           event.preventDefault();
           buttons[buttons.length - 1].focus();
         } else if (!event.shiftKey && document.activeElement === buttons[buttons.length - 1]) {
@@ -271,7 +272,7 @@ export default function TelegramStudioCatalog() {
 
       {listError && <div role="alert" className="mt-6 rounded-lg border border-[#a45f50] p-5 text-[#f0b5a7]">
         {listError}
-        <button type="button" className="ml-3 underline" onClick={() => navigate({ ...route })}>Atualizar</button>
+        <button type="button" className="ml-3 underline" onClick={() => setReloadVersion(version => version + 1)}>Tentar novamente</button>
       </div>}
       {loading && <div role="status" className="grid grid-cols-2 gap-4 py-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {Array.from({ length: 10 }, (_, i) => <div key={i} className="aspect-[3/4] animate-pulse rounded-lg bg-[#2b231c]" />)}
@@ -308,7 +309,7 @@ export default function TelegramStudioCatalog() {
       </nav>}
     </main>
 
-    {selected && <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="catalog-detail-title"
+    {selected && <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Galeria do modelo"
       className="fixed inset-0 z-50 overflow-y-auto bg-[#0e0b09]/98 p-4 outline-none sm:p-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap justify-between gap-3">
