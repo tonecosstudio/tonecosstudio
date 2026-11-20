@@ -1280,15 +1280,15 @@ export default function TonecosAdminHomePage() {
 
           {isCatalog && (
             <div className="space-y-7">
-              <section className={panelClass}>
-                <TonartTelegramDrafts />
-              </section>
-              <section className={panelClass}>
-                <p className="mb-4 text-xs uppercase tracking-widest text-white/50">
-                  Acervo comercial anterior · preservado
-                </p>
-                <TonartAdminCatalogReview />
-              </section>
+              <TonartTelegramDrafts />
+              <details className={panelClass}>
+                <summary className="cursor-pointer text-sm font-semibold text-white/70 hover:text-white">
+                  Consultar acervo comercial anterior (preservado)
+                </summary>
+                <div className="mt-6 border-t border-white/15 pt-5">
+                  <TonartAdminCatalogReview />
+                </div>
+              </details>
             </div>
           )}
 
