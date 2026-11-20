@@ -124,6 +124,10 @@ class TelegramCuradoriaAdapterTests(unittest.TestCase):
             self.assertEqual(invalid["coverage_status"], "partial")
             self.assertIn("TOPIC_ID_INVALID", invalid["reason"])
             self.assertEqual(adapter._topic_to_scan(db_path, 99), (5, "Abe3D"))
+            with identity._open_curadoria(db_path) as db:
+                db.execute("UPDATE telegram_identity_coverage SET coverage_status='exhausted' WHERE message_id=3")
+                db.commit()
+            self.assertIsNone(adapter._topic_to_scan(db_path, 99))
 
         class CuratedNames:
             def official_sources(self, topic):
