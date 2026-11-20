@@ -526,3 +526,39 @@ test("private media is exact-key scoped and only image/webp is allowed",async()=
   assert.equal(bad.status,404);
   assert.equal(io.calls.length,1);
 });
+
+test("private group ingestion uses the same first-party catalog Worker, never public routes",async()=>{
+  const token='Bearer '+'d'.repeat(100);
+  const path=DRAFT_PREFIX+'/import';
+  const group={
+    originId:'2370335738',studio:'Abe3D',
+    groupKey:'b2b99222c387716d35aba4c3',name:'Bowsette',
+    universe:'Super Mario',variant:'',franchiseId:197,
+    images:[{messageId:17278,sha256:'1'.repeat(64)}],
+  };
+  const io=mockFetch(JSON.stringify({id:'tg_'+group.groupKey,created:true}),201,{
+    'content-type':'application/json',
+    'cache-control':'public,max-age=500',
+    'set-cookie':'test=bad',
+  });
+  const req=new Request(SITE+path,{
+    method:'POST',headers:{authorization:token,'content-type':'application/json'},
+    body:JSON.stringify(group),
+  });
+  const res=await proxyTelegramAdminRequest(req,io.fetcher);
+  assert.equal(res.status,201);
+  assert.equal((await res.json()).created,true);
+  assert.equal(io.calls.length,1);
+  assert.equal(io.calls[0].url,WORKER+'/api/admin/telegram-drafts/import');
+  assert.equal(io.calls[0].options.method,'POST');
+  assert.equal(io.calls[0].options.headers.get('authorization'),token);
+  assert.equal(io.calls[0].options.body,JSON.stringify(group));
+  assert.equal(res.headers.get('cache-control'),'private, no-store');
+  assert.equal(res.headers.has('set-cookie'),false);
+  const anon=await proxyTelegramAdminRequest(new Request(SITE+path,{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify(group),
+  }),io.fetcher);
+  assert.equal(anon.status,403);
+  assert.equal(io.calls.length,1);
+});
