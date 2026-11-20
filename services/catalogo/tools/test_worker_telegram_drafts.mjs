@@ -30,6 +30,7 @@ function setup() {
     telegram_origin_id: '2370335738', telegram_studio: 'Abe3D',
     telegram_character: 'Monica Rambeau', telegram_review_status: 'pending',
     telegram_rights_status: 'not_reviewed', telegram_name_provisional: 1, telegram_revision: 0,
+    telegram_gallery_order: '[]',
   }
   const env = {
     ADMIN_SUPABASE_URL: 'https://mockproject.supabase.co',
@@ -56,12 +57,13 @@ function setup() {
           },
           async run() {
             if (!sql.includes('UPDATE models')) throw Error('Unsafe SQL')
-            if (vals[6] !== id || vals[7] !== row.telegram_revision) {
+            if (vals[8] !== id || vals[9] !== row.telegram_revision) {
               return { meta: { changes: 0 } }
             }
             Object.assign(row, {
               name: vals[0], telegram_studio: vals[1], telegram_character: vals[2],
               variant_name: vals[3], telegram_review_status: vals[4],
+              telegram_gallery_order: vals[5], cover_storage_key: vals[6],
               telegram_revision: row.telegram_revision + 1,
             })
             return { meta: { changes: 1 } }
@@ -146,11 +148,24 @@ test('authorized admin lists, opens, edits, persists and sees four private image
     response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id), env)
     assert.equal((await response.json()).name, edit.name)
     assert.equal(row.published, 0)
+    const order = [21451,21450,21449,21448]
+    response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id, 'PATCH',
+      { ...edit, revision: 1, imageOrder: order }), env)
+    assert.equal(response.status, 200)
+    const reordered = await response.json()
+    assert.equal(reordered.revision, 2)
+    assert.deepEqual(reordered.images.map(x => x.messageId), order)
+    assert.equal(reordered.images[0].role, 'cover')
+    assert.equal(reordered.images.length, before.images.length)
+    assert.deepEqual(new Set(reordered.images.map(x => x.sha256)),
+      new Set(before.images.map(x => x.sha256)))
+    response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id), env)
+    assert.deepEqual((await response.json()).images.map(x => x.messageId),order)
     response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id, 'PATCH', edit), env)
     assert.equal(response.status, 409)
-    assert.equal(row.telegram_revision, 1)
+    assert.equal(row.telegram_revision, 2)
     response = await routeTelegramDrafts(request('/api/admin/telegram-drafts/' + id, 'PATCH',
-      { revision: 1, name: 'unsafe', published: true }), env)
+      { revision: 2, name: 'unsafe', published: true }), env)
     assert.equal(response.status, 409)
     assert.equal(row.published, 0)
   } finally { restore() }
