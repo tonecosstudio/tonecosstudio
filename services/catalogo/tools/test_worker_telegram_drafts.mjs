@@ -188,3 +188,123 @@ test('canonical SQL migration has draft-only triggers', () => {
   assert.match(sql, /trg_telegram_draft_publication_requires_review/)
   assert.match(sql, /idx_models_telegram_group_key/)
 })
+
+
+const importBundle = await esbuild.build({
+  entryPoints: [join(dir,'../worker/telegramDraftImport.ts')],
+  bundle: true, platform: 'browser', format: 'esm', target: 'es2022',
+  write: false, logLevel: 'silent',
+})
+const { importPrivateTelegramDraft } = await import('data:text/javascript;base64,' +
+  Buffer.from(importBundle.outputFiles[0].text).toString('base64'))
+
+function draftImportFixture() {
+  const key = 'b2b99222c387716d35aba4c3'
+  const input = {
+    originId: '2370335738', studio: 'Abe3D', groupKey: key,
+    name: 'Bowsette', universe: 'Super Mario', variant: '',
+    franchiseId: 197,
+    images: [
+      { messageId: 17278, sha256: '1'.repeat(64) },
+      { messageId: 17279, sha256: '2'.repeat(64) },
+    ],
+  }
+  let stored = null
+  let batches = 0
+  const heads = []
+  const env = {
+    DB: {
+      prepare(sql) {
+        const statement = {
+          sql, values: [],
+          bind(...args) { this.values = args; return this },
+          async first() {
+            if (sql.includes('FROM franchises')) return {id:197}
+            if (sql.includes('WHERE telegram_origin_id=?')) return stored
+            if (sql.includes('FROM models')) return null
+            return null
+          },
+          async all() {
+            if (sql.includes('FROM model_image_sources') && sql.includes('WHERE model_id=?')) {
+              return {results:stored?.photos??[]}
+            }
+            return {results:[]}
+          },
+        }
+        return statement
+      },
+      async batch(statements) {
+        batches++
+        assert.equal(statements.length, 3)
+        assert.match(statements[0].sql,/INSERT INTO models/)
+        assert.equal(statements[0].values[10],0,'new drafts cannot be published')
+        stored = {
+          id:'tg_'+key, name:input.name, published:0,
+          photos: statements.slice(1).map(x=>({
+            image_id:x.values[1],source_sha256:x.values[4],
+          })),
+        }
+        return statements.map(()=>({success:true}))
+      },
+    },
+    PRIVATE_TELEGRAM: {
+      async head(key) {
+        heads.push(key)
+        return {}
+      },
+    },
+  }
+  const run = async data => importPrivateTelegramDraft(
+    new Request('https://worker.example.test/api/admin/telegram-drafts/import',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify(data),
+    }),env,
+  )
+  return {input,env,heads,run,getBatches:()=>batches}
+}
+
+test('canonical group importer creates once, verifies every private R2 HEAD and reuses on replay',async()=>{
+  const x=draftImportFixture()
+  const first=await x.run(x.input)
+  assert.equal(first.status,201)
+  assert.equal(first.data.created,true)
+  assert.equal(first.data.published,false)
+  assert.equal(first.data.imageCount,2)
+  assert.equal(x.getBatches(),1)
+  assert.equal(x.heads.length,4)
+  assert.ok(x.heads.every(k=>k.startsWith('telegram-studios/v1/2370335738/')))
+  assert.ok(x.heads.some(k=>k.endsWith('/display.webp')))
+  assert.ok(x.heads.some(k=>k.endsWith('/thumb.webp')))
+  const second=await x.run({...x.input,name:'Provisional title overridden by Curadoria'})
+  assert.equal(second.status,200)
+  assert.equal(second.data.created,false)
+  assert.equal(second.data.reused,true)
+  assert.equal(second.data.name,x.input.name,'manually maintained commercial title survives reimport')
+  assert.equal(x.getBatches(),1,'reimport cannot insert images or models again')
+  assert.equal(x.heads.length,4,'no R2 rewrite or needless HEAD on idempotent replay')
+})
+
+test('import refuses excluded General +50k and corrupt input without touching catalog or R2',async()=>{
+  const x=draftImportFixture()
+  for(const candidate of [
+    {...x.input,studio:'Geral +50k'},
+    {...x.input,images:[x.input.images[0],x.input.images[0]]},
+    {...x.input,originId:'other-telegram'},
+    {...x.input,images:[{messageId:1,sha256:'bad'}]},
+    {...x.input,franchiseId:-1},
+  ]){
+    const r=await x.run(candidate)
+    assert.equal(r.status,400)
+    assert.equal(x.getBatches(),0)
+    assert.equal(x.heads.length,0)
+  }
+})
+
+test('missing private WebP blocks draft import atomically',async()=>{
+  const x=draftImportFixture()
+  x.env.PRIVATE_TELEGRAM.head=async()=>null
+  const r=await x.run(x.input)
+  assert.equal(r.status,409)
+  assert.equal(r.data.error,'r2_manifest_incomplete')
+  assert.equal(x.getBatches(),0)
+})
