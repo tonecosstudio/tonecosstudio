@@ -84,6 +84,8 @@ export default function TelegramStudioCatalog() {
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
   const [studios, setStudios] = useState<Studio[]>([]);
+  const [showAllStudios, setShowAllStudios] = useState(false);
+  const [studioSearch, setStudioSearch] = useState("");
   const [studiosError, setStudiosError] = useState("");
   const [page, setPage] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
@@ -268,6 +270,22 @@ export default function TelegramStudioCatalog() {
   const featuredStudios = [...studios]
     .sort((a, b) => b.total - a.total)
     .slice(0, 7);
+  const normalizedStudioSearch = studioSearch
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+  const visibleStudios = showAllStudios
+    ? studios
+        .filter((item) =>
+          item.studio
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .toLocaleLowerCase("pt-BR")
+            .includes(normalizedStudioSearch),
+        )
+        .sort((a, b) => a.studio.localeCompare(b.studio, "pt-BR"))
+    : featuredStudios;
   const lastPage = page ? Math.ceil(page.total / PAGE_SIZE) : 0;
 
   return (
@@ -729,9 +747,73 @@ export default function TelegramStudioCatalog() {
             Explore esculturas de diferentes criadores e descubra os modelos
             reunidos por estúdio no TONART.
           </p>
-          {featuredStudios.length ? (
-            <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredStudios.map((item) => (
+          {studios.length > featuredStudios.length && (
+            <div className="mt-7 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                aria-expanded={showAllStudios}
+                aria-controls="studio-directory"
+                onClick={() => {
+                  setShowAllStudios((current) => !current);
+                  setStudioSearch("");
+                }}
+                className={classes}
+              >
+                {showAllStudios
+                  ? "Mostrar destaques"
+                  : "Ver todos os " +
+                    studios.length.toLocaleString("pt-BR") +
+                    " estúdios"}
+              </button>
+              {!showAllStudios && (
+                <p className="text-xs text-[#aeb5a8]">
+                  As coleções em destaque são apenas uma parte dos estúdios
+                  catalogados.
+                </p>
+              )}
+            </div>
+          )}
+          {showAllStudios && (
+            <div className="mt-6 max-w-md">
+              <label
+                htmlFor="studio-directory-search"
+                className="mb-2 block text-sm font-medium text-[#e8d7bb]"
+              >
+                Buscar estúdios
+              </label>
+              <div className="relative">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#aeae9e]"
+                />
+                <input
+                  id="studio-directory-search"
+                  type="search"
+                  maxLength={120}
+                  value={studioSearch}
+                  onChange={(event) => setStudioSearch(event.target.value)}
+                  placeholder="Nome do estúdio"
+                  className="min-h-12 w-full rounded-lg border border-[#565c50] bg-[#101610] py-2 pl-11 pr-4 text-[#f4eee4] outline-none placeholder:text-[#92998e] focus:border-[#e1b784]"
+                />
+              </div>
+              <p
+                role="status"
+                aria-live="polite"
+                className="mt-2 text-xs text-[#b0b5a7]"
+              >
+                {visibleStudios.length.toLocaleString("pt-BR")}{" "}
+                {visibleStudios.length === 1
+                  ? "estúdio encontrado"
+                  : "estúdios encontrados"}
+              </p>
+            </div>
+          )}
+          {visibleStudios.length ? (
+            <div
+              id="studio-directory"
+              className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+            >
+              {visibleStudios.map((item) => (
                 <button
                   key={item.studio}
                   type="button"
@@ -740,7 +822,7 @@ export default function TelegramStudioCatalog() {
                     changeStudio(item.studio);
                     document
                       .getElementById("colecao")
-                      ?.scrollIntoView({ behavior: "smooth" });
+                      ?.scrollIntoView?.({ behavior: "smooth" });
                   }}
                   className={
                     "group flex min-h-[148px] flex-col justify-between rounded-xl border p-5 text-left hover:border-[#cbb086] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +

@@ -102,4 +102,60 @@ describe("Telegram-only public studio gallery", () => {
       ).toBe(true),
     );
   });
+  it("explores all cataloged studios with an accent-insensitive local search", async () => {
+    const sampleStudios = [
+      { studio: "3DXM", total: 359 },
+      { studio: "Estúdio Águia", total: 12 },
+      ...Array.from({ length: 8 }, (_, index) => ({
+        studio: "Outro Estúdio " + (index + 1),
+        total: index + 1,
+      })),
+    ];
+    const fetcher = vi.fn(async (input: string) => {
+      const url = new URL(
+        String(input),
+        "https://catalogo.tonartstudio.com.br",
+      );
+      if (url.pathname.endsWith("/studios")) {
+        return Response.json({ studios: sampleStudios });
+      }
+      return Response.json({ total: 1, offset: 0, limit: 24, items: [model] });
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    render(<TelegramStudioCatalog />);
+    const expand = await screen.findByRole("button", {
+      name: /ver todos os 10 estúdios/i,
+    });
+    fireEvent.click(expand);
+
+    const studioSearch = screen.getByRole("searchbox", {
+      name: /buscar estúdios/i,
+    });
+    fireEvent.change(studioSearch, { target: { value: "aguia" } });
+
+    const studioSection = screen.getByRole("region", {
+      name: /conheça os estúdios/i,
+    });
+    expect(
+      within(studioSection).getByText("1 estúdio encontrado"),
+    ).toBeInTheDocument();
+    expect(
+      within(studioSection).getByRole("button", { name: /estúdio águia/i }),
+    ).toBeInTheDocument();
+    expect(
+      within(studioSection).queryByRole("button", { name: /outro estúdio/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(studioSection).getByRole("button", { name: /estúdio águia/i }),
+    );
+    await waitFor(() => {
+      expect(
+        fetcher.mock.calls.some(([uri]) =>
+          String(uri).includes("studio=Est%C3%BAdio+%C3%81guia"),
+        ),
+      ).toBe(true);
+    });
+  });
 });
