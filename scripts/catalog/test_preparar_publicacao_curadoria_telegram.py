@@ -354,6 +354,8 @@ def test_existing_name_sync_read_only():
         assert not incomplete and report["held"]["incomplete_or_unsupported_gallery"]==1
         # Reset to a complete export and enforce stable source identities.
         inputs[0]["image_count"]=inputs[1]["image_count"]="2"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
         # The CLI's names-only mode does not need source files.
         import subprocess,sys
         out=home/"names-only"
