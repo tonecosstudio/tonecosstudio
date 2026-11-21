@@ -148,7 +148,7 @@ describe("TONART: curadoria contínua em lotes de 24", () => {
       await editor().findByRole("heading", { name: "Modelo 25" }),
     ).toBeInTheDocument();
     expect(
-      editor().getByText("Ficha 25 de 25 nesta seleção"),
+      await editor().findByText("Ficha 25 de 25 nesta seleção"),
     ).toBeInTheDocument();
     expect(mocks.searchIndex).toHaveBeenCalledWith("", "", 24, false);
     expect(

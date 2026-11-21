@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import esbuild from "esbuild";
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 const entry = new URL("../worker/telegramPublic.ts", import.meta.url).pathname.replace(/^\/([A-Z]:)/i, "$1");
 const built = await esbuild.build({entryPoints:[entry], bundle:true, platform:"browser",format:"esm",target:"es2022",write:false});
 const {routeTelegramStudioShowcase} = await import("data:text/javascript;base64,"+Buffer.from(built.outputFiles[0].text).toString("base64"));
@@ -106,4 +108,46 @@ test("invalid queries, media keys and methods never read private R2",async()=>{
  assert.equal((await routeTelegramStudioShowcase(request("/"+id+"/media/"+"x".repeat(64)+"/thumb"),env)).status,404);
  assert.equal((await routeTelegramStudioShowcase(request("","POST"),env)).status,405);
  assert.equal(keys.length,0);
+});
+
+test("all public studio listings, details and media enforce explicit showcase visibility",async()=>{
+ const {env,queries,keys}=fixture();
+ for(const url of ["/studios","?studio=Studio%20A","/"+id,"/"+id+"/media/"+sha+"/thumb"]){
+  const response=await routeTelegramStudioShowcase(request(url),env);
+  assert.equal(response.status,200);
+ }
+ const modelQueries=queries.filter(sql=>/FROM models m\b/.test(sql));
+ assert.ok(modelQueries.length>=4);
+ assert.ok(modelQueries.every(sql=>sql.includes("m.telegram_showcase_visible=1")));
+ assert.equal(keys.length,1);
+});
+
+test("showcase migration preserves existing visible rows and keeps new drafts private",()=>{
+ const db=new DatabaseSync(":memory:");
+ try{
+  db.exec("CREATE TABLE models (id TEXT PRIMARY KEY, telegram_group_key TEXT, telegram_review_status TEXT, telegram_rights_status TEXT, telegram_studio TEXT, name TEXT);");
+  const put=db.prepare("INSERT INTO models (id,telegram_group_key,telegram_review_status,telegram_rights_status,telegram_studio,name) VALUES (?,?,?,?,?,?)");
+  put.run("shown","a","pending","not_reviewed","Studio A","Already visible");
+  put.run("shown2","b","reviewing","not_reviewed","Studio B","Another existing");
+  put.run("rejected","c","rejected","not_reviewed","Studio A","Rejected");
+  put.run("unrelated",null,"pending","not_reviewed","Commercial","Untouched");
+  const sql=readFileSync(new URL("../migrations/0025_telegram_showcase_private_visibility.sql",import.meta.url),"utf8");
+  db.exec(sql);
+  const status=(name)=>db.prepare("SELECT telegram_showcase_visible AS visible FROM models WHERE id=?").get(name)?.visible;
+  assert.equal(status("shown"),1);
+  assert.equal(status("shown2"),1);
+  assert.equal(status("rejected"),0);
+  assert.equal(status("unrelated"),0);
+  put.run("new-private","d","pending","not_reviewed","VX-Labs","Private draft");
+  assert.equal(status("new-private"),0);
+  assert.throws(()=>db.prepare("UPDATE models SET telegram_showcase_visible=1 WHERE id='new-private'").run(),/showcase requires editorial review and rights/);
+  assert.throws(()=>db.prepare("INSERT INTO models(id,telegram_group_key,telegram_review_status,telegram_rights_status,telegram_studio,name,telegram_showcase_visible) VALUES('bad','e','pending','not_reviewed','VX-Labs','Wrong',1)").run(),/showcase requires editorial review and rights/);
+  assert.equal(status("new-private"),0);
+  db.prepare("UPDATE models SET telegram_review_status='confirmed',telegram_rights_status='approved' WHERE id='new-private'").run();
+  assert.equal(status("new-private"),0,"approval must not automatically publish");
+  db.prepare("UPDATE models SET telegram_showcase_visible=1 WHERE id='new-private'").run();
+  assert.equal(status("new-private"),1);
+  db.prepare("UPDATE models SET telegram_rights_status='not_reviewed' WHERE id='new-private'").run();
+  assert.equal(status("new-private"),0,"revoking rights withdraws the public preview");
+ }finally{db.close()}
 });

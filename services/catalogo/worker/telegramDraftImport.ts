@@ -194,13 +194,13 @@ export async function importPrivateTelegramDraft(
       'cover_storage_key,gallery_manifest_key,gallery_version,published,search_text,' +
       'variant_name,telegram_group_key,telegram_origin_id,telegram_studio,telegram_character,' +
       'telegram_review_status,telegram_name_provisional,telegram_rights_status,' +
-      'telegram_revision,telegram_gallery_order) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'telegram_revision,telegram_gallery_order,telegram_showcase_visible) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     ).bind(
       id, body.franchiseId, 'telegram-' + studioName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + group,
       'TG-' + group.toUpperCase(), modelName, 'Telegram Studios · Rascunhos',
       images.length, cover, null, 1, 0, [studioName, modelName, universeName].filter(Boolean).join(' '),
       variantName, group, sourceId, studioName, modelName, 'pending', 1, 'not_reviewed',
-      0, JSON.stringify(groupIds),
+      0, JSON.stringify(groupIds), 0,
     ),
     ...images.map((photo, i) => env.DB.prepare(
       'INSERT INTO model_image_sources(model_id,image_id,position,role,source_sha256,gallery_version)' +

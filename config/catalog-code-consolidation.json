@@ -218,8 +218,8 @@
       },
       "config/catalog-schema-contract.json": {
         "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
-        "localBlob": "0e1071eb5aed3e6f69c98be640dc6dafd95d3e71",
-        "reason": "Reviewed additive D1 schema checks for Telegram draft identity and private gallery order; legacy origin schema pin preserved without active source Worker cutover"
+        "localBlob": "ad9fc51a13366ca1e18dffd6e99eebceeec86579",
+        "reason": "Reviewed additive D1 schema checks for private Telegram public-showcase visibility, preserving existing public listings, private gallery order and immutable origin source pins; release still gated on migration 0025 before Worker deploy."
       }
     },
     "excludedModules": [
