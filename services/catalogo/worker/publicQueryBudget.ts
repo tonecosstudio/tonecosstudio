@@ -20,6 +20,16 @@ export type CatalogQueryBudgetResult = boolean | null | {
   maxLength?: number
 }
 
+// Preserve the original ASCII control-byte filter without a regex literal that
+// fails the repository lint rule. Scan code units without allocating an array.
+function containsAsciiControl(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i)
+    if (code <= 31 || code === 127) return true
+  }
+  return false
+}
+
 export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   const path = url.pathname
   const media = path.startsWith("/media/")
@@ -59,7 +69,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   let maxHeight: number | null = null
   for (const [key, value] of url.searchParams) {
     if (!names.has(key) || seen.has(key) || value.length < 1 ||
-        value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false
+        value.length > 2048 || containsAsciiControl(value)) return false
     seen.add(key)
     if (key === "limit") {
       const max = path === "/api/recent" ? 24 : path === "/api/franchises" ? 48 : 60
