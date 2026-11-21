@@ -331,7 +331,8 @@
     },
     "sourceFixStatusAtReconciliation": "merged-in-main",
     "sourceFixMergedHead": "bc766f75579691d9cbff933fef46dff0af87dee3",
-    "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2"
+    "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
+    "sourceFixBaseShaAtMerge": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c"
   },
   "productionObservation": {
     "observedDate": "2026-11-21",
