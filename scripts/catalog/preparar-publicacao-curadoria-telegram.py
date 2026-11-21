@@ -615,6 +615,168 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
     }
 
 
+
+def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_models: int,
+                                 franchises_csv: Path, expected_franchises: int):
+    """Read-only plan for the EXISTING private Telegram draft importer.
+
+    No franchise invention, no image read/reupload, no D1 or publication write.
+    R2 HEAD, current D1 source ownership and admin auth remain importer gates.
+    """
+    if expected_d1_models < 1 or expected_franchises < 1:
+        raise ValueError("Contagens D1 e franquias obrigatorias e positivas")
+    known_rows = read_csv(known_d1_csv)
+    required_known = {"model_id", "studio", "telegram_group_key"}
+    if not known_rows or not required_known <= set(known_rows[0]):
+        raise ValueError("Snapshot D1 sem identidade de estúdio/grupo")
+    known = {}
+    for row in known_rows:
+        gid = row["telegram_group_key"]
+        model_id = row["model_id"]
+        if not group24(gid) or model_id != "tg_" + gid or not row["studio"]:
+            raise ValueError("Snapshot D1 Telegram com identidade invalida")
+        if gid in known and known[gid] != row:
+            raise ValueError("Grupo D1 com duas autoridades")
+        known[gid] = row
+    if len(known) != expected_d1_models:
+        raise ValueError("Snapshot D1 incompleto: fichas esperadas %d, encontradas %d" %
+                         (expected_d1_models, len(known)))
+
+    franchise_rows = read_csv(franchises_csv)
+    if not franchise_rows or not {"id", "name"} <= set(franchise_rows[0]):
+        raise ValueError("Snapshot de franquias D1 sem id/name")
+    franchise_ids, franchise_map = set(), defaultdict(set)
+    for row in franchise_rows:
+        try:
+            fid = int(row["id"])
+        except (ValueError, TypeError):
+            raise ValueError("Franquia D1 com ID invalido") from None
+        if fid < 1 or fid in franchise_ids or not row["name"]:
+            raise ValueError("Franquia D1 duplicada/invalida")
+        franchise_ids.add(fid)
+        franchise_map[key(row["name"])].add(fid)
+    if len(franchise_ids) != expected_franchises:
+        raise ValueError("Snapshot franquias D1 incompleto")
+
+    groups, owners = defaultdict(list), defaultdict(set)
+    for row in read_curation(db):
+        topic = str(row["original_topic"] or "").strip()
+        if (not topic or key(topic) in {"geral 50k", "informacoes"} or
+                topic.isdecimal() or re.fullmatch(r"Topico_\d+", topic, re.I)):
+            continue
+        group_id = gallery_identity(row)
+        groups[group_id].append(row)
+        digest = str(row["sha256"] or "").lower()
+        if HASH.fullmatch(digest):
+            owners[digest].add(group_id)
+    candidates, held, reasons = [], [], Counter()
+    seen_ids = set()
+
+    def reject(identity: str, members: list[dict], reason: str):
+        reasons[reason] += 1
+        head = members[0]
+        held.append({"identity_key": identity, "studio": head["original_topic"],
+                     "model": head["title"] or "", "universe": head["universe"] or "",
+                     "reason": reason})
+
+    for group_id, members in sorted(groups.items()):
+        head = members[0]
+        mids = [int(x["message_id"]) for x in members]
+        digests = [str(x["sha256"] or "").lower() for x in members]
+        label = str(head["title"] or "").strip()
+        topic = str(head["original_topic"] or "").strip()
+        group_key = group_id
+        if group_id.startswith("single:"):
+            if len(members) != 1 or group_id != "single:" + str(mids[0]):
+                reject(group_id, members, "invalid_single_group")
+                continue
+            group_key = hashlib.sha256(("2370335738:" + group_id).encode()).hexdigest()[:24]
+        if not group24(group_key) or len(members) > 80:
+            reject(group_id, members, "invalid_group_or_size")
+            continue
+        if (len(set(mids)) != len(mids) or len(set(digests)) != len(members) or
+                any(not HASH.fullmatch(sha) for sha in digests) or
+                any(len(owners[sha]) > 1 for sha in digests)):
+            reject(group_id, members, "duplicate_or_ambiguous_media")
+            continue
+        if any((x["original_topic"] != topic or x["studio"] != topic) for x in members):
+            reject(group_id, members, "studio_identity_conflict")
+            continue
+        if (not label or len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)
+                or any(x["name_status"] not in {"confirmado", "provavel"} for x in members)
+                or any(x["review_status"] in {"rejeitado", "descartado"} for x in members)):
+            reject(group_id, members, "name_pending_or_rejected")
+            continue
+        if (len({key(x["title"]) for x in members}) != 1 or
+                len({key(x["variant"]) for x in members}) != 1 or
+                len({key(x["universe"]) for x in members}) != 1):
+            reject(group_id, members, "gallery_metadata_conflict")
+            continue
+        if not group_id.startswith("single:"):
+            if any(x["model_group_state"] != "provavel" or
+                   x["group_studio"] != topic or
+                   key(x["group_title"]) != key(label) or
+                   int(x["group_image_count"] or 0) != len(members) for x in members):
+                reject(group_id, members, "group_needs_review")
+                continue
+        old = known.get(group_key)
+        if old:
+            if old["studio"] != topic:
+                reject(group_id, members, "existing_d1_group_studio_conflict")
+            else:
+                reasons["already_in_d1"] += 1
+            continue
+        model_id = "tg_" + group_key
+        if model_id in seen_ids:
+            reject(group_id, members, "local_model_id_collision")
+            continue
+        seen_ids.add(model_id)
+        variant, universe = str(head["variant"] or "").strip(), str(head["universe"] or "").strip()
+        if len(variant) > 160 or len(universe) > 160:
+            reject(group_id, members, "metadata_too_long")
+            continue
+        ids = franchise_map.get(key(universe), set()) if universe else set()
+        if len(ids) != 1:
+            reject(group_id, members,
+                   "franchise_missing_or_unmapped" if not ids else "franchise_ambiguous")
+            continue
+        media = sorted(zip(mids, digests))
+        import_manifest = {
+            "originId": "2370335738", "studio": topic, "groupKey": group_id,
+            "name": label, "universe": universe, "variant": variant,
+            "franchiseId": next(iter(ids)),
+            "images": [{"messageId": mid, "sha256": sha} for mid, sha in media],
+        }
+        # Importer validates every R2 HEAD, live identity/hash conflicts and
+        # Supabase admin session before it is permitted to create a private draft.
+        operation_id = hashlib.sha256(json.dumps(
+            [model_id, import_manifest], sort_keys=True,
+            ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
+        candidates.append({
+            "operation_id": operation_id, "model_id": model_id, "studio": topic,
+            "admin_endpoint": "POST /api/admin/telegram-drafts/import",
+            "import_manifest": import_manifest, "new_private_draft_only": True,
+            "rights_verified": False, "showcase_visible": False,
+            "r2_verified": False, "production_write_authorized": False,
+            "apply_executed": False,
+        })
+    summary = {
+        "schema": "tonart.telegram.private-draft-plan/1",
+        "groups_examined": len(groups), "existing_d1_models": len(known),
+        "franchises_in_d1": len(franchise_ids), "candidate_imports": len(candidates),
+        "held": len(held), "reasons": dict(sorted(reasons.items())),
+        "external_writes": False, "public_visibility_authorized": False,
+        "r2_presence_verified": False,
+        "note": "Plan only; importer checks live R2 HEAD, hash ownership, admin auth and D1 0025 before writes.",
+    }
+    return candidates, held, summary
+
+
+def group24(value):
+    return bool(re.fullmatch(r"[a-f0-9]{24}", str(value or "")))
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Staging Telegram/TONART, sem upload ou exclusoes")
     parser.add_argument("--db", type=Path, default=DB_DEFAULT)
@@ -628,9 +790,30 @@ def main():
                         help="Somente reconciliar nomes de fichas D1 existentes; sem varrer imagens ou preparar importacao")
     parser.add_argument("--expected-draft-count", type=int,
                         help="Total de fichas Telegram no escopo exportado do D1; recusa export incompleto")
+    parser.add_argument("--private-drafts-only", action="store_true",
+                        help="Planejar novos rascunhos privados por galeria, sem consultar fotos/alterar D1")
+    parser.add_argument("--franchises-csv", type=Path, help="Franquias do D1, id/name, sem inventar classificacao")
+    parser.add_argument("--expected-franchise-count", type=int, help="Contagem total das franquias no D1")
     args = parser.parse_args()
     source, out = args.source_root.resolve(), args.out.resolve()
     ensure_private_output(out, source)
+    if args.names_only and args.private_drafts_only:
+        parser.error("Escolha somente um modo de reconciliacao")
+    if args.private_drafts_only:
+        if (not args.existing_drafts_csv or not args.expected_draft_count or
+                not args.franchises_csv or not args.expected_franchise_count):
+            parser.error("--private-drafts-only exige snapshot/contagem D1 de fichas e franquias")
+        ops, held, info = plan_private_telegram_drafts(
+            args.db, args.existing_drafts_csv, args.expected_draft_count,
+            args.franchises_csv, args.expected_franchise_count)
+        atomic_text(out / "rascunhos_telegram_importacao_privada.jsonl",
+                    "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in ops))
+        atomic_text(out / "rascunhos_telegram_retidos.jsonl",
+                    "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in held))
+        atomic_text(out / "resumo_rascunhos_telegram.json",
+                    json.dumps(info, ensure_ascii=False, indent=2) + "\n")
+        print(json.dumps({"out": str(out), "summary": info}, ensure_ascii=False))
+        return
     if args.names_only:
         if not args.existing_drafts_csv or not args.expected_draft_count or args.expected_draft_count < 1:
             parser.error("--names-only exige --existing-drafts-csv e --expected-draft-count positivo")

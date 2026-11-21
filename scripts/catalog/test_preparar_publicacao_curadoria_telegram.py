@@ -373,7 +373,83 @@ def test_existing_name_sync_read_only():
 
 
 
+
+def test_private_draft_plan_without_publication():
+    with tempfile.TemporaryDirectory(prefix="tonart-private-import-plan-") as temp:
+        home = Path(temp)
+        db, known, fr = home/"c.sqlite3", home/"d1.csv", home/"franchises.csv"
+        with closing(sqlite3.connect(db)) as con:
+            con.executescript("""
+                CREATE TABLE assets(message_id INTEGER PRIMARY KEY, sha256 TEXT,
+                    source_relative TEXT, original_topic TEXT, source_date TEXT);
+                CREATE TABLE annotations(message_id INTEGER PRIMARY KEY,status TEXT,model TEXT);
+                CREATE TABLE name_proposals(message_id INTEGER PRIMARY KEY,status TEXT,
+                    studio TEXT,title TEXT,universe TEXT,variant TEXT,filename TEXT,
+                    official_url TEXT,evidence_type TEXT,confidence REAL);
+                CREATE TABLE model_groups(group_key TEXT PRIMARY KEY,state TEXT,
+                    studio TEXT,title TEXT);
+                CREATE TABLE model_group_members(message_id INTEGER PRIMARY KEY,group_key TEXT);
+            """)
+            def insert(mid, studio, title, universe, group, digest=None):
+                sha = digest or hashlib.sha256(str(mid).encode()).hexdigest()
+                con.execute("INSERT INTO assets VALUES(?,?,?,?,?)",
+                            (mid,sha,f"{studio}/src_{mid}.jpg",studio,"2026-11-21"))
+                con.execute("INSERT INTO annotations VALUES(?,?,?)", (mid,"revisar",title))
+                con.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (mid,"provavel",studio,title,universe,"",f"{mid}.jpg","","caption",0.7))
+                if group:
+                    con.execute("INSERT INTO model_group_members VALUES(?,?)",(mid,group))
+            con.execute("INSERT INTO model_groups VALUES(?,?,?,?)",
+                        ("a"*24,"provavel","Studio A","Eevee"))
+            con.execute("INSERT INTO model_groups VALUES(?,?,?,?)",
+                        ("b"*24,"provavel","Studio A","Mew"))
+            con.execute("INSERT INTO model_groups VALUES(?,?,?,?)",
+                        ("c"*24,"provavel","Studio A","Mixed"))
+            insert(11,"Studio A","Eevee","Pokémon","a"*24)
+            insert(12,"Studio A","Eevee","Pokémon","a"*24)
+            insert(13,"Studio A","Mew","Pokémon","b"*24)
+            insert(14,"Studio A","Mixed","Pokémon","c"*24)
+            insert(15,"Studio A","Other","Pokémon","c"*24)
+            insert(16,"Studio A","Kirby","Unknown Universe",None)
+            insert(17,"Studio A","Pikachu","Pokémon",None)
+            insert(18,"Geral + 50k","Private","Pokémon",None)
+            con.commit()
+        with known.open("w",encoding="utf8",newline="") as file:
+            w=csv.DictWriter(file,fieldnames=["model_id","studio","telegram_group_key"])
+            w.writeheader();w.writerow(dict(model_id="tg_"+"b"*24,studio="Studio A",
+                                          telegram_group_key="b"*24))
+        with fr.open("w",encoding="utf8",newline="") as file:
+            w=csv.DictWriter(file,fieldnames=["id","name"])
+            w.writeheader();w.writerow(dict(id=57,name="Pokémon"))
+        ready, held, summary = m.plan_private_telegram_drafts(db,known,1,fr,1)
+        assert len(ready)==2,ready
+        assert summary["existing_d1_models"]==1 and summary["franchises_in_d1"]==1
+        assert summary["reasons"]["already_in_d1"]==1 and summary["held"]==2,summary
+        assert {o["import_manifest"]["groupKey"] for o in ready}=={"a"*24,"single:17"}
+        assert all(o["import_manifest"]["franchiseId"]==57 for o in ready)
+        assert all(not o["apply_executed"] and not o["showcase_visible"]
+                   and not o["rights_verified"] and not o["r2_verified"] for o in ready)
+        assert ready[0]["import_manifest"]["images"]==[
+            {"messageId":11,"sha256":hashlib.sha256(b"11").hexdigest()},
+            {"messageId":12,"sha256":hashlib.sha256(b"12").hexdigest()},
+        ]
+        second,_,_ = m.plan_private_telegram_drafts(db,known,1,fr,1)
+        assert [x["operation_id"] for x in ready]==[x["operation_id"] for x in second]
+        try:
+            m.plan_private_telegram_drafts(db,known,2,fr,1)
+            assert False, "partial D1 export must be blocked"
+        except ValueError as exc:
+            assert "Snapshot D1 incompleto" in str(exc)
+        try:
+            m.plan_private_telegram_drafts(db,known,1,fr,2)
+            assert False, "partial franchise export must be blocked"
+        except ValueError as exc:
+            assert "franquias D1 incompleto" in str(exc)
+        assert not any(path.suffix==".webp" for path in home.iterdir())
+
+
 if __name__ == "__main__":
     run()
     test_reconciliation_matrix()
     test_existing_name_sync_read_only()
+    test_private_draft_plan_without_publication()
