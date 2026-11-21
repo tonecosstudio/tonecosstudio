@@ -21,6 +21,16 @@ test("preview metadata uses only the Tonecos deployment host", () => {
   assert.ok(result.includes('content="630"'));
 });
 
+test("Telegram-only catalog social image describes the gallery, not commissioned sculptures", () => {
+  const origin = "https://tonart-catalogo-publico-a1b2c3d4-jogo-brasils-projects.vercel.app";
+  const publicCatalog = injectSocialMeta(html, origin, { VITE_PUBLIC_CATALOG_MVP: "true" });
+  assert.ok(publicCatalog.includes('property="og:image:alt" content="TONART Studio — catálogo visual dos modelos dos estúdios"'));
+  assert.ok(publicCatalog.includes('name="twitter:image:alt" content="TONART Studio — catálogo visual dos modelos dos estúdios"'));
+  assert.doesNotMatch(publicCatalog, /esculturas sob encomenda/);
+  const commercial = injectSocialMeta(html, origin, { VITE_PUBLIC_CATALOG_MVP: "false" });
+  assert.match(commercial, /esculturas sob encomenda/);
+});
+
 test("official TONART Vercel preview uses only its own project hostname", () => {
   const origin = resolveSocialOrigin({
     VERCEL_ENV: "preview",
