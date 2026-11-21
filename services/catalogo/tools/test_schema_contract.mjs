@@ -72,13 +72,19 @@ function fakeDb(appliedNames, calls, missingStructures = new Set()) {
   }
 }
 
-test('schema contract exactly matches versioned migration files', () => {
+test('runtime schema contract pins required migrations but allows later staged migrations', () => {
   const files = fs.readdirSync(path.join(root, 'migrations'))
     .filter((name) => /^\d{4}_.+\.sql$/.test(name))
     .sort()
 
-  assert.deepEqual(contract.requiredMigrations, files)
-  assert.equal(contract.latestMigration, files.at(-1))
+  // The deployed runtime requires only reviewed migrations; later SQL files
+  // are staged for a separately approved cutover, never implied by presence.
+  assert.deepEqual(files.slice(0, contract.requiredMigrations.length), contract.requiredMigrations)
+  assert.equal(contract.latestMigration, contract.requiredMigrations.at(-1))
+  assert.ok(files.length >= contract.requiredMigrations.length)
+  const staged = files.slice(contract.requiredMigrations.length)
+  assert.ok(staged.every((name) =>
+    Number(name.slice(0, 4)) > Number(contract.latestMigration.slice(0, 4))))
   assert.equal(new Set(contract.requiredMigrations).size, contract.requiredMigrations.length)
   assert.ok(Number.isSafeInteger(contract.version) && contract.version >= 1)
   assert.equal(new Set(structureKeys()).size, structureKeys().length)
