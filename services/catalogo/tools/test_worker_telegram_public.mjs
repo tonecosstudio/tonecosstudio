@@ -52,6 +52,86 @@ test("only anonymous successful Telegram lists are CDN cacheable; details, inval
  assert.equal(down.headers.get("cache-control"),"no-store");
 });
 
+
+test("Worker edge cache reuses anonymous list/studio responses without repeat D1 reads", async () => {
+ const previous=Object.getOwnPropertyDescriptor(globalThis,"caches");
+ const entries=new Map(),seen={match:0,put:0};
+ const fake={
+   default:{
+     async match(req){seen.match++;return entries.get(req.url)?.clone()},
+     async put(req,res){seen.put++;entries.set(req.url,res.clone())},
+   },
+ };
+ Object.defineProperty(globalThis,"caches",{configurable:true,writable:true,value:fake});
+ try {
+   const {env,queries}=fixture(),pending=[];
+   const bg={waitUntil(p){pending.push(p)}};
+   const url=request("?limit=24&offset=0");
+   const first=await routeTelegramStudioShowcase(url,env,bg);
+   assert.equal(first.status,200);
+   await Promise.all(pending);
+   const d1AfterFirst=queries.length;
+   assert.equal(d1AfterFirst,2);
+   const second=await routeTelegramStudioShowcase(url,env,bg);
+   assert.equal(second.status,200);
+   assert.deepEqual(await second.json(),await first.json());
+   assert.equal(queries.length,d1AfterFirst,"repeated model listing must use cache");
+   assert.equal(seen.put,1);
+   const studioUrl=request("/studios");
+   const studio=await routeTelegramStudioShowcase(studioUrl,env,bg);
+   assert.equal(studio.status,200);
+   await Promise.all(pending);
+   const d1AfterStudio=queries.length;
+   assert.equal(d1AfterStudio,3);
+   assert.deepEqual(await (await routeTelegramStudioShowcase(studioUrl,env,bg)).json(),
+                    await studio.json());
+   assert.equal(queries.length,d1AfterStudio,"repeated studio list must use cache");
+   assert.equal(seen.put,2);
+ } finally {
+   if(previous)Object.defineProperty(globalThis,"caches",previous);
+   else delete globalThis.caches;
+ }
+});
+
+test("Worker cache never stores private, invalid, detail, media or D1-error responses", async () => {
+ const previous=Object.getOwnPropertyDescriptor(globalThis,"caches");
+ const entries=new Map(),seen={match:0,put:0};
+ Object.defineProperty(globalThis,"caches",{configurable:true,value:{
+   default:{
+     async match(req){seen.match++;return entries.get(req.url)?.clone()},
+     async put(req,res){seen.put++;entries.set(req.url,res.clone())},
+   },
+ }});
+ try {
+   const {env,queries,keys}=fixture();
+   const priv=new Request(base+"?limit=24",{headers:{authorization:"Bearer sensitive"}});
+   const cookie=new Request(base+"?limit=24",{headers:{cookie:"session=sensitive"}});
+   for(const req of [priv,cookie]){
+     const res=await routeTelegramStudioShowcase(req,env);
+     assert.equal(res.status,200);
+     assert.equal(res.headers.get("cache-control"),"no-store");
+   }
+   assert.equal(seen.match,0);
+   assert.equal(seen.put,0);
+   assert.equal((await routeTelegramStudioShowcase(request("?limit=100"),env)).status,400);
+   assert.equal((await routeTelegramStudioShowcase(request("/"+id),env)).status,200);
+   assert.equal((await routeTelegramStudioShowcase(request("/"+id+"/media/"+sha+"/thumb"),env)).status,200);
+   assert.equal(keys.length,1);
+   assert.equal(seen.match,0);
+   assert.equal(seen.put,0);
+   const failing={...env,DB:{prepare(){throw Error("D1 quota exceeded")}}};
+   assert.equal((await routeTelegramStudioShowcase(request("?limit=24&offset=3"),failing)).status,503);
+   assert.equal(seen.put,0,"D1 failure must never poison the edge cache");
+   const recovered=await routeTelegramStudioShowcase(request("?limit=24&offset=3"),env);
+   assert.equal(recovered.status,200);
+   assert.equal(seen.put,1);
+   assert.ok(queries.length>0);
+ } finally {
+   if(previous)Object.defineProperty(globalThis,"caches",previous);
+   else delete globalThis.caches;
+ }
+});
+
 test("global index search checks name, character and variant with bound values",async()=>{
  const {env,queries,bindings}=fixture();
  const response=await routeTelegramStudioShowcase(request("?studio=Studio%20A&q=Chibi&limit=24"),env);

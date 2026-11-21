@@ -5,7 +5,7 @@ import { validatePublicCatalogQuery } from './publicQueryBudget'
 type ApiEnv = Parameters<typeof apiWorker.fetch>[1]
 
 export default {
-  async fetch(request: Request, env: ApiEnv): Promise<Response> {
+  async fetch(request: Request, env: ApiEnv, ctx?: { waitUntil(promise: Promise<unknown>): void }): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname.startsWith(PUBLIC_MEDIA_PREFIX)) {
       // Immutable R2 keys never accept cache-busting query suffixes.
@@ -15,6 +15,6 @@ export default {
       }
       return servePublicMedia(request, env.MEDIA as unknown as PublicMediaBucket)
     }
-    return apiWorker.fetch(request, env)
+    return apiWorker.fetch(request, env, ctx)
   },
 }

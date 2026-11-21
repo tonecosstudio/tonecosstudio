@@ -33,6 +33,53 @@ const STUDIO_DIRECTORY_CACHE_CONTROL = 'public, max-age=0, s-maxage=300'
 const metadataCache = (request: Request, cacheControl = LIST_CACHE_CONTROL) =>
   request.headers.has('authorization') || request.headers.has('cookie') ? 'no-store' : cacheControl
 
+type PublicEdgeCache = {
+  match(request: Request): Promise<Response | undefined>
+  put(request: Request, response: Response): Promise<void>
+}
+type BackgroundTasks = { waitUntil(promise: Promise<unknown>): void }
+
+/**
+ * Reuse the existing Cloudflare edge cache on anonymous public metadata only.
+ * No cache namespace, KV, R2 objects or D1 counters are created. Details,
+ * individual media, errors and authenticated requests always recheck storage.
+ * Cache API is regional; a miss in another colo is not a publication grant.
+ */
+async function serveCachedMetadata(
+  request: Request,
+  build: () => Promise<Response>,
+  background?: BackgroundTasks,
+): Promise<Response> {
+  const allowed = request.method === 'GET' &&
+    !request.headers.has('authorization') && !request.headers.has('cookie') &&
+    !request.headers.has('range') && !request.headers.has('if-none-match') &&
+    !request.headers.has('if-modified-since')
+  const cache = allowed
+    ? (globalThis as unknown as { caches?: { default?: PublicEdgeCache } }).caches?.default
+    : undefined
+  if (!cache) return build()
+
+  // Recreate a header-free request: user-controlled headers never vary the key.
+  // The route validates every query parameter before invoking this function.
+  const key = new Request(request.url, { method: 'GET' })
+  try {
+    const hit = await cache.match(key)
+    if (hit?.status === 200) return hit
+  } catch {
+    // An unavailable cache is a miss, never a catalog outage.
+  }
+
+  const response = await build()
+  if (response.status === 200 && response.headers.get('cache-control')?.startsWith('public,')) {
+    const write = cache.put(key, response.clone()).catch(() => {
+      // Cache insertion failures must never hide a valid D1 response.
+    })
+    if (background) background.waitUntil(write)
+    else await write
+  }
+  return response
+}
+
 function json(data: unknown, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(data), { status, headers: {
     'content-type': 'application/json; charset=utf-8',
@@ -46,17 +93,21 @@ function normalize(m: ModelRow) {
     provisional: m.telegram_name_provisional === 1,
   }
 }
-export async function routeTelegramStudioShowcase(request: Request, env: TelegramPublicEnv): Promise<Response> {
+export async function routeTelegramStudioShowcase(
+  request: Request, env: TelegramPublicEnv, background?: BackgroundTasks,
+): Promise<Response> {
   const url = new URL(request.url)
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
   if (!env.DB || !env.PRIVATE_TELEGRAM) return json({ error: 'catalog_studios_unavailable' }, 503)
   try {
     if (url.pathname === ROOT + '/studios') {
       if (url.search) return json({ error: 'invalid_query' }, 400)
-      const rows = (await env.DB.prepare("SELECT m.telegram_studio AS studio, COUNT(*) AS total FROM models m WHERE " +
-        VISIBLE + " GROUP BY m.telegram_studio ORDER BY m.telegram_studio COLLATE NOCASE")
-        .all<{ studio: string; total: number }>()).results
-      return json({ studios: rows }, 200, metadataCache(request, STUDIO_DIRECTORY_CACHE_CONTROL))
+      return await serveCachedMetadata(request, async () => {
+        const rows = (await env.DB.prepare("SELECT m.telegram_studio AS studio, COUNT(*) AS total FROM models m WHERE " +
+          VISIBLE + " GROUP BY m.telegram_studio ORDER BY m.telegram_studio COLLATE NOCASE")
+          .all<{ studio: string; total: number }>()).results
+        return json({ studios: rows }, 200, metadataCache(request, STUDIO_DIRECTORY_CACHE_CONTROL))
+      }, background)
     }
     if (url.pathname === ROOT) {
       const studio = url.searchParams.get('studio') ?? ''
@@ -72,6 +123,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
           !/^[1-9]\d?$/.test(rawLimit) || Number(rawLimit) > 48)
         return json({ error: 'invalid_query' }, 400)
+      return await serveCachedMetadata(request, async () => {
       const where = [VISIBLE]
       const values: unknown[] = []
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
@@ -99,6 +151,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
       return json({ total: count?.total ?? 0, offset: Number(rawOffset), limit: Number(rawLimit),
         items: rows.map(m => ({...normalize(m), cover: m.cover_sha && SHA.test(m.cover_sha)
           ? ROOT + '/' + m.id + '/media/' + m.cover_sha + '/thumb' : null})) }, 200, metadataCache(request))
+      }, background)
     }
     const mediaMatch = new RegExp('^' + ROOT + '/(tg_[a-f0-9]{24})/media/([a-f0-9]{64})/(thumb|display)$').exec(url.pathname)
     const detailMatch = new RegExp('^' + ROOT + '/(tg_[a-f0-9]{24})$').exec(url.pathname)
