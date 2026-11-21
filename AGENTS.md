@@ -1,5 +1,13 @@
 # AGENTS — TONART Studio
 
+## INCIDENTE ATIVO — BLOQUEAR NOVOS DEPLOYS WRANGLER ATÉ GATE M5 (21/11/2026)
+
+- **NÃO executar `wrangler deploy`, nem scripts que promovam `tonecos-catalogo-api`, enquanto o D1 real estiver na migration `0024`, sem `models.telegram_showcase_visible` da `0025` e sem aprovação M5.** O Worker v9 responde HTTP 503 nesse estado. Esta ordem vale também para outros chats e automações com a mesma conta Cloudflare.
+- **Evidência direta Cloudflare:** novos deploys Wrangler em **21/11/2026 10:35:56Z** (versão `95f77f36`) e **10:37:36Z** (`d2f5333c`) foram implantados pela conta `tonecosstudio@gmail.com` (Cloudflare account audit logs). A correção via rollback na API às **10:36:35Z** não permaneceu por causa do segundo deploy. Não confundir rollback momentâneo com estabilização do publicador.
+- **Ordem segura obrigatória:** interromper o processo que está republicando, solucionar a desativação administrativa dos cinco workflows legados com credencial admin, validar CI/manifesto, obter GO específico de migração `0025` pela autoridade correta, comprovar coluna/ledger/triggers no D1, então implantar Worker compatível pelo publicador único. Não remover gates, forçar aprovação de nomes/direitos nem criar update engine paralelo.
+- **Site indisponível detectado novamente após 10:37Z** em `/api/categories` e `/api/telegram-studios/studios` (HTTP 503); qualquer alegação de restabelecimento requer novo teste HTTP real após o último deploy. A preparação de nomes/galerias em `main` está separada deste incidente e **não** concede autorização de produção.
+
+
 ## Checkpoint global da Curadoria Telegram — 21/11/2026
 
 - **Leitura obrigatória antes de trabalhar no catálogo/curadoria:** [docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md, seção 13](docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md#13-estado-transversal-de-todos-os-estúdios-e-sincronização--21112026) e, no desktop autorizado, `C:\Users\ordax\Documents\TONART-Telegram-Import\espelho-telegram\CURADORIA-DIVISAO-POR-ESTUDIO.md` (inventário atualizado; consultar SQLite real). Não depender de mensagens anteriores de chat.
