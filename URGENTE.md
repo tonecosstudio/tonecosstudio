@@ -93,6 +93,58 @@
 
 ---
 
+---
+
+## CHECKPOINT — issue #32 — 18/11/2026 — projeção pronta, dados reais pendentes
+
+- **Branches/PRs:** `main@5d8a24e5`; PR #26 `6d72a221`, PR #31 `3bf3138a`; código #33 validado em `6ede923c`, com checkpoint atualizado em `224525aa` (docs-only). As três PRs seguem abertas em draft e fora da `main`; nenhum código editorial foi integrado. O GitHub marca #33 `CONFLICTING`, embora `origin/main` seja ancestral e `git merge-tree` local não encontre conflito; não fiz merge nem force push.
+- **Curadoria preparada:** inventário de **2.609 modelos**; **96** identidades e biografias originais candidatas, **108** fontes e **388** claims com referências; **935** vínculos candidatos em **922** modelos únicos. Revisados: **0**; aprovados: **0**; vínculos com evidência independente específica por estatueta: **0**. O rótulo do modelo só é proveniência, nunca prova de identidade.
+- **Caminho de dados existente:** #31 mantém a curadoria privada, aprovação humana separada da revisão, invalidação por mudança concorrente e RPC `admin_export_approved_catalog_character_projection()` somente para `service_role`. #26 contém normalizador fail-closed, migration D1 0023, sync transacional/idempotente, rollback, verificação de IDs/slugs/publicação/franquia no D1 e os GETs editoriais na allowlist dos proxies existentes. O publicador mantém a chave `service_role` local e envia primeiro dry-run; não há outro Worker/catálogo. #33 consome o gateway e as rotas existentes; a flag pública permanece desligada.
+- **Validações locais deste ciclo:** Worker/projeção **10/10**; publicador Supabase→Worker **6/6**; proxies Vercel/Pages **42/42**; inventário #32 **11/11**. O teste de projeção aplicou 0023 apenas em SQLite em memória e percorreu o Worker real local com RPC Supabase simulada. Isso não prova leitura hospedada no Supabase.
+- **Checks remotos:** Quality Gate #44348006753 (#26), #44382453220 (#31) e #44383202231 (#33) passaram somente o job offline do Worker; os demais jobs foram ignorados. O teste PostgreSQL descartável de aprovação/revogação passou em #44336122500 no commit `015e9662`; migrations #31 não mudaram desde esse SHA. Nenhum check homologou Supabase hospedado ou publicação.
+- **Verificações inconclusivas locais:** `npm run catalog:monorepo:check` e `npm run catalog:worker:typecheck` ficaram sem saída por mais de dois minutos; o Vitest das fichas/gateway também não emitiu saída em 60 segundos. As três sessões foram interrompidas e não contam como aprovadas.
+- **Bloqueio real:** o único Supabase conectado é produção (`icmtmaakjucmuzxnofkd`), sem staging isolado/local disponível; as migrations Supabase #31 e D1 0023 não foram aplicadas e a projeção D1 segue vazia. Não há registro aprovado nem export real para testar. Faltam revisão humana por identidade/franquia/atributo/vínculo, staging isolado autorizado para migrations e round-trip, e gate/autorização do Worker M5.
+- **NEXT_ACTION:** realizar a revisão editorial humana na curadoria #31 e provisionar/autorizar um ambiente isolado sem escrever na produção; então aplicar migrations nesse ambiente, executar RPC real → dry-run → sync D1 e validar as páginas #33. Só depois considerar habilitar a flag.
+- **DO_NOT_REPEAT:** não refazer inventário, pesquisa já preparada ou testes offline verdes sem mudança concreta; não contar fixtures/PostgreSQL descartável como integração hospedada; não migrar, publicar, habilitar dados/SEO ou tocar produção sem autorização.
+
+## CHECKPOINT — issue #32 — 18/11/2026 — importação e projeção editorial validadas offline
+
+- **Base/PR:** branch `codex/issue-32-character-catalog`, base `main@b82a76a8`, código/dados no HEAD `6e3e8bcd`. PRs #26, #31 e #33 continuam abertas em draft; nenhuma destas funcionalidades foi integrada à `main`.
+- **Fila e pesquisa:** inventário de **2.609 modelos** e **1.381 rótulos candidatos**; **90 dossiês** de identidade preparados, arquivo review-only de **897.619 bytes**, **101 fontes HTTPS** (100 classificadas como oficiais e 1 publicadora) e **355 claims** com referências por atributo. Em 89 dossiês há franquia candidata preparada e 1 permanece ambíguo. Existem **910 vínculos candidatos distribuídos por 897 modelos únicos**; todos pendentes, com **0 vínculos apoiados por evidência independente**. Os 90 dossiês, nomes, franquias, biografias e relações seguem pendentes de revisão; **0 revisados e 0 aprovados**. Nenhum modelo foi contado como personagem distinto.
+- **Novos candidatos One Piece:** foram preparados dossiês de Roronoa Zoro, Monkey D. Luffy e Sanji com 7 IDs de modelo existentes no inventário, biografias originais curtas e claims separados por fonte. As referências oficiais de personagem apareceram na busca do site oficial, mas a abertura automatizada respondeu HTTP 403; isso e o escopo de adaptação da referência Bandai/ONE PIECE ODYSSEY estão explícitos como ambiguidades para revisão. Nenhum vínculo recebeu evidência independente do modelo.
+- **Importador privado #31:** o pacote atual da #33 foi aceito pelo parser da PR #31 (`8f5ffc50`): **90 dossiês, 101 fontes e 910 vínculos**, abaixo do limite de importação de 5 MiB. O teste Vitest direcionado do importador passou **7/7** e o pacote foi lido diretamente pelo parser; nenhuma escrita no Supabase ocorreu. O editor preenche somente rascunhos privados e exige confirmação humana por identidade, franquia, claims e cada relação.
+- **Exportação e Worker #26:** a RPC `admin_export_approved_catalog_character_projection` exporta apenas aprovação atual e evidências confirmadas; o publicador recusa a fonte Supabase produtiva e só aceita destino Worker local. Nesta rodada passaram **4/4 testes do publicador** e **8/8 testes do Worker editorial**, cobrindo fonte/RPC, alvo local, dry-run, evidência/aprovação, idempotência, compare-and-swap e rollback. `catalog:worker:typecheck` passou anteriormente neste HEAD. A migration D1 `0023_public_editorial_projection.sql` não foi aplicada. Provas anteriores preservadas no checkpoint da #26: suíte de aplicação/publicação D1 26/26, proxies Pages 27/27 e Vercel 15/15; sem repetir testes inalterados.
+- **Interface pública #33:** gateway, rotas existentes e recomendações usam as projeções v1; a interface só habilita para payload aprovado e flag exata `v1`. Fixtures permanecem nos testes. Nesta branch passaram 72/72 testes de gateway/fichas, 11/11 testes do inventário, `npm run typecheck:app` e `git diff --check`.
+- **Fontes:** amostra do dossiê Raven/Ravena cotejada com a página oficial da DC; fatos sobre Rachel Roth, origem familiar e New Teen Titans correspondem à fonte citada. As referências One Piece foram encontradas em páginas oficiais e em um perfil em inglês da publicadora Bandai Namco para ONE PIECE ODYSSEY. Isso é preparação/cotejo de fontes, não revisão nem aprovação editorial.
+- **GitHub Actions:** Quality Gate [#44329798701](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44329798701) passou no HEAD `6e3e8bcd` pelo job `Catalog Worker offline / no deploy`, incluindo inventário atualizado, projeção editorial/Worker, TypeScript, proxy e gate de cutover offline. Os outros quatro jobs foram pulados. O run anterior [#44329226890](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44329226890) encontrou a expectativa antiga `87` no teste do inventário; ela foi alinhada aos 90 dossiês e o seguinte passou. O run #44316416693 da #31 passou a validação de migration/RLS/export em PostgreSQL descartável no HEAD `8f5ffc50`; nenhum desses resultados comprova round-trip com Supabase/D1 reais.
+- **Bloqueios exatos:** nenhuma identidade ou relação recebeu revisão/aprovação humana; não há exportação real aprovada para publicar. As migrations Supabase da #31 e D1 0023 da #26 não foram aplicadas. Não há ambiente não produtivo Supabase/D1 autorizado; o único Supabase conectado não foi escrito. Publicação do Worker ativo e cutover M5 não autorizados. Enquanto isso, a projeção real fica vazia e o flag público fechado.
+- **NEXT_ACTION:** revisão humana dos 90 dossiês e 910 vínculos na curadoria privada existente; após aprovação, obter/autorizar staging isolado, aplicar nele as migrations na ordem, exportar somente a revisão aprovada, validar dry-run e round-trip Worker/D1 e verificar as páginas da #33 com projeção real. Manter todas as flags públicas fechadas até esses gates.
+- **DO_NOT_REPEAT:** não promover candidatos, não usar fixtures como integração real, não aplicar migrations nem escrever no Supabase produtivo, não publicar Worker, não habilitar indexação e não repetir a auditoria/inventário sem mudança das fontes.
+
+## CHECKPOINT — issue #32 — 17/11/2026 — candidatos e fichas atrás da projeção aprovada
+
+- **Base e PR:** branch `codex/issue-32-character-catalog`, base `main@08a4b73e2686d16c517c6c5565443772c620d635`; inventário `05f3b068`; implementação nesta PR #33 em `654d9f598289c700a58a636dbc8dc8ea337f27fd`. PR #33 segue draft; PRs #26, #29, #30 e #31 não foram sobrescritas. `RelatedModels` permanece inalterado.
+- **Inventário/candidatos:** reconciliação somente leitura por ID via gateway público, 43 páginas: contrato candidato #26 = 2.596, catálogo público = 2.575, união = 2.609 (2.562 compartilhados, 34 somente no contrato, 13 somente publicados, zero divergência de slug nos IDs compartilhados). A fila em `docs/review/character-catalog-review-queue.csv` preserva nome exato de catálogo, origem/campo, variante/coleção/pasta, contexto de franquia e códigos de ambiguidade. Em todas as 2.609 linhas: `unverified_candidate`, revisão obrigatória, `identity_verified=false`, `franchise_verified=false`, sem evidência de identidade, vínculo aprovado ou biografia. Metadados do catálogo não são prova de identidade; o CSV é derivado e não é fonte de publicação.
+- **Fichas e gateway:** `public-catalog-gateway.ts` ganhou contratos e decoders v1 para `GET api/editorial/v1/characters/:slug` e `GET api/editorial/v1/universes/:category/:franchise`, usando o gateway existente. Rejeita projeção não aprovada, URL sem HTTPS, citação apenas de catálogo, relação não revisada, escopo divergente e relações duplicadas. A ficha de personagem ocupa as rotas existentes; a ficha de universo entra no agrupamento existente de franquia. Cards usam `catalogModelDetailsPath` e `gateway.mediaUrl`, ocultando modelos sem capa pública elegível. O flag `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION` só habilita com valor exato `v1`; ausente por padrão. Fixtures existem apenas nos testes.
+- **Quality Gate:** o workflow existente agora observa `docs/review/**`, inventário, testes e arquivos das fichas; `catalog:mvp:test` inclui os novos testes. Nenhum workflow novo foi criado.
+- **Dependência da PR #31:** permanece aberta/draft em `78f961e2863d199b360ae2e177a5c838fbfdc664`. A migration `supabase/migrations/20261117030000_tonart_curated_model_characters.sql` e as alterações correspondentes do frontend/gateway administrativo devem ser integradas juntas. O preflight da PR #31 (17/11) constatou a relação/RPC nova ainda ausente, 0 perfis editoriais, 0 vínculos verificados legados e 0 inconsistências. Só há branch Supabase `main`; não existe staging isolado autorizado. Nenhuma migration foi aplicada nesta frente.
+- **Dependência do Worker/proxy:** o publicador ativo continua `washingtonmsdj/catalogo`; o candidato da PR #26 segue staged-offline. As rotas editoriais v1 não existem no Worker publicado. `functions/catalogo-api/[[path]].js` só permite as listas atuais, `/api/models/...` e `/media/...`; `api/catalogo-proxy.js` encaminha pelo mesmo adaptador. Assim, os novos caminhos do gateway não funcionarão até o owner do Worker publicar uma projeção versionada e o proxy canônico permitir esses GETs. Este código não cria Worker/endpoint paralelo nem altera proxy, D1 ou R2.
+- **Revisão editorial:** nenhum dos rótulos do inventário foi promovido. Falta revisão humana por identidade, franquia e vínculo de cada estatueta, com evidência independente registrada na curadoria privada existente. A projeção deve expor apenas relações/textos aprovados; não há biografias, idades ou aliases revisados nesta entrega.
+- **Validação local:** 12/12 testes Vitest focados, 10/10 testes Node do inventário, `node --check`, `npm run typecheck:app`, Prettier nos arquivos novos e `git diff --check` passaram. O scan leu apenas o gateway HTTP público; não houve acesso direto D1/R2, Supabase, PostgreSQL, migration, deploy nem escrita remota. Os testes usam fixtures e não comprovam integração do Worker/Supabase.
+- **GitHub Actions:** run [#44103718463](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44103718463) no SHA `5935e6b6` falhou no job `Catalog Worker offline / no deploy` com `steps=null`; os outros quatro jobs foram pulados. A CI não executou/validou os comandos do repositório e não está aprovada.
+- **Próxima ação:** aguardar staging autorizado e integração completa da PR #31; revisão editorial de candidatos no serviço privado; implementação da projeção v1 e allowlists no owner do Worker/proxy. Só então validar em ambiente autorizado e considerar a configuração do flag. Não repetir scan integral sem mudança das fontes nem habilitar a ficha no site antes da projeção real aprovada.
+
+## CHECKPOINT — 18/11/2026 — preparação do fluxo editorial até D1
+
+- **Base e owners:** PR #31 continua na branch existente, sincronizada por merge com `origin/main@5d8a24e5` (merge de código `d7253359`; commits seguintes são checkpoints documentais); integra a revisão privada e exportação Supabase. PR #26 (`6d72a221`) contém o publicador e Worker offline; PR #33 (`685231fd`) contém as páginas e a fila de candidatos. O publicador, catálogo, Worker, D1/R2 e revisão continuam únicos; nenhum recurso paralelo foi criado.
+- **Fila atual da PR #33, conferida no pacote de pesquisa:** **2.609 modelos**, **1.381 rótulos candidatos**, **96 dossiês de identidade** e biografias originais preparadas, **108 fontes HTTPS** (107 oficiais e 1 publicadora) e **388 claims** associados a fontes por atributo. Há 95 franquias candidatas e 1 dossiê com franquia explicitamente ambígua. São **935 vínculos candidatos** em **922 modelos únicos**; todos seguem pendentes e nenhum possui evidência independente específica da escultura. Revisados/aprovados: **0 identidades, 0 franquias, 0 biografias e 0 vínculos**. Candidatos não são identidades verificadas.
+- **Contrato #31 → #26:** a exportação usa apenas `admin_export_approved_catalog_character_projection` e exige aprovação humana ainda válida para o perfil e a revisão exata dos vínculos, com evidência independente para identidade, franquia, atributos e cada relação modelo-personagem. A rotina da #26 valida IDs, franquias, publicação e evidência contra o D1 antes de aplicar a projeção; o importador da #31 só preenche rascunhos vazios na sessão administrativa e não grava/aprova automaticamente.
+- **Validação local executada:** o parser privado da #31 aceitou o pacote atual da #33 sem escrita e confirmou **96 candidatos, 108 fontes, 388 claims, 935 vínculos em 922 modelos únicos e zero aprovações**; `node --test scripts/catalog/publish-approved-character-projection.test.mjs` passou **6/6** e `node --experimental-strip-types --test services/catalogo/tools/test_worker_editorial_projection.mjs` passou **10/10**. Os testes de publicação cobrem RPC exportadora simulada, Worker SQLite, dry-run, aplicação, idempotência, CAS, rollback e rejeições; não comprovam conexão ou escrita real no Supabase/D1.
+- **Release verify local:** antes de sincronizar a main, no HEAD #31 `015e9662`, TypeScript, ESLint e auditorias de segurança passaram; ESLint registrou 182 avisos e zero erros. A cobertura terminou com **3.847 testes aprovados, 10 falhas e 32 ignorados** em 332 arquivos, parando antes de build/audit final. As falhas incluíram duas expectativas antigas (CTA Home e texto de Coins), quatro testes de saldo sem habilitar a flag no setup, três testes de etiqueta com cleanup global sem `localStorage` e o defeito de `event.currentTarget` da tela de orçamento, corrigido posteriormente pela #34 na main. Depois do primeiro merge, dois testes direcionados no HEAD `6fe5c163` não iniciaram coleta (default e um worker fork; **0 executados**). Na main sincronizada mais recente, `npm run typecheck:app` passou no código do HEAD `d7253359`; o HEAD atual `cb54cb8c` acrescenta somente o checkpoint documental. O Vitest focado em seis arquivos chegou a imprimir `RUN`, mas não coletou testes em 2 minutos e foi interrompido (**0 executados**). `release:verify` e build/audit final não foram executados no candidato atual. Os checks da #29/#34/#35 na main validam seus respectivos heads, não esta combinação editorial. O gate GitHub anterior [#44316416693](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44316416693) permanece em SHA antigo `8f5ffc50`.
+- **Estado e bloqueios:** PRs #26, #31 e #33 permanecem abertas e não integradas à `main`; projeção D1 vazia e flag pública fechada. Migration `0023_public_editorial_projection.sql` e migrations editoriais Supabase não aplicadas; nenhuma exportação aprovada. A PR #31 segue draft; GitHub reporta `mergeable=UNKNOWN`, `mergeStateStatus=UNKNOWN`, sem checks ou decisão de revisão no HEAD atual. Localmente `origin/main` é ancestral do branch e `git merge-tree` não encontrou conflitos. O ambiente não tem `supabase`, `psql` ou `docker` local instalados; o projeto Supabase conectado é produtivo, sem staging isolado autorizado. Faltam revisão humana das identidades/franquias/claims e dos 935 vínculos com evidência própria, staging para migrações/round-trip e autorização separada de publicação do Worker/cutover M5. Nenhuma escrita remota ou publicação foi feita.
+- **Próxima ação:** concluir a revisão privada no sistema existente e coletar evidência independente para cada modelo antes de aprovar; só então aplicar migrations em staging isolado autorizado, executar exportação aprovada em dry-run e homologar as páginas #33 com dados reais. Não habilitar a flag pública enquanto não houver projeção aprovada e validada.
+- **Não repetir:** não tratar fixture/SQLite como integração Supabase→D1; não reaplicar migration em produção; não reexecutar o release completo até corrigir as falhas de teste listadas ou mudar o HEAD/gate; não publicar Worker, cutover M5, indexação ou conteúdo sem revisão humana.
+
 ## CHECKPOINT — 18/11/2026 — MVP comercial/mobile integrado e prévia validada
 
 - **SSOT / integração:** `tonecosstudio/tonecosstudio/main`. PR #34 (admin input values) integrada por squash `e70531433ae9a19ec4ac941653cb605f8e32aa6b`; PR #35 (contato por e-mail de visitantes com seleção, sem cadastro e sem escrita anônima em Supabase) integrada por `5769b99dbe47312779f8d160a85e577ab087bda0`; PR #29 (catálogo e responsividade mobile) integrada por `15c89ab8ac587a72b1173029445daa95f661cb2d`. PRs #26/#31/#33 editoriais não alteradas e **não bloqueiam o MVP comercial**.
@@ -1860,6 +1912,471 @@ Documentos ativos: [README](README.md), [AGENTS](AGENTS.md), [arquitetura](docs/
 **NEXT_ACTION:** iniciar Fase A da especificação, verificar o estado atual após outros agentes e só então avançar em vínculos de identidade/projeção pública e UI existente, com testes proporcionais.
 
 **DO_NOT_REPEAT:** não criar outro catálogo ou fonte de tags, não copiar biografias em cada modelo, não ativar Supabase legado público, não reexecutar migrations já aplicadas, não abrir Workflows/deploy por esta alteração documental.
+
+## Rodada 78 — busca pública editorial na PR #33 (17/11/2026)
+
+- Na branch existente `codex/issue-32-character-catalog`, acrescentei busca limitada de personagens por nome, alias e franquia ao catálogo. Ela usa o gateway tipado existente, valida publicação pública aprovada, evidências e slugs canônicos, e só consulta quando `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION=v1`; links levam à ficha pelo slug estável. Fixtures ficam apenas nos testes.
+- Validação dirigida: 35 testes passaram na rodada principal; as duas expectativas antigas de texto da ficha de modelo foram atualizadas para a cópia vigente e os dois casos passaram em execuções dirigidas separadas. `tsc -p tsconfig.app.json --noEmit`, ESLint dos seis arquivos e `git diff --check` passaram. A suíte usa resposta fixture e não comprova Worker/D1 real.
+- Limite real: o candidato Worker da PR #26 ainda não expõe `api/editorial/v1/characters/search`; sem essa rota, projeção publicada e conteúdo editorial aprovado, a busca permanece fechada e sem resultados em produção. Nenhum candidato foi marcado verificado nem dado publicado. A migração/integração de produção, deploy e indexação continuam fora do escopo autorizado.
+
+**NEXT_ACTION:** na branch existente da PR #26, implementar a leitura da projeção editorial aprovada no Worker candidato e cobrir a rota offline; manter M5 staged-offline. Só habilitar a flag pública após contrato real, dados aprovados e homologação editorial.
+
+**DO_NOT_REPEAT:** não tratar fixtures como integração D1/Worker; não ligar a flag antes do endpoint aprovado; não exportar rascunhos privados da curadoria; não aplicar migrations, fazer cutover, deploy ou indexação.
+
+## Rodada 79 — projeção editorial pública e navegação de personagens (17/11/2026)
+
+- A branch existente da PR #26 recebeu `ec685aa7`: migration aditiva `0023_public_editorial_projection.sql`, tabelas de projeção pública vazias, relações muitos-para-muitos com os modelos canônicos e rotas Worker de busca/fichas que só leem publicações explicitamente aprovadas. M5 continua `staged-offline`; migration não aplicada, sem deploy ou escrita em produção.
+- A exceção de segurança do Quality Gate fica limitada às duas exclusões exatas da linha antiga do índice FTS5 editorial. O checker continua bloqueando qualquer outra exclusão de linhas; `config/catalog-code-consolidation.json` registra os overlays e o hash da nova migration sem alterar os pins de origem.
+- Na branch existente da PR #33, o gateway agora valida características com evidências independentes e até 200 fontes por resposta de universo; a ficha mostra características verificadas no estilo atual. Corrigi também a rota contextual de personagem para abrir a ficha editorial e, com a projeção desligada, preservar os filtros de franquia ao voltar ao catálogo.
+- **Validações:** PR #26: Worker **70/70**, busca/fichas em SQLite **6/6**, contrato do monorepo **14/14**, TypeScript do Worker e policy checker passaram; uma verificação negativa confirmou que a exceção FTS não libera exclusão de modelos. PR #33: gateway/fichas **11/11**, rota/navegação **13/13**, TypeScript da aplicação e ESLint direcionado passaram. Fixtures foram usadas exclusivamente em testes.
+- **Bloqueios reais:** ainda não existe processo de exportação/aprovação que leve a curadoria privada do Supabase para a projeção D1; estado privado `reviewed` não equivale a `approved/public`. A projection não contém perfis reais, então a flag pública permanece desligada e os testes não provam integração real. Não executei migration, escrita, cutover, deploy ou indexação. A GitHub Actions sem runner continua sem aprovação de CI.
+
+**NEXT_ACTION:** concluir a autoridade editorial/publicação real somente após definir revisão dos registros e o caminho autorizado para o D1 canônico; manter perfis e busca fechados até essa projeção existir e ser homologada.
+
+**DO_NOT_REPEAT:** não marcar candidatos como verificados, não converter fixtures em conteúdo, não tratar `reviewed` como publicação, não aplicar a migration `0023`, não ativar M5 nem a flag pública sem os gates correspondentes.
+
+## Rodada 80 — vínculos editoriais de modelos na PR #33 (17/11/2026)
+
+- Na ficha canônica do modelo, a flag `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION=v1` habilita consulta ao gateway existente para vínculos públicos aprovados. A interface apresenta personagens com evidência de identidade e da relação, navega pelas rotas canônicas de personagem e oferece o universo completo quando a resposta é truncada. Com a flag desligada, não faz chamada editorial. O endpoint de leitura correspondente está no Worker candidato da PR #26 (`9f2ec142`); `RelatedModels` e suas sugestões permanecem reutilizados e inalterados.
+- O decoder limita a resposta a 30 itens, valida IDs/slugs únicos, publicação aprovada e evidências independentes para identidade e vínculo; rejeita ID inválido. Fixtures foram adicionadas somente aos testes. A cobrança comercial não presume saldo nem exibe Coins simuladas para visitante sem autenticação; o teste confirma a exigência de conta antes de consultar saldo ou checkout.
+- **Validações locais:** `public-catalog-editorial-projection.test.ts` 10/10; teste de duas identidades ligadas a um modelo passou; teste da oferta/visitante passou após substituir expectativas comerciais obsoletas; ESLint direcionado e `tsc -p tsconfig.app.json --noEmit` passaram; `git diff --check` passou. Os ajustes posteriores ao typecheck foram somente no arquivo de testes. Essas respostas fixture não comprovam Worker/D1/Supabase real.
+- **Bloqueios reais:** a migration `0023` ainda está sem aplicação autorizada e a projeção D1 está vazia; não existe exportação aprovada da curadoria privada. Nenhum personagem ou vínculo foi publicado, migration aplicada, deploy, cutover ou indexação executados. A flag pública deve continuar desligada até aprovação editorial e homologação do Worker/D1. O estado do GitHub Actions não foi reconsultado nesta rodada.
+
+**NEXT_ACTION:** validar no ambiente isolado autorizado o caminho de aprovação e publicação Supabase→D1 e, depois da homologação, ativar os vínculos via configuração aprovada; manter o código local integrado à PR #33 enquanto estes gates não existem.
+
+**DO_NOT_REPEAT:** não usar fixtures como prova de integração, não inferir associação de modelo por nome, não publicar registros `reviewed` sem estado editorial público `approved`, não aplicar migration nem fazer deploy/cutover/indexação.
+
+## Rodada 81 — falha de instalação no Quality Gate (18/11/2026)
+
+- O run `44217722614`, acionado pela PR #33 no SHA `fbb9d4a4`, preparou o runner Ubuntu e falhou em `npm ci`: o `onnxruntime-node@1.17.3` tentou baixar o pacote CUDA Linux x64 e recebeu **404**. Nenhum teste ou typecheck remoto começou; os demais jobs foram ignorados pelas condições atuais do evento PR.
+- Corrigi a causa no job existente `catalog-offline` de `.github/workflows/quality.yml`, definindo `npm_config_onnxruntime_node_install_cuda=skip`. A suíte offline usa CPU e não necessita do provedor CUDA. Não foram criados workflows, alteradas dependências ou habilitado deploy.
+- **Validação local:** executar o instalador `onnxruntime-node` com essa configuração encerrou com sucesso; `git diff --check` passou. O commit acionará o fluxo normal da PR para confirmar a instalação e os jobs; não houve rerun manual.
+- **Pendências:** a PR continua draft; projeção D1 ainda vazia, migration `0023` sem aplicação autorizada e sem exportador aprovado da curadoria. CI só poderá ser considerado validado após o novo run completar os testes do catálogo.
+
+**NEXT_ACTION:** enviar a correção à PR #33 e acompanhar o run novo; manter flag editorial desligada até publicação aprovada e homologação real do Worker/D1.
+
+**DO_NOT_REPEAT:** não baixar nem instalar CUDA na suíte offline, não declarar o run `44217722614` aprovado, não rerun manualmente antes do commit corretivo e não usar fixtures como evidência de dados públicos reais.
+
+## Rodada 82 — expectativa de Coins alinhada aos centésimos (18/11/2026)
+
+- No run `44218243363`, a instalação corrigida passou e a suíte iniciou: **400/401** testes passaram. O único caso falhou porque a apresentação canônica já formata Coins com duas casas (`+12,00`), enquanto o teste legado procurava `+12` como nó de texto isolado. A célula acessível contém o valor correto; nenhuma alteração de tela ou regra de saldo foi necessária.
+- Atualizei somente a expectativa em `TonecosAdminHomePage.test.tsx` para consultar a célula acessível com `+12,00`. Validação local focada passou (**1/1**); ESLint do teste e `git diff --check` passaram. O run `44218243363` segue reprovado por essa expectativa anterior e não é marcado como aprovado; o próximo commit acionará a confirmação na suíte completa.
+- Os testes locais desta rodada não alteram o status da projeção editorial: migration `0023` sem aplicação autorizada, publicação D1 vazia, sem exportador aprovado da curadoria privada; nenhum dado real foi disponibilizado.
+
+**NEXT_ACTION:** enviar o ajuste pontual à branch existente da PR #33 e acompanhar o novo Quality Gate, sem rerun manual.
+
+**DO_NOT_REPEAT:** não remover a precisão de duas casas da carteira para atender teste obsoleto, não alterar código comercial nessa correção, não tratar a suíte parcial do run anterior como aprovação total.
+
+## Rodada 83 — Quality Gate offline aprovado na PR #33 (18/11/2026)
+
+- Run `44218874862`, SHA `39925cc04fdc4f48bb4a34e7bd22742ea33a4f4e`: job `Catalog Worker offline / no deploy` **SUCCESS**. `npm ci` passou com CUDA desativado; suíte pública/comercial/SpecialSTL e inventário passou; verificações de ownership/blobs, TypeScript do Worker, runtime do Worker, busca/SQLite, proxy Pages e gate de cutover sem rede passaram. A verificação do release candidate ficou skipped. Os jobs gerais de cobertura, build/dependências de produção e auditoria ficaram skipped pela condição atual para eventos PR; eles não são declarados aprovados.
+- Commits enviados à branch existente da PR #33 nesta sequência: `fbb9d4a4` vínculos aprovados na ficha do modelo; `e21f3db9` corrige instalação CUDA indisponível do CI; `39925cc0` corrige a expectativa de Coins formatadas em centésimos. Nenhuma PR adicional foi aberta.
+- **Validações locais deste ciclo:** gateway editorial **10/10**; UI de vínculo múltiplo passou; teste do visitante/oferta passou; teste da célula de ledger `+12,00` passou; ESLint direcionado, TypeScript da aplicação e `git diff --check` passaram. Fixture valida contrato e navegação, não conectividade real com D1/Supabase.
+- **Bloqueios remanescentes da missão:** não há exportação aprovada entre a curadoria privada da PR #31 e a projeção D1 da PR #26; a migration pública `0023` não foi aplicada e não há conteúdo editorial publicado. Portanto páginas/listagens seguem condicionadas à flag pública desligada. O run verde não comprova dados reais, Auth/RLS, migration ou deploy.
+
+**NEXT_ACTION:** para concluir a publicação editorial, a autoridade de dados deve aprovar e homologar o fluxo Supabase→D1, aplicar a migration autorizada e abastecer a projeção com registros revisados; então homologar e liberar a flag. Até lá, manter staged-offline.
+
+**DO_NOT_REPEAT:** não inferir os 2.609 vínculos como verificados, não ativar a flag usando fixture, não aplicar migration/deploy/cutover sem autorização, não declarar os jobs `skipped` como aprovados.
+
+## Rodada 84 — pipeline editorial preparado entre PRs #31, #26 e #33 (18/11/2026)
+
+- PR #31 (`3a9b227a`) agora vincula aprovação humana à revisão exata da ficha e de todos os modelos/fontes ativos; alterações de evidência, vínculo, slug ou identidade invalidam a aprovação. O exportador `admin_export_approved_catalog_character_projection()` é restrito a `service_role`, falha fechado por evidência independente e preserva biografia opcional. A página administrativa mostra os vínculos e fontes cobertos pela aprovação.
+- PR #26 (`548ae605`) contém o publicador local Supabase RPC → Worker existente → projeção D1: ele bloqueia a referência Supabase produtiva, só aceita destino Worker em loopback e valida o contrato do exportador. A migration `0023` segue `staged-offline`; nenhum endpoint público ou gravador paralelo foi criado.
+- A fila da PR #33 mantém **2.609 modelos**, **1.381 rótulos candidatos**, **7 identidades candidatas pesquisadas**, **7 rascunhos biográficos originais** apoiados por **11 URLs de fontes primárias** e **84 vínculos candidatos**. Estado revisável: **0 identidades revisadas/aprovadas**, **0 vínculos revisados/aprovados** e **0 vínculos de modelo com evidência independente**. Os nomes, franquias e vínculos preparados não são dados públicos nem identidades confirmadas.
+- **Validações locais:** curadoria PR #31 **43/43**; exportação D1 pelo Worker **8/8**; publicador e reconciliação de escopo **26/26**; Quality Gate de arquitetura **14/14**; busca/fichas/gateway da PR #33 **129/129**; teste final de rótulos de fonte **5/5**; TypeScript da aplicação e do Worker passaram; `git diff --check` passou. O TypeScript encontrou e corrigiu o mapa incompleto dos oito tipos de fonte na ficha pública. A alteração do pin do Worker alinha o manifesto ao blob atual. Fixtures e D1 simulado validam contrato, não integração real.
+- Os Quality Gates offline das PRs #26 e #31 terminaram **SUCCESS**: runs `44268482071` e `44268612620`. O run #31 executou o aceite PostgreSQL 17 descartável, com `ROLLBACK`, e registrou `TONART isolated PostgreSQL approval/revocation smoke PASS`; nenhuma credencial Supabase ou dado produtivo foi usado. Localmente, `psql`, Docker, Supabase CLI e Wrangler não estão instalados. Os jobs gerais de build, cobertura e auditoria ficaram `skipped` para o evento de PR, portanto CI completo não está aprovado.
+- Na PR #33, o run `44270318038` para o SHA `8a70503c` concluiu **SUCCESS** no job `Catalog Worker offline / no deploy`: instalação, suíte offline, ownership/blobs, TypeScript/Worker, busca SQLite, proxy Pages e gate sem rede passaram. Os jobs gerais de build, cobertura e auditoria foram `skipped`; não é aprovação integral de CI.
+- **Base/HEAD conferidos:** `main` `b82a76a8`; PR #26 `548ae605`; PR #31 `3a9b227a`; PR #33 `8a70503c` no último run verificado. As três branches estão atualizadas com a `main`, abertas e sem conflitos.
+- **Bloqueios externos exatos:** não há projeto Supabase de staging nem D1/Worker isolado acessível. Para homologar de ponta a ponta, é necessário disponibilizar um Supabase descartável com as migrations #31 aplicadas e um destino D1 local/isolado para a migration `0023`, além do token de sincronização local. As migrations #31 foram aplicadas somente ao PostgreSQL descartável do teste; nenhum banco persistente/produtivo foi migrado. A migration D1 `0023`, exportação real, publicação, deploy, cutover M5 e indexação continuam pendentes. A flag pública continua desligada.
+- PRs #26, #31 e #33 permanecem abertas e sem merge; foram atualizadas em suas próprias branches com fast-forward/merge da `main`, sem force push. O código pode ser revisado; integração comercial permanece bloqueada até aceite isolado, aprovação editorial humana e homologação real.
+
+**NEXT_ACTION:** disponibilizar staging Supabase e D1/Worker isolados para rodar o aceite reversível e a sincronização real; revisar candidatos e vínculos na curadoria privada; só então avaliar merge e ativação pública com os gates aprovados.
+
+**DO_NOT_REPEAT:** não chamar testes SQLite/fixtures de integração Supabase/D1 real; não usar a referência produtiva para migrations ou exportação; não aprovar candidatos pelo rótulo do catálogo; não aplicar `0023`, publicar/deployar, ativar flag, fazer cutover ou indexar sem os gates.
+
+## Rodada 85 — expansão revisável de identidades candidatas (18/11/2026)
+
+- Na PR #33, acrescentei candidatos pesquisados para **Son Goku, Vegeta, Frieza (rótulo do catálogo: Freeza) e Majin Buu**, apoiados por quatro páginas do site oficial de Dragon Ball. Os quatro textos biográficos são rascunhos originais; claims de identidade, franquia e biografia estão ligados a fontes e permanecem `pending_human_review`.
+- Os vínculos foram preparados apenas para **IDs e slugs exatos** da fila: 48 Goku, 42 Vegeta, 28 Freeza e 28 Majin Buu. O total do pacote passa a **11 identidades candidatas pesquisadas**, **15 URLs oficiais**, **11 rascunhos biográficos** e **230 vínculos candidatos**. Cada vínculo preserva o status de origem/publicação do catálogo, mas continua sem evidência independente por modelo e requer revisão visual/editorial.
+- A validação da fila agora impede pares personagem–modelo duplicados, mas aceita o mesmo ID de modelo candidato ligado a personagens diferentes; não presume que 2.609 modelos sejam 2.609 identidades. Teste direcionado `node --test scripts/catalog/character-catalog-inventory.test.mjs`: **11/11**; `git diff --check` passou.
+- Estado permanece fechado: **0 identidades revisadas/aprovadas**, **0 vínculos revisados/aprovados**, **0 vínculos com evidência independente**. Nenhuma identidade foi gravada na curadoria, migration aplicada, exportação executada ou projeção publicada. Migration D1 `0023`, Supabase→D1 real, flag pública e M5 continuam bloqueados por falta de staging/D1 isolado e revisão editorial humana.
+
+**NEXT_ACTION:** revisar os 11 dossiês na curadoria privada canônica e fornecer Supabase/D1 isolados para homologar a exportação; manter a flag desligada e os candidatos sem aprovação até esses gates.
+
+**DO_NOT_REPEAT:** não converter fonte oficial da franquia em prova de que um render específico representa personagem; não tratar correspondência exata do rótulo como evidência; não fazer merge/deploy ou escrita em banco para contornar a ausência de staging.
+
+## Rodada 86 — segunda expansão de candidatos Dragon Ball (18/11/2026)
+
+- Acrescentei candidatos para **Gohan, Piccolo, Android 18 (rótulo do catálogo: Androide 18) e Cell**, com quatro páginas oficiais e biografias originais sujeitas à revisão humana. A ficha de Piccolo preserva a distinção entre Piccolo e Grande Rei Demônio Piccolo; os demais registram ambiguidades de saga, forma, idioma e render.
+- Vínculos selecionados por ID/slug e rótulo exato da fila: **19 Gohan, 17 Piccolo, 17 Android 18 e 14 Cell**. O pacote agora tem **15 identidades pesquisadas**, **19 fontes oficiais**, **15 rascunhos** e **297 vínculos candidatos**. A fotografia preserva `source_status`, publicação do contrato candidato e slug público quando existe.
+- Todas as alegações continuam pendentes: **0 identidades revisadas/aprovadas**, **0 vínculos revisados/aprovados**, **0 relações com evidência independente**. Os textos e fontes não validam os renders individuais nem liberam a projeção pública. Nenhum banco, migration, Worker, flag ou ambiente produtivo foi alterado.
+- **Validação após esta expansão:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 15 dossiês e 297 vínculos; `git diff --check` passou. O teste valida estrutura, IDs e estados pendentes, não aprovação editorial nem integração D1/Supabase.
+
+**NEXT_ACTION:** revisar candidatos e vínculos na curadoria privada canônica e seguir a expansão por outros grupos de identidade de alta frequência.
+
+**DO_NOT_REPEAT:** não tratar o selo oficial da franquia como prova do render; não fundir Piccolo Jr. com seu antecessor; não promover grafia localizada, transformação ou forma como identidade confirmada.
+
+## Rodada 87 — terceira expansão de candidatos Dragon Ball (18/11/2026)
+
+- Acrescentei dossiês candidatos para **Nappa (11 IDs), Bulma (9), Kamesennin / Mestre Kame (10) e Gogeta (10)** com fontes oficiais e biografias originais pendentes de revisão. A fonte de Kamesennin registra Mutenroshi como outro nome e Jackie Chun como disfarce; a fonte de Gogeta trata especificamente da fusão Super Saiyajin 4 de Dragon Ball GT.
+- O pacote agora contém **19 identidades candidatas pesquisadas**, **23 URLs oficiais**, **19 rascunhos biográficos** e **337 vínculos candidatos**. A seleção de vínculos usa rótulos exatos e IDs/slugs da fila; ela não confirma os renders, variantes ou personagens que aparecem em cada cena.
+- **Estado editorial:** 0 identidades revisadas/aprovadas, 0 vínculos revisados/aprovados e 0 vínculos com evidência independente. Nenhum registro foi escrito na curadoria ou na projeção pública.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com o lote expandido; `git diff --check` passou. O fluxo Supabase→D1, a migration `0023`, a flag pública e M5 permanecem sem alteração.
+
+**NEXT_ACTION:** continuar a triagem dos grupos restantes com fontes primárias e, em separado, revisar visualmente os 337 possíveis vínculos na curadoria privada canônica.
+
+**DO_NOT_REPEAT:** não inferir que todos os rótulos “Gogeta” representam a versão GT/Super Saiyajin 4; não converter “Mestre Kame” ou “Jackie Chun” em aliases verificados sem decisão editorial.
+
+## Rodada 88 — expansão de candidatos com fontes oficiais (18/11/2026)
+
+- Preparei dossiês para **Thanos, Scorpion, Darth Vader e Deadpool**, com 5 fontes oficiais, biografias originais e afirmações de identidade, franquia e atributos ligadas às respectivas fontes. Os valores de franquia do catálogo que são categorias (“Vilões”, “Equipes e Grupos”, “Heróis Individuais”) foram mantidos como proveniência e não usados como prova de franquia.
+- Os vínculos candidatos foram reconciliados por ID e nome exato: **8 Thanos, 8 Scorpion, 8 Darth Vader e 11 Deadpool**. Os dois dioramas “Cable e Deadpool” e “Wolverine e Deadpool” ficaram fora desse vínculo individual; versões, cenas com múltiplos personagens, dioramas e renders estilizados permanecem ambíguos e exigem revisão visual por modelo.
+- O pacote passa a **23 identidades pesquisadas**, **28 URLs oficiais**, **23 rascunhos biográficos** e **372 relações candidatas**. Todas permanecem pendentes de revisão humana; **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente**.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Checagem do pacote confirmou 23 candidatos, 28 fontes, 372 vínculos, zero pares duplicados e nenhuma evidência independente por modelo. Nenhum dado foi gravado no Supabase ou na projeção D1. Migration `0023`, exportação aprovada, homologação Supabase→D1, flag pública e M5 continuam bloqueados por ausência de staging isolado e revisão editorial humana.
+
+**NEXT_ACTION:** submeter os 23 dossiês e 372 vínculos à revisão visual/editorial na curadoria privada da PR #31; homologar a exportação e a sincronização somente em staging Supabase e D1 isolados.
+
+**DO_NOT_REPEAT:** não considerar o título exato do modelo como prova do render; não converter categorias de navegação em franquias; não promover rascunhos ou candidatos para a projeção pública.
+
+## Rodada 89 — candidatos de God of War e Street Fighter (18/11/2026)
+
+- Preparei candidatos para **Kratos, Chun-Li e Cammy**, usando duas páginas oficiais da PlayStation e quatro páginas oficiais da Capcom. As afirmações biográficas têm fontes; todos os textos são rascunhos originais pendentes de revisão humana.
+- Foram selecionados por nome exato **24 modelos Kratos, 22 Chun-Li e 21 Cammy**. A pesquisa de Kratos se restringe à fase nórdica descrita nas fontes; não foi aplicada automaticamente a estátuas da fase grega. As bios de Chun-Li e Cammy refletem os guias consultados, sem uniformizar versões ou renders.
+- O pacote passa a **26 identidades pesquisadas**, **34 URLs oficiais**, **26 rascunhos biográficos** e **439 vínculos candidatos**. Os vínculos continuam sem evidência independente por modelo; permanecem **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade do pacote confirmou 26 identidades, 34 fontes, 439 vínculos, claims sem fonte: 0, pares duplicados: 0, evidências independentes: 0 e aprovações: 0. O job offline do Quality Gate **44276288960** passou no commit `019eaf70`; build, cobertura e auditorias gerais foram ignorados pelo filtro da PR. Sem escrita em Supabase/D1, migration, publicação ou ativação da flag pública.
+
+**NEXT_ACTION:** revisar os candidatos e conferir visualmente cada ID na curadoria privada; disponibilizar staging isolado para a homologação Supabase→D1.
+
+**DO_NOT_REPEAT:** não aplicar biografia da fase nórdica de Kratos a esculturas de outra era; não presumir versão de Street Fighter a partir do nome ou do título comercial.
+
+## Rodada 90 — mais candidatos Marvel com fontes únicas (18/11/2026)
+
+- Preparei dossiês para **Capitão América, Hulk, Ciclope e Magneto**, com 4 novas URLs oficiais da Marvel; fontes iguais são reutilizadas por ID em vez de duplicadas. As biografias mantêm ambiguidades de manto, variante, fase e continuidade.
+- Foram selecionados **17 modelos Capitão América, 16 Hulk, 18 Ciclope e 12 Magneto** por ID e rótulo exato. O nome Capitão América não determina se o titular é Steve Rogers ou Sam Wilson; nenhuma versão foi atribuída às esculturas.
+- O pacote passa a **30 identidades pesquisadas, 38 URLs oficiais únicas, 30 rascunhos originais e 502 vínculos candidatos**. Todos seguem `pending_human_review`; permanecem **0 identidades aprovadas, 0 relações aprovadas e 0 vínculos com evidência independente**.
+- **Validação:** teste da fila passou **11/11**, `git diff --check` passou. Verificação confirmou fontes únicas, claims com referências existentes, sem pares duplicados e sem relações aprovadas. Não houve escrita Supabase/D1, migration, publicação ou ativação da flag.
+
+**NEXT_ACTION:** continuar a pesquisa dos próximos grupos de maior volume; revisar identidade, franquia, cada claim e cada vínculo na curadoria privada antes de qualquer exportação.
+
+**DO_NOT_REPEAT:** não tratar o manto Capitão América como identidade de uma pessoa específica; não usar categoria, uniforme ou nome do catálogo como prova visual de render.
+
+## Rodada 91 — expansão Marvel e Capcom (18/11/2026)
+
+- Preparei dossiês para **Juggernaut, Justiceiro, Juri e Ryu**, apoiados por 4 novas páginas oficiais — duas Marvel e duas Capcom — com rascunhos originais e claims por fonte.
+- Foram vinculados como candidatos **11 Juggernaut, 11 Justiceiro, 11 Juri e 10 Ryu**, sempre por IDs/nomes da fila. O dossiê preserva Juggernaut como manto com outros portadores; as fontes Capcom se restringem a histórias específicas de Street Fighter V.
+- O pacote chega a **34 identidades, 42 URLs oficiais únicas, 34 biografias e 545 relações candidatas**. Todos seguem pendentes; **0 identidades aprovadas, 0 vínculos aprovados e 0 relações com evidência independente**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou fontes existentes e únicas, claims sem fonte: 0, pares duplicados: 0 e relações fora de revisão pendente: 0.
+
+**NEXT_ACTION:** continuar a pesquisa revisável por volume; conferir visualmente os IDs e inserir evidências por relação na curadoria privada antes de exportar qualquer perfil.
+
+**DO_NOT_REPEAT:** não associar todas as esculturas Juggernaut a Cain Marko; não universalizar os arcos Street Fighter V para outras versões sem revisão.
+
+## Rodada 92 — X-Men e hospedeiros do simbionte (18/11/2026)
+
+- Preparei dossiês para **Jean Grey, Tempestade, Vampira e Venom**, com quatro páginas oficiais da Marvel, biografias originais e claims ligados às fontes.
+- Foram selecionados por ID e rótulo localizado **10 Jean Grey, 9 Tempestade, 9 Vampira e 9 Venom**. O dossiê distingue fases da Força Fênix e registra que Venom pode referir-se ao simbionte ou a diferentes hospedeiros; nenhum modelo foi atribuído automaticamente a Eddie Brock.
+- O pacote passa a **38 identidades, 46 URLs oficiais únicas, 38 rascunhos biográficos e 582 vínculos candidatos**. Todos os vínculos e claims permanecem pendentes; **0 identidades ou relações aprovadas e 0 relações com evidência independente por modelo**.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou 46 fontes únicas, claims sem fonte: 0, pares duplicados: 0 e vínculos fora de revisão pendente: 0.
+
+**NEXT_ACTION:** continuar com os grupos restantes de maior frequência e encaminhar as 582 relações para revisão visual/editorial na curadoria privada antes de qualquer publicação.
+
+**DO_NOT_REPEAT:** não inferir a fase de Jean Grey, traje de X-Men ou hospedeiro de Venom apenas pelo nome do catálogo.
+
+## Rodada 93 — separar identidades homônimas de Thor (18/11/2026)
+
+- A fila tem 18 modelos com rótulo Thor: 17 no contexto catalogado de Vingadores/Marvel e 1 no contexto catalogado de God of War. Registrei dois candidatos independentes, Thor Odinson e Thor (God of War Ragnarök), apoiados por páginas oficiais Marvel e entrevistas/artigos da Santa Monica Studio publicados no PlayStation Blog.
+- Todos os 18 vínculos usam IDs e slugs da fila e preservam a proveniência de catálogo; ficam pendentes de conferência visual e revisão humana. Para a variante Marvel, a relação com Odinson não é presumida: a Marvel reconhece outros titulares do manto, incluindo Jane Foster. Nenhum nome do catálogo foi tratado como prova do render.
+- O pacote passa a **40 identidades candidatas, 49 fontes oficiais únicas, 40 rascunhos e 600 vínculos candidatos**. Estado: 0 identidades aprovadas, 0 vínculos aprovados e 0 vínculos com evidência independente por modelo.
+- Confirmei por leitura de metadados Supabase que a organização `tonecosstudio` possui apenas `tonecosstudio-site` e apenas a branch `main`; não há staging isolado. Não fiz consultas SQL, escritas, migrations, publicação ou deploy. PRs #26 e #31 estão abertas em branches separadas; #26 contém a migration `0023` e o Worker/protocolo de publicação, enquanto #31 contém a RPC `admin_export_approved_catalog_character_projection`. PR #33 não incorpora essas branches.
+- O Quality Gate `44279440374` da PR #33 passou no commit `d3c12136` para `Catalog Worker offline / no deploy`; build, auditorias gerais e cobertura foram ignorados pelos filtros do evento. As PRs #26 e #31 também têm jobs `Catalog Worker offline / no deploy` aprovados (`44268482071` e `44268612620`), com os demais gates gerais ignorados. Isso não comprova exportação real, aplicação de `0023` ou homologação Supabase→D1.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** após atualizar a verificação de separação Marvel/God of War. Integridade do lote confirmou 40 candidatos, 49 URLs únicas, 600 vínculos, claims com fontes existentes: 0 faltantes, pares duplicados: 0, aprovações: 0 e evidências independentes por modelo: 0. `git diff --check` passou. A verificação read-only confirma ausência de ambiente isolado. Projeção D1 vazia e flag pública desligada permanecem inalteradas.
+
+**NEXT_ACTION:** enviar a atualização na PR #33; manter a sincronização real bloqueada até haver ambiente Supabase e Worker/D1 isolados e revisão editorial humana na curadoria privada da PR #31.
+
+**DO_NOT_REPEAT:** não tratar o export mockado/teste offline como sincronização real; não aplicar `0023` ao projeto ativo; não fundir Thor Marvel e God of War ou aprovar vínculos por rótulo, franquia, coleção ou slug.
+
+## Rodada 94 — preparar Dante, Recoome e Trunks (18/11/2026)
+
+- Adicionei dossiês para **Dante**, **Recoome** e **Trunks (adolescente do futuro)** a partir de manual da Capcom e páginas oficiais de Dragon Ball. Claims de identidade, franquia e biografia apontam às fontes; os rascunhos são originais e pendentes de revisão humana.
+- Preparei **9 relações candidatas Dante, 8 Recoome e 8 Trunks** por IDs/slug exatos da fila. A fonte de Trunks cobre uma versão específica; os modelos com rótulo genérico não foram atribuídos a idade ou linha temporal. A fonte de Dante é Devil May Cry 4; não foi generalizada a todas as versões da franquia.
+- O lote passa a **43 identidades candidatas, 53 URLs oficiais únicas, 43 rascunhos e 625 vínculos candidatos**. Incluí uma fonte oficial para sustentar a ambiguidade de outras portadoras do título Thor; continuam em zero os estados revisados/aprovados e os vínculos com evidência independente por modelo.
+- **Validação:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11** com os 43 dossiês, 53 fontes e 625 vínculos; `git diff --check` passou. Integridade confirmou claims com fonte: 0 faltantes, pares duplicados: 0, links fora do estado pendente: 0, aprovações: 0 e vínculos com evidência independente: 0.
+
+**NEXT_ACTION:** subir a atualização validada na PR #33; encaminhar candidatos e vínculos ao fluxo de revisão humana privado da PR #31.
+
+**DO_NOT_REPEAT:** não inferir época/forma de Trunks nem continuidade de Dante a partir de título; não promover fontes biográficas como evidência de que um render específico representa o personagem.
+
+## Rodada 95 — candidatos Marvel de Demolidor e Gambit (18/11/2026)
+
+- Preparei os dossiês de **Daredevil (Demolidor)** e **Gambit**, com perfis oficiais da Marvel, texto biográfico original e claims ligados às fontes. A fonte de Daredevil é explicitamente do perfil audiovisual; Gambit preserva as fases distintas e o alter ego Death como ambiguidades.
+- Foram selecionados **7 modelos Demolidor e 7 Gambit** por ID e rótulo. “Heróis Individuais” e “Equipes e Grupos” continuam como proveniência de navegação, sem promover categoria a universo ou franquia.
+- O lote chega a **45 candidatos, 55 URLs oficiais únicas, 45 rascunhos e 639 vínculos**. Todos seguem pendentes de revisão, sem evidência independente por modelo e sem aprovações.
+- **Validação desta rodada:** `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**; `git diff --check` passou. Integridade confirmou 45 candidatos, 55 URLs únicas, 639 vínculos, 0 claims sem fonte, 0 pares duplicados, 0 links fora do estado pendente, 0 aprovações e 0 vínculos com evidência independente.
+
+**NEXT_ACTION:** subir o lote validado na PR #33 e deixar a fila para revisão humana em #31.
+
+**DO_NOT_REPEAT:** não tratar a categoria de catálogo como franquia; não universalizar o perfil audiovisual de Daredevil nem atribuir uma forma específica de Gambit aos renders pelo nome.
+
+
+## Rodada 96 — preparação Marvel na issue #32 (18/11/2026)
+
+- Atualizei a preparação editorial existente com quatro candidatos de pesquisa — Apocalipse, Homem de Ferro, Dentes de Sabre e Fera — baseados em cinco páginas oficiais da Marvel. São candidatos pesquisados, não identidades verificadas.
+- O conjunto preparado agora tem **49 candidatos, 60 URLs oficiais únicas, 49 rascunhos biográficos e 666 relações candidatas**. Foram associados por ID da fila 27 modelos nesta rodada. Todas as identidades, franquias, claims e relações seguem pendentes; **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação executada: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check — passou. O Quality Gate da PR #33 no commit f0bead29 passou no job Catalog Worker offline / no deploy (44285423901); auditorias gerais, build e cobertura foram ignorados por filtros do evento.
+- Nenhuma alteração em Supabase, D1, migration, Worker publicado ou flag. A migration 0023 segue sem aplicação; não há export aprovado e o único projeto Supabase disponível não tem branch isolada. Revisão humana da PR #31, ambiente isolado e autorização para homologar a publicação seguem necessários.
+
+**NEXT_ACTION:** enviar os dossiês na PR #33; encaminhar para a curadoria privada #31 e solicitar um ambiente Supabase/D1 isolado antes de validar a exportação real.
+
+**DO_NOT_REPEAT:** não contar relações candidatas como vínculos comprovados; não tratar o Quality Gate offline como homologação Supabase→D1; não aplicar 0023 ao projeto produtivo.
+
+
+## Rodada 97 — candidatos CAPCOM, Mortal Kombat, Berserk e The Witcher (18/11/2026)
+
+- Preparei dossiês revisáveis para Ada Wong, Sonya Blade, Guts e Ciri com fontes oficiais da CAPCOM, Warner Bros. Games/NetherRealm, Dark Horse Comics e CD PROJEKT RED.
+- A preparação chega a **53 candidatos, 64 URLs oficiais únicas, 53 biografias originais e 693 relações candidatas**. Esta rodada incluiu 27 relações localizadas pela fila existente. Identidade, franquia, claims e relações permanecem pendentes: **0 identidades aprovadas, 0 relações aprovadas, 0 relações com evidência independente por modelo**.
+- Validação local executada nesta rodada: teste da fila 11/11 e git diff --check passaram. O gate offline do commit anterior 6ccad9dd (run 44285897047) passou; os demais jobs foram pulados pelos filtros do evento.
+- Sem escrita Supabase/D1, migration ou publicação. A revisão humana segue necessária; o projeto Supabase disponível é produtivo e não possui branch isolada, então o caminho real Supabase→D1 não foi homologado.
+
+**NEXT_ACTION:** subir na PR #33 e encaminhar a curadoria para #31. Para homologar, falta ambiente Supabase/D1 isolado e exportação editorial humana aprovada.
+
+**DO_NOT_REPEAT:** não contar modelos candidatos como relações comprovadas; não apresentar o pacote de pesquisa como dados públicos nem aplicar a migration 0023 no projeto produtivo.
+
+
+## Rodada 98 — candidatos Cable e He-Man (18/11/2026)
+
+- Preparei dois dossiês, reutilizando a fonte Marvel de Cable já cadastrada e adicionando uma página oficial da Mattel para He-Man. Os textos e os dois candidatos de franquia continuam pendentes de revisão humana.
+- Conjunto atualizado: **55 candidatos, 65 fontes oficiais únicas, 55 rascunhos biográficos e 706 relações candidatas**. Esta rodada acrescentou 13 relações por ID da fila. Permanecem **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local: teste da fila 11/11 e git diff --check passaram. O job offline da PR #33 no commit anterior b73c8742 passou (run 44286840321); jobs gerais, build e cobertura foram ignorados pelos filtros.
+- Sem escrita no Supabase/D1, aplicação da 0023, publicação ou ativação da flag. A projeção real permanece vazia; falta revisão editorial privada e ambiente isolado Supabase/D1 para homologar o fluxo.
+
+**NEXT_ACTION:** enviar esta pesquisa pela PR #33 e encaminhá-la à curadoria privada da #31. Homologação Supabase→D1 depende de ambiente isolado.
+
+**DO_NOT_REPEAT:** não tratar fontes da Marvel/Mattel como prova dos renders; não aplicar 0023 no Supabase produtivo nem liberar projeção vazia.
+
+
+## Rodada 99 — pesquisa Dragon Ball, Street Fighter e TMNT (18/11/2026)
+
+- Preparei três candidatos com fontes oficiais: Zarbon (DRAGON BALL OFFICIAL SITE), Akuma (CAPCOM) e Michelangelo (Nickelodeon). Cada claim de identidade, franquia e biografia referencia uma fonte cadastrada.
+- A fotografia do pacote chega a **58 candidatos, 68 URLs oficiais únicas, 58 rascunhos biográficos e 724 relações candidatas**. Foram acrescentadas 18 relações por ID da fila nesta rodada. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local: node --test scripts/catalog/character-catalog-inventory.test.mjs — 11/11 passaram; git diff --check passou. O gate offline no commit anterior 963d8e32 passou (run 44287307874); build, auditorias gerais e cobertura foram pulados pelos filtros do evento.
+- Nenhuma escrita no Supabase/D1, migration ou publicação. A projeção pública segue vazia; falta revisão editorial humana e Supabase/D1 isolados para homologação real.
+
+**NEXT_ACTION:** encaminhar os registros à curadoria da #31; aguardar ambiente isolado para testar exportação Supabase→Worker/D1.
+
+**DO_NOT_REPEAT:** não confundir fonte sobre um personagem com evidência do render; não tratar estado candidato como aprovado nem aplicar migration no projeto produtivo.
+
+
+## Rodada 100 — ambiguidade de identidades Marvel (18/11/2026)
+
+- Preparei candidatos de pesquisa para Colossus/Piotr Rasputin, Psylocke (Betsy/Kwannon sem resolução) e Ghost Rider (manto, portador sem resolução), com fontes oficiais Marvel e claims referenciados.
+- A fotografia chega a **61 candidatos, 71 URLs oficiais únicas, 61 rascunhos biográficos e 742 relações candidatas**. Foram vinculados 18 modelos por IDs exatos da fila. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local desta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. O job offline do commit anterior 08e7ebbf passou (run 44287759562); auditorias gerais, build e cobertura foram pulados pelos filtros.
+- Não houve escrita Supabase/D1, migration, publicação ou mudança da flag. Revisão humana e ambiente isolado Supabase/D1 seguem bloqueios reais para homologar os dados.
+
+**NEXT_ACTION:** encaminhar os candidatos à curadoria #31; adicionar fontes visuais por modelo e aprovações humanas antes de exportar para a projeção.
+
+**DO_NOT_REPEAT:** não tratar um manto ou alias ambíguo como uma identidade individual aprovada; não tentar homologar no projeto Supabase produtivo.
+
+
+## Rodada 101 — Raphael na fila editorial (18/11/2026)
+
+- Acrescentei um candidato Raphael a partir da fila e reutilizei o documento Nickelodeon já cadastrado na rodada de Michelangelo; não criei fonte duplicada.
+- A preparação atual soma **62 candidatos, 71 fontes oficiais únicas, 62 rascunhos e 748 relações candidatas**. Foram selecionados seis IDs para revisão visual. Mantêm-se **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local nesta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. Nenhuma escrita em Supabase/D1, migration, publicação ou mudança da flag.
+
+**NEXT_ACTION:** encaminhar a #31 para revisão editorial humana. O caminho de dados só poderá ser homologado em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não inferir uma identidade visual de Raphael pela máscara vermelha ou pelo nome do catálogo.
+
+
+## Rodada 102 — Sub-Zero e Lara Croft (18/11/2026)
+
+- Preparei dois dossiês com fontes oficiais da Warner Bros. Games/NetherRealm e Tomb Raider, preservando a ambiguidade do manto Sub-Zero e das fases da franquia Lara Croft.
+- A fotografia agora tem **64 candidatos, 73 fontes oficiais únicas, 64 rascunhos e 758 relações candidatas**. Foram selecionados dez modelos por IDs da fila. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local nesta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. Nenhuma escrita Supabase/D1, migration, publicação ou ativação de flag.
+- Bloqueio de homologação permanece: não há branch Supabase isolada nem aprovação editorial; a migration 0023 não foi aplicada e a projeção D1 segue vazia.
+
+**NEXT_ACTION:** enviar esta rodada pela PR #33 e encaminhar à curadoria privada da #31; homologar somente com ambiente isolado e conteúdo aprovado.
+
+**DO_NOT_REPEAT:** não presumir portador ou versão pelo nome; não projetar candidatos pendentes nem tocar no projeto Supabase produtivo.
+
+
+## Rodada 103 — novos candidatos Marvel (18/11/2026)
+
+- Preparei quatro dossiês para Emma Frost, Loki, Doctor Doom e Nightcrawler/Kurt Wagner, cada claim apontando a uma fonte oficial Marvel. A ficha Nightcrawler limita-se à versão X-Men ’97 consultada.
+- O lote agora registra **68 candidatos, 77 URLs oficiais únicas, 68 rascunhos biográficos e 779 relações candidatas**. Foram preparados 21 vínculos potenciais nesta rodada. Continuam **0 identidades aprovadas, 0 relações aprovadas e 0 relações com evidência independente por modelo**.
+- Validação local desta rodada: node --test scripts/catalog/character-catalog-inventory.test.mjs passou 11/11; git diff --check passou. O job offline do commit anterior 573eb9b1 passou (run 44288999574); auditorias gerais, build e cobertura foram pulados.
+- Não houve escrita em Supabase/D1, migration, deploy ou flag. Projeção real vazia; ambiente Supabase isolado e revisão editorial continuam necessários.
+
+**NEXT_ACTION:** encaminhar dados à curadoria privada #31 e homologar Supabase→Worker/D1 apenas em ambiente isolado com conteúdo aprovado.
+
+**DO_NOT_REPEAT:** não usar fonte biográfica como evidência de render; não aplicar 0023 ao projeto Supabase produtivo.
+
+
+## Rodada 104 — All Might e Leon na fila editorial (18/11/2026)
+
+- Acrescentei dois dossiês revisáveis com fontes oficiais da série animada *My Hero Academia* e da CAPCOM. Os textos delimitam a continuidade coberta pelas fontes; os dez modelos encontrados na fila permanecem apenas relações candidatas, sem evidência visual independente.
+- O pacote da PR #33 agora contém **70 identidades preparadas, 79 fontes oficiais únicas e 789 relações candidatas**. Permanecem **0 identidades revisadas, 0 aprovadas, 0 relações revisadas/aprovadas e 0 relações de modelo com evidência independente**.
+- Validação desta rodada: `node --test scripts/catalog/character-catalog-inventory.test.mjs` passou **11/11**. O teste confirma fontes referenciadas por claim, IDs/slugs existentes, status pendente e ausência de evidência independente.
+- Compatibilidade da transferência validada à parte: um teste temporário executado no checkout da #31 importou o pacote atual da #33 e montou um rascunho editorial em memória (**1/1 passou**); o arquivo temporário foi removido e nenhuma persistência foi chamada. Isso não testa a projeção Supabase→Worker/D1.
+- Estado consultado no GitHub: PRs **#26** (`548ae605`), **#31** (`77ecba78`) e **#33** (`98cc66c4`) continuam abertas em draft, sem conflito reportado; **nenhuma destas entregas está integrada à `main`**. A curadoria privada e o import manual estão na #31; a migration de projeção pública 0023 e o consumidor editorial do Worker estão na #26; a interface e a preparação dos candidatos estão na #33. Os testes offline anteriores de #26 e a execução isolada da cadeia SQL em #31 não constituem homologação conjunta Supabase→D1.
+- Bloqueios externos inalterados: não há ambiente Supabase/D1 isolado disponível; as migrations editoriais da #31 e a 0023 da #26 não foram aplicadas; não existe exportação editorial aprovada; a projeção pública continua vazia; publicação do Worker e cutover M5 não foram autorizados. Não houve escrita em Supabase/D1, publicação ou ativação de ficha pública nesta rodada.
+
+**NEXT_ACTION:** encaminhar os novos candidatos à revisão privada da #31. Depois de aprovações humanas, obter ambiente isolado para aplicar migrations e homologar exportação, projeção Worker/D1 e páginas da #33 de ponta a ponta.
+
+**DO_NOT_REPEAT:** não tratar os 789 links candidatos como relações comprovadas; não afirmar integração das três PRs na `main`; não aplicar migrations no Supabase produtivo nem ativar a flag enquanto a projeção estiver vazia.
+
+## Rodada 105 — Naruto Uzumaki na fila editorial (18/11/2026)
+
+- Preparei um dossiê de Naruto Uzumaki usando o site oficial da franquia. Vinculei apenas os cinco registros com nome exato “Naruto Uzumaki”; dois itens de confrontos/grupos ficaram fora. Continuidade e aparência dos cinco renders seguem sem confirmação visual.
+- O pacote da PR #33 agora soma **71 identidades preparadas, 80 URLs oficiais únicas e 794 relações candidatas**. Permanecem **0 identidades revisadas/aprovadas, 0 relações revisadas/aprovadas e 0 vínculos com evidência independente por render**.
+- Validação executada: teste da fila **11/11**; teste de integração temporário no checkout #31 **1/1**, aceitando o pacote atual da #33 e preparando em memória a biografia e as fontes para revisão. O teste temporário foi removido; nenhuma chamada de persistência ocorreu. `git diff --check` passou.
+- O Quality Gate **44305091773** do commit anterior `34dce8e9` passou no job offline sem deploy; cobertura, build, auditorias gerais e release foram ignorados pelos filtros. A nova rodada ainda aguarda seu gate após o push.
+- Permanecem os bloqueios da rodada 104: migrations #31/0023 sem aplicação, sem Supabase/D1 isolado, sem exportação aprovada, projeção pública vazia e sem autorização de publicação Worker/M5. Nenhuma alteração de produção foi feita.
+
+**NEXT_ACTION:** submeter os candidatos para revisão editorial privada; obter ambiente isolado para homologar o caminho aprovado Supabase→D1→Worker→páginas públicas.
+
+**DO_NOT_REPEAT:** não contar vínculos candidatos como identidades verificadas nem afirmar homologação pública a partir de testes em memória ou offline.
+
+## Rodada 106 — Krillin, Cloud e Tifa na fila editorial (18/11/2026)
+
+- Preparei dossiês para Krillin, Cloud e Tifa com fontes oficiais de DRAGON BALL e SQUARE ENIX. Preservei a diferença de localização “Krillin/Kuririn” e limitei os perfis de Cloud e Tifa à continuidade FINAL FANTASY VII REBIRTH consultada.
+- Foram incluídos cinco modelos por candidato, selecionados por nome exato na fila. Os 15 vínculos permanecem candidatos: **não há evidência visual independente, revisão ou aprovação**.
+- O pacote da PR #33 agora contém **74 identidades preparadas, 83 fontes oficiais únicas e 809 relações candidatas**. Totais revisados/aprovados continuam em zero.
+- Validação: teste da fila **11/11**, teste temporário da importação do pacote atual pela revisão privada da #31 **1/1**, e `git diff --check` passaram. O arquivo temporário foi removido; não houve chamada de persistência.
+- Migrations #31 e 0023/#26 seguem não aplicadas; não há exportação aprovada, projeção D1 preenchida ou autorização para publicação/cutover. Nenhuma escrita de produção foi feita.
+
+**NEXT_ACTION:** encaminhar os candidatos à revisão humana e homologar a projeção somente em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não confundir títulos, nomes de fila ou biografias de uma continuidade com evidência visual dos renders; não publicar relações pendentes.
+
+## Rodada 107 — Burter e Shenlong na fila editorial (18/11/2026)
+
+- Preparei dossiês para Burter e Shenron a partir do DRAGON BALL OFFICIAL SITE. A fila usa “Shenlong”, enquanto as fontes oficiais em inglês usam “Shenron”; a localização permanece explicitamente pendente. Não presumi que os renders correspondam a essas identidades.
+- Cada candidato tem cinco relações por nome exato da fila. **Dois modelos são apenas candidatos não publicados** (um em cada identidade); seus estados e ausência de slug público foram preservados. Todos os dez vínculos requerem revisão visual e humana.
+- O pacote da PR #33 agora tem **76 identidades preparadas, 86 fontes oficiais únicas e 819 relações candidatas**. Identidades/relações revisadas ou aprovadas e relações com evidência visual independente permanecem em zero.
+- Validação: teste da fila **11/11**; teste temporário da importação atual pela revisão privada da #31 **1/1**; `git diff --check` passou. O teste temporário foi removido e nenhuma persistência foi chamada.
+- As migrations #31/0023 continuam sem aplicação; não há exportação aprovada ou projeção D1 preenchida. Sem ambiente isolado e sem autorização de Worker/M5, não foi feita publicação nem escrita produtiva.
+
+**NEXT_ACTION:** enviar o lote à revisão privada e aprovar nomes, claims, variantes e cada vínculo com evidência visual antes de qualquer exportação.
+
+**DO_NOT_REPEAT:** não usar publicação ou nome de catálogo como prova visual; não confundir Shenron/Shenlong nem incluir relações pendentes no público.
+
+## Rodada 108 — Mumm-Ra e Cheetara (18/11/2026)
+
+- Preparei dois dossiês originais e pendentes de revisão para as versões cobertas pelas sinopses oficiais de *ThunderCats* (1985), da HBO Max. Os claims de Mumm-Ra e Cheetara apontam para a [página oficial da série e episódios](https://www.hbomax.com/br/pt/show/0d50eaec-1b11-4bab-ac9b-49ac21fbf7ed).
+- Relacionei seis registros exatos de Mumm-Ra e cinco de Cheetara pelos IDs já existentes na fila. Os 11 vínculos seguem sem evidência visual independente, não aprovados e sujeitos à revisão humana; versões, transformações e continuidade permanecem ambíguas.
+- A preparação soma **78 candidatos, 87 fontes oficiais únicas e 830 vínculos candidatos**. Continuam **0 identidades revisadas/aprovadas, 0 vínculos revisados/aprovados e 0 relações com evidência visual independente**; o pacote não está autorizado para projeção pública.
+- Validação executada: `node --test scripts/catalog/character-catalog-inventory.test.mjs` (**11/11 passou**) e `git diff --check` passou. Nenhuma persistência, migration, exportação aprovada, publicação ou ativação de flag ocorreu.
+- Permanecem bloqueios externos: não há staging isolado Supabase/D1; migrations #31 e 0023/#26 não foram aplicadas; falta revisão editorial humana e exportação aprovada; projeção D1 vazia; Worker/M5 sem autorização. Nenhuma escrita produtiva foi feita.
+
+**NEXT_ACTION:** encaminhar os novos dossiês para revisão privada na #31; após aprovações, homologar o fluxo Supabase→D1→Worker em ambiente isolado autorizado.
+
+**DO_NOT_REPEAT:** não promover nomes exatos de catálogo a evidência visual, não aprovar continuidade por sinopse da série e não usar a fonte como evidência do render TONART.
+
+## Rodada 109 — Lunch/Launch na fila editorial (18/11/2026)
+
+- Preparei candidato pendente para Lunch, nome usado nas fontes oficiais em inglês, preservando “Launch” como rótulo da fila e sem assumir equivalência/localização aprovada. O rascunho usa o [perfil oficial de personagem](https://en.dragon-ball-official.com/news/01_2174.html) e o artigo oficial sobre a Kame House.
+- Vinculei seis IDs exatos da fila, todos sujeitos a inspeção dos renders. A biografia cobre somente fatos narrados nas fontes; continuidade, nome localizado e correspondência visual seguem pendentes.
+- Totais atuais: **79 candidatos, 89 fontes oficiais únicas e 836 vínculos candidatos**. Permanecem **0 identidades ou relações revisadas/aprovadas e 0 vínculos com evidência independente de render**.
+- Esta rodada atualiza o pacote de revisão; não houve escrita ou exportação em Supabase/D1. A homologação ainda depende das migrations #31/0023, de staging isolado, de revisão humana aprovada e de autorização para publicar/cortar o Worker.
+
+**NEXT_ACTION:** encaminhar Lunch/Launch, Mumm-Ra e Cheetara à curadoria privada para resolver nomes, versões e relações por inspeção visual.
+
+**DO_NOT_REPEAT:** não usar os títulos dos seis modelos como confirmação de Lunch/Launch ou como evidência do render.
+
+## Rodada 110 — Mileena, Goro, T-800 e John Wick (18/11/2026)
+
+- Preparei quatro candidatos com escopo de continuidade delimitado: elenco principal de *Mortal Kombat 1* para Mileena; Kameo de MK1 para Goro; T-800/Carl de *Dark Fate*; e perfil de John Wick baseado no guia oficial da franquia e na divulgação de *Chapter 4*. Fontes: [FAQ WB Games](https://mortalkombatgamessupport.wbgames.com/hc/en-us/articles/16726930433939-Mortal-Kombat-1-FAQ), [roster oficial MK1](https://www.mortalkombat.com/en-gb/roster), [Paramount](https://www.paramount.com/movies/terminator-dark-fate), [Peacock](https://www.peacocktv.com/blog/your-guide-to-the-john-wick-universe) e [Lionsgate Publicity](https://www.lionsgatepublicity.com/theatrical/john-wick-4).
+- Preparei **23 vínculos** por ID exato da fila. A candidata Mileena inclui um registro candidato não publicado, preservado como tal. T-800 e John Wick mantêm as franquias exibidas no catálogo como candidatos de localização (`Exterminador do Futuro` e `John Wick (Franquia)`). Nenhum vínculo está visualmente confirmado.
+- Totais atuais: **83 candidatos, 94 fontes oficiais únicas e 859 vínculos candidatos**. Revisões/aprovações e evidência independente de render continuam em zero.
+- Próximo gate permanece editorial e externo: curadoria humana na #31, ambiente isolado Supabase/D1, migrations da #31 e 0023/#26 e exportação aprovada. Nenhuma gravação, migration ou publicação foi feita.
+
+**NEXT_ACTION:** encaminhar os dossiês à curadoria privada; revisar especialmente a continuidade das versões, a distinção Goro/KOF e as franquias localizadas antes de aprovar qualquer vínculo.
+
+**DO_NOT_REPEAT:** não converter nome/slug em evidência visual nem expandir fatos de uma versão para todos os modelos de um personagem.
+
+## Rodada 111 — Viúva Negra e Surfista Prateado (18/11/2026)
+
+- Preparei candidatos a partir dos perfis de quadrinhos oficiais da [Marvel para Black Widow](https://www.marvel.com/characters/black-widow-natasha-romanova/in-comics) e de sua [história de Norrin Radd/Silver Surfer](https://www.marvel.com/teams-and-groups/heralds-of-galactus).
+- Acrescentei cinco IDs para cada ficha. O catálogo agrupa os dez registros em “Equipes e Grupos”; registrei esse rótulo em `catalogFranchiseCandidates` e a franquia Marvel como candidata da fonte, sem reclassificar os modelos. Mantive em aberto portadoras, fases, uniformes e correspondência visual.
+- Totais atuais: **85 candidatos, 96 fontes oficiais únicas e 869 vínculos candidatos**. Nenhuma identidade ou relação foi revisada/aprovada e nenhum render tem evidência independente anexada.
+- Nenhuma gravação, migration ou publicação ocorreu. A curadoria humana, o staging Supabase/D1 e as migrations #31/0023 seguem como pré-requisitos à homologação real.
+
+**NEXT_ACTION:** levar os candidatos à revisão privada e decidir manualmente se o agrupamento genérico “Equipes e Grupos” deve ser reconciliado com Marvel para cada modelo.
+
+**DO_NOT_REPEAT:** não converter a categoria de agrupamento em franquia canônica nem tratar as páginas biográficas como prova das imagens TONART.
+
+## Rodada 112 — Panthro e Paragus (18/11/2026)
+
+- Preparei Panthro com a página oficial de *ThunderCats* já referenciada no pacote e Paragus com o [perfil oficial de Dragon Ball Super: Broly](https://en.dragon-ball-official.com/news/01_678.html).
+- Acrescentei quatro relações candidatas por personagem, usando IDs existentes. Panthro permanece delimitado à série animada de 1985 e Paragus ao filme *Dragon Ball Super: Broly*; nenhuma imagem foi verificada visualmente.
+- Totais atuais: **87 candidatos, 97 fontes oficiais únicas e 877 vínculos candidatos**. Revisões/aprovações e evidência independente dos renders permanecem em zero.
+- Validação: teste da fila **11/11**, importação temporária na revisão privada #31 **1/1** (rascunhos somente em memória) e `git diff --check` aprovados. O arquivo temporário foi removido; não houve escrita, migration ou publicação.
+
+**NEXT_ACTION:** validar pacote e importação da curadoria #31, depois sincronizar a mesma PR #33.
+
+**DO_NOT_REPEAT:** não promover os quatro nomes de cada grupo a vínculos confirmados sem inspeção e aprovação humana.
+
+## Rodada 113 — Candidatos multicaracteres Dragon Ball (18/11/2026)
+
+- Ampliei as fichas existentes de Son Goku, Vegeta e Gohan com candidatos de relação para os IDs dos rótulos compostos “Goku e Vegeta” e “Goku e Gohan”. Os mesmos modelos aparecem em cada rascunho de personagem pertinente, para que a curadoria #31 possa revisar uma relação por personagem.
+- Foram acrescentados **26 vínculos candidatos** para 13 modelos existentes. Títulos compostos são apenas proveniência de busca; cada relação continua sem evidência independente, confirmação visual ou aprovação humana.
+- Totais atuais: **87 identidades preparadas, 97 fontes oficiais únicas e 903 vínculos candidatos**. Nenhuma relação foi marcada como verificada.
+- Corrigi na branch existente da PR #31 a incompatibilidade que impedia importar modelos compostos para dois personagens: agora o mesmo par catálogo ID/slug pode aparecer em candidatos distintos, com unicidade por ficha e rejeição de colisões ID↔slug. Não houve duplicação de identidades.
+- Validações locais: fila **11/11**; testes do importador #31 **7/7**; teste temporário contra o pacote real #33 **1/1** (87 candidatos, 97 fontes; “Goku e Vegeta” gerou dois rascunhos pendentes); TypeScript app e `git diff --check` passaram. O teste temporário foi removido e nenhuma persistência foi chamada.
+- Totais revisados/aprovados e vínculos com evidência visual independente continuam em **zero**. Nenhuma migration, exportação editorial aprovada, escrita de produção, publicação ou ativação da flag ocorreu.
+- Integração: commits `8f5ffc50` (#31) e `0b812516` (#33) foram enviados às PRs existentes; ambas seguem abertas em draft. Nenhuma mudança desta rodada foi integrada à `main`; PR #26 permanece `staged-offline`.
+
+**NEXT_ACTION:** revisar a correção já enviada na PR #31 e encaminhar os candidatos à curadoria privada; homologar Supabase→D1→Worker somente após staging isolado, migrations autorizadas e aprovações humanas.
+
+**DO_NOT_REPEAT:** não converter um título que nomeia dois personagens em prova de que ambos aparecem no render.
+
+## Rodada 114 — auditoria focal da fila e do caminho de projeção (18/11/2026)
+
+- **Base/HEAD:** PR #33 baseada em `origin/main@b82a76a8`; preservei o commit concorrente `26b93b38` que adiciona cobertura para storefront com projeção desativada. PR #33, #31 e #26 continuam abertas em draft e nenhuma destas alterações foi integrada à `main`.
+- A fila regenerável cobre **2.609/2.609 modelos**, mas isso significa triagem conservadora, não pesquisa concluída. O pacote review-only então continha **90 identidades candidatas, 90 biografias originais, 101 URLs únicas (100 oficiais e uma de editora), 355 claims e 910 relações candidatas sobre 897 IDs de modelo distintos**. Desses IDs, 871 também estavam publicados e 26 existiam somente no contrato candidato; os outros **1.712 modelos** seguiam apenas como `pending_evidence`, sem dossiê. As 910 relações tinham `reviewRequired=true`, sem evidência independente do render. **Identidades revisadas: 0; identidades aprovadas: 0; relações revisadas/aprovadas: 0; modelos vinculados com evidência independente: 0.** Wolverine permanecia explicitamente ambíguo; nenhuma ambiguidade foi promovida.
+- A validação da fila confirmou IDs/slugs dos candidatos contra o inventário e ausência de referências de fonte desconhecidas. O importador da curadoria #31 aceitou o pacote completo em memória (90 candidatos, 101 fontes, 910 relações), sem persistir nada.
+- A execução Actions `#44354633321` para `a3dc51d7` aprovou apenas `Catalog Worker offline / no deploy`; os quatro jobs restantes foram `skipping`. Não é CI completa. `gh pr edit` recusou atualizar o resumo da PR com `UpdatePullRequest` sem permissão; a descrição remota continua com as contagens antigas até o owner atualizar.
+- A tipagem/decodificação pública da #33 já aceita as categorias de evidência da curadoria, rejeitando categorias desconhecidas. Vitest focado (gateway, projeção e fichas), `typecheck:app` e o teste isolado de storefront foram iniciados, mas ficaram sem saída; o teste isolado não progrediu em 90 segundos. Interrompi os processos e não os conto como aprovados. Os **72/72 testes de gateway/fichas e o typecheck registrados anteriormente** são evidência de execução anterior, não um rerun deste HEAD.
+- **Testes executados:** fila #33 **11/11**; importador + serviço privado de curadoria #31 **51/51**; `typecheck:app` da #31 passou; adaptador de publicação + Worker de projeção #26 **16/16**, no HEAD remoto `6d72a221`; `catalog:worker:typecheck` passou. Os testes do Worker percorrem RPC simulada → Worker/D1 local e validam aprovação, evidências por campo/vínculo, revisão de relação, idempotência, stale replay, concorrência, dry-run e rollback. Os testes do adaptador cobrem fonte isolada/local, RPC export-only e rollback local mesmo se Supabase estiver indisponível. Isso não comprova Supabase hospedado.
+- **Integração real permanece bloqueada:** migrations editoriais da #31 e D1 `0023` da #26 não aplicadas; não há staging isolado autorizado; o export autorizado está vazio porque não há registros aprovados; projeção editorial D1 segue vazia; publisher de produção permanece na origem e M5/cutover não autorizados. A flag `VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION` permanece ausente/desligada. Nenhum banco produtivo foi escrito, nenhum Worker publicado e nenhum deploy/indexação ocorreu.
+
+**NEXT_ACTION:** revisão humana pela curadoria privada #31, com fonte para identidade/franquia/claims e evidência visual ou documental independente para cada relação; depois, quando autorizado, aplicar migrations apenas em staging isolado e homologar o export aprovado → Worker/D1 local/isolado → gateway/páginas antes de qualquer publicação.
+
+**DO_NOT_REPEAT:** não contar candidatos/links como aprovados; não tratar teste com RPC simulada como round-trip Supabase real; não aplicar migrations produtivas nem ligar a flag editorial vazia.
+
+## Rodada 115 — reconciliação de pesquisa oficial e projeção (18/11/2026)
+
+- Preservei o commit concorrente `e392f64e` da PR #33 (dossiês de Broly, Kakashi, Jill Valentine e Miles Morales) e integrei a pesquisa adicional de Donatello e Sakura. As fontes/claims de Kakashi, Jill e Miles foram consolidadas nas identidades já existentes, sem duplicar entidades nem relações. Sakura está identificada explicitamente como candidata de *Street Fighter* para evitar confusão com homônimos. O pacote tem agora **96 biografias originais pendentes**, baseadas em **108 URLs únicas** (107 oficiais e uma de editora); as biografias permanecem limitadas ao que as fontes descrevem. Capcom/Marvel retornaram 403 à abertura automatizada e Nickelodeon redirecionou regionalmente; essas limitações estão preservadas nos dossiês.
+- O lote possui **935 vínculos candidatos sobre 922 IDs de modelos** existentes: 896 publicados e 26 exclusivos do contrato candidato, sem slug público. Os vínculos novos continuam `reviewRequired=true`, sem evidência independente do render. Miles Morales mantém ambiguidade de franquia por estar em “Heróis Individuais”; Wolverine permanece ambíguo entre escopos.
+- Totais atuais: **0 identidades revisadas, 0 aprovadas, 0 relações revisadas/aprovadas e 0 modelos vinculados com evidência independente**. Os outros **1.687 dos 2.609 modelos** permanecem apenas na fila `pending_evidence`, sem dossiê de pesquisa.
+- Generalizei o Quality Gate existente para obter as contagens dos metadados do pacote e adicionei verificações para a nova onda de Donatello/Sakura, preservando as asserções específicas de Broly/Kakashi/Jill/Miles. A validação do inventário #33 passou **11/11**; o parser da revisão privada #31 aceitou o pacote combinado em memória, sem persistência ou RPC de escrita. As provas anteriores da Rodada 114 para os testes da #31 e Worker/D1 local da #26 não são uma rodada real no Supabase hospedado.
+- A flag continua desligada. Migrations editoriais da #31 e `0023` da #26 não foram aplicadas; não há staging isolado nem export aprovado, e a projeção D1 segue vazia. Nenhuma alteração desta rodada foi integrada à `main`; PRs #26, #31 e #33 seguem abertas, sem deploy, M5, indexação ou escrita produtiva. A edição da descrição da PR foi recusada pela permissão `UpdatePullRequest` da conta conectada.
+
+**NEXT_ACTION:** revisão editorial humana das 96 identidades e 935 relações, com evidência independente por render; em seguida, staging isolado autorizado para homologar export aprovado → D1 local/isolado → gateway/páginas. Pesquisar também os 1.687 modelos restantes.
+
+**DO_NOT_REPEAT:** não tratar rótulo, título, franquia/categoria ou fonte biográfica como prova de que um render representa personagem específico; não usar mocks como homologação Supabase/Cloudflare.
+
+## CHECKPOINT — 17/11/2026 — perfil editorial privado na PR #31
+
+- **Implementação local na branch da PR #31** (`78f961e2` como HEAD remoto confirmado antes das alterações): a ficha editorial foi anexada à identidade canônica existente; não cria tabela/catálogo de personagens paralelo. A migration nova é aditiva e mantém estado/revisões anteriores, fontes HTTPS por afirmação e controle otimista de versão.
+- O painel administrativo permite rascunho e revisão privada de slug, aliases, biografia original, idade contextual, obra de origem e características. Uma revisão exige fonte para cada informação; exige slug, biografia e obra de origem. O gateway `admin-rpc` autoriza os dois RPCs só no caminho autenticado e injeta o ID do administrador; usuário/cliente não tem chamada direta. Revisão privada **não publica**.
+- **Validação local:** **38/38 Vitest direcionados, TypeScript app, ESLint nos quatro arquivos TS/TSX alterados, Prettier e `git diff --check` aprovados**. Nenhum teste PostgreSQL foi feito nesta rodada; o script de staging existente cobre draft/review, fontes obrigatórias, unicidade do slug, concorrência de versão, privacidade e `ROLLBACK` com fixtures claramente fictícias.
+- **Bloqueios reais:** o ambiente local continua sem PostgreSQL, Docker, Supabase CLI ou PGlite; não há staging isolado autorizado. A migration não foi aplicada. A projeção/endpoints públicos do Worker ainda não estão disponíveis, e o inventário de 2.609 modelos continua sendo fila de candidatos sem pesquisa editorial concluída; nenhum candidato foi promovido.
+- **Segurança/publicação:** nenhuma escrita no Supabase conectado, deploy, publicação de conteúdo, SEO ou abertura de cobrança foi executada. Manter as fichas públicas atrás do contrato de projeção aprovado no Worker e exigir revisão humana das fontes antes de popular o catálogo.
+
+## CHECKPOINT — 18/11/2026 — importação multicaractere da fila editorial #33
+
+- **Base/HEAD antes da alteração:** `main`/merge-base `b82a76a80cde54b8bef0afa73cfe48ff4a549d3b`; branch existente da PR #31 em `77ecba78397a04f75cd73b0d7a2414ccae352f00`.
+- Corrigi o parser da preparação editorial: o mesmo par de ID/slug do catálogo pode aparecer em candidatos de personagens diferentes (escultura composta), mantendo unicidade dentro de cada ficha e rejeitando ID↔slug conflitante. A UI já selecionava candidatos separadamente e preenche apenas rascunhos em memória.
+- **Validações locais:** 7/7 testes Vitest direcionados; teste temporário contra o pacote real da PR #33 passou (87 candidatos, 97 fontes; modelo composto mapeado para Son Goku e Vegeta, ambos pendentes); TypeScript app e `git diff --check` passaram. O arquivo temporário foi removido.
+- **Estado editorial e segurança:** 0 identidades ou relações aprovadas nesta fila; nenhuma aprovação, gravação no Supabase, migration, projeção D1 ou publicação foi feita. O teste não prova persistência nem integração real.
+- **Bloqueios externos:** staging isolado e aplicação autorizada das migrations #31/0023 continuam ausentes; conteúdo depende de revisão humana e evidência visual individual antes de exportação. Worker/M5 permanecem sem autorização.
+
+**NEXT_ACTION:** encaminhar candidatos e rascunhos para revisão privada humana; só depois validar a exportação aprovada em ambiente Supabase/D1 isolado.
+
+**DO_NOT_REPEAT:** não exigir ID de modelo globalmente único entre personagens; não marcar relações da fila como verificadas; não aplicar migrations ou gravar conteúdo no projeto Supabase conectado.
 
 ## Rodada 78 — correção do formulário de resposta de orçamento (18/11/2026)
 

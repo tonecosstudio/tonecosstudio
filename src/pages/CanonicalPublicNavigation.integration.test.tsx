@@ -93,6 +93,7 @@ function setupFetch() {
 async function renderRoute(path: string) {
   const { default: LandingPage } = await import("./LandingPage");
   const { default: CatalogArcade } = await import("./CatalogArcade");
+  const { default: CatalogCharacterArcade } = await import("./CatalogCharacterArcade");
   const { CatalogBrowsingProvider } = await import("@/services/catalog/catalog-browsing-context");
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
@@ -106,7 +107,7 @@ async function renderRoute(path: string) {
           <Route path="/universo" element={<CatalogArcade />} />
           <Route path="/universo/:themeKey" element={<CatalogArcade />} />
           <Route path="/universo/:themeKey/:franchiseKey" element={<CatalogArcade />} />
-          <Route path="/universo/:themeKey/:franchiseKey/:characterSlug" element={<CatalogArcade />} />
+          <Route path="/universo/:themeKey/:franchiseKey/:characterSlug" element={<CatalogCharacterArcade />} />
           <Route path="/modelos" element={<Destination />} />
           <Route path="/modelos/:id" element={<Destination />} />
         </Routes>

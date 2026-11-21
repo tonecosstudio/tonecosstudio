@@ -23,11 +23,16 @@ import {
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
+import {
+  PUBLIC_ROUTES,
+  catalogCharacterSlugPath,
+  catalogModelDetailsPath,
+} from "@/config/routes";
 import {
   isCatalogMediaUnderReview,
   isCatalogPublicMvpEnabled,
 } from "@/config/catalog-public-mvp";
+import { isPublicEditorialProjectionEnabled } from "@/config/catalog-editorial-projection";
 import {
   Sheet,
   SheetClose,
@@ -110,6 +115,7 @@ export default function CatalogModelsArcade() {
   // build, avoid extra category/franchise reads just to populate closed selects.
   // Opening either filter remains the explicit trigger for its indexed lookup.
   const mediaUnderReview = isCatalogMediaUnderReview();
+  const editorialProjectionEnabled = isPublicEditorialProjectionEnabled();
   const publicReadOnly =
     import.meta.env.VITE_PREVIEW_READ_ONLY === "true" &&
     isCatalogPublicMvpEnabled();
@@ -214,6 +220,19 @@ export default function CatalogModelsArcade() {
     // snapshot or client-side upload channel. Background tabs do not poll.
     refetchInterval: publicReadOnly ? 2 * 60 * 1000 : false,
     refetchIntervalInBackground: false,
+  });
+
+  const editorialCharacters = useQuery({
+    queryKey: ["tonecos-editorial-character-search", search],
+    queryFn: ({ signal }) => gateway!.searchCharacters(search, 8, signal),
+    enabled:
+      gateway !== null &&
+      editorialProjectionEnabled &&
+      !publicationBlocked &&
+      !invalidSearch &&
+      searchLength >= 3,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   const rows = models.data?.items ?? [];
@@ -718,6 +737,105 @@ export default function CatalogModelsArcade() {
                 </SheetTrigger>
               </div>
             </div>
+
+            {editorialProjectionEnabled &&
+            searchLength >= 3 &&
+            !invalidSearch &&
+            !publicationBlocked ? (
+              <section
+                aria-labelledby="catalog-character-search-title"
+                className="mt-6 border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(0,0%,6%)] p-4 sm:p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2
+                    id="catalog-character-search-title"
+                    className="font-mono text-xs font-semibold uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))]"
+                  >
+                    Personagens e universos
+                  </h2>
+                  {editorialCharacters.isFetching ? (
+                    <span
+                      className="text-xs text-[hsl(0,0%,56%)]"
+                      role="status"
+                    >
+                      Buscando fichas aprovadas…
+                    </span>
+                  ) : null}
+                </div>
+                {editorialCharacters.isError ? (
+                  <div
+                    className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[hsl(0,0%,64%)]"
+                    role="alert"
+                  >
+                    <span>
+                      Não foi possível buscar fichas editoriais agora.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void editorialCharacters.refetch()}
+                      disabled={editorialCharacters.isFetching}
+                      className="inline-flex min-h-11 items-center border border-[hsl(var(--gold-accent)/0.5)] px-3 text-xs text-[hsl(var(--gold-accent))] disabled:opacity-40"
+                    >
+                      Tentar novamente
+                    </button>
+                  </div>
+                ) : editorialCharacters.isSuccess &&
+                  editorialCharacters.data.items.length === 0 ? (
+                  <p
+                    className="mt-3 text-sm text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Nenhum personagem publicado corresponde ao nome, alias ou
+                    franquia buscados.
+                  </p>
+                ) : editorialCharacters.isSuccess ? (
+                  <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {editorialCharacters.data.items.map((result) => {
+                      const matchLabels = {
+                        name_exact: "Nome exato",
+                        name: "Nome",
+                        alias: "Alias",
+                        franchise: "Franquia",
+                      } as const;
+                      return (
+                        <li key={result.character.id}>
+                          <Link
+                            to={catalogCharacterSlugPath(result.character.slug)}
+                            className="flex min-h-16 flex-col justify-center border border-[hsl(0,0%,16%)] px-3 py-2 transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                          >
+                            <span className="flex flex-wrap items-center justify-between gap-2 text-sm font-semibold text-[hsl(0,0%,92%)]">
+                              {result.character.name}
+                              <span className="font-mono text-[9px] uppercase tracking-wider text-[hsl(var(--gold-accent))]">
+                                {matchLabels[result.matchedBy]}
+                              </span>
+                            </span>
+                            <span className="mt-1 truncate text-xs text-[hsl(0,0%,56%)]">
+                              {result.universe.name}
+                            </span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <p
+                    className="mt-3 text-sm text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Consultando apenas personagens aprovados…
+                  </p>
+                )}
+                {editorialCharacters.data?.truncated ? (
+                  <p
+                    className="mt-3 text-xs text-[hsl(0,0%,56%)]"
+                    role="status"
+                  >
+                    Há mais correspondências. Refine a busca para localizar a
+                    ficha desejada.
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
 
             {gateway === null ? (
               <div

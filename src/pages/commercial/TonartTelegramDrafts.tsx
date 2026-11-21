@@ -115,12 +115,16 @@ export default function TonartTelegramDrafts() {
 
   // The existing D1 index handles global search and pagination, not an in-page filter.
   useEffect(() => {
+    const requestedQuery = searchText.trim();
+    // Initial mount and an already-applied filter must not reset a later
+    // page when the debounced callback races with cross-page navigation.
+    if (requestedQuery === query) return;
     const timer = window.setTimeout(() => {
       setOffset(0);
-      setQuery(searchText.trim());
+      setQuery(requestedQuery);
     }, 280);
     return () => window.clearTimeout(timer);
-  }, [searchText]);
+  }, [searchText, query]);
 
   useEffect(() => {
     let live = true;

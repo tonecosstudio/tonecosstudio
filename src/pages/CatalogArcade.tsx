@@ -9,9 +9,10 @@ import {
   ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_ROUTES, catalogModelsPath } from "@/config/routes";
 import { formatModelCountLabel } from "@/lib/catalog-model-count";
 import { CanonicalUniverseFolders } from "@/pages/catalog/CanonicalUniverseFolders";
+import { CatalogUniverseEditorialPanel } from "@/pages/catalog/CatalogUniverseEditorialPanel";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { isCatalogMediaUnderReview } from "@/config/catalog-public-mvp";
 import {
@@ -20,14 +21,6 @@ import {
 } from "@/services/catalog/public-catalog-gateway";
 
 const VALID_SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
-
-function modelsPath(category?: string, franchise?: string): string {
-  const params = new URLSearchParams();
-  if (category) params.set("category", category);
-  if (franchise) params.set("franchise", franchise);
-  const search = params.toString();
-  return PUBLIC_ROUTES.catalogModels + (search ? "?" + search : "");
-}
 
 function readableSlugLabel(slug: string): string {
   return slug
@@ -204,7 +197,7 @@ export default function CatalogArcade() {
   // Existing deep links remain navigable. A character-only index is not
   // exposed by the canonical API, so never invent character-level results.
   if (characterSlug && franchiseKey && themeKey && !invalidScope) {
-    return <Navigate to={modelsPath(themeKey, franchiseKey)} replace />;
+    return <Navigate to={catalogModelsPath(themeKey, franchiseKey)} replace />;
   }
 
   const activeQuery = themeKey ? franchisesQuery : categoriesQuery;
@@ -265,11 +258,17 @@ export default function CatalogArcade() {
             )}
             <Link
               className="ml-auto inline-flex min-h-11 items-center justify-center border border-[hsl(var(--gold-accent)/0.4)] px-4 py-3 font-mono text-xs uppercase tracking-wide text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
-              to={modelsPath()}
+              to={catalogModelsPath()}
             >
               Ver todos os modelos
             </Link>
           </nav>
+          {themeKey && franchiseKey ? (
+            <CatalogUniverseEditorialPanel
+              categorySlug={themeKey}
+              franchiseSlug={franchiseKey}
+            />
+          ) : null}
           <ArcadeSectionTitle>
             {franchiseKey
               ? "PASTAS E MODELOS"
@@ -534,7 +533,7 @@ export default function CatalogArcade() {
           {themeKey && !franchiseKey && !invalidScope && !mediaUnderReview && (
             <Link
               className="mt-8 inline-flex items-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-5 py-3 text-sm text-[hsl(var(--gold-accent))]"
-              to={modelsPath(themeKey)}
+              to={catalogModelsPath(themeKey)}
             >
               Explorar modelos desta categoria{" "}
               <ArrowRight size={16} aria-hidden="true" />

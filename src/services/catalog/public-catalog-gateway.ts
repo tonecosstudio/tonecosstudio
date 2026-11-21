@@ -1,4 +1,7 @@
-import { isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
+import {
+  isApprovedPublicCover,
+  isApprovedPublicMediaKey,
+} from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
 
 /**
@@ -69,6 +72,153 @@ export type PublicCatalogDetail = PublicCatalogModel & {
   description: string | null;
   material: string | null;
   heightCm: number | null;
+};
+
+/**
+ * Versioned public editorial projection. These shapes are deliberately
+ * stricter than the private curation records: only published, reviewed rows
+ * with source references can cross the public gateway.
+ */
+export type PublicCatalogEditorialEvidence = {
+  id: string;
+  title: string;
+  url: string;
+  kind:
+    | "official"
+    | "primary"
+    | "publisher"
+    | "licensor"
+    | "institution"
+    | "reputable_reference"
+    | "other"
+    | "catalog";
+};
+
+export type PublicCatalogEditorialPublication = {
+  contractVersion: 1;
+  editorialStatus: "approved";
+  visibility: "public";
+  revision: string;
+  reviewedAt: string;
+};
+
+export type PublicCatalogEditorialModelReference = {
+  modelId: string;
+  slug: string;
+  name: string;
+  variantName: string;
+  coverStorageKey: string | null;
+  reviewStatus: "approved";
+  evidenceIds: string[];
+};
+
+export type PublicCatalogCharacterProfile = {
+  publication: PublicCatalogEditorialPublication;
+  character: {
+    id: string;
+    slug: string;
+    name: string;
+    aliases: Array<{ value: string; evidenceIds: string[] }>;
+    summary: string | null;
+    summaryEvidenceIds: string[];
+    biography: string | null;
+    biographyEvidenceIds: string[];
+    ageContext: {
+      value: string | null;
+      context: string;
+      evidenceIds: string[];
+    } | null;
+    originWork: string | null;
+    originWorkEvidenceIds: string[];
+    mediaTypes: string[];
+    characteristics: Array<{ value: string; evidenceIds: string[] }>;
+    mediaTypeEvidenceIds: string[];
+    identityEvidenceIds: string[];
+  };
+  universe: {
+    id: string;
+    slug: string;
+    name: string;
+    categorySlug: string;
+    evidenceIds: string[];
+  };
+  evidence: PublicCatalogEditorialEvidence[];
+  sameCharacterModels: PublicCatalogEditorialModelReference[];
+  otherUniverseModels: PublicCatalogEditorialModelReference[];
+};
+
+export type PublicCatalogCharacterSearchItem = {
+  publication: PublicCatalogEditorialPublication;
+  character: {
+    id: string;
+    slug: string;
+    name: string;
+    aliases: Array<{ value: string; evidenceIds: string[] }>;
+    summary: string | null;
+    summaryEvidenceIds: string[];
+    identityEvidenceIds: string[];
+  };
+  universe: {
+    id: string;
+    slug: string;
+    name: string;
+    categorySlug: string;
+    evidenceIds: string[];
+  };
+  evidence: PublicCatalogEditorialEvidence[];
+  matchedBy: "name_exact" | "name" | "alias" | "franchise";
+};
+
+export type PublicCatalogCharacterSearchPage = {
+  items: PublicCatalogCharacterSearchItem[];
+  truncated: boolean;
+};
+
+export type PublicCatalogModelEditorialCharacter = {
+  publication: PublicCatalogEditorialPublication;
+  character: {
+    id: string;
+    slug: string;
+    name: string;
+    identityEvidenceIds: string[];
+  };
+  universe: {
+    slug: string;
+    categorySlug: string;
+  };
+  relationEvidenceIds: string[];
+  evidence: PublicCatalogEditorialEvidence[];
+};
+
+export type PublicCatalogModelEditorialCharacterPage = {
+  items: PublicCatalogModelEditorialCharacter[];
+  truncated: boolean;
+};
+
+export type PublicCatalogUniverseProfile = {
+  publication: PublicCatalogEditorialPublication;
+  universe: {
+    id: string;
+    slug: string;
+    name: string;
+    categorySlug: string;
+    mediaTypes: string[];
+    summary: string | null;
+    summaryEvidenceIds: string[];
+    overview: string | null;
+    overviewEvidenceIds: string[];
+    identityEvidenceIds: string[];
+  };
+  evidence: PublicCatalogEditorialEvidence[];
+  characters: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    summary: string | null;
+    reviewStatus: "approved";
+    evidenceIds: string[];
+  }>;
+  models: PublicCatalogEditorialModelReference[];
 };
 
 export type PublicCatalogPage = {
@@ -150,7 +300,10 @@ function optionalText(value: unknown, field: string): string | null {
 }
 
 function validateCatalogCursor(value: string | undefined, field: string): void {
-  if (value !== undefined && (typeof value !== "string" || !value || value.length > 2048)) {
+  if (
+    value !== undefined &&
+    (typeof value !== "string" || !value || value.length > 2048)
+  ) {
     throw new Error(field);
   }
 }
@@ -204,6 +357,815 @@ function decodeModel(value: unknown): PublicCatalogModel {
   };
 }
 
+function editorialTimestamp(value: unknown, field: string): string {
+  const timestamp = requiredText(value, field);
+  if (!Number.isFinite(Date.parse(timestamp))) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  return timestamp;
+}
+
+function decodeEditorialEvidence(
+  value: unknown,
+): PublicCatalogEditorialEvidence[] {
+  if (!Array.isArray(value) || value.length > 200) {
+    throw new Error("invalid_catalog_editorial_evidence");
+  }
+  const seen = new Set<string>();
+  return value.map((item: unknown): PublicCatalogEditorialEvidence => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("invalid_catalog_editorial_evidence_item");
+    }
+    const row = item as {
+      id?: unknown;
+      title?: unknown;
+      url?: unknown;
+      kind?: unknown;
+    };
+    const id = requiredText(row.id, "editorial_evidence_id");
+    if (seen.has(id))
+      throw new Error("duplicate_catalog_editorial_evidence_id");
+    seen.add(id);
+    if (
+      ![
+        "official", "primary", "publisher", "licensor", "institution",
+        "reputable_reference", "other", "catalog",
+      ].includes(row.kind as string)
+    ) {
+      throw new Error("invalid_catalog_editorial_evidence_kind");
+    }
+    const rawUrl = requiredText(row.url, "editorial_evidence_url");
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      throw new Error("invalid_catalog_editorial_evidence_url");
+    }
+    if (url.protocol !== "https:" || url.username || url.password) {
+      throw new Error("invalid_catalog_editorial_evidence_url");
+    }
+    return {
+      id,
+      title: requiredText(row.title, "editorial_evidence_title"),
+      url: url.toString(),
+      kind: row.kind as PublicCatalogEditorialEvidence["kind"],
+    };
+  });
+}
+
+function decodeEvidenceIds(
+  value: unknown,
+  evidence: PublicCatalogEditorialEvidence[],
+  field: string,
+  requireIndependent = false,
+): string[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 40) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  const seen = new Set<string>();
+  const evidenceById = new Map(evidence.map((item) => [item.id, item]));
+  const ids = value.map((item: unknown) => {
+    const id = requiredText(item, `editorial_${field}_id`);
+    if (seen.has(id) || !evidenceById.has(id)) {
+      throw new Error(`invalid_catalog_editorial_${field}_reference`);
+    }
+    seen.add(id);
+    return id;
+  });
+  if (
+    requireIndependent &&
+    !ids.some((id) => evidenceById.get(id)?.kind !== "catalog")
+  ) {
+    throw new Error(`catalog_editorial_${field}_needs_independent_evidence`);
+  }
+  return ids;
+}
+
+function decodeEditorialPublication(
+  value: unknown,
+): PublicCatalogEditorialPublication {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_editorial_publication");
+  }
+  const row = value as {
+    contractVersion?: unknown;
+    editorialStatus?: unknown;
+    visibility?: unknown;
+    revision?: unknown;
+    reviewedAt?: unknown;
+  };
+  if (
+    row.contractVersion !== 1 ||
+    row.editorialStatus !== "approved" ||
+    row.visibility !== "public"
+  ) {
+    throw new Error("catalog_editorial_projection_not_approved");
+  }
+  return {
+    contractVersion: 1,
+    editorialStatus: "approved",
+    visibility: "public",
+    revision: requiredText(row.revision, "editorial_revision"),
+    reviewedAt: editorialTimestamp(row.reviewedAt, "reviewed_at"),
+  };
+}
+
+function editorialStringList(value: unknown, field: string): string[] {
+  if (!Array.isArray(value) || value.length > 40) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  const seen = new Set<string>();
+  return value.map((item: unknown) => {
+    const text = requiredText(item, `editorial_${field}_item`);
+    if (seen.has(text)) throw new Error(`duplicate_catalog_editorial_${field}`);
+    seen.add(text);
+    return text;
+  });
+}
+
+function decodeEditorialClaims(
+  value: unknown,
+  evidence: PublicCatalogEditorialEvidence[],
+  field: string,
+): Array<{ value: string; evidenceIds: string[] }> {
+  if (!Array.isArray(value) || value.length > 30) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  const seen = new Set<string>();
+  return value.map((item: unknown) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`invalid_catalog_editorial_${field}_item`);
+    }
+    const claim = item as { value?: unknown; evidenceIds?: unknown };
+    if (
+      typeof claim.value !== "string" ||
+      !claim.value.trim() ||
+      claim.value.trim().length > 240
+    ) {
+      throw new Error(`invalid_catalog_editorial_${field}_value`);
+    }
+    const text = claim.value.trim();
+    const key = text.toLocaleLowerCase("pt-BR");
+    if (seen.has(key)) {
+      throw new Error(`duplicate_catalog_editorial_${field}`);
+    }
+    seen.add(key);
+    return {
+      value: text,
+      evidenceIds: decodeEvidenceIds(
+        claim.evidenceIds,
+        evidence,
+        `${field}_evidence`,
+        true,
+      ),
+    };
+  });
+}
+
+function editorialOptionalText(value: unknown, field: string): string | null {
+  const text = optionalText(value, `editorial_${field}`);
+  if (text && text.length > 4000)
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  return text;
+}
+
+function decodeEditorialModelReferences(
+  value: unknown,
+  evidence: PublicCatalogEditorialEvidence[],
+  field: string,
+  requireIndependentEvidence = false,
+): PublicCatalogEditorialModelReference[] {
+  if (!Array.isArray(value) || value.length > 60) {
+    throw new Error(`invalid_catalog_editorial_${field}`);
+  }
+  const seen = new Set<string>();
+  const seenSlugs = new Set<string>();
+  return value.map((item: unknown): PublicCatalogEditorialModelReference => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`invalid_catalog_editorial_${field}_item`);
+    }
+    const row = item as {
+      modelId?: unknown;
+      slug?: unknown;
+      name?: unknown;
+      variantName?: unknown;
+      coverStorageKey?: unknown;
+      reviewStatus?: unknown;
+      evidenceIds?: unknown;
+    };
+    const modelId = requiredText(row.modelId, "editorial_model_id");
+    if (seen.has(modelId))
+      throw new Error(`duplicate_catalog_editorial_${field}_model`);
+    seen.add(modelId);
+    const slug = requiredText(row.slug, "editorial_model_slug");
+    if (!validCatalogSlug(slug))
+      throw new Error("invalid_catalog_editorial_model_slug");
+    if (seenSlugs.has(slug))
+      throw new Error(`duplicate_catalog_editorial_${field}_slug`);
+    seenSlugs.add(slug);
+    if (row.reviewStatus !== "approved") {
+      throw new Error("catalog_editorial_model_relation_not_approved");
+    }
+    return {
+      modelId,
+      slug,
+      name: requiredText(row.name, "editorial_model_name"),
+      variantName:
+        optionalText(row.variantName, "editorial_model_variant") ?? "",
+      coverStorageKey: optionalText(
+        row.coverStorageKey,
+        "editorial_model_cover",
+      ),
+      reviewStatus: "approved",
+      evidenceIds: decodeEvidenceIds(
+        row.evidenceIds,
+        evidence,
+        `${field}_relation`,
+        requireIndependentEvidence,
+      ),
+    };
+  });
+}
+
+function decodePublicCharacterProfile(
+  value: unknown,
+  expectedSlug: string,
+  expectedUniverse?: { categorySlug: string; franchiseSlug: string },
+): PublicCatalogCharacterProfile {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_character_profile");
+  }
+  const row = value as {
+    publication?: unknown;
+    character?: unknown;
+    universe?: unknown;
+    evidence?: unknown;
+    sameCharacterModels?: unknown;
+    otherUniverseModels?: unknown;
+  };
+  const publication = decodeEditorialPublication(row.publication);
+  const evidence = decodeEditorialEvidence(row.evidence);
+  if (
+    !row.character ||
+    typeof row.character !== "object" ||
+    Array.isArray(row.character)
+  ) {
+    throw new Error("invalid_catalog_character_identity");
+  }
+  if (
+    !row.universe ||
+    typeof row.universe !== "object" ||
+    Array.isArray(row.universe)
+  ) {
+    throw new Error("invalid_catalog_character_universe");
+  }
+  const character = row.character as Record<string, unknown>;
+  const universe = row.universe as Record<string, unknown>;
+  const slug = requiredText(character.slug, "character_slug");
+  if (!validCatalogSlug(slug) || slug !== expectedSlug) {
+    throw new Error("catalog_character_slug_mismatch");
+  }
+  const universeSlug = requiredText(universe.slug, "universe_slug");
+  const categorySlug = requiredText(
+    universe.categorySlug,
+    "universe_category_slug",
+  );
+  if (!validCatalogSlug(universeSlug) || !validCatalogSlug(categorySlug)) {
+    throw new Error("invalid_catalog_character_universe_slug");
+  }
+  if (
+    expectedUniverse &&
+    (universeSlug !== expectedUniverse.franchiseSlug ||
+      categorySlug !== expectedUniverse.categorySlug)
+  ) {
+    throw new Error("catalog_character_universe_context_mismatch");
+  }
+  const identityEvidenceIds = decodeEvidenceIds(
+    character.identityEvidenceIds,
+    evidence,
+    "character_identity_evidence",
+    true,
+  );
+  const biography = editorialOptionalText(
+    character.biography,
+    "character_biography",
+  );
+  const biographyEvidenceIds = biography
+    ? decodeEvidenceIds(
+        character.biographyEvidenceIds,
+        evidence,
+        "character_biography_evidence",
+        true,
+      )
+    : [];
+  const summary = editorialOptionalText(character.summary, "character_summary");
+  const summaryEvidenceIds = summary
+    ? decodeEvidenceIds(
+        character.summaryEvidenceIds,
+        evidence,
+        "character_summary_evidence",
+        true,
+      )
+    : [];
+  const originWork = editorialOptionalText(
+    character.originWork,
+    "character_origin_work",
+  );
+  const originWorkEvidenceIds = originWork
+    ? decodeEvidenceIds(
+        character.originWorkEvidenceIds,
+        evidence,
+        "character_origin_evidence",
+        true,
+      )
+    : [];
+  const mediaTypes = editorialStringList(
+    character.mediaTypes,
+    "character_media_types",
+  );
+  const characteristics = decodeEditorialClaims(
+    character.characteristics,
+    evidence,
+    "character_characteristics",
+  );
+  const mediaTypeEvidenceIds = mediaTypes.length
+    ? decodeEvidenceIds(
+        character.mediaTypeEvidenceIds,
+        evidence,
+        "character_media_type_evidence",
+        true,
+      )
+    : [];
+  let ageContext: PublicCatalogCharacterProfile["character"]["ageContext"] =
+    null;
+  if (character.ageContext !== null && character.ageContext !== undefined) {
+    if (
+      typeof character.ageContext !== "object" ||
+      Array.isArray(character.ageContext)
+    ) {
+      throw new Error("invalid_catalog_character_age_context");
+    }
+    const age = character.ageContext as Record<string, unknown>;
+    ageContext = {
+      value: age.value === null || age.value === undefined
+        ? null
+        : requiredText(age.value, "character_age"),
+      context: requiredText(age.context, "character_age_context"),
+      evidenceIds: decodeEvidenceIds(
+        age.evidenceIds,
+        evidence,
+        "character_age_evidence",
+        true,
+      ),
+    };
+  }
+  if (character.aliases !== undefined && !Array.isArray(character.aliases)) {
+    throw new Error("invalid_catalog_character_aliases");
+  }
+  const aliases = ((character.aliases as unknown[] | undefined) ?? []).map(
+    (item: unknown) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("invalid_catalog_character_alias");
+      }
+      const alias = item as { value?: unknown; evidenceIds?: unknown };
+      return {
+        value: requiredText(alias.value, "character_alias"),
+        evidenceIds: decodeEvidenceIds(
+          alias.evidenceIds,
+          evidence,
+          "character_alias_evidence",
+          true,
+        ),
+      };
+    },
+  );
+  if (!row.universe || typeof row.universe !== "object")
+    throw new Error("invalid_catalog_character_universe");
+  const universeEvidenceIds = decodeEvidenceIds(
+    universe.evidenceIds,
+    evidence,
+    "character_universe_evidence",
+    true,
+  );
+  const sameCharacterModels = decodeEditorialModelReferences(
+    row.sameCharacterModels,
+    evidence,
+    "same_character_models",
+    true,
+  );
+  const otherUniverseModels = decodeEditorialModelReferences(
+    row.otherUniverseModels,
+    evidence,
+    "other_universe_models",
+  );
+  if (
+    sameCharacterModels.some((model) =>
+      otherUniverseModels.some(
+        (other) => other.modelId === model.modelId || other.slug === model.slug,
+      ),
+    )
+  ) {
+    throw new Error("duplicate_catalog_editorial_related_model");
+  }
+
+  return {
+    publication,
+    character: {
+      id: requiredText(character.id, "character_id"),
+      slug,
+      name: requiredText(character.name, "character_name"),
+      aliases,
+      summary,
+      summaryEvidenceIds,
+      biography,
+      biographyEvidenceIds,
+      ageContext,
+      originWork,
+      originWorkEvidenceIds,
+      mediaTypes,
+      characteristics,
+      mediaTypeEvidenceIds,
+      identityEvidenceIds,
+    },
+    universe: {
+      id: requiredText(universe.id, "universe_id"),
+      slug: universeSlug,
+      name: requiredText(universe.name, "universe_name"),
+      categorySlug,
+      evidenceIds: universeEvidenceIds,
+    },
+    evidence,
+    sameCharacterModels,
+    otherUniverseModels,
+  };
+}
+
+function decodePublicCharacterSearchPage(
+  value: unknown,
+  limit: number,
+): PublicCatalogCharacterSearchPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_character_search");
+  }
+  const row = value as { items?: unknown; truncated?: unknown };
+  if (
+    !Array.isArray(row.items) ||
+    row.items.length > limit ||
+    typeof row.truncated !== "boolean"
+  ) {
+    throw new Error("invalid_catalog_character_search");
+  }
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  const items = row.items.map(
+    (item: unknown): PublicCatalogCharacterSearchItem => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      const result = item as {
+        publication?: unknown;
+        character?: unknown;
+        universe?: unknown;
+        evidence?: unknown;
+        matchedBy?: unknown;
+      };
+      const publication = decodeEditorialPublication(result.publication);
+      const evidence = decodeEditorialEvidence(result.evidence);
+      if (
+        !result.character ||
+        typeof result.character !== "object" ||
+        Array.isArray(result.character) ||
+        !result.universe ||
+        typeof result.universe !== "object" ||
+        Array.isArray(result.universe)
+      ) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      const character = result.character as Record<string, unknown>;
+      const universe = result.universe as Record<string, unknown>;
+      const id = requiredText(character.id, "character_search_id");
+      const slug = requiredText(character.slug, "character_search_slug");
+      const universeSlug = requiredText(
+        universe.slug,
+        "character_search_universe_slug",
+      );
+      const categorySlug = requiredText(
+        universe.categorySlug,
+        "character_search_category_slug",
+      );
+      if (
+        !validCatalogSlug(slug) ||
+        !validCatalogSlug(universeSlug) ||
+        !validCatalogSlug(categorySlug) ||
+        seenIds.has(id) ||
+        seenSlugs.has(slug) ||
+        !["name_exact", "name", "alias", "franchise"].includes(
+          result.matchedBy as string,
+        )
+      ) {
+        throw new Error("invalid_catalog_character_search_item");
+      }
+      seenIds.add(id);
+      seenSlugs.add(slug);
+      const identityEvidenceIds = decodeEvidenceIds(
+        character.identityEvidenceIds,
+        evidence,
+        "character_search_identity_evidence",
+        true,
+      );
+      const summary = editorialOptionalText(
+        character.summary,
+        "character_search_summary",
+      );
+      const summaryEvidenceIds = summary
+        ? decodeEvidenceIds(
+            character.summaryEvidenceIds,
+            evidence,
+            "character_search_summary_evidence",
+            true,
+          )
+        : [];
+      if (!Array.isArray(character.aliases) || character.aliases.length > 40) {
+        throw new Error("invalid_catalog_character_search_aliases");
+      }
+      const aliases = character.aliases.map((rawAlias: unknown) => {
+        if (
+          !rawAlias ||
+          typeof rawAlias !== "object" ||
+          Array.isArray(rawAlias)
+        ) {
+          throw new Error("invalid_catalog_character_search_alias");
+        }
+        const alias = rawAlias as { value?: unknown; evidenceIds?: unknown };
+        return {
+          value: requiredText(alias.value, "character_search_alias"),
+          evidenceIds: decodeEvidenceIds(
+            alias.evidenceIds,
+            evidence,
+            "character_search_alias_evidence",
+            true,
+          ),
+        };
+      });
+      return {
+        publication,
+        character: {
+          id,
+          slug,
+          name: requiredText(character.name, "character_search_name"),
+          aliases,
+          summary,
+          summaryEvidenceIds,
+          identityEvidenceIds,
+        },
+        universe: {
+          id: requiredText(universe.id, "character_search_universe_id"),
+          slug: universeSlug,
+          name: requiredText(universe.name, "character_search_universe_name"),
+          categorySlug,
+          evidenceIds: decodeEvidenceIds(
+            universe.evidenceIds,
+            evidence,
+            "character_search_universe_evidence",
+            true,
+          ),
+        },
+        evidence,
+        matchedBy:
+          result.matchedBy as PublicCatalogCharacterSearchItem["matchedBy"],
+      };
+    },
+  );
+  return { items, truncated: row.truncated };
+}
+
+function decodePublicUniverseProfile(
+  value: unknown,
+  expectedCategorySlug: string,
+  expectedFranchiseSlug: string,
+): PublicCatalogUniverseProfile {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_universe_profile");
+  }
+  const row = value as {
+    publication?: unknown;
+    universe?: unknown;
+    evidence?: unknown;
+    characters?: unknown;
+    models?: unknown;
+  };
+  const publication = decodeEditorialPublication(row.publication);
+  const evidence = decodeEditorialEvidence(row.evidence);
+  if (
+    !row.universe ||
+    typeof row.universe !== "object" ||
+    Array.isArray(row.universe)
+  ) {
+    throw new Error("invalid_catalog_universe_profile_identity");
+  }
+  const universe = row.universe as Record<string, unknown>;
+  const slug = requiredText(universe.slug, "universe_slug");
+  const categorySlug = requiredText(
+    universe.categorySlug,
+    "universe_category_slug",
+  );
+  if (
+    !validCatalogSlug(slug) ||
+    !validCatalogSlug(categorySlug) ||
+    slug !== expectedFranchiseSlug ||
+    categorySlug !== expectedCategorySlug
+  ) {
+    throw new Error("catalog_universe_scope_mismatch");
+  }
+  if (!Array.isArray(row.characters) || row.characters.length > 120) {
+    throw new Error("invalid_catalog_universe_characters");
+  }
+  const summary = editorialOptionalText(universe.summary, "universe_summary");
+  const summaryEvidenceIds = summary
+    ? decodeEvidenceIds(
+        universe.summaryEvidenceIds,
+        evidence,
+        "universe_summary_evidence",
+        true,
+      )
+    : [];
+  const overview = editorialOptionalText(
+    universe.overview,
+    "universe_overview",
+  );
+  const overviewEvidenceIds = overview
+    ? decodeEvidenceIds(
+        universe.overviewEvidenceIds,
+        evidence,
+        "universe_overview_evidence",
+        true,
+      )
+    : [];
+  const seenCharacters = new Set<string>();
+  const seenCharacterSlugs = new Set<string>();
+  const characters = row.characters.map((item: unknown) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("invalid_catalog_universe_character");
+    }
+    const character = item as Record<string, unknown>;
+    const id = requiredText(character.id, "universe_character_id");
+    const characterSlug = requiredText(
+      character.slug,
+      "universe_character_slug",
+    );
+    if (
+      seenCharacters.has(id) ||
+      seenCharacterSlugs.has(characterSlug) ||
+      !validCatalogSlug(characterSlug)
+    ) {
+      throw new Error("duplicate_or_invalid_catalog_universe_character");
+    }
+    seenCharacters.add(id);
+    seenCharacterSlugs.add(characterSlug);
+    if (character.reviewStatus !== "approved") {
+      throw new Error("catalog_universe_character_not_approved");
+    }
+    return {
+      id,
+      slug: characterSlug,
+      name: requiredText(character.name, "universe_character_name"),
+      summary: editorialOptionalText(
+        character.summary,
+        "universe_character_summary",
+      ),
+      reviewStatus: "approved" as const,
+      evidenceIds: decodeEvidenceIds(
+        character.evidenceIds,
+        evidence,
+        "universe_character_evidence",
+        true,
+      ),
+    };
+  });
+
+  return {
+    publication,
+    universe: {
+      id: requiredText(universe.id, "universe_id"),
+      slug,
+      name: requiredText(universe.name, "universe_name"),
+      categorySlug,
+      mediaTypes: editorialStringList(
+        universe.mediaTypes,
+        "universe_media_types",
+      ),
+      summary,
+      summaryEvidenceIds,
+      overview,
+      overviewEvidenceIds,
+      identityEvidenceIds: decodeEvidenceIds(
+        universe.identityEvidenceIds,
+        evidence,
+        "universe_identity_evidence",
+        true,
+      ),
+    },
+    evidence,
+    characters,
+    models: decodeEditorialModelReferences(
+      row.models,
+      evidence,
+      "universe_models",
+    ),
+  };
+}
+
+function decodePublicModelEditorialCharacters(
+  value: unknown,
+): PublicCatalogModelEditorialCharacterPage {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("invalid_catalog_model_characters");
+  }
+  const row = value as { items?: unknown; truncated?: unknown };
+  if (
+    !Array.isArray(row.items) ||
+    row.items.length > 30 ||
+    typeof row.truncated !== "boolean"
+  ) {
+    throw new Error("invalid_catalog_model_characters");
+  }
+
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  const items = row.items.map(
+    (item: unknown): PublicCatalogModelEditorialCharacter => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new Error("invalid_catalog_model_character");
+      }
+      const result = item as {
+        publication?: unknown;
+        character?: unknown;
+        universe?: unknown;
+        relationEvidenceIds?: unknown;
+        evidence?: unknown;
+      };
+      const publication = decodeEditorialPublication(result.publication);
+      const evidence = decodeEditorialEvidence(result.evidence);
+      if (
+        !result.character ||
+        typeof result.character !== "object" ||
+        Array.isArray(result.character) ||
+        !result.universe ||
+        typeof result.universe !== "object" ||
+        Array.isArray(result.universe)
+      ) {
+        throw new Error("invalid_catalog_model_character");
+      }
+      const character = result.character as Record<string, unknown>;
+      const universe = result.universe as Record<string, unknown>;
+      const id = requiredText(character.id, "model_character_id");
+      const slug = requiredText(character.slug, "model_character_slug");
+      const universeSlug = requiredText(
+        universe.slug,
+        "model_character_universe_slug",
+      );
+      const categorySlug = requiredText(
+        universe.categorySlug,
+        "model_character_category_slug",
+      );
+      if (
+        !validCatalogSlug(slug) ||
+        !validCatalogSlug(universeSlug) ||
+        !validCatalogSlug(categorySlug) ||
+        seenIds.has(id) ||
+        seenSlugs.has(slug)
+      ) {
+        throw new Error("duplicate_or_invalid_catalog_model_character");
+      }
+      seenIds.add(id);
+      seenSlugs.add(slug);
+      return {
+        publication,
+        character: {
+          id,
+          slug,
+          name: requiredText(character.name, "model_character_name"),
+          identityEvidenceIds: decodeEvidenceIds(
+            character.evidenceIds,
+            evidence,
+            "model_character_identity_evidence",
+            true,
+          ),
+        },
+        universe: { slug: universeSlug, categorySlug },
+        relationEvidenceIds: decodeEvidenceIds(
+          result.relationEvidenceIds,
+          evidence,
+          "model_character_relation_evidence",
+          true,
+        ),
+        evidence,
+      };
+    },
+  );
+  return { items, truncated: row.truncated };
+}
+
 /**
  * Quarantine externally branded catalog media when the public metadata
  * itself identifies the source. No pixel scanning, hidden Worker calls,
@@ -212,7 +1174,8 @@ function decodeModel(value: unknown): PublicCatalogModel {
  * An image whose branding exists only inside its pixels must be reviewed
  * separately before it can be called clean.
  */
-const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
+const EXTERNAL_MEDIA_BRAND =
+  /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
 
 /**
  * One image was matched visually, pixel-for-pixel by subject/composition,
@@ -228,8 +1191,6 @@ const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set(
   specialstlQuarantine.confirmed.map((entry) => entry.modelId),
 );
 
-
-
 /**
  * A creator's own logo, signature or Patreon credit is not evidence of
  * unauthorized redistribution. Only explicitly identified redistribution
@@ -241,11 +1202,23 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) || isApprovedPublicCover(model)) && ![
-    model.slug, model.code, model.name, model.variantName,
-    model.category, model.categorySlug, model.franchise, model.franchiseSlug,
-    model.collection, model.folderPath, model.coverStorageKey,
-  ].some(hasRestrictedExternalBrand);
+  return (
+    (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) ||
+      isApprovedPublicCover(model)) &&
+    ![
+      model.slug,
+      model.code,
+      model.name,
+      model.variantName,
+      model.category,
+      model.categorySlug,
+      model.franchise,
+      model.franchiseSlug,
+      model.collection,
+      model.folderPath,
+      model.coverStorageKey,
+    ].some(hasRestrictedExternalBrand)
+  );
 }
 
 /**
@@ -273,14 +1246,23 @@ export async function probeCanonicalCatalogMediaByte(
   if (!approvedMediaUrl) throw new Error("catalog_media_probe_url_missing");
   const base = new URL(baseUrl);
   const url = new URL(approvedMediaUrl);
-  if (base.protocol !== "https:" || url.origin !== base.origin ||
-      !url.href.startsWith(base.href + "media/") || url.search || url.hash ||
-      url.username || url.password) {
+  if (
+    base.protocol !== "https:" ||
+    url.origin !== base.origin ||
+    !url.href.startsWith(base.href + "media/") ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
     throw new Error("catalog_media_probe_url_invalid");
   }
   const response = await fetcher(url.toString(), {
     method: "GET",
-    headers: { Range: "bytes=0-0", Accept: "image/webp,image/avif,image/png,image/jpeg" },
+    headers: {
+      Range: "bytes=0-0",
+      Accept: "image/webp,image/avif,image/png,image/jpeg",
+    },
     credentials: "omit",
     redirect: "error",
     signal,
@@ -289,10 +1271,14 @@ export async function probeCanonicalCatalogMediaByte(
   try {
     const range = response.headers.get("Content-Range");
     const mime = response.headers.get("Content-Type");
-    if (response.status !== 206 ||
-        !range || !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
-        !mime || !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
-        !reader) {
+    if (
+      response.status !== 206 ||
+      !range ||
+      !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
+      !mime ||
+      !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
+      !reader
+    ) {
       throw new Error("catalog_media_probe_invalid_response");
     }
     const chunk = await reader.read();
@@ -346,7 +1332,10 @@ export function createPublicCatalogGateway(
     typeof window === "undefined" ? undefined : window.location.origin,
   );
 
-  async function read(path: string | URL, signal?: AbortSignal): Promise<unknown> {
+  async function read(
+    path: string | URL,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
       credentials,
@@ -362,26 +1351,38 @@ export function createPublicCatalogGateway(
     mediaUrl(key: string | null): string | null {
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
-      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
+      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key))
+        return null;
       const segments = key.split("/");
-      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") && !isApprovedPublicMediaKey(key)) return null;
+      if (
+        CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") &&
+        !isApprovedPublicMediaKey(key)
+      )
+        return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
-        segments.slice(1).some(
-          (part) =>
-            !part ||
-            part === "." ||
-            part === ".." ||
-            /[:?#%\\]/.test(part) || Array.from(part).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
-        )
-      ) return null;
+        segments
+          .slice(1)
+          .some(
+            (part) =>
+              !part ||
+              part === "." ||
+              part === ".." ||
+              /[:?#%\\]/.test(part) ||
+              Array.from(part).some(
+                (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+              ),
+          )
+      )
+        return null;
       try {
         // encodeURIComponent leaves !'()* raw; Pages media paths permit only
         // unreserved characters and valid percent-escaped bytes.
         const encoded = segments.map((part) =>
-          encodeURIComponent(part).replace(/[!'()*]/g, (char) =>
-            "%" + char.charCodeAt(0).toString(16).toUpperCase(),
+          encodeURIComponent(part).replace(
+            /[!'()*]/g,
+            (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase(),
           ),
         );
         if (encoded.some((part) => part.length > 256)) return null;
@@ -428,7 +1429,12 @@ export function createPublicCatalogGateway(
           count: wholeNumber(category.count, "category_count"),
           ...(category.cover_storage_key === undefined
             ? {}
-            : { coverStorageKey: optionalText(category.cover_storage_key, "category_cover_key") }),
+            : {
+                coverStorageKey: optionalText(
+                  category.cover_storage_key,
+                  "category_cover_key",
+                ),
+              }),
         };
       });
     },
@@ -444,10 +1450,7 @@ export function createPublicCatalogGateway(
       ) {
         throw new Error("catalog_franchise_search_length_invalid");
       }
-      if (
-        filters.category &&
-        !validCatalogSlug(filters.category)
-      ) {
+      if (filters.category && !validCatalogSlug(filters.category)) {
         throw new Error("catalog_franchise_category_invalid");
       }
       const limit = filters.limit ?? 24;
@@ -494,7 +1497,12 @@ export function createPublicCatalogGateway(
             category: requiredText(row.category, "franchise_category"),
             ...(row.cover_storage_key === undefined
               ? {}
-              : { coverStorageKey: optionalText(row.cover_storage_key, "franchise_cover_key") }),
+              : {
+                  coverStorageKey: optionalText(
+                    row.cover_storage_key,
+                    "franchise_cover_key",
+                  ),
+                }),
           };
           if (!validCatalogSlug(franchise.id)) {
             throw new Error("invalid_catalog_franchise_id");
@@ -520,7 +1528,10 @@ export function createPublicCatalogGateway(
       filters: PublicCatalogFolderFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogFolderPage> {
-      if (!validCatalogSlug(filters.category) || !validCatalogSlug(filters.franchise)) {
+      if (
+        !validCatalogSlug(filters.category) ||
+        !validCatalogSlug(filters.franchise)
+      ) {
         throw new Error("catalog_folder_scope_invalid");
       }
       const parent = filters.parent ?? "";
@@ -535,9 +1546,17 @@ export function createPublicCatalogGateway(
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("invalid_catalog_folders");
       }
-      const data = payload as { current?: unknown; trail?: unknown; items?: unknown };
-      if (!Array.isArray(data.trail) || data.trail.length > 24 ||
-          !Array.isArray(data.items) || data.items.length > 256) {
+      const data = payload as {
+        current?: unknown;
+        trail?: unknown;
+        items?: unknown;
+      };
+      if (
+        !Array.isArray(data.trail) ||
+        data.trail.length > 24 ||
+        !Array.isArray(data.items) ||
+        data.items.length > 256
+      ) {
         throw new Error("invalid_catalog_folder_page");
       }
       const decodePath = (input: unknown, field: string): string => {
@@ -562,7 +1581,11 @@ export function createPublicCatalogGateway(
         if (typeof data.current !== "object" || Array.isArray(data.current)) {
           throw new Error("invalid_catalog_folder_current");
         }
-        const row = data.current as { id?: unknown; label?: unknown; count?: unknown };
+        const row = data.current as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+        };
         current = {
           id: decodePath(row.id, "folder_current_id"),
           label: requiredText(row.label, "folder_current_label"),
@@ -573,8 +1596,11 @@ export function createPublicCatalogGateway(
         throw new Error("catalog_folder_parent_mismatch");
       }
       const trail = data.trail.map(decodeTrail);
-      if ((parent && (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
-          (!parent && trail.length > 0)) {
+      if (
+        (parent &&
+          (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
+        (!parent && trail.length > 0)
+      ) {
         throw new Error("catalog_folder_trail_mismatch");
       }
       const seen = new Set<string>();
@@ -582,7 +1608,13 @@ export function createPublicCatalogGateway(
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_folder");
         }
-        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown; cover_storage_key?: unknown };
+        const row = value as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+          hasChildren?: unknown;
+          cover_storage_key?: unknown;
+        };
         const id = decodePath(row.id, "folder_id");
         if (seen.has(id)) throw new Error("duplicate_catalog_folder");
         seen.add(id);
@@ -597,9 +1629,14 @@ export function createPublicCatalogGateway(
           label: requiredText(row.label, "folder_label"),
           count: wholeNumber(row.count, "folder_count"),
           hasChildren: row.hasChildren,
-          ...(row.cover_storage_key === undefined ? {} : {
-            coverStorageKey: optionalText(row.cover_storage_key, "folder_cover_key"),
-          }),
+          ...(row.cover_storage_key === undefined
+            ? {}
+            : {
+                coverStorageKey: optionalText(
+                  row.cover_storage_key,
+                  "folder_cover_key",
+                ),
+              }),
         };
       });
       return { current, trail, items };
@@ -609,8 +1646,7 @@ export function createPublicCatalogGateway(
       slug: string,
       signal?: AbortSignal,
     ): Promise<PublicCatalogDetail> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
         signal,
@@ -638,13 +1674,79 @@ export function createPublicCatalogGateway(
       };
     },
 
+    async getCharacterProfile(
+      slug: string,
+      signal?: AbortSignal,
+      expectedUniverse?: { categorySlug: string; franchiseSlug: string },
+    ): Promise<PublicCatalogCharacterProfile> {
+      if (!validCatalogSlug(slug))
+        throw new Error("invalid_catalog_character_slug");
+      const result = await read(
+        `api/editorial/v1/characters/${encodeURIComponent(slug)}`,
+        signal,
+      );
+      return decodePublicCharacterProfile(result, slug, expectedUniverse);
+    },
+
+    async getModelCharacters(
+      modelId: string,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogModelEditorialCharacterPage> {
+      if (!/^[A-Za-z0-9_-]{1,120}$/.test(modelId)) {
+        throw new Error("catalog_model_id_invalid");
+      }
+      const result = await read(
+        `api/editorial/v1/models/${encodeURIComponent(modelId)}/characters`,
+        signal,
+      );
+      return decodePublicModelEditorialCharacters(result);
+    },
+
+    async searchCharacters(
+      query: string,
+      limit = 8,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogCharacterSearchPage> {
+      const normalized = query.trim();
+      const length = Array.from(normalized).length;
+      if (length < 3 || length > 80) {
+        throw new Error("catalog_character_search_length_invalid");
+      }
+      if (!Number.isInteger(limit) || limit < 1 || limit > 12) {
+        throw new Error("catalog_character_search_limit_invalid");
+      }
+      const params = new URLSearchParams({
+        q: normalized,
+        limit: String(limit),
+      });
+      const result = await read(
+        `api/editorial/v1/characters/search?${params.toString()}`,
+        signal,
+      );
+      return decodePublicCharacterSearchPage(result, limit);
+    },
+
+    async getUniverseProfile(
+      categorySlug: string,
+      franchiseSlug: string,
+      signal?: AbortSignal,
+    ): Promise<PublicCatalogUniverseProfile> {
+      if (!validCatalogSlug(categorySlug) || !validCatalogSlug(franchiseSlug)) {
+        throw new Error("invalid_catalog_universe_slug");
+      }
+      const result = await read(
+        `api/editorial/v1/universes/${encodeURIComponent(categorySlug)}/${encodeURIComponent(franchiseSlug)}`,
+        signal,
+      );
+      return decodePublicUniverseProfile(result, categorySlug, franchiseSlug);
+    },
+
     async listGallery(
       slug: string,
       filters: PublicCatalogGalleryFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogGalleryPage> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       if (!Number.isInteger(filters.version) || filters.version < 1)
         throw new Error("catalog_gallery_version_invalid");
       const limit = filters.limit ?? 24;
@@ -794,17 +1896,19 @@ export function createPublicCatalogGateway(
         throw new Error("invalid_catalog_recent_items");
       }
       const seen = new Set<string>();
-      return items.map((value: unknown) => {
-        const model = decodeModel(value);
-        if (!validCatalogSlug(model.slug)) {
-          throw new Error("invalid_catalog_recent_slug");
-        }
-        if (seen.has(model.id)) {
-          throw new Error("duplicate_catalog_recent_model");
-        }
-        seen.add(model.id);
-        return model;
-      }).filter(isPubliclyEligibleCatalogModel);
+      return items
+        .map((value: unknown) => {
+          const model = decodeModel(value);
+          if (!validCatalogSlug(model.slug)) {
+            throw new Error("invalid_catalog_recent_slug");
+          }
+          if (seen.has(model.id)) {
+            throw new Error("duplicate_catalog_recent_model");
+          }
+          seen.add(model.id);
+          return model;
+        })
+        .filter(isPubliclyEligibleCatalogModel);
     },
     async listPage(
       filters: PublicCatalogFilters = {},
@@ -862,7 +1966,9 @@ export function createPublicCatalogGateway(
       if (
         nextCursor !== null &&
         nextCursor !== undefined &&
-        (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)
+        (typeof nextCursor !== "string" ||
+          !nextCursor ||
+          nextCursor.length > 2048)
       ) {
         throw new Error("invalid_catalog_page_cursor");
       }

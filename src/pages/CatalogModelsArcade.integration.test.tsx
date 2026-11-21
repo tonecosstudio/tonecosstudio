@@ -79,6 +79,50 @@ const second = {
   code: "TCS-002",
 };
 
+function characterSearchResponse() {
+  const publication = {
+    contractVersion: 1,
+    editorialStatus: "approved",
+    visibility: "public",
+    revision: "character-search-test-1",
+    reviewedAt: "2026-11-17T12:00:00.000Z",
+  };
+  const evidence = [
+    {
+      id: "official-zoro",
+      title: "Official character page",
+      url: "https://example.org/zoro",
+      kind: "official",
+    },
+  ];
+  return {
+    truncated: false,
+    items: [
+      {
+        publication,
+        character: {
+          id: "character-zoro",
+          slug: "roronoa-zoro",
+          name: "Roronoa Zoro",
+          aliases: [{ value: "Zoro", evidenceIds: ["official-zoro"] }],
+          summary: "Resumo editorial aprovado.",
+          summaryEvidenceIds: ["official-zoro"],
+          identityEvidenceIds: ["official-zoro"],
+        },
+        universe: {
+          id: "universe-one-piece",
+          slug: "one-piece",
+          name: "One Piece",
+          categorySlug: "anime",
+          evidenceIds: ["official-zoro"],
+        },
+        evidence,
+        matchedBy: "alias",
+      },
+    ],
+  };
+}
+
 function setupFetch() {
   const calls: Array<{ url: URL; init: RequestInit }> = [];
   const fetcher = vi.fn(async (input: string, init: RequestInit) => {
@@ -91,6 +135,9 @@ function setupFetch() {
         ],
         truncated: true,
       });
+    }
+    if (url.pathname.endsWith("/api/editorial/v1/characters/search")) {
+      return Response.json(characterSearchResponse());
     }
     if (url.pathname.endsWith("/api/categories")) {
       return Response.json({
@@ -110,12 +157,10 @@ function setupFetch() {
 }
 
 async function renderCatalog(path = "/modelos") {
-  const { default: CatalogModelsArcade } = await import(
-    "./CatalogModelsArcade"
-  );
-  const { CatalogBrowsingProvider } = await import(
-    "@/services/catalog/catalog-browsing-context"
-  );
+  const { default: CatalogModelsArcade } =
+    await import("./CatalogModelsArcade");
+  const { CatalogBrowsingProvider } =
+    await import("@/services/catalog/catalog-browsing-context");
   const queryClient = new QueryClient({
     // Match the application's normal query-cache lifetime so forward/back
     // navigation can reuse a recently fetched page.
@@ -124,11 +169,11 @@ async function renderCatalog(path = "/modelos") {
   return render(
     <QueryClientProvider client={queryClient}>
       <CatalogBrowsingProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/modelos" element={<CatalogModelsArcade />} />
-        </Routes>
-      </MemoryRouter>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/modelos" element={<CatalogModelsArcade />} />
+          </Routes>
+        </MemoryRouter>
       </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
@@ -145,15 +190,89 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("keeps the public model storefront operational while editorial publication remains disabled", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "");
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?q=zoro");
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      calls.some(({ url }) =>
+        url.pathname.includes("/api/editorial/v1/"),
+      ),
+    ).toBe(false);
+    expect(
+      screen.queryByRole("link", { name: /Roronoa Zoro/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not block the normal model catalog if an enabled editorial endpoint returns 404", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "v1");
+    const { fetcher } = setupFetch();
+    const editorFailures: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
+      const url = new URL(input);
+      if (url.pathname.endsWith("/api/editorial/v1/characters/search")) {
+        editorFailures.push(url.pathname);
+        return Response.json({ error: "editorial_not_published" }, { status: 404 });
+      }
+      return fetcher(input, init);
+    }));
+    await renderCatalog("/modelos?q=zoro");
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(editorFailures).toHaveLength(1));
+    expect(
+      screen.queryByRole("link", { name: /Roronoa Zoro/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("offers approved character pages when a query matches a canonical alias", async () => {
+    vi.stubEnv("VITE_TONECOS_PUBLIC_EDITORIAL_PROJECTION", "v1");
+    const { calls } = setupFetch();
+    await renderCatalog("/modelos?q=zoro");
+
+    const characterLink = await screen.findByRole("link", {
+      name: /Roronoa Zoro/,
+    });
+    expect(characterLink).toHaveAttribute(
+      "href",
+      "/universo/personagem/roronoa-zoro",
+    );
+    expect(screen.getByText("One Piece")).toBeInTheDocument();
+    expect(screen.getByText("Alias")).toBeInTheDocument();
+    expect(
+      calls.some(
+        ({ url }) =>
+          url.pathname.endsWith("/api/editorial/v1/characters/search") &&
+          url.searchParams.get("q") === "zoro",
+      ),
+    ).toBe(true);
+  });
+
   it("restores ordinary image cards in read-only public mode despite the old blanket flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     const { calls } = setupFetch();
     await renderCatalog("/modelos?category=originais&franchise=autoral");
-    expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toBeInTheDocument();
-    expect(calls.some(({ url }) => url.pathname.endsWith("/api/catalog"))).toBe(true);
-    expect(screen.queryByRole("heading", { name: "Imagens em preparação" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    expect(calls.some(({ url }) => url.pathname.endsWith("/api/catalog"))).toBe(
+      true,
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Imagens em preparação" }),
+    ).not.toBeInTheDocument();
   });
 
   it("labels the read-only selection without implying quote submission", async () => {
@@ -161,12 +280,20 @@ describe("Tonecos canonical model discovery UI", () => {
     vi.stubEnv("VITE_PREVIEW_READ_ONLY", "true");
     setupFetch();
     await renderCatalog();
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    const saved = screen.getByRole("button", { name: "Abrir referências salvas com 0 modelos" });
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    const saved = screen.getByRole("button", {
+      name: "Abrir referências salvas com 0 modelos",
+    });
     fireEvent.click(saved);
-    expect(screen.getByText(/O catálogo público não recebe solicitações/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/O catálogo público não recebe solicitações/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/não é enviada ao estúdio/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Abrir seleção para orçamento/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Abrir seleção para orçamento/ }),
+    ).not.toBeInTheDocument();
   });
   it("keeps the model search input and submit button full-width on narrow viewports", async () => {
     setupFetch();
@@ -189,22 +316,35 @@ describe("Tonecos canonical model discovery UI", () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const { calls } = setupFetch();
     await renderCatalog("/modelos?category=originais&franchise=autoral");
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("originais");
-    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toHaveValue("autoral");
-    expect(calls.filter(({ url }) => url.pathname.endsWith("/api/catalog"))).toHaveLength(1);
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por categoria" }),
+    ).toHaveValue("originais");
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+    ).toHaveValue("autoral");
+    expect(
+      calls.filter(({ url }) => url.pathname.endsWith("/api/catalog")),
+    ).toHaveLength(1);
   });
 
   it("shows the ordinary empty result when no non-quarantined models match", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     const fetcher = vi.fn(async (input: string) => {
       const url = new URL(input);
-      if (!url.pathname.endsWith("/api/catalog")) throw new Error("Unexpected request");
+      if (!url.pathname.endsWith("/api/catalog"))
+        throw new Error("Unexpected request");
       return Response.json({ items: [], nextCursor: null });
     });
     vi.stubGlobal("fetch", fetcher);
     await renderCatalog();
-    expect(await screen.findByText("Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca.")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Nenhum modelo disponível corresponde aos filtros utilizados. Tente outra busca.",
+      ),
+    ).toBeInTheDocument();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
@@ -227,7 +367,6 @@ describe("Tonecos canonical model discovery UI", () => {
   });
 
   it("shows six columns on wide screens and gives an obvious next-page action", async () => {
-
     const { calls } = setupFetch();
     await renderCatalog();
     const first = await screen.findByRole("link", {
@@ -244,13 +383,19 @@ describe("Tonecos canonical model discovery UI", () => {
     await screen.findByRole("link", {
       name: "Ver detalhes de Escultura seguinte",
     });
-    expect(screen.getByRole("button", { name: "Voltar à página 1" })).toBeEnabled();
-    expect(screen.getByText("Página 2 · 1 modelo nesta página")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Voltar à página 1" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByText("Página 2 · 1 modelo nesta página"),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Voltar à página 1" }));
     await screen.findByRole("link", {
       name: "Ver detalhes de Escultura original",
     });
-    expect(calls.filter(x => x.url.pathname.endsWith("/api/catalog"))).toHaveLength(2);
+    expect(
+      calls.filter((x) => x.url.pathname.endsWith("/api/catalog")),
+    ).toHaveLength(2);
   });
 
   it("preserves selected IDs across cursor pages without creating a commercial order", async () => {
@@ -268,9 +413,11 @@ describe("Tonecos canonical model discovery UI", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Adicionar à seleção" }),
     );
-    expect(screen.getByRole("button", {
-      name: "Abrir seleção para orçamento com 1 modelo",
-    })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Abrir seleção para orçamento com 1 modelo",
+      }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Remover da seleção" }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -416,73 +563,110 @@ describe("Tonecos canonical model discovery UI", () => {
   it("recovers a failed on-demand category request without a full catalog reload", async () => {
     const calls: string[] = [];
     let categoryAttempts = 0;
-    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
-      expect(init.method).toBe("GET");
-      const url = new URL(input);
-      calls.push(url.pathname);
-      if (url.pathname.endsWith("/api/catalog")) {
-        return Response.json({ items: [original], nextCursor: null });
-      }
-      if (url.pathname.endsWith("/api/categories")) {
-        categoryAttempts += 1;
-        return categoryAttempts === 1
-          ? new Response("Unavailable", { status: 503 })
-          : Response.json({
-              items: [{ id: "originais", label: "Originais", count: 2 }],
-            });
-      }
-      throw new Error("unexpected_worker_request: " + url.pathname);
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init: RequestInit) => {
+        expect(init.method).toBe("GET");
+        const url = new URL(input);
+        calls.push(url.pathname);
+        if (url.pathname.endsWith("/api/catalog")) {
+          return Response.json({ items: [original], nextCursor: null });
+        }
+        if (url.pathname.endsWith("/api/categories")) {
+          categoryAttempts += 1;
+          return categoryAttempts === 1
+            ? new Response("Unavailable", { status: 503 })
+            : Response.json({
+                items: [{ id: "originais", label: "Originais", count: 2 }],
+              });
+        }
+        throw new Error("unexpected_worker_request: " + url.pathname);
+      }),
+    );
 
     await renderCatalog();
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
     expect(calls).toHaveLength(1);
-    fireEvent.focus(screen.getByRole("combobox", { name: "Filtrar por categoria" }));
+    fireEvent.focus(
+      screen.getByRole("combobox", { name: "Filtrar por categoria" }),
+    );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível carregar as categorias",
     );
-    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente categorias" }));
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por categoria" }),
+    ).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tentar novamente categorias" }),
+    );
     await screen.findByRole("option", { name: "Originais" });
-    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toBeEnabled();
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por categoria" }),
+    ).toBeEnabled();
     expect(categoryAttempts).toBe(2);
-    expect(calls.filter(path => path.endsWith("/api/catalog"))).toHaveLength(1);
+    expect(calls.filter((path) => path.endsWith("/api/catalog"))).toHaveLength(
+      1,
+    );
   });
 
   it("recovers a failed franchise request without repeating the catalog scan", async () => {
     const calls: string[] = [];
     let franchiseAttempts = 0;
-    vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
-      expect(init.method).toBe("GET");
-      const url = new URL(input);
-      calls.push(url.pathname);
-      if (url.pathname.endsWith("/api/catalog")) {
-        return Response.json({ items: [original], nextCursor: null });
-      }
-      if (url.pathname.endsWith("/api/franchises")) {
-        franchiseAttempts += 1;
-        return franchiseAttempts === 1
-          ? new Response("Unavailable", { status: 503 })
-          : Response.json({
-              items: [{ id: "autoral", label: "Autoral", count: 2, category: "originais" }],
-              truncated: false,
-            });
-      }
-      throw new Error("unexpected_worker_request: " + url.pathname);
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string, init: RequestInit) => {
+        expect(init.method).toBe("GET");
+        const url = new URL(input);
+        calls.push(url.pathname);
+        if (url.pathname.endsWith("/api/catalog")) {
+          return Response.json({ items: [original], nextCursor: null });
+        }
+        if (url.pathname.endsWith("/api/franchises")) {
+          franchiseAttempts += 1;
+          return franchiseAttempts === 1
+            ? new Response("Unavailable", { status: 503 })
+            : Response.json({
+                items: [
+                  {
+                    id: "autoral",
+                    label: "Autoral",
+                    count: 2,
+                    category: "originais",
+                  },
+                ],
+                truncated: false,
+              });
+        }
+        throw new Error("unexpected_worker_request: " + url.pathname);
+      }),
+    );
 
     await renderCatalog();
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    fireEvent.focus(screen.getByRole("combobox", { name: "Filtrar por franquia" }));
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    fireEvent.focus(
+      screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+    );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível consultar as franquias",
     );
-    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente franquias" }));
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+    ).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Tentar novamente franquias" }),
+    );
     await screen.findByRole("option", { name: /Autoral/ });
-    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toBeEnabled();
+    expect(
+      screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+    ).toBeEnabled();
     expect(franchiseAttempts).toBe(2);
-    expect(calls.filter(path => path.endsWith("/api/catalog"))).toHaveLength(1);
+    expect(calls.filter((path) => path.endsWith("/api/catalog"))).toHaveLength(
+      1,
+    );
   });
 
   it("fails closed without an explicitly configured HTTPS catalog origin", async () => {
@@ -527,162 +711,216 @@ describe("Tonecos canonical model discovery UI", () => {
   });
 });
 
-  it("returns to the same catalog search and folder filters after opening a model", async () => {
-    const startingPath =
-      "/modelos?q=escultura&category=originais&franchise=autoral&folder=esculturas%2Fclassicas";
-    const { calls, fetcher: listFetch } = setupFetch();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string, init: RequestInit) => {
-        const path = new URL(input).pathname;
-        if (path.endsWith("/api/models/escultura-original")) {
-          return Response.json({
-            ...original,
-            description: null,
-            material: null,
-            height_cm: null,
-          });
-        }
-        if (path.endsWith("/api/models/escultura-original/images")) {
-          const makeImage = (id: string, role: "cover" | "gallery") => ({
-            id,
-            role,
-            width: 800,
-            height: 1000,
-            bytes: 4096,
-            mime: "image/webp",
-            qualityScore: 95,
-            sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
-            variantKeys: {
-              thumb: "media/model-one/" + id + "/thumb.webp",
-              card: role === "cover" ? original.cover_storage_key : "media/model-one/" + id + "/card.webp",
-              detail: "media/model-one/" + id + "/detail.webp",
-              original: null,
-            },
-          });
-          return Response.json({
-            items: [makeImage("image-1", "cover"), makeImage("image-2", "gallery")],
-            nextCursor: null,
-            total: 2,
-            version: 1,
-          });
-        }
-        return listFetch(input, init);
-      }),
-    );
-    const { default: Models } = await import("./CatalogModelsArcade");
-    const { default: Details } = await import("./catalog/CanonicalModelDetails");
-    const { CatalogBrowsingProvider } = await import(
-      "@/services/catalog/catalog-browsing-context"
-    );
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={client}>
-        <CatalogBrowsingProvider>
+it("returns to the same catalog search and folder filters after opening a model", async () => {
+  const startingPath =
+    "/modelos?q=escultura&category=originais&franchise=autoral&folder=esculturas%2Fclassicas";
+  const { calls, fetcher: listFetch } = setupFetch();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string, init: RequestInit) => {
+      const path = new URL(input).pathname;
+      if (path.endsWith("/api/models/escultura-original")) {
+        return Response.json({
+          ...original,
+          description: null,
+          material: null,
+          height_cm: null,
+        });
+      }
+      if (path.endsWith("/api/models/escultura-original/images")) {
+        const makeImage = (id: string, role: "cover" | "gallery") => ({
+          id,
+          role,
+          width: 800,
+          height: 1000,
+          bytes: 4096,
+          mime: "image/webp",
+          qualityScore: 95,
+          sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
+          variantKeys: {
+            thumb: "media/model-one/" + id + "/thumb.webp",
+            card:
+              role === "cover"
+                ? original.cover_storage_key
+                : "media/model-one/" + id + "/card.webp",
+            detail: "media/model-one/" + id + "/detail.webp",
+            original: null,
+          },
+        });
+        return Response.json({
+          items: [
+            makeImage("image-1", "cover"),
+            makeImage("image-2", "gallery"),
+          ],
+          nextCursor: null,
+          total: 2,
+          version: 1,
+        });
+      }
+      return listFetch(input, init);
+    }),
+  );
+  const { default: Models } = await import("./CatalogModelsArcade");
+  const { default: Details } = await import("./catalog/CanonicalModelDetails");
+  const { CatalogBrowsingProvider } =
+    await import("@/services/catalog/catalog-browsing-context");
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <CatalogBrowsingProvider>
         <MemoryRouter initialEntries={[startingPath]}>
           <Routes>
             <Route path="/modelos" element={<Models />} />
             <Route path="/modelos/:id" element={<Details />} />
           </Routes>
         </MemoryRouter>
-        </CatalogBrowsingProvider>
-      </QueryClientProvider>,
-    );
-    fireEvent.click(
-      await screen.findByRole("link", { name: "Ver detalhes de Escultura original" }),
-    );
-    const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
-    expect(back).toHaveAttribute("href", startingPath);
-    fireEvent.click(back);
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("escultura");
-    expect(screen.getByRole("combobox", { name: "Filtrar por categoria" })).toHaveValue("originais");
-    expect(screen.getByRole("combobox", { name: "Filtrar por franquia" })).toHaveValue("autoral");
-    expect(screen.getByText(/Pasta selecionada:/)).toHaveTextContent("esculturas/classicas");
-    const catalogReads = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
-    expect(catalogReads.length).toBeGreaterThan(0);
-    expect(catalogReads.every(({ url }) =>
-      url.searchParams.get("q") === "escultura" &&
-      url.searchParams.get("category") === "originais" &&
-      url.searchParams.get("franchise") === "autoral" &&
-      url.searchParams.get("folder") === "esculturas/classicas"
-    )).toBe(true);
+      </CatalogBrowsingProvider>
+    </QueryClientProvider>,
+  );
+  fireEvent.click(
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    }),
+  );
+  const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
+  expect(back).toHaveAttribute("href", startingPath);
+  fireEvent.click(back);
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura original",
   });
+  expect(
+    screen.getByRole("textbox", { name: "Pesquisar modelos" }),
+  ).toHaveValue("escultura");
+  expect(
+    screen.getByRole("combobox", { name: "Filtrar por categoria" }),
+  ).toHaveValue("originais");
+  expect(
+    screen.getByRole("combobox", { name: "Filtrar por franquia" }),
+  ).toHaveValue("autoral");
+  expect(screen.getByText(/Pasta selecionada:/)).toHaveTextContent(
+    "esculturas/classicas",
+  );
+  const catalogReads = calls.filter((call) =>
+    call.url.pathname.endsWith("/api/catalog"),
+  );
+  expect(catalogReads.length).toBeGreaterThan(0);
+  expect(
+    catalogReads.every(
+      ({ url }) =>
+        url.searchParams.get("q") === "escultura" &&
+        url.searchParams.get("category") === "originais" &&
+        url.searchParams.get("franchise") === "autoral" &&
+        url.searchParams.get("folder") === "esculturas/classicas",
+    ),
+  ).toBe(true);
+});
 
-  it("keeps page two and a provisional selection across model detail navigation", async () => {
-    const { calls, fetcher } = setupFetch();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string, init: RequestInit) => {
-        const pathname = new URL(input).pathname;
-        if (pathname.endsWith("/api/models/escultura-seguinte")) {
-          return Response.json({ ...second, description: null, material: null, height_cm: null });
-        }
-        if (pathname.endsWith("/api/models/escultura-seguinte/images")) {
-          const image = (id: string, role: "cover" | "gallery") => ({
-            id, role, width: 800, height: 1000, bytes: 4096,
-            mime: "image/webp", qualityScore: 92,
-            sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
-            variantKeys: {
-              thumb: "media/model-two/" + id + "/thumb.webp",
-              card: role === "cover" ? second.cover_storage_key : "media/model-two/" + id + "/card.webp",
-              detail: "media/model-two/" + id + "/detail.webp",
-              original: null,
-            },
-          });
-          return Response.json({
-            items: [image("image-1", "cover"), image("image-2", "gallery")],
-            nextCursor: null, total: 2, version: 1,
-          });
-        }
-        return fetcher(input, init);
-      }),
-    );
-    const { default: Models } = await import("./CatalogModelsArcade");
-    const { default: Details } = await import("./catalog/CanonicalModelDetails");
-    const { CatalogBrowsingProvider } = await import(
-      "@/services/catalog/catalog-browsing-context"
-    );
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    render(
-      <QueryClientProvider client={client}>
-        <CatalogBrowsingProvider>
-          <MemoryRouter initialEntries={["/modelos"]}>
-            <Routes>
-              <Route path="/modelos" element={<Models />} />
-              <Route path="/modelos/:id" element={<Details />} />
-            </Routes>
-          </MemoryRouter>
-        </CatalogBrowsingProvider>
-      </QueryClientProvider>,
-    );
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
-    fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
-    fireEvent.click(screen.getByRole("link", { name: "Ver detalhes de Escultura seguinte" }));
-    expect(await screen.findByRole("button", { name: "Remover da seleção" }))
-      .toHaveAttribute("aria-pressed", "true");
-    const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
-    expect(back).toHaveAttribute("href", "/modelos");
-    fireEvent.click(back);
-    const returnedCard = await screen.findByRole("link", { name: "Ver detalhes de Escultura seguinte" });
-    await waitFor(() => expect(returnedCard).toHaveFocus());
-    expect(screen.getByText("Página 2 · 1 modelo nesta página")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Remover da seleção" }))
-      .toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(
-      screen.getByRole("button", { name: /Abrir seleção para orçamento com 2 modelos/ }),
-    );
-    const selection = screen.getByRole("dialog");
-    expect(selection).toHaveTextContent("2 de 50 modelos selecionados.");
-    expect(selection).toHaveTextContent("Escultura original");
-    expect(selection).toHaveTextContent("Escultura seguinte");
-    expect(selection).toHaveTextContent("Nenhum orçamento foi enviado.");
-    expect(calls.every(({ init }) => init.method === "GET")).toBe(true);
+it("keeps page two and a provisional selection across model detail navigation", async () => {
+  const { calls, fetcher } = setupFetch();
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string, init: RequestInit) => {
+      const pathname = new URL(input).pathname;
+      if (pathname.endsWith("/api/models/escultura-seguinte")) {
+        return Response.json({
+          ...second,
+          description: null,
+          material: null,
+          height_cm: null,
+        });
+      }
+      if (pathname.endsWith("/api/models/escultura-seguinte/images")) {
+        const image = (id: string, role: "cover" | "gallery") => ({
+          id,
+          role,
+          width: 800,
+          height: 1000,
+          bytes: 4096,
+          mime: "image/webp",
+          qualityScore: 92,
+          sourceSha256: role === "cover" ? "a".repeat(64) : "b".repeat(64),
+          variantKeys: {
+            thumb: "media/model-two/" + id + "/thumb.webp",
+            card:
+              role === "cover"
+                ? second.cover_storage_key
+                : "media/model-two/" + id + "/card.webp",
+            detail: "media/model-two/" + id + "/detail.webp",
+            original: null,
+          },
+        });
+        return Response.json({
+          items: [image("image-1", "cover"), image("image-2", "gallery")],
+          nextCursor: null,
+          total: 2,
+          version: 1,
+        });
+      }
+      return fetcher(input, init);
+    }),
+  );
+  const { default: Models } = await import("./CatalogModelsArcade");
+  const { default: Details } = await import("./catalog/CanonicalModelDetails");
+  const { CatalogBrowsingProvider } =
+    await import("@/services/catalog/catalog-browsing-context");
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
   });
+  render(
+    <QueryClientProvider client={client}>
+      <CatalogBrowsingProvider>
+        <MemoryRouter initialEntries={["/modelos"]}>
+          <Routes>
+            <Route path="/modelos" element={<Models />} />
+            <Route path="/modelos/:id" element={<Details />} />
+          </Routes>
+        </MemoryRouter>
+      </CatalogBrowsingProvider>
+    </QueryClientProvider>,
+  );
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura original",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
+  fireEvent.click(screen.getByRole("button", { name: "Próxima" }));
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura seguinte",
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Adicionar à seleção" }));
+  fireEvent.click(
+    screen.getByRole("link", { name: "Ver detalhes de Escultura seguinte" }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "Remover da seleção" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  const back = await screen.findByRole("link", { name: "Voltar ao catálogo" });
+  expect(back).toHaveAttribute("href", "/modelos");
+  fireEvent.click(back);
+  const returnedCard = await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura seguinte",
+  });
+  await waitFor(() => expect(returnedCard).toHaveFocus());
+  expect(
+    screen.getByText("Página 2 · 1 modelo nesta página"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Anterior" })).toBeEnabled();
+  expect(
+    screen.getByRole("button", { name: "Remover da seleção" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: /Abrir seleção para orçamento com 2 modelos/,
+    }),
+  );
+  const selection = screen.getByRole("dialog");
+  expect(selection).toHaveTextContent("2 de 50 modelos selecionados.");
+  expect(selection).toHaveTextContent("Escultura original");
+  expect(selection).toHaveTextContent("Escultura seguinte");
+  expect(selection).toHaveTextContent("Nenhum orçamento foi enviado.");
+  expect(calls.every(({ init }) => init.method === "GET")).toBe(true);
+});
 
 describe("Tonecos shareable model detail UI", () => {
   it("loads a versioned gallery, selects images and pages without submitting an order", async () => {
@@ -731,23 +969,21 @@ describe("Tonecos shareable model detail UI", () => {
       throw new Error("Unexpected detail request: " + url);
     });
     vi.stubGlobal("fetch", fetcher);
-    const { default: CanonicalModelDetails } = await import(
-      "./catalog/CanonicalModelDetails"
-    );
-    const { CatalogBrowsingProvider } = await import(
-      "@/services/catalog/catalog-browsing-context"
-    );
+    const { default: CanonicalModelDetails } =
+      await import("./catalog/CanonicalModelDetails");
+    const { CatalogBrowsingProvider } =
+      await import("@/services/catalog/catalog-browsing-context");
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
     render(
       <QueryClientProvider client={queryClient}>
         <CatalogBrowsingProvider>
-        <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
-          <Routes>
-            <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
-          </Routes>
-        </MemoryRouter>
+          <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
+            <Routes>
+              <Route path="/modelos/:id" element={<CanonicalModelDetails />} />
+            </Routes>
+          </MemoryRouter>
         </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
@@ -779,7 +1015,7 @@ describe("Tonecos shareable model detail UI", () => {
     ).toHaveAttribute("src", BASE + "/media/detail/img-two.webp");
     expect(
       screen.getByText(
-        /A equipe confirma disponibilidade, frete e prazo antes de qualquer contratação/,
+        /Valor, tamanho final, acabamento, prazo de produção e entrega precisam ser confirmados pela equipe/,
       ),
     ).toBeInTheDocument();
     expect(requests.every((request) => request.method === "GET")).toBe(true);
@@ -801,23 +1037,21 @@ describe("Tonecos shareable model detail UI", () => {
           : Response.json({ ...original, gallery_version: 0, image_count: 0 });
       }),
     );
-    const { default: Details } = await import(
-      "./catalog/CanonicalModelDetails"
-    );
-    const { CatalogBrowsingProvider } = await import(
-      "@/services/catalog/catalog-browsing-context"
-    );
+    const { default: Details } =
+      await import("./catalog/CanonicalModelDetails");
+    const { CatalogBrowsingProvider } =
+      await import("@/services/catalog/catalog-browsing-context");
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(
       <QueryClientProvider client={client}>
         <CatalogBrowsingProvider>
-        <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
-          <Routes>
-            <Route path="/modelos/:id" element={<Details />} />
-          </Routes>
-        </MemoryRouter>
+          <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
+            <Routes>
+              <Route path="/modelos/:id" element={<Details />} />
+            </Routes>
+          </MemoryRouter>
         </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
@@ -834,7 +1068,7 @@ describe("Tonecos shareable model detail UI", () => {
     expect(calls).toBe(2);
     expect(
       screen.getByText(
-        /A equipe confirma disponibilidade, frete e prazo antes de qualquer contratação/,
+        /Valor, tamanho final, acabamento, prazo de produção e entrega precisam ser confirmados pela equipe/,
       ),
     ).toBeInTheDocument();
   });
@@ -868,23 +1102,21 @@ describe("Tonecos shareable model detail UI", () => {
         throw new Error("Unexpected request: " + url.toString());
       }),
     );
-    const { default: Details } = await import(
-      "./catalog/CanonicalModelDetails"
-    );
-    const { CatalogBrowsingProvider } = await import(
-      "@/services/catalog/catalog-browsing-context"
-    );
+    const { default: Details } =
+      await import("./catalog/CanonicalModelDetails");
+    const { CatalogBrowsingProvider } =
+      await import("@/services/catalog/catalog-browsing-context");
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
     render(
       <QueryClientProvider client={client}>
         <CatalogBrowsingProvider>
-        <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
-          <Routes>
-            <Route path="/modelos/:id" element={<Details />} />
-          </Routes>
-        </MemoryRouter>
+          <MemoryRouter initialEntries={["/modelos/escultura-original"]}>
+            <Routes>
+              <Route path="/modelos/:id" element={<Details />} />
+            </Routes>
+          </MemoryRouter>
         </CatalogBrowsingProvider>
       </QueryClientProvider>,
     );
@@ -976,8 +1208,12 @@ it("only searches franchise names when explicitly requested, with an indexed bou
 
 it("preserves a canonical folder filter through model reads and clears it explicitly", async () => {
   const { calls } = setupFetch();
-  await renderCatalog("/modelos?category=originais&franchise=autoral&folder=personagens");
-  await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+  await renderCatalog(
+    "/modelos?category=originais&franchise=autoral&folder=personagens",
+  );
+  await screen.findByRole("link", {
+    name: "Ver detalhes de Escultura original",
+  });
   const requests = calls.filter((c) => c.url.pathname.endsWith("/api/catalog"));
   expect(requests).toHaveLength(1);
   expect(requests[0].url.searchParams.get("category")).toBe("originais");
@@ -986,40 +1222,47 @@ it("preserves a canonical folder filter through model reads and clears it explic
   expect(screen.getByText(/Pasta selecionada:/i)).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Limpar pasta" }));
   await waitFor(() => {
-    expect(calls.some((c) =>
-      c.url.pathname.endsWith("/api/catalog") &&
-      !c.url.searchParams.has("folder")
-    )).toBe(true);
+    expect(
+      calls.some(
+        (c) =>
+          c.url.pathname.endsWith("/api/catalog") &&
+          !c.url.searchParams.has("folder"),
+      ),
+    ).toBe(true);
   });
 });
 
 it("blocks multi-page cursor cycles but still allows revisiting the next cached page", async () => {
   const cursors: string[] = [];
-  vi.stubGlobal("fetch", vi.fn(async (input: string, init: RequestInit) => {
-    expect(init.method).toBe("GET");
-    const url = new URL(input);
-    if (!url.pathname.endsWith("/api/catalog")) {
-      throw new Error("unexpected_catalog_endpoint: " + url.pathname);
-    }
-    const cursor = url.searchParams.get("cursor");
-    cursors.push(cursor ?? "");
-    const pageIndex = cursor === null ? 1 : cursor === "page-two" ? 2 : 3;
-    const model = {
-      ...original,
-      id: "model-" + pageIndex,
-      slug: "escultura-" + pageIndex,
-      name: "Escultura " + pageIndex,
-      code: "TS-" + pageIndex,
-    };
-    return Response.json({
-      items: [model],
-      nextCursor: pageIndex === 1
-        ? "page-two"
-        : pageIndex === 2
-          ? "page-three"
-          : "page-two",
-    });
-  }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string, init: RequestInit) => {
+      expect(init.method).toBe("GET");
+      const url = new URL(input);
+      if (!url.pathname.endsWith("/api/catalog")) {
+        throw new Error("unexpected_catalog_endpoint: " + url.pathname);
+      }
+      const cursor = url.searchParams.get("cursor");
+      cursors.push(cursor ?? "");
+      const pageIndex = cursor === null ? 1 : cursor === "page-two" ? 2 : 3;
+      const model = {
+        ...original,
+        id: "model-" + pageIndex,
+        slug: "escultura-" + pageIndex,
+        name: "Escultura " + pageIndex,
+        code: "TS-" + pageIndex,
+      };
+      return Response.json({
+        items: [model],
+        nextCursor:
+          pageIndex === 1
+            ? "page-two"
+            : pageIndex === 2
+              ? "page-three"
+              : "page-two",
+      });
+    }),
+  );
 
   await renderCatalog();
   await screen.findByRole("link", { name: "Ver detalhes de Escultura 1" });
@@ -1044,6 +1287,10 @@ it("blocks multi-page cursor cycles but still allows revisiting the next cached 
 it("does not issue catalog reads when folder scope is absent", async () => {
   const { calls } = setupFetch();
   await renderCatalog("/modelos?folder=personagens");
-  expect(await screen.findByText(/A pasta requer uma categoria/i)).toBeInTheDocument();
-  expect(calls.filter((c) => c.url.pathname.endsWith("/api/catalog"))).toHaveLength(0);
+  expect(
+    await screen.findByText(/A pasta requer uma categoria/i),
+  ).toBeInTheDocument();
+  expect(
+    calls.filter((c) => c.url.pathname.endsWith("/api/catalog")),
+  ).toHaveLength(0);
 });

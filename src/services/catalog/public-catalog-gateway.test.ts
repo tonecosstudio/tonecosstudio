@@ -22,7 +22,83 @@ const row = {
   cover_storage_key: "media/covers/mdl-123.webp",
 };
 
+const editorialEvidenceKinds = [
+  "official", "primary", "publisher", "licensor",
+  "institution", "reputable_reference", "other", "catalog",
+] as const;
+
+function approvedCharacterProjectionFixture() {
+  return {
+    publication: {
+      contractVersion: 1,
+      editorialStatus: "approved",
+      visibility: "public",
+      revision: "review-4",
+      reviewedAt: "2026-11-18T08:00:00.000Z",
+    },
+    character: {
+      id: "55555555-5555-4555-8555-555555555555",
+      slug: "personagem-teste",
+      name: "Personagem de teste",
+      aliases: [],
+      summary: null,
+      summaryEvidenceIds: [],
+      biography: null,
+      biographyEvidenceIds: [],
+      ageContext: {
+        value: null,
+        context: "A idade varia entre adaptações.",
+        evidenceIds: ["source-institution"],
+      },
+      originWork: null,
+      originWorkEvidenceIds: [],
+      mediaTypes: [],
+      characteristics: [],
+      mediaTypeEvidenceIds: [],
+      identityEvidenceIds: ["source-official"],
+    },
+    universe: {
+      id: "44",
+      slug: "universo-teste",
+      name: "Universo de teste",
+      categorySlug: "anime",
+      evidenceIds: ["source-publisher"],
+    },
+    evidence: editorialEvidenceKinds.map((kind) => ({
+      id: `source-${kind}`,
+      title: `Fixture ${kind}`,
+      url: `https://example.org/${kind}`,
+      kind,
+    })),
+    sameCharacterModels: [],
+    otherUniverseModels: [],
+  };
+}
+
 describe("canonical catalog read boundary", () => {
+  it("preserves curation evidence kinds and context-only ages from the Worker", async () => {
+    const io = vi.fn(async () => Response.json(approvedCharacterProjectionFixture()));
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api", io as typeof fetch,
+    );
+
+    const profile = await gateway.getCharacterProfile("personagem-teste", undefined, {
+      categorySlug: "anime",
+      franchiseSlug: "universo-teste",
+    });
+
+    expect(profile.character.ageContext).toEqual({
+      value: null,
+      context: "A idade varia entre adaptações.",
+      evidenceIds: ["source-institution"],
+    });
+    expect(profile.evidence.map((item) => item.kind)).toEqual(editorialEvidenceKinds);
+    expect(io).toHaveBeenCalledExactlyOnceWith(
+      "https://example.test/catalogo-api/api/editorial/v1/characters/personagem-teste",
+      expect.objectContaining({ method: "GET", credentials: "omit" }),
+    );
+  });
+
   it("reads one page with cursor and never loads the whole acervo", async () => {
     const io = vi.fn(
       async () =>

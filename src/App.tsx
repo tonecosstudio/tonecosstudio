@@ -155,7 +155,7 @@ function AppContent() {
               />
               <Route
                 path={PUBLIC_ROUTES.catalogUniverseCharacter}
-                element={<CatalogArcade />}
+                element={<CatalogCharacterArcade />}
               />
               <Route
                 path={PUBLIC_ROUTES.catalogModels}
