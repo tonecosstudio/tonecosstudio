@@ -163,6 +163,7 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
   assert.deepEqual(Object.keys(overlays).sort(), [
     'config/catalog-schema-contract.json',
     'tools/test_worker_folder_counts.mjs',
+    'worker/entry.ts',
     'worker/index.ts',
     'wrangler.jsonc',
   ]);
@@ -200,6 +201,29 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
   assert.ok(existsSync(join(root, contract.target.serviceRoot, 'tools/test_worker_entry_integration.mjs')));
   assert.equal(contract.migration.targetD1MigrationEnabled, false);
   // Publisher ownership is phase-dependent and validated in the M5 gate above.
+});
+
+
+test('upstream public query budget is reconciled by Git blob without replacing Worker authority', () => {
+  const files = contract.staging.sourceReconciledAdditions ?? {};
+  assert.deepEqual(Object.keys(files).sort(), [
+    'tools/test_worker_public_query_budget.mjs',
+    'worker/publicQueryBudget.ts',
+  ]);
+  for (const [path, expected] of Object.entries(files)) {
+    assert.match(expected, sha);
+    const bytes = readFileSync(join(root, contract.target.serviceRoot, path));
+    const canonical = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'));
+    const actual = createHash('sha1')
+      .update('blob ' + canonical.byteLength)
+      .update(Buffer.from([0]))
+      .update(canonical)
+      .digest('hex');
+    assert.equal(actual, expected, 'Reconciled source content drift: ' + path);
+  }
+  assert.match(source('services/catalogo/worker/index.ts'), /validatePublicCatalogQuery/);
+  assert.match(source('services/catalogo/worker/entry.ts'), /validatePublicCatalogQuery/);
+  assert.equal(contract.migration.releaseAuthorized, false);
 });
 
 test('M5 snapshot is a pinned observation, not production approval', () => {
