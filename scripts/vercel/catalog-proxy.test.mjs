@@ -417,6 +417,45 @@ test("Vercel CDN caches only successful public catalog JSON for five minutes", a
   }
 });
 
+test("Vercel caches only anonymous Telegram metadata (60s models, 300s studios)", async () => {
+ const originalFetch = globalThis.fetch;
+ let response = Response.json({items: [], total: 0}, {
+   headers: {"Cache-Control": "public, max-age=0, s-maxage=60"},
+ });
+ globalThis.fetch = async () => response.clone();
+ try {
+   for (const path of ["api/telegram-studios", "api/telegram-studios/studios"]) {
+     const res = responseSink();
+     await handler({
+       method: "GET", url: "/api/catalogo-proxy?path=" + encodeURIComponent(path),
+       query: {path}, headers: {host:"catalogo.tonartstudio.com.br",accept:"application/json"},
+     },res);
+     assert.equal(res.statusCode,200,path);
+     assert.equal(res.headers.get("vercel-cdn-cache-control"),
+       path.endsWith("/studios") ? "public, s-maxage=300" : "public, s-maxage=60",path);
+   }
+   for (const entry of [
+     {path:"api/telegram-studios/"+TELEGRAM_ID, cache:"public, max-age=0, s-maxage=60"},
+     {path:"api/telegram-studios/"+TELEGRAM_ID+"/media/"+"a".repeat(64)+"/thumb", cache:"public, max-age=0, s-maxage=60"},
+     {path:"api/telegram-studios", cookie:"session=private"},
+     {path:"api/telegram-studios", authorization:"Bearer private"},
+     {path:"api/telegram-studios", bad:true},
+   ]) {
+     response=entry.bad?Response.json({error:"unavailable"},{status:503,headers:{"Cache-Control":"public, max-age=0, s-maxage=60"}}):
+       Response.json({items:[]},{headers:{"Cache-Control":entry.cache || "public, max-age=0, s-maxage=60"}});
+     const res=responseSink();
+     await handler({
+       method:"GET",url:"/api/catalogo-proxy?path="+encodeURIComponent(entry.path),
+       query:{path:entry.path},
+       headers:{host:"catalogo.tonartstudio.com.br",accept:"application/json",
+         ...(entry.cookie?{cookie:entry.cookie}:{}),
+         ...(entry.authorization?{authorization:entry.authorization}:{})},
+     },res);
+     assert.equal(res.headers.has("vercel-cdn-cache-control"),false,entry.path);
+   }
+ }finally{globalThis.fetch=originalFetch;}
+});
+
 test("Vercel never extends CDN cache for errors, private payloads, media or Authorization", async () => {
   const originalFetch = globalThis.fetch;
   let reply = Response.json({ items: [] }, {

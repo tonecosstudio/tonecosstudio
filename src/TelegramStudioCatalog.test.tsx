@@ -30,7 +30,7 @@ const detail = {
 };
 
 function mockCatalog() {
-  const fetcher = vi.fn(async (input: string) => {
+  const fetcher = vi.fn(async (input: string, _options?: RequestInit) => {
     const url = new URL(String(input), "https://catalogo.tonartstudio.com.br");
     if (url.pathname.endsWith("/studios")) {
       return Response.json({ studios: [{ studio: "3DXM", total: 1 }] });
@@ -54,7 +54,7 @@ afterEach(() => {
 
 describe("Telegram-only public studio gallery", () => {
   it("shows studio collections and shares a deep link without commercial actions", async () => {
-    mockCatalog();
+    const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
     expect(await screen.findByText("Aang")).toBeInTheDocument();
     expect(
@@ -79,6 +79,10 @@ describe("Telegram-only public studio gallery", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
     expect(window.location.search).not.toContain("modelo=");
+    const requests = fetcher.mock.calls;
+    expect(requests.some(([uri]) => String(uri).endsWith("/studios"))).toBe(false);
+    expect(requests.find(([uri]) => String(uri).includes("?offset="))?.[1]?.cache).toBe("default");
+    expect(requests.find(([uri]) => String(uri).endsWith("/" + id))?.[1]?.cache).toBe("no-store");
   });
 
   it("rejects short search terms locally and passes a valid term to the canonical API", async () => {
@@ -136,7 +140,7 @@ describe("Telegram-only public studio gallery", () => {
         total: index + 1,
       })),
     ];
-    const fetcher = vi.fn(async (input: string) => {
+    const fetcher = vi.fn(async (input: string, _options?: RequestInit) => {
       const url = new URL(
         String(input),
         "https://catalogo.tonartstudio.com.br",
@@ -157,6 +161,7 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       fetcher.mock.calls.filter(([uri]) => String(uri).includes("limit=24")),
     ).toHaveLength(0);
+    expect(fetcher.mock.calls.find(([uri]) => String(uri).endsWith("/studios"))?.[1]?.cache).toBe("default");
     fireEvent.change(studioSearch, { target: { value: "aguia" } });
     const studioSection = screen.getByRole("region", {
       name: /coleções por estúdio/i,

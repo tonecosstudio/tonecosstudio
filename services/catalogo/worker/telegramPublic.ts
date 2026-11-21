@@ -26,11 +26,17 @@ const ROOT = '/api/telegram-studios'
 const ID = /^tg_[a-f0-9]{24}$/
 const SHA = /^[a-f0-9]{64}$/
 const VISIBLE = "m.telegram_group_key IS NOT NULL AND m.telegram_showcase_visible=1 AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected'"
+// Only previously authorized list metadata is cached (60s model lists, 300s
+// aggregate studio counts); detail/media recheck revocation on every request.
+const LIST_CACHE_CONTROL = 'public, max-age=0, s-maxage=60'
+const STUDIO_DIRECTORY_CACHE_CONTROL = 'public, max-age=0, s-maxage=300'
+const metadataCache = (request: Request, cacheControl = LIST_CACHE_CONTROL) =>
+  request.headers.has('authorization') || request.headers.has('cookie') ? 'no-store' : cacheControl
 
-function json(data: unknown, status = 200) {
+function json(data: unknown, status = 200, cacheControl = 'no-store') {
   return new Response(JSON.stringify(data), { status, headers: {
     'content-type': 'application/json; charset=utf-8',
-    'cache-control': 'no-store', 'x-content-type-options': 'nosniff',
+    'cache-control': cacheControl, 'x-content-type-options': 'nosniff',
   } })
 }
 function normalize(m: ModelRow) {
@@ -50,7 +56,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
       const rows = (await env.DB.prepare("SELECT m.telegram_studio AS studio, COUNT(*) AS total FROM models m WHERE " +
         VISIBLE + " GROUP BY m.telegram_studio ORDER BY m.telegram_studio COLLATE NOCASE")
         .all<{ studio: string; total: number }>()).results
-      return json({ studios: rows })
+      return json({ studios: rows }, 200, metadataCache(request, STUDIO_DIRECTORY_CACHE_CONTROL))
     }
     if (url.pathname === ROOT) {
       const studio = url.searchParams.get('studio') ?? ''
@@ -92,7 +98,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results
       return json({ total: count?.total ?? 0, offset: Number(rawOffset), limit: Number(rawLimit),
         items: rows.map(m => ({...normalize(m), cover: m.cover_sha && SHA.test(m.cover_sha)
-          ? ROOT + '/' + m.id + '/media/' + m.cover_sha + '/thumb' : null})) })
+          ? ROOT + '/' + m.id + '/media/' + m.cover_sha + '/thumb' : null})) }, 200, metadataCache(request))
     }
     const mediaMatch = new RegExp('^' + ROOT + '/(tg_[a-f0-9]{24})/media/([a-f0-9]{64})/(thumb|display)$').exec(url.pathname)
     const detailMatch = new RegExp('^' + ROOT + '/(tg_[a-f0-9]{24})$').exec(url.pathname)

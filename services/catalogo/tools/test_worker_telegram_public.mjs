@@ -25,6 +25,7 @@ test("lists only Telegram D1 and studio counts",async()=>{
  const {env,queries,keys}=fixture();
  const res=await routeTelegramStudioShowcase(request("?limit=24&offset=0"),env);
  assert.equal(res.status,200);
+ assert.equal(res.headers.get("cache-control"),"public, max-age=0, s-maxage=60");
  const b=await res.json();
  assert.equal(b.total,1);assert.equal(b.items[0].id,id);assert.equal(b.items[0].provisional,true);
  assert.equal(b.items[0].cover,"/api/telegram-studios/"+id+"/media/"+sha+"/thumb");
@@ -33,7 +34,24 @@ test("lists only Telegram D1 and studio counts",async()=>{
  assert.equal(keys.length,0);
  const studios=await routeTelegramStudioShowcase(request("/studios"),env);
  assert.deepEqual((await studios.json()).studios,[{studio:"Studio A",total:1}]);
+ assert.equal(studios.headers.get("cache-control"),"public, max-age=0, s-maxage=300");
 });
+test("only anonymous successful Telegram lists are CDN cacheable; details, invalid and errors never are",async()=>{
+ const {env}=fixture();
+ for (const url of ["?limit=24", "/studios"]) {
+  const request=new Request(base+url,{headers:{authorization:"Bearer private-request"}});
+  const response=await routeTelegramStudioShowcase(request,env);
+  assert.equal(response.headers.get("cache-control"),"no-store");
+  const cookieRequest=new Request(base+url,{headers:{cookie:"session=private-request"}});
+  assert.equal((await routeTelegramStudioShowcase(cookieRequest,env)).headers.get("cache-control"),"no-store");
+ }
+ assert.equal((await routeTelegramStudioShowcase(request("/"+id),env)).headers.get("cache-control"),"no-store");
+ assert.equal((await routeTelegramStudioShowcase(request("?limit=999"),env)).headers.get("cache-control"),"no-store");
+ const down=await routeTelegramStudioShowcase(request("/studios"),{...env,DB:undefined});
+ assert.equal(down.status,503);
+ assert.equal(down.headers.get("cache-control"),"no-store");
+});
+
 test("global index search checks name, character and variant with bound values",async()=>{
  const {env,queries,bindings}=fixture();
  const response=await routeTelegramStudioShowcase(request("?studio=Studio%20A&q=Chibi&limit=24"),env);

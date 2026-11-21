@@ -7,6 +7,11 @@ import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public
 // Never cache account/quote operations, errors, Range responses or media here.
 const PUBLIC_MODEL_METADATA_ROUTE = /^(?:api\/catalog|api\/recent|api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?)$/;
 const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
+// Only already-visible Telegram list metadata; details/media remain live for
+// immediate rights/visibility revocation and must never receive edge TTL.
+const PUBLIC_TELEGRAM_METADATA_ROUTE = /^(?:api\/telegram-studios|api\/telegram-studios\/studios)$/;
+const PUBLIC_TELEGRAM_LIST_EDGE_TTL = "public, s-maxage=60";
+const PUBLIC_TELEGRAM_STUDIOS_EDGE_TTL = "public, s-maxage=300";
 
 /** Host-scoped public gallery policy; commercial domains retain their own routes. */
 export function isStandaloneTelegramCatalogHost(host) {
@@ -200,8 +205,9 @@ export default async function handler(req, res) {
     });
     if (
       response.status === 200 &&
-      PUBLIC_MODEL_METADATA_ROUTE.test(path) &&
+      (PUBLIC_MODEL_METADATA_ROUTE.test(path) || PUBLIC_TELEGRAM_METADATA_ROUTE.test(path)) &&
       !req.headers?.authorization &&
+      !req.headers?.cookie &&
       /^application\/json(?:\s*;|$)/i.test(response.headers.get("content-type") ?? "") &&
       /^public(?:,|$)/i.test(response.headers.get("cache-control") ?? "") &&
       !response.headers.has("set-cookie") &&
@@ -209,7 +215,9 @@ export default async function handler(req, res) {
     ) {
       // Vercel-only cache override: browser freshness stays owned by Worker
       // Cache-Control. No parallel data cache, KV or D1 mirror.
-      res.setHeader("Vercel-CDN-Cache-Control", PUBLIC_MODEL_EDGE_TTL);
+      res.setHeader("Vercel-CDN-Cache-Control", path === "api/telegram-studios/studios"
+        ? PUBLIC_TELEGRAM_STUDIOS_EDGE_TTL
+        : path === "api/telegram-studios" ? PUBLIC_TELEGRAM_LIST_EDGE_TTL : PUBLIC_MODEL_EDGE_TTL);
     }
     const bytes = Buffer.from(await response.arrayBuffer());
     res.end(bytes);

@@ -93,7 +93,13 @@ function urlForRoute(route: Route): string {
 }
 
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(API + path, { signal, cache: "no-store" });
+  // Only the anonymous directory and paged list use the bounded CDN TTL.
+  // Gallery details and media must always recheck current visibility/rights.
+  const publicMetadata = path === "/studios" || path.startsWith("?");
+  const response = await fetch(API + path, {
+    signal,
+    cache: publicMetadata ? "default" : "no-store",
+  });
   if (!response.ok) throw new Error("catalog_unavailable");
   return response.json() as Promise<T>;
 }
