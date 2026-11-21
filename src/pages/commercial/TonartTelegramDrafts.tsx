@@ -92,6 +92,8 @@ export default function TonartTelegramDrafts() {
   const searchRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  // Preserve explicit button intent when SubmitEvent.submitter is unavailable.
+  const advanceRequestedRef = useRef(false);
   const selectedIndex =
     page?.items.findIndex((item) => item.id === selectedId) ?? -1;
   const hasPrevious = canNavigateTelegramIndex(page, selectedId, -1);
@@ -457,11 +459,14 @@ export default function TonartTelegramDrafts() {
 
   async function save(event: FormEvent) {
     event.preventDefault();
+    const clickedAdvance = advanceRequestedRef.current;
+    advanceRequestedRef.current = false;
     if (!selected || !form || saving || !dirty) return;
     const submittedBy = (event.nativeEvent as SubmitEvent).submitter;
     const advance =
-      submittedBy instanceof HTMLElement &&
-      submittedBy.getAttribute("data-advance") === "true";
+      (submittedBy instanceof HTMLElement &&
+        submittedBy.getAttribute("data-advance") === "true") ||
+      clickedAdvance;
     const shouldAdvance = advance && hasNext;
     setSaving(true);
     setSaved(false);
@@ -1226,6 +1231,7 @@ export default function TonartTelegramDrafts() {
                         event.key === "Enter"
                       ) {
                         event.preventDefault();
+                        advanceRequestedRef.current = false;
                         event.currentTarget.requestSubmit();
                       }
                     }}
@@ -1342,6 +1348,9 @@ export default function TonartTelegramDrafts() {
                     )}
                     <button
                       type="submit"
+                      onClick={() => {
+                        advanceRequestedRef.current = false;
+                      }}
                       className={actionClass + " w-full"}
                       disabled={saving || !dirty}
                     >
@@ -1354,6 +1363,9 @@ export default function TonartTelegramDrafts() {
                     <button
                       type="submit"
                       data-advance="true"
+                      onClick={() => {
+                        advanceRequestedRef.current = true;
+                      }}
                       className={outlineButton + " w-full"}
                       disabled={
                         saving || navigating || loading || !dirty || !hasNext
