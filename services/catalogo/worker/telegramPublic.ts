@@ -57,8 +57,8 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
       const rawLimit = url.searchParams.get('limit') ?? '24'
       const allowed = new Set(['studio', 'q', 'provisional', 'offset', 'limit'])
       if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
-          studio.length > 120 || /[\u0000-\u001f\u007f]/.test(studio) ||
-          q.length > 80 || /[\u0000-\u001f\u007f]/.test(q) ||
+          studio.length > 120 || /\p{Cc}/u.test(studio) ||
+          q.length > 80 || /\p{Cc}/u.test(q) ||
           (provisional !== null && provisional !== '0' && provisional !== '1') ||
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
           !/^[1-9]\d?$/.test(rawLimit) || Number(rawLimit) > 48)

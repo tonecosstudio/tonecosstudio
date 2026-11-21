@@ -171,7 +171,7 @@ export default function TonartTelegramDrafts() {
       live = false;
       urls.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [selected?.id, selected?.revision, selected?.images.length]);
+  }, [selected]);
 
   useEffect(() => {
     let live = true;
@@ -191,7 +191,7 @@ export default function TonartTelegramDrafts() {
       live = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [lightbox, selected?.id, selected?.revision, activeMessageId]);
+  }, [lightbox, selected, activeMessageId]);
 
   useEffect(() => {
     if (!dirty) return;
@@ -272,7 +272,7 @@ export default function TonartTelegramDrafts() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [selectedId, hasNext, hasPrevious, saving, dirty, lightbox,
-      navigating, page, offset, studio, query, onlyProvisional, loading]);
+      navigating, page, offset, studio, query, onlyProvisional, loading, choose, navigate]);
 
   // Resolve neighbors on the current page first, then ask the same canonical
   // index for the adjacent page. Never skip a model at page 24/25.

@@ -147,7 +147,7 @@ function detail(draft: Draft, images: Source[]) {
 }
 function validText(value: unknown, max: number, required: boolean): value is string {
   return typeof value === 'string' && value.length <= max &&
-    !/[\u0000-\u001f\u007f]/.test(value) &&
+    !/\p{Cc}/u.test(value) &&
     (!required || value.trim().length > 0)
 }
 

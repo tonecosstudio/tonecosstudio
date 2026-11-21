@@ -19,16 +19,6 @@ export type DraftImportEnv = {
   PRIVATE_TELEGRAM?: PrivateBucket
 }
 type Photo = { messageId: number; sha256: string }
-type ImportDraft = {
-  originId: string
-  studio: string
-  groupKey: string
-  name: string
-  universe: string
-  variant: string
-  franchiseId: number
-  images: Photo[]
-}
 type ImportResult = { status: number; data: Record<string, unknown> }
 const sha64 = /^[a-f0-9]{64}$/
 const group24 = /^[a-f0-9]{24}$/
@@ -37,9 +27,9 @@ const root = 'telegram-studios/v1/' + sourceId + '/telegram-webp-final-v1/'
 const allowedFields = ['originId', 'studio', 'groupKey', 'name', 'universe', 'variant', 'franchiseId', 'images']
 const present = (value: unknown, max: number) =>
   typeof value === 'string' && value.length > 0 && value.length <= max &&
-  value.trim().length > 0 && !/[\u0000-\u001f\u007f]/.test(value)
+  value.trim().length > 0 && !/\p{Cc}/u.test(value)
 const optional = (value: unknown, max: number) =>
-  typeof value === 'string' && value.length <= max && !/[\u0000-\u001f\u007f]/.test(value)
+  typeof value === 'string' && value.length <= max && !/\p{Cc}/u.test(value)
 function key(digest: string, role: 'display' | 'thumb') {
   return root + digest.slice(0, 2) + '/' + digest + '/' + role + '.webp'
 }
