@@ -4,6 +4,7 @@
  * Supabase Auth and the canonical is_tonecos_admin RPC remain the authority.
  */
 import { importPrivateTelegramDraft, type DraftImportEnv } from './telegramDraftImport'
+import { orderedTelegramGallery } from './telegramGallery'
 
 type Statement = {
   bind(...values: unknown[]): Statement
@@ -108,17 +109,7 @@ async function sources(db: Database, id: string) {
     ORDER BY position,image_id LIMIT 80`).bind(id).all<Source>()).results
 }
 function detail(draft: Draft, images: Source[]) {
-  let ordered = images
-  try {
-    const requested = JSON.parse(draft.telegram_gallery_order || "[]") as unknown
-    if (Array.isArray(requested) && requested.length === images.length) {
-      const byId = new Map(images.map(x => [Number(x.image_id.replace(/^tg:/, '')), x]))
-      const ids = requested.map(Number)
-      if (new Set(ids).size === images.length && ids.every(id => byId.has(id))) {
-        ordered = ids.map(id => byId.get(id)!)
-      }
-    }
-  } catch { /* Invalid legacy metadata cannot change source membership. */ }
+  const ordered = orderedTelegramGallery(images, draft.telegram_gallery_order)
   return {
     id: draft.id,
     source: 'telegram_studios',
