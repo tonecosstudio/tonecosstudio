@@ -1,5 +1,5 @@
 /**
- * Public, read-only presentation of Telegram studio drafts.
+ * Public, read-only presentation of explicitly visible Telegram studio models.
  * The canonical D1 remains the single source of models, and the private R2
  * binding serves only hashes explicitly associated with a Telegram model.
  * Commercial publication flags and review decisions are never modified here.
@@ -22,7 +22,7 @@ type ImageRow = { image_id: string; source_sha256: string; position: number }
 const ROOT = '/api/telegram-studios'
 const ID = /^tg_[a-f0-9]{24}$/
 const SHA = /^[a-f0-9]{64}$/
-const VISIBLE = "m.telegram_group_key IS NOT NULL AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected'"
+const VISIBLE = "m.telegram_group_key IS NOT NULL AND m.telegram_showcase_visible=1 AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected'"
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: {
