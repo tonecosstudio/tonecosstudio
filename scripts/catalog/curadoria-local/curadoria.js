@@ -533,9 +533,14 @@ async function refreshCatalogSync(){
     el("catalogSyncStatus").textContent="Conferencia somente leitura em "+report.observed_at+
       ". Nenhum nome ou direito foi aprovado automaticamente.";
     renderCatalogSync();
-  }catch(e){el("catalogSyncStatus").textContent="Conferencia indisponivel: "+e.message;}
+  }catch(e){
+    latestCatalogSync=null;
+    el("catalogSyncDetails").hidden=true;
+    el("catalogSyncStatus").textContent="Conferencia indisponivel: "+e.message+
+      " Nenhuma divergencia foi inferida do site fora do ar.";
+  }
   finally{button.disabled=false;}
 }
 el("catalogSyncButton").onclick=refreshCatalogSync;
 el("catalogSyncStudio").onchange=renderCatalogSync;
-setInterval(()=>{if(latestCatalogSync&&document.visibilityState==="visible")refreshCatalogSync()},1800000);
+// O inventario remoto e pesado: atualizar apenas por acao explicita do operador.

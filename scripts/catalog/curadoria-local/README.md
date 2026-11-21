@@ -269,3 +269,9 @@ O host segue na porta loopback 8769 e reutiliza o mesmo SQLite,
 token local, imagens e galerias, sem duplicar serviços e sem publicação
 automática. Tarefas homônimas com outro owner/comando são recusadas.
 Para desinstalação intencional: `INICIAR_CURADORIA.ps1 -Uninstall`.
+
+## Conciliação pública com limite de leituras
+
+A comparação host/site é somente leitura e deve ser solicitada explicitamente pelo operador. Uma varredura paginada da API pública consome leituras do D1; o inventário íntegro verificado é reutilizado em memória por seis horas, com horário da observação visível na interface.
+
+Se a origem retornar erro ou dados incompletos, o host responde HTTP 503 e o código catalog_upstream_unavailable com retry_after_seconds, sem inferir que o catálogo está vazio ou divergente. O cooldown de 30 minutos impede novas varreduras enquanto a origem estiver indisponível. Nenhuma ficha é aprovada, publicada ou replicada no D1/R2 por esta operação. O cooldown reside apenas na memória do único processo supervisionado do host.

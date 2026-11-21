@@ -16,14 +16,26 @@ import re
 import sqlite3
 import time
 from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
 CATALOG_URL = "https://catalogo.tonartstudio.com.br/catalogo-api/api/telegram-studios"
 PAGE_SIZE = 48
-CACHE_SECONDS = 1800
+CACHE_SECONDS = 21600  # at most four full D1 inventories/day, per host
+FAILURE_COOLDOWN_SECONDS = 1800  # failures must not cause a public-API retry storm
 _cache_lock = Lock()
 _cached_at = 0.0
 _cached_inventory = None
 _cached_observed_at = ""
+_unavailable_until = 0.0
+
+
+class CatalogUnavailable(RuntimeError):
+    """Read-only comparison is unavailable, not an empty or divergent catalog."""
+
+    def __init__(self, retry_after_seconds: int):
+        self.retry_after_seconds = max(1, int(retry_after_seconds))
+        super().__init__("Catalogo publico indisponivel. Nova tentativa em "
+                         + str((self.retry_after_seconds + 59) // 60) + " minutos.")
 KEY = re.compile(r"^tg_([0-9a-f]{24})$")
 
 
@@ -82,16 +94,27 @@ def _site_inventory(fetch_json):
 
 def read_site_inventory(fetch_json=None, now=None):
     """Retorna inventário íntegro; cache apenas para chamadas de rede reais."""
-    global _cached_at, _cached_inventory, _cached_observed_at
+    global _cached_at, _cached_inventory, _cached_observed_at, _unavailable_until
     if fetch_json is not None:
         return _site_inventory(fetch_json), datetime.now(timezone.utc).isoformat(timespec="seconds")
     clock = time.monotonic() if now is None else now
     with _cache_lock:
-        if _cached_inventory is not None and clock - _cached_at < CACHE_SECONDS:
+        # Once an inventory is verified it remains internally consistent for
+        # the bounded window; a concurrent browser tab never refetches all pages.
+        if _cached_inventory is not None and 0 <= clock - _cached_at < CACHE_SECONDS:
             return _cached_inventory, _cached_observed_at
-        inventory = _site_inventory(_get_json)
+        if clock < _unavailable_until:
+            raise CatalogUnavailable(int(_unavailable_until - clock + 0.999))
+        try:
+            inventory = _site_inventory(_get_json)
+        except (HTTPError, URLError, OSError, RuntimeError, ValueError) as exc:
+            # A D1 quota exhaustion returns HTTP 503. Never spin through the
+            # paginated public API again while the remote service is unavailable.
+            _unavailable_until = clock + FAILURE_COOLDOWN_SECONDS
+            raise CatalogUnavailable(FAILURE_COOLDOWN_SECONDS) from exc
         observed_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
         _cached_inventory, _cached_at, _cached_observed_at = inventory, clock, observed_at
+        _unavailable_until = 0.0
         return inventory, observed_at
 
 

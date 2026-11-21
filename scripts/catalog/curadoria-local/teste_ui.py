@@ -37,6 +37,10 @@ assert 'id="loadMoreAlbums"' in html
 assert 'el("loadMoreAlbums").onclick' in js
 assert 'page=next?albumCandidatePage+1:1' in js
 assert 'catalogSyncStudio' in html and 'renderCatalogSync' in js
+assert '1800000' not in js
+assert 'latestCatalogSync=null;' in js
+assert 'catalog_upstream_unavailable' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+
 assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js
 assert 'editGalleryPhotoName' in js

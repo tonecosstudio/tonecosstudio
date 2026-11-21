@@ -66,6 +66,39 @@ class CatalogSyncTests(unittest.TestCase):
         finally:
             c.close()
 
+    def test_quota_failure_is_cooled_down_without_retry_storm(self):
+        from unittest.mock import patch
+        from urllib.error import HTTPError
+        sync._cached_inventory = None
+        sync._unavailable_until = 0.0
+        with patch.object(sync, "_get_json", side_effect=HTTPError(
+            sync.CATALOG_URL, 503, "quota exhausted", {}, None,
+        )) as upstream:
+            with self.assertRaises(sync.CatalogUnavailable) as first:
+                sync.read_site_inventory(now=100)
+            self.assertEqual(first.exception.retry_after_seconds,
+                             sync.FAILURE_COOLDOWN_SECONDS)
+            with self.assertRaises(sync.CatalogUnavailable) as cached:
+                sync.read_site_inventory(now=110)
+            self.assertGreater(cached.exception.retry_after_seconds, 0)
+            self.assertEqual(upstream.call_count, 1)
+            with self.assertRaises(sync.CatalogUnavailable):
+                sync.read_site_inventory(now=100 + sync.FAILURE_COOLDOWN_SECONDS + 1)
+            self.assertEqual(upstream.call_count, 2)
+
+    def test_verified_catalog_inventory_is_reused_between_manual_checks(self):
+        from unittest.mock import patch
+        sync._cached_inventory = None
+        sync._unavailable_until = 0.0
+        with patch.object(sync, "_get_json", side_effect=self.fake_fetch) as upstream:
+            result, observed = sync.read_site_inventory(now=1000)
+            self.assertEqual(len(result), 50)
+            self.assertEqual(upstream.call_count, 2)
+            again, later = sync.read_site_inventory(now=1001)
+            self.assertIs(result, again)
+            self.assertEqual(observed, later)
+            self.assertEqual(upstream.call_count, 2)
+
     def test_rejects_incomplete_pagination(self):
         def incomplete(url):
             r = self.fake_fetch(url)

@@ -410,6 +410,15 @@ class Handler(BaseHTTPRequestHandler):
                                        FROM external_candidates ORDER BY matched_message_id IS NULL,filename LIMIT 200""").fetchall()
                 return self.respond({"items":[as_obj(x) for x in rows]})
             return self.respond({"error":"not found"},404)
+        except catalog_sync.CatalogUnavailable as exc:
+            return self.respond({
+                "ok": False,
+                "error": str(exc),
+                "code": "catalog_upstream_unavailable",
+                "retry_after_seconds": exc.retry_after_seconds,
+                "mode": "read_only",
+                "site_models": None,
+            }, 503)
         except Exception as exc:
             return self.respond({"error":str(exc)},500)
 
