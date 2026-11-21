@@ -7,6 +7,16 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
+      "source": "/:blocked(login|cadastro|registrar|minha-conta|conta|solicitar-orcamento|orcamentos|carrinho|checkout|admin)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(catalogo\\.tonartstudio\\.com\\.br|tonart-catalogo-publico(?:-[a-z0-9-]+)?\\.vercel\\.app)"
+        }
+      ],
+      "destination": "/api/catalogo-proxy?path=api/catalog"
+    },
+    {
       "source": "/catalogo-api/:path*",
       "destination": "/api/catalogo-proxy?path=:path*"
     },

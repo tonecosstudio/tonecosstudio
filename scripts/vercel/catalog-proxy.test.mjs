@@ -1,6 +1,7 @@
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
 import { proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
@@ -591,4 +592,49 @@ test("Vercel private Telegram WebP response remains non-cacheable and strips ups
   } finally {
     globalThis.fetch = original;
   }
+});
+
+
+test("the Telegram-only Vercel host rejects commercial browser routes without changing the commercial site", async () => {
+  const config = JSON.parse(readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"));
+  assert.equal(config.rewrites.length, 3);
+  const [rule, apiRewrite, spaFallback] = config.rewrites;
+  assert.equal(apiRewrite.source, "/catalogo-api/:path*");
+  assert.equal(spaFallback.destination, "/index.html");
+  assert.equal(rule.destination, "/api/catalogo-proxy?path=api/catalog");
+  const pathMatch = rule.source.match(/^\/:blocked\(([^)]+)\)$/);
+  assert.ok(pathMatch, "commercial path blocklist must be one explicit route matcher");
+  const blocked = new RegExp("^(?:" + pathMatch[1] + ")$");
+  for (const route of ["login", "cadastro", "registrar", "conta", "minha-conta", "solicitar-orcamento", "orcamentos", "carrinho", "checkout", "admin"]) {
+    assert.equal(blocked.test(route), true, route);
+  }
+  for (const route of ["", "galeria", "modelos", "telegram-studios", "api", "index.html"]) {
+    assert.equal(blocked.test(route), false, route);
+  }
+  assert.equal(rule.has.length, 1);
+  assert.equal(rule.has[0].type, "host");
+  const hostMatch = new RegExp("^(?:" + rule.has[0].value + ")$");
+  for (const hostname of [
+    "catalogo.tonartstudio.com.br",
+    "tonart-catalogo-publico.vercel.app",
+    "tonart-catalogo-publico-krym10bza-jogo-brasils-projects.vercel.app",
+  ]) {
+    assert.equal(hostMatch.test(hostname), true, hostname);
+  }
+  for (const hostname of [
+    "tonartstudio.com.br",
+    "www.tonartstudio.com.br",
+    "tonart-studio-public.vercel.app",
+    "example.com",
+  ]) {
+    assert.equal(hostMatch.test(hostname), false, hostname);
+  }
+  const res = responseSink();
+  await handler({
+    method: "GET",
+    url: "/api/catalogo-proxy?path=api/catalog",
+    query: { path: "api/catalog" },
+    headers: { host: "catalogo.tonartstudio.com.br" },
+  }, res);
+  assert.equal(res.statusCode, 404);
 });
