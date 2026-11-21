@@ -150,6 +150,9 @@ describe("TONART: curadoria contínua em lotes de 24", () => {
     expect(
       await editor().findByText("Ficha 25 de 25 nesta seleção"),
     ).toBeInTheDocument();
+    // A mount-time search debounce must not reset the index back to page one.
+    await new Promise<void>((resolve) => window.setTimeout(resolve, 350));
+    expect(editor().getByText("Ficha 25 de 25 nesta seleção")).toBeInTheDocument();
     expect(mocks.searchIndex).toHaveBeenCalledWith("", "", 24, false);
     expect(
       editor().getByRole("button", { name: "Abrir próxima ficha" }),
