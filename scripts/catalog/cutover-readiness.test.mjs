@@ -47,11 +47,13 @@ const fullState = () => ({
   sourceMainSha: original.origin.observedMainSha,
   sourceFix: {
     number: original.staging.sourceFixPullRequest,
-    state: 'open', draft: true, merged: false,
-    headSha: original.staging.sourceFixHead,
-    baseSha: original.origin.observedMainSha,
+    state: 'closed', draft: false, merged: true,
+    headSha: original.staging.sourceFixMergedHead,
+    mergeCommitSha: original.staging.sourceFixMergeCommit,
+    baseSha: original.staging.sourceFixBaseShaAtMerge,
     headRepo: original.origin.repository,
   },
+  sourceMediaBlobSha: original.staging.fileBlobs['worker/media.ts'],
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
   showcaseSchema: {
@@ -134,9 +136,13 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
     }
     if (u.endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
       return Response.json({ number: original.staging.sourceFixPullRequest,
-        state: 'open', draft: true, merged: false,
-        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
-        base: { sha: original.origin.observedMainSha } })
+        state: 'closed', draft: false, merged: true,
+        merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.staging.sourceFixBaseShaAtMerge } })
+    }
+    if (u.includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
     }
     if (u.includes('/runs?status=')) return Response.json({ total_count: 0 })
     if (u.startsWith('https://api.github.com/')) {
@@ -242,15 +248,19 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     if (String(url).includes('/runs?status=')) {
       return Response.json({ total_count: 0 })
     }
+    if (String(url).includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
+    }
     if (String(url).endsWith('/git/ref/heads/main')) {
       return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
     }
     if (String(url).endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
       return Response.json({
         number: original.staging.sourceFixPullRequest,
-        state: 'open', draft: true, merged: false,
-        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
-        base: { sha: original.origin.observedMainSha },
+        state: 'closed', draft: false, merged: true,
+        merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.staging.sourceFixBaseShaAtMerge },
       })
     }
     if (String(url).endsWith('/repos/' + original.origin.repository)) {
@@ -277,11 +287,13 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.ok(state.additionalWriters.every(x => x.state === 'disabled_manually' && x.pending === 0))
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 10 + 6 * retiringWriters.length)
+    assert.equal(requests.length, 11 + 6 * retiringWriters.length)
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
     assert.equal(state.targetDefaultBranch, 'main')
     assert.ok(requests.some(url => url.endsWith('/repos/' + original.target.repository)))
-    assert.equal(state.sourceFix.headSha, original.staging.sourceFixHead)
+    assert.equal(state.sourceFix.headSha, original.staging.sourceFixMergedHead)
+    assert.equal(state.sourceFix.mergeCommitSha, original.staging.sourceFixMergeCommit)
+    assert.equal(state.sourceMediaBlobSha, original.staging.fileBlobs['worker/media.ts'])
     assert.ok(requests.some(url => url.endsWith('/pulls/' + original.staging.sourceFixPullRequest)))
     assert.equal(state.sourceMainSha, original.origin.observedMainSha)
     assert.equal(state.sourceRepositoryId, original.origin.repositoryId)
@@ -339,7 +351,7 @@ test('source repository ID and canonical name must match GitHub metadata', () =>
   assert.ok(assessCutoverReadiness(approvedContract(), renamed).blockers.includes('source_repository_identity_unverified'))
 })
 
-test('unmerged source media fix PR must match imported head and original base', () => {
+test('merged source media fix must match canonical merged head, original base and source blob', () => {
   const changed = fullState()
   changed.sourceFix.headSha = '0000000000000000000000000000000000000000'
   assert.ok(assessCutoverReadiness(approvedContract(), changed).blockers.includes('source_media_patch_drift_or_unverified'))
@@ -348,14 +360,22 @@ test('unmerged source media fix PR must match imported head and original base', 
   retargeted.sourceFix.baseSha = '1111111111111111111111111111111111111111'
   assert.ok(assessCutoverReadiness(approvedContract(), retargeted).blockers.includes('source_media_patch_drift_or_unverified'))
 
+  const changedMerge = fullState()
+  changedMerge.sourceFix.mergeCommitSha = 'ffffffffffffffffffffffffffffffffffffffff'
+  assert.ok(assessCutoverReadiness(approvedContract(), changedMerge).blockers.includes('source_media_patch_drift_or_unverified'))
+
+  const changedBlob = fullState()
+  changedBlob.sourceMediaBlobSha = '0000000000000000000000000000000000000000'
+  assert.ok(assessCutoverReadiness(approvedContract(), changedBlob).blockers.includes('source_media_patch_drift_or_unverified'))
+
   const missing = fullState()
   delete missing.sourceFix
   assert.ok(assessCutoverReadiness(approvedContract(), missing).blockers.includes('source_media_patch_drift_or_unverified'))
 })
 
-test('merged, closed, or non-draft source patch requires explicit reconciliation', () => {
+test('unmerged, open, or draft source patch cannot pass reconciliation', () => {
   for (const mutation of [
-    { state: 'closed' }, { merged: true }, { draft: false },
+    { state: 'open' }, { merged: false }, { draft: true },
     { headRepo: 'someone-else/catalogo' },
   ]) {
     const observed = fullState()
@@ -394,14 +414,18 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
     if (String(url).endsWith('/repos/' + original.origin.repository)) {
       return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
     }
+    if (String(url).includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
+    }
     if (String(url).endsWith('/git/ref/heads/main')) {
       return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
     }
     if (String(url).endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
       return Response.json({
-        number: original.staging.sourceFixPullRequest, state: 'open', draft: true, merged: false,
-        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
-        base: { sha: original.origin.observedMainSha },
+        number: original.staging.sourceFixPullRequest, state: 'closed', draft: false, merged: true,
+        merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.staging.sourceFixBaseShaAtMerge },
       })
     }
     if (String(url).includes('/runs?status=')) return Response.json({ total_count: 0 })
@@ -411,7 +435,7 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
   try {
     const state = await inspectLiveReadOnly({ GITHUB_TOKEN: 'test-github-token' })
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
-    assert.equal(requests.length, 10 + 6 * retiringWriters.length)
+    assert.equal(requests.length, 11 + 6 * retiringWriters.length)
     assert.ok(requests.every(r => r.method === 'GET' && r.token === 'Bearer test-github-token'))
     assert.ok(requests.every(r => r.url.startsWith('https://api.github.com/')))
   } finally {
