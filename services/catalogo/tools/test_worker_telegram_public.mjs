@@ -56,7 +56,8 @@ test("global index search checks name, character and variant with bound values",
  const {env,queries,bindings}=fixture();
  const response=await routeTelegramStudioShowcase(request("?studio=Studio%20A&q=Chibi&limit=24"),env);
  assert.equal(response.status,200);
- const sql=queries.find(x=>x.includes("ORDER BY m.telegram_studio COLLATE NOCASE"));
+ const sql=queries.find(x=>x.includes("ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE"));
+ assert.ok(sql.includes("ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?"));
  assert.match(sql,/m.name LIKE \?/);
  assert.match(sql,/m.telegram_character LIKE \?/);
  assert.match(sql,/COALESCE\(m.variant_name/);

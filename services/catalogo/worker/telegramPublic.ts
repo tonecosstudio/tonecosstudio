@@ -94,7 +94,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
         " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
         ' THEN 0 ELSE 1 END, s.position LIMIT 1) AS cover_sha' +
         ' FROM models m WHERE ' + condition +
-        ' ORDER BY m.telegram_studio COLLATE NOCASE,m.name COLLATE NOCASE,m.id LIMIT ? OFFSET ?')
+        ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?')
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results
       return json({ total: count?.total ?? 0, offset: Number(rawOffset), limit: Number(rawLimit),
         items: rows.map(m => ({...normalize(m), cover: m.cover_sha && SHA.test(m.cover_sha)
