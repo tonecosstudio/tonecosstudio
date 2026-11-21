@@ -162,7 +162,9 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
     'config/catalog-schema-contract.json',
+    'tools/test_schema_contract.mjs',
     'tools/test_worker_folder_counts.mjs',
+    'tools/test_worker_media_contract.mjs',
     'worker/entry.ts',
     'worker/index.ts',
     'worker/publicQueryBudget.ts',

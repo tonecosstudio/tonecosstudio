@@ -61,9 +61,18 @@ async function serveCachedMetadata(
     : undefined
   if (!cache) return build()
 
+  // The route already validated allowed parameters and rejected duplicates.
+  // Canonicalize equivalent public-list URLs so parameter order and omitted
+  // pagination defaults do not multiply D1 reads on regional cache misses.
+  // Do not normalize studio, search, category or provisional filters.
+  const cacheUrl = new URL(request.url)
+  if (cacheUrl.pathname === ROOT) {
+    if (!cacheUrl.searchParams.has('limit')) cacheUrl.searchParams.set('limit', '24')
+    if (!cacheUrl.searchParams.has('offset')) cacheUrl.searchParams.set('offset', '0')
+  }
+  cacheUrl.searchParams.sort()
   // Recreate a header-free request: user-controlled headers never vary the key.
-  // The route validates every query parameter before invoking this function.
-  const key = new Request(request.url, { method: 'GET' })
+  const key = new Request(cacheUrl.toString(), { method: 'GET' })
   try {
     const hit = await cache.match(key)
     if (hit?.status === 200) return hit

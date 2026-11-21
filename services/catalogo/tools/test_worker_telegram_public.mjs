@@ -93,6 +93,46 @@ test("Worker edge cache reuses anonymous list/studio responses without repeat D1
  }
 });
 
+test("public list cache keys share aliases without merging distinct filters", async () => {
+ const previous=Object.getOwnPropertyDescriptor(globalThis,"caches");
+ const entries=new Map(),written=[];
+ Object.defineProperty(globalThis,"caches",{configurable:true,value:{default:{
+   async match(req){return entries.get(req.url)?.clone()},
+   async put(req,res){written.push(req.url);entries.set(req.url,res.clone())},
+ }}});
+ try {
+   const {env,queries}=fixture();
+   const page=await routeTelegramStudioShowcase(request("?studio=Studio%20A&limit=24&offset=0"),env);
+   assert.equal(page.status,200);
+   assert.equal(queries.length,2);
+   const alias=await routeTelegramStudioShowcase(request("?offset=0&studio=Studio%20A"),env);
+   assert.equal(alias.status,200);
+   assert.deepEqual(await alias.json(),await page.json());
+   assert.equal(queries.length,2,"equivalent list URLs must share one D1 result");
+   assert.equal(written.length,1);
+   assert.ok(written[0].endsWith("?limit=24&offset=0&studio=Studio+A"));
+
+   const anotherStudio=await routeTelegramStudioShowcase(request("?studio=Studio%20B&limit=24"),env);
+   assert.equal(anotherStudio.status,200);
+   assert.equal(queries.length,4,"studio filters must remain isolated");
+
+   const defaultPage=await routeTelegramStudioShowcase(request(""),env);
+   assert.equal(defaultPage.status,200);
+   assert.equal(queries.length,6);
+   const defaultAlias=await routeTelegramStudioShowcase(request("?offset=0&limit=24"),env);
+   assert.equal(defaultAlias.status,200);
+   assert.equal(queries.length,6,"missing defaults must not repeat D1 reads");
+
+   const differentPage=await routeTelegramStudioShowcase(request("?offset=24&limit=24"),env);
+   assert.equal(differentPage.status,200);
+   assert.equal(queries.length,8,"different pages must remain distinct");
+   assert.equal(written.length,4);
+ } finally {
+   if(previous)Object.defineProperty(globalThis,"caches",previous);
+   else delete globalThis.caches;
+ }
+});
+
 test("Worker cache never stores private, invalid, detail, media or D1-error responses", async () => {
  const previous=Object.getOwnPropertyDescriptor(globalThis,"caches");
  const entries=new Map(),seen={match:0,put:0};

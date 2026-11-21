@@ -117,7 +117,7 @@ test('entrypoint routes media before delegating to the D1-backed API handler', (
   const entry = fs.readFileSync(new URL('../worker/entry.ts', import.meta.url), 'utf8')
   const mediaBranch = entry.indexOf("url.pathname.startsWith(PUBLIC_MEDIA_PREFIX)")
   const mediaReturn = entry.indexOf('return servePublicMedia(request, env.MEDIA')
-  const apiReturn = entry.indexOf('return apiWorker.fetch(request, env)')
+  const apiReturn = entry.indexOf('return apiWorker.fetch(request, env, ctx)')
 
   assert.ok(mediaBranch >= 0)
   assert.ok(mediaReturn > mediaBranch)
