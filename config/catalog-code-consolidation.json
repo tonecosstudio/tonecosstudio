@@ -253,6 +253,16 @@
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
         "localBlob": "ce64383b73823899c15547da3c03dd0737938783",
         "reason": "Reviewed TONART-local lint correction: replaces the rejected ASCII-control regex literal with an equivalent charCodeAt scan; preserves the upstream source pin, rejection semantics and single Worker ownership. No release."
+      },
+      "tools/test_schema_contract.mjs": {
+        "sourceBlob": "fc6335a7c3e2458d8a3d81cecdcc24c4d7a3e34a",
+        "localBlob": "de77b673b2287b3177db503335b8505cfa4d46b7",
+        "reason": "Reviewed TONART-local test distinguishes source-required D1 migrations through 0025 from later staged 0026-0028; it does not activate or require a production migration."
+      },
+      "tools/test_worker_media_contract.mjs": {
+        "sourceBlob": "6d57dc241a405ee6743a92d6a25c6f8f5a6f67d0",
+        "localBlob": "e48458169f3408dbaa01ebc974e3903443f498d9",
+        "reason": "Reviewed TONART-local test checks the existing Worker delegation with Cloudflare execution context; R2 media interception and D1-independent GET/HEAD retain original behavior."
       }
     },
     "excludedModules": [
