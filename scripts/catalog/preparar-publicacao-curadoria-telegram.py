@@ -496,6 +496,104 @@ def write_plan(out: Path, records: list[dict], summary: dict) -> None:
                     "".join(json.dumps(op, ensure_ascii=False) + "\n" for op in operations))
 
 
+def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list[dict], dict]:
+    """Read-only reconciliation for EXISTING D1 Telegram drafts.
+
+    Never creates models, changes review/rights, or trusts a matching title.
+    Every gallery photo needs matching Telegram message_id and SHA-256.
+    The live admin PATCH endpoint rechecks the revision before any later write.
+    """
+    rows = read_csv(inventory)
+    needed = {
+        "model_id", "studio", "model", "variant", "sha256", "image_id",
+        "telegram_group_key", "telegram_revision", "telegram_review_status",
+        "telegram_name_provisional", "telegram_rights_status", "published",
+    }
+    if not rows or not needed <= set(rows[0]):
+        raise ValueError("Snapshot D1 Telegram ausente/incompleto para sincronizar nomes")
+    local = {int(row["message_id"]): row for row in read_curation(db)}
+    models = defaultdict(list)
+    image_owners = defaultdict(set)
+    for row in rows:
+        model_id = row["model_id"]
+        image_id = row["image_id"]
+        digest = (row["sha256"] or "").lower()
+        if not re.fullmatch(r"tg_[a-f0-9]{24}", model_id) or not re.fullmatch(r"tg:[1-9][0-9]*", image_id):
+            raise ValueError("Identidade Telegram D1 invalida no snapshot")
+        if not HASH.fullmatch(digest):
+            raise ValueError("SHA-256 D1 invalido no snapshot")
+        models[model_id].append(row)
+        image_owners[(image_id, digest)].add(model_id)
+    ready, held = [], Counter()
+    for model_id, images in sorted(models.items()):
+        one = images[0]
+        mid_ids = [int(r["image_id"][3:]) for r in images]
+        # Refuse partial galleries, duplicate rows or conflicting D1 model fields.
+        fields = ("studio", "model", "variant", "telegram_group_key",
+                  "telegram_revision", "telegram_review_status",
+                  "telegram_name_provisional", "telegram_rights_status", "published")
+        if (len(set(mid_ids)) != len(images)
+                or any(any(row[k] != one[k] for k in fields) for row in images)
+                or any(len(image_owners[(r["image_id"], r["sha256"].lower())]) != 1 for r in images)):
+            held["ambiguous_d1_gallery"] += 1
+            continue
+        old = (one["model"] or "").strip()
+        if not re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old):
+            held["already_named_or_manually_edited"] += 1
+            continue
+        if (one["telegram_revision"] != "0" or one["telegram_review_status"] != "pending"
+                or one["telegram_name_provisional"] != "1"
+                or one["telegram_rights_status"] != "not_reviewed" or one["published"] != "0"):
+            held["not_untouched_private_draft"] += 1
+            continue
+        matched = [local.get(mid) for mid in mid_ids]
+        if any(r is None for r in matched):
+            held["local_gallery_incomplete"] += 1
+            continue
+        if any((r["telegram_topic"] != one["studio"] or r["studio"] != one["studio"]
+                or r["original_sha256"] != images[i]["sha256"].lower())
+               for i, r in enumerate(matched)):
+            held["source_identity_or_sha_mismatch"] += 1
+            continue
+        titles = {str(r["model"] or "").strip() for r in matched}
+        groups = {r["model_group_key"] for r in matched}
+        if (len(titles) != 1 or not next(iter(titles)) or
+                next(iter(titles)).startswith("Modelo sem nome") or
+                any(r["name_status"] not in {"confirmado", "provavel"} for r in matched) or
+                len(groups) != 1):
+            held["ambiguous_local_identity"] += 1
+            continue
+        group = next(iter(groups))
+        if group and group != one["telegram_group_key"]:
+            held["group_identity_mismatch"] += 1
+            continue
+        if any(key(r["variant"]) and key(one["variant"]) and
+               key(r["variant"]) != key(one["variant"]) for r in matched):
+            held["variant_conflict"] += 1
+            continue
+        name = next(iter(titles))
+        proof = sorted((mid, images[i]["sha256"].lower()) for i, mid in enumerate(mid_ids))
+        operation_id = hashlib.sha256(json.dumps(
+            [model_id, 0, old, name, proof], ensure_ascii=False,
+            separators=(",", ":")).encode("utf-8")).hexdigest()
+        ready.append({
+            "operation_id": operation_id, "model_id": model_id, "studio": one["studio"],
+            "old_name": old, "new_name": name, "expected_revision": 0,
+            "source_proof": [{"message_id": mid, "sha256": sha} for mid, sha in proof],
+            "admin_patch": {"revision": 0, "name": name},
+            "name_status": "confirmado" if all(r["name_status"] == "confirmado" for r in matched)
+                           else "provavel",
+            "approval_granted": False, "rights_verified": False,
+            "publication_granted": False, "apply_executed": False,
+        })
+    return ready, {
+        "schema": "tonart.telegram.existing-name-sync/1",
+        "d1_models_seen": len(models), "ready": len(ready),
+        "held": dict(sorted(held.items())), "external_writes": False,
+        "note": "Plan only. Check D1 source proof/live revision and admin authorization before PATCH.",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Staging Telegram/TONART, sem upload ou exclusoes")
     parser.add_argument("--db", type=Path, default=DB_DEFAULT)
@@ -503,11 +601,19 @@ def main():
     parser.add_argument("--existing-csv", type=Path)
     parser.add_argument("--expected-model-count", type=int, help="Quantidade total de IDs da origem canônica, incluindo não publicados")
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
+    parser.add_argument("--existing-drafts-csv", type=Path,
+                        help="Snapshot somente leitura do D1 Telegram para planejar correcao de nomes existentes")
     args = parser.parse_args()
     source, out = args.source_root.resolve(), args.out.resolve()
     ensure_private_output(out, source)
     rows, summary = build_plan(args.db, source, args.existing_csv, args.expected_model_count)
     write_plan(out, rows, summary)
+    if args.existing_drafts_csv:
+        updates, info = plan_existing_telegram_name_updates(args.db, args.existing_drafts_csv)
+        atomic_text(out / "correcoes_fichas_existentes.jsonl",
+                    "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in updates))
+        atomic_text(out / "resumo_correcoes_fichas_existentes.json",
+                    json.dumps(info, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps({"out": str(out), "summary": summary}, ensure_ascii=False))
 
 

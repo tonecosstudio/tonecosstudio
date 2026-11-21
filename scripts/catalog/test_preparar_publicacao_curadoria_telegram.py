@@ -268,6 +268,78 @@ def test_reconciliation_matrix():
         assert all(not op["rights_verified"] and not op["production_write_authorized"] for op in ops)
     print("MATRIZ APROVADA: escala/variante, SHA, album, foto extra, colisoes, retomada e idempotencia")
 
+def test_existing_name_sync_read_only():
+    """D1 cards are reused by exact origin identity; no approval shortcut."""
+    with tempfile.TemporaryDirectory(prefix="tonart-existing-sync-") as temp:
+        home = Path(temp)
+        db, csv_path = home / "curadoria.sqlite3", home / "drafts.csv"
+        with closing(sqlite3.connect(db)) as con:
+            con.executescript("""
+                CREATE TABLE assets(message_id INTEGER PRIMARY KEY,sha256 TEXT,
+                    source_relative TEXT,original_topic TEXT,source_date TEXT);
+                CREATE TABLE annotations(message_id INTEGER PRIMARY KEY,status TEXT,model TEXT);
+                CREATE TABLE name_proposals(message_id INTEGER PRIMARY KEY,status TEXT,
+                    studio TEXT,title TEXT,universe TEXT,variant TEXT,filename TEXT,
+                    official_url TEXT,evidence_type TEXT,confidence REAL);
+                CREATE TABLE model_groups(group_key TEXT PRIMARY KEY,state TEXT,
+                    studio TEXT,title TEXT);
+                CREATE TABLE model_group_members(message_id INTEGER PRIMARY KEY,group_key TEXT);
+            """)
+            def insert(mid, title, status="provavel", group=None):
+                digest = hashlib.sha256(f"image-{mid}".encode()).hexdigest()
+                con.execute("INSERT INTO assets VALUES(?,?,?,?,?)",
+                            (mid, digest, f"Abe3D/msg_{mid}.jpg", "Abe3D", "2026-11-21"))
+                con.execute("INSERT INTO annotations VALUES(?,?,?)", (mid, "revisar", title))
+                con.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (mid, status, "Abe3D", title, "", "", f"msg_{mid}.jpg", "", "", 0.7))
+                if group:
+                    con.execute("INSERT INTO model_group_members VALUES(?,?)", (mid, group))
+                return digest
+            con.execute("INSERT INTO model_groups VALUES(?,?,?,?)",
+                        ("c" * 24, "provavel", "Abe3D", "Selene"))
+            one, two = insert(101, "Selene", "confirmado", "c" * 24), insert(102, "Selene", "confirmado", "c" * 24)
+            three = insert(103, "Lara")
+            four = insert(104, "Unknown", "revisar")
+            five = insert(105, "Variant X")
+            con.commit()
+        fields = ["model_id","studio","model","variant","sha256","image_id",
+                  "telegram_group_key","telegram_revision","telegram_review_status",
+                  "telegram_name_provisional","telegram_rights_status","published"]
+        def record(model, mid, digest, old, group="", rev="0", rights="not_reviewed"):
+            return dict(model_id=model,studio="Abe3D",model=old,variant="",
+                        sha256=digest,image_id=f"tg:{mid}",telegram_group_key=group,
+                        telegram_revision=rev,telegram_review_status="pending",
+                        telegram_name_provisional="1",telegram_rights_status=rights,published="0")
+        inputs = [
+            record("tg_"+"a"*24,101,one,"Modelo sem nome #101","c"*24),
+            record("tg_"+"a"*24,102,two,"Modelo sem nome #101","c"*24),
+            record("tg_"+"b"*24,103,three,"Modelo sem nome #103"),
+            record("tg_"+"d"*24,104,four,"Modelo sem nome #104"),
+            record("tg_"+"e"*24,105,five,"Manually reviewed title"),
+        ]
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields)
+            w.writeheader();w.writerows(inputs)
+        ready, report=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert {r["model_id"] for r in ready}=={"tg_"+"a"*24,"tg_"+"b"*24}, ready
+        assert report["ready"]==2 and not report["external_writes"]
+        assert all(not r["publication_granted"] and not r["rights_verified"] for r in ready)
+        assert ready[0]["admin_patch"]=={"revision":0,"name":"Selene"}
+        again,_=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert [r["operation_id"] for r in ready]==[r["operation_id"] for r in again]
+        inputs[2]["telegram_revision"]="1"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        blocked,_=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert len(blocked)==1, blocked
+        inputs[1]["sha256"]="f"*64
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        mismatch,_=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert not mismatch, mismatch
+
+
 if __name__ == "__main__":
     run()
     test_reconciliation_matrix()
+    test_existing_name_sync_read_only()
