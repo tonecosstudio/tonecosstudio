@@ -184,8 +184,8 @@ describe("internal catalog curation service", () => {
     const paths = [
       "supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
       "supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
-      "supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
-      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "supabase/migrations/20261121033100_tonart_character_editorial_profiles.sql",
+      "supabase/migrations/20261121033200_tonart_public_character_approval_and_export.sql",
     ];
     const migrations = paths.map((path) => readRepositorySource(path));
     for (const migration of migrations) {
@@ -1158,7 +1158,7 @@ describe("internal catalog curation service", () => {
       "utf8",
     );
     const migration = readFileSync(
-      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "supabase/migrations/20261121033000_tonart_curated_model_characters.sql",
       "utf8",
     );
     const acceptance = readFileSync(
@@ -1382,7 +1382,7 @@ describe("internal catalog curation service", () => {
 
   it("stages a lossless and private many-to-many cutover with no second writer", () => {
     const migration = readFileSync(
-      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "supabase/migrations/20261121033000_tonart_curated_model_characters.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
     expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
@@ -1498,7 +1498,7 @@ describe("internal catalog curation service", () => {
 
   it("locks legacy writers and rejects unreviewed dependencies before the destructive cutover", () => {
     const migration = readFileSync(
-      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "supabase/migrations/20261121033000_tonart_curated_model_characters.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
     const lockPosition = migration.indexOf(
@@ -1530,7 +1530,7 @@ describe("internal catalog curation service", () => {
 
   it("grants each private migration RPC with its exact PostgreSQL definition signature", () => {
     const migration = readFileSync(
-      "supabase/migrations/20261117030000_tonart_curated_model_characters.sql",
+      "supabase/migrations/20261121033000_tonart_curated_model_characters.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
     const declared = new Map(
@@ -1566,7 +1566,7 @@ describe("internal catalog curation service", () => {
 
   it("retains one canonical relation revision for every editorial publication", () => {
     const migration = readFileSync(
-      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "supabase/migrations/20261121033200_tonart_public_character_approval_and_export.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
     const acceptance = readFileSync(
@@ -1715,7 +1715,7 @@ describe("internal catalog curation service", () => {
 
   it("keeps biography optional from human review through the public export", () => {
     const publicationMigration = readFileSync(
-      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+      "supabase/migrations/20261121033200_tonart_public_character_approval_and_export.sql",
       "utf8",
     ).replace(/\r\n/g, "\n");
     const acceptance = readFileSync(

@@ -267,7 +267,7 @@ jobs:
       # PostgreSQL is ephemeral, has no network, mounts source read-only,
       # and never receives Supabase/D1 credentials or production data.
       - name: Test editorial approval and revocation on disposable PostgreSQL
-        if: hashFiles('supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql') != ''
+        if: hashFiles('supabase/migrations/20261121033200_tonart_public_character_approval_and_export.sql') != ''
         shell: bash
         run: |
           set -euo pipefail

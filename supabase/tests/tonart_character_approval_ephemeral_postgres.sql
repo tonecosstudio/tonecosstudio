@@ -41,7 +41,7 @@ INSERT INTO public.catalog_curation_model_profiles (
   'mdl_legacy_001', 'legacy-test-model', '33333333-3333-4333-8333-333333333333',
   true, 'https://example.org/legacy-character', 'Legacy verified model link'
 );
-\ir ../migrations/20261117030000_tonart_curated_model_characters.sql
+\ir ../migrations/20261121033000_tonart_curated_model_characters.sql
 DO $legacy_link_backfill$
 BEGIN
   IF NOT EXISTS (
@@ -66,8 +66,8 @@ BEGIN
   END IF;
 END;
 $legacy_link_backfill$;
-\ir ../migrations/20261117040000_tonart_character_editorial_profiles.sql
-\ir ../migrations/20261118010000_tonart_public_character_approval_and_export.sql
+\ir ../migrations/20261121033100_tonart_character_editorial_profiles.sql
+\ir ../migrations/20261121033200_tonart_public_character_approval_and_export.sql
 
 DO $private_editorial_access_contract$
 DECLARE
