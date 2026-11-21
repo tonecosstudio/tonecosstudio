@@ -27,6 +27,10 @@ assert '/api/append-gallery' in (root/'gallery_ui.js').read_text(encoding='utf-8
 assert '/api/gallery-candidates' in (root/'gallery_ui.js').read_text(encoding='utf-8')
 assert '/api/append-gallery' in js
 assert '/api/capabilities' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+for operation in ('albums.candidates','names.list','images.visual_candidates',
+                  'images.annotate','catalog.export','catalog.compare_csv',
+                  'external_candidates.list'):
+    assert '\"id\":\"'+operation+'\"' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'async function openBoard(' in js
 assert 'id="catalogSyncButton"' in html and '/api/catalog-sync' in js
 assert 'id="loadMoreAlbums"' in html
