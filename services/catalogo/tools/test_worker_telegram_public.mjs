@@ -3,19 +3,19 @@ import { test } from "node:test";
 import esbuild from "esbuild";
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
-
 const entry = new URL("../worker/telegramPublic.ts", import.meta.url).pathname.replace(/^\/([A-Z]:)/i, "$1");
 const built = await esbuild.build({entryPoints:[entry], bundle:true, platform:"browser",format:"esm",target:"es2022",write:false});
 const {routeTelegramStudioShowcase} = await import("data:text/javascript;base64,"+Buffer.from(built.outputFiles[0].text).toString("base64"));
 const id="tg_abcdef0123456789abcdef01",sha="a".repeat(64),base="https://worker.test/api/telegram-studios";
 function fixture(){
  const queries=[],keys=[],bindings=[];
- const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,image_count:1,cover_sha:sha};
- return {queries,keys,bindings,env:{
+ const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,telegram_gallery_order:'[1212]',image_count:1,cover_sha:sha};
+ const sources=[{image_id:"tg:1212",source_sha256:sha,position:0}];
+ return {row,sources,queries,keys,bindings,env:{
   DB:{prepare(sql){queries.push(sql);let params=[];return {
    bind(...v){params=v;bindings.push({sql,values:v});return this},
    async first(){if(sql.includes("COUNT(*)"))return {total:1};if(sql.includes("s.source_sha256")&&params[1]===sha)return {source_sha256:sha};if(sql.includes("FROM models m")&&params[0]===id)return row;return null},
-   async all(){if(sql.includes("GROUP BY"))return {results:[{studio:"Studio A",total:1}]};if(sql.includes("SELECT m.id"))return {results:[row]};if(sql.includes("FROM model_image_sources"))return {results:[{image_id:"tg:1212",source_sha256:sha,position:0}]};return {results:[row]}}
+   async all(){if(sql.includes("GROUP BY"))return {results:[{studio:"Studio A",total:1}]};if(sql.includes("SELECT m.id"))return {results:[row]};if(sql.includes("FROM model_image_sources"))return {results:sources};return {results:[row]}}
   }}},
   PRIVATE_TELEGRAM:{async get(key){keys.push(key);return {body:new ReadableStream({start(c){c.enqueue(new TextEncoder().encode("RIFFxxxxWEBP"));c.close()}})}}}
  }};
@@ -67,6 +67,39 @@ test("detail and gallery are bound to mapped model SHA",async()=>{
  const denied=await routeTelegramStudioShowcase(request("/"+id+"/media/"+"b".repeat(64)+"/display"),env);
  assert.equal(denied.status,404);assert.equal(keys.length,1);
 });
+
+test("public gallery and cover follow the private editor's confirmed photo order",async()=>{
+ const {env,row,sources,queries}=fixture();
+ const otherSha="b".repeat(64);
+ sources.push({image_id:"tg:3434",source_sha256:otherSha,position:1});
+ row.image_count=2;
+ row.telegram_gallery_order="[3434,1212]";
+ const detail=await routeTelegramStudioShowcase(request("/"+id),env);
+ assert.equal(detail.status,200);
+ const gallery=(await detail.json()).images;
+ assert.deepEqual(gallery.map(x=>x.position),[0,1]);
+ assert.deepEqual(gallery.map(x=>x.display),[
+   "/api/telegram-studios/"+id+"/media/"+otherSha+"/display",
+   "/api/telegram-studios/"+id+"/media/"+sha+"/display",
+ ]);
+ const list=await routeTelegramStudioShowcase(request("?limit=24"),env);
+ assert.equal(list.status,200);
+ assert.ok(queries.some(x=>x.includes("m.cover_storage_key")&&x.includes("s.source_sha256")));
+ // Malformed or repeated order metadata must never duplicate or drop a source.
+ row.telegram_gallery_order="[1212,1212]";
+ const repeated=await routeTelegramStudioShowcase(request("/"+id),env);
+ assert.deepEqual((await repeated.json()).images.map(x=>x.display),[
+   "/api/telegram-studios/"+id+"/media/"+sha+"/display",
+   "/api/telegram-studios/"+id+"/media/"+otherSha+"/display",
+ ]);
+ row.telegram_gallery_order="invalid-json";
+ const malformed=await routeTelegramStudioShowcase(request("/"+id),env);
+ assert.deepEqual((await malformed.json()).images.map(x=>x.display),[
+   "/api/telegram-studios/"+id+"/media/"+sha+"/display",
+   "/api/telegram-studios/"+id+"/media/"+otherSha+"/display",
+ ]);
+});
+
 test("invalid queries, media keys and methods never read private R2",async()=>{
  const {env,keys}=fixture();
  assert.equal((await routeTelegramStudioShowcase(request("?offset=-1"),env)).status,400);

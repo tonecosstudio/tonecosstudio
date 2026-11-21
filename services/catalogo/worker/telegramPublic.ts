@@ -4,6 +4,8 @@
  * binding serves only hashes explicitly associated with a Telegram model.
  * Commercial publication flags and review decisions are never modified here.
  */
+import { orderedTelegramGallery } from './telegramGallery'
+
 type D1Statement = {
   bind(...values: unknown[]): D1Statement
   first<T>(): Promise<T | null>
@@ -16,6 +18,7 @@ type ModelRow = {
   id: string; name: string; telegram_studio: string; telegram_character: string
   telegram_origin_id: string; variant_name: string | null; image_count: number
   telegram_name_provisional: number
+  telegram_gallery_order: string | null
 }
 type ImageRow = { image_id: string; source_sha256: string; position: number }
 
@@ -79,7 +82,11 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
         .bind(...values).first<{ total: number }>()
       const rows = (await env.DB.prepare(
         'SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,m.variant_name,m.image_count,m.telegram_name_provisional,' +
-        ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1 ORDER BY s.position LIMIT 1) AS cover_sha' +
+        ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1' +
+        ' ORDER BY CASE WHEN m.cover_storage_key=(' +
+        " 'telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +
+        " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
+        ' THEN 0 ELSE 1 END, s.position LIMIT 1) AS cover_sha' +
         ' FROM models m WHERE ' + condition +
         ' ORDER BY m.telegram_studio COLLATE NOCASE,m.name COLLATE NOCASE,m.id LIMIT ? OFFSET ?')
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results
@@ -94,7 +101,7 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
     const id = (mediaMatch || detailMatch)![1]
     if (!ID.test(id)) return json({ error: 'not_found' }, 404)
     const model = await env.DB.prepare('SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,' +
-      'm.variant_name,m.image_count,m.telegram_name_provisional FROM models m WHERE m.id=? AND ' + VISIBLE + ' LIMIT 1')
+      'm.variant_name,m.image_count,m.telegram_name_provisional,m.telegram_gallery_order FROM models m WHERE m.id=? AND ' + VISIBLE + ' LIMIT 1')
       .bind(id).first<ModelRow>()
     if (!model) return json({ error: 'not_found' }, 404)
     if (mediaMatch) {
@@ -116,8 +123,10 @@ export async function routeTelegramStudioShowcase(request: Request, env: Telegra
     const images = (await env.DB.prepare('SELECT image_id,source_sha256,position FROM model_image_sources ' +
       'WHERE model_id=? AND gallery_version=1 ORDER BY position,image_id LIMIT 80')
       .bind(id).all<ImageRow>()).results
-    return json({...normalize(model), images: images.filter(x=>SHA.test(x.source_sha256)).map(x=>({
-      position:x.position, thumb:ROOT+'/'+id+'/media/'+x.source_sha256+'/thumb',
+    const ordered = orderedTelegramGallery(images, model.telegram_gallery_order)
+      .filter(x => SHA.test(x.source_sha256))
+    return json({...normalize(model), images: ordered.map((x, position)=>({
+      position, thumb:ROOT+'/'+id+'/media/'+x.source_sha256+'/thumb',
       display:ROOT+'/'+id+'/media/'+x.source_sha256+'/display',
     })) })
   } catch {
