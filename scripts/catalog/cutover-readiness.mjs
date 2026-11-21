@@ -1,5 +1,6 @@
 /**
- * Read-only M5 release gate. Never deploys, changes workflows, accesses D1 or touches R2.
+ * Read-only M5 release gate. Never deploys, changes workflows or writes D1/R2.
+ * Checks only Cloudflare D1 schema metadata needed for Worker compatibility.
  * An approval flag alone is insufficient: inspect the source writer and live Worker state.
  */
 import { readFileSync } from 'node:fs'
@@ -11,6 +12,7 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url))
 // The offline monorepo guard pins these identities to the approved repository.
 const CANONICAL = JSON.parse(readFileSync(join(ROOT, 'config/catalog-code-consolidation.json'), 'utf8'))
 const WORKER_CONFIG = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/wrangler.jsonc'), 'utf8'))
+const SCHEMA_CONTRACT = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/config/catalog-schema-contract.json'), 'utf8'))
 const SOURCE_WORKFLOW_ID = CANONICAL.origin.apiDeployWorkflowId
 const SOURCE_WORKFLOW_PATH = CANONICAL.origin.apiDeployPipeline
 const SOURCE_REPO = CANONICAL.origin.repository
@@ -24,6 +26,9 @@ const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
 const WORKER_NAME = CANONICAL.runtime.worker
 const WORKER_D1 = WORKER_CONFIG.d1_databases?.find(binding => binding.binding === 'DB')
 const WORKER_MEDIA = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding === 'MEDIA')
+const REQUIRED_SHOWCASE_COLUMN = 'telegram_showcase_visible'
+const REQUIRED_SHOWCASE_MIGRATION = SCHEMA_CONTRACT.requiredMigrations?.find(x => x.startsWith('0025_telegram_showcase_'))
+const REQUIRED_SHOWCASE_TRIGGERS = SCHEMA_CONTRACT.requiredObjects?.triggers?.filter(x => x.startsWith('trg_telegram_showcase_')) ?? []
 
 export function assessCutoverReadiness(contract, state) {
   const blockers = []
@@ -122,6 +127,18 @@ export function assessCutoverReadiness(contract, state) {
     'existing_r2_binding_unverified',
   )
   add(turnstile?.type === 'secret_text', 'turnstile_secret_presence_unverified')
+  // A Worker that selects telegram_showcase_visible returns HTTP 503 on the old
+  // D1 schema. Verify the actual applied migration and all relevant triggers
+  // before authorizing a new version, never rely only on a tracked SQL file.
+  const visibility = observed.showcaseSchema
+  add(
+    REQUIRED_SHOWCASE_MIGRATION === '0025_telegram_showcase_private_visibility.sql' &&
+      REQUIRED_SHOWCASE_TRIGGERS.length === 3 &&
+      visibility?.column === REQUIRED_SHOWCASE_COLUMN &&
+      visibility?.migration === REQUIRED_SHOWCASE_MIGRATION &&
+      REQUIRED_SHOWCASE_TRIGGERS.every(name => visibility?.triggers?.includes(name)),
+    'telegram_showcase_migration_0025_unverified',
+  )
 
   return { ready: blockers.length === 0, blockers }
 }
@@ -134,6 +151,42 @@ async function getJSON(url, headers = {}) {
   })
   if (!response.ok) throw new Error('readonly_api_http_' + response.status)
   return response.json()
+}
+
+async function getVerifiedShowcaseSchema(account, token) {
+  // D1 HTTP transport uses POST for SELECT. This statement reads metadata only:
+  // no scan of models, UPDATE, DDL, migration application or R2 operation.
+  if (!WORKER_D1?.database_id || !REQUIRED_SHOWCASE_MIGRATION ||
+      REQUIRED_SHOWCASE_TRIGGERS.length !== 3) {
+    throw new Error('required_showcase_schema_contract_missing')
+  }
+  const quote = value => "'" + String(value).replaceAll("'", "''") + "'"
+  const sql = [
+    "SELECT 'column' AS category,name FROM pragma_table_info('models') WHERE name=" + quote(REQUIRED_SHOWCASE_COLUMN),
+    "SELECT 'migration' AS category,name FROM d1_migrations WHERE name=" + quote(REQUIRED_SHOWCASE_MIGRATION),
+    "SELECT 'trigger' AS category,name FROM sqlite_master WHERE type='trigger' AND name IN (" +
+      REQUIRED_SHOWCASE_TRIGGERS.map(quote).join(',') + ')',
+  ].join(' UNION ALL ')
+  const url = 'https://api.cloudflare.com/client/v4/accounts/' +
+    encodeURIComponent(account) + '/d1/database/' + encodeURIComponent(WORKER_D1.database_id) + '/query'
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token, 'content-type': 'application/json' },
+    body: JSON.stringify({ sql }),
+    signal: AbortSignal.timeout(10000),
+  })
+  if (!response.ok) throw new Error('read_only_d1_schema_http_' + response.status)
+  const data = await response.json()
+  if (data.success !== true || !Array.isArray(data.result)) {
+    throw new Error('read_only_d1_schema_response_invalid')
+  }
+  const records = data.result.flatMap(x => x.results ?? [])
+  const has = (category, name) => records.some(x => x.category === category && x.name === name)
+  return {
+    column: has('column', REQUIRED_SHOWCASE_COLUMN) ? REQUIRED_SHOWCASE_COLUMN : null,
+    migration: has('migration', REQUIRED_SHOWCASE_MIGRATION) ? REQUIRED_SHOWCASE_MIGRATION : null,
+    triggers: REQUIRED_SHOWCASE_TRIGGERS.filter(name => has('trigger', name)),
+  }
 }
 
 export async function inspectLiveReadOnly(env = process.env) {
@@ -177,9 +230,10 @@ export async function inspectLiveReadOnly(env = process.env) {
   const host = 'https://api.cloudflare.com/client/v4/accounts/' + encodeURIComponent(account) +
     '/workers/scripts/' + WORKER_NAME
   const headers = { Authorization: 'Bearer ' + env.CLOUDFLARE_API_TOKEN }
-  const [deploy, settings] = await Promise.all([
+  const [deploy, settings, showcaseSchema] = await Promise.all([
     getJSON(host + '/deployments', headers),
     getJSON(host + '/settings', headers),
+    getVerifiedShowcaseSchema(account, env.CLOUDFLARE_API_TOKEN),
   ])
   if (deploy.success !== true || settings.success !== true) {
     throw new Error('cloudflare_metadata_not_verified')
@@ -187,6 +241,7 @@ export async function inspectLiveReadOnly(env = process.env) {
   state.cloudflareAccountId = account
   state.deployment = (deploy.result?.deployments ?? [])[0]
   state.bindings = settings.result?.bindings
+  state.showcaseSchema = showcaseSchema
   return state
 }
 
@@ -212,6 +267,7 @@ async function main() {
       sourceWaiting: state.waiting ?? null,
       sourcePending: state.pending ?? null,
       liveWorkerVersionId: state.deployment?.versions?.[0]?.version_id ?? null,
+      verifiedShowcaseMigration: state.showcaseSchema?.migration ?? null,
       blockers: verdict.blockers,
     }, null, 2))
     if (!verdict.ready) process.exitCode = 2
