@@ -4,6 +4,7 @@ import { routeTelegramStudioShowcase, type TelegramPublicEnv } from './telegramP
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
 import { type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
+import { validatePublicCatalogQuery } from './publicQueryBudget'
 import { configuredPublicOrigins, validateTurnstile } from './turnstile'
 import { RESOLVED_MODEL_BY_SLUG_CTE, resolvePublicModelIds } from './modelAliases'
 
@@ -603,6 +604,17 @@ export default {
       return routeTelegramDrafts(request, env as unknown as TelegramDraftEnv)
     }
     if (request.method === 'OPTIONS') return options(request, env)
+
+    // Reject noncanonical query keys, duplicates and cache-busting input before
+    // any D1 schema check. Telegram showcase/private drafts and quote authority
+    // keep their existing handlers; this guard only covers public catalog reads.
+    if (request.method === 'GET') {
+      const budget = validatePublicCatalogQuery(url)
+      if (budget !== null && budget !== true) {
+        const detail = budget === false ? { error: 'invalid_catalog_query' } : budget
+        return json(request, env, detail, { status: 400 })
+      }
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/health') {
       const schema = await catalogSchemaStatus(env.DB)
