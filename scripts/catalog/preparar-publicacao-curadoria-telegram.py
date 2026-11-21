@@ -550,12 +550,12 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
         if any(r is None for r in matched):
             held["local_gallery_incomplete"] += 1
             continue
-        if any((r["telegram_topic"] != one["studio"] or r["studio"] != one["studio"]
-                or r["original_sha256"] != images[i]["sha256"].lower())
+        if any((r["original_topic"] != one["studio"] or r["studio"] != one["studio"]
+                or r["sha256"] != images[i]["sha256"].lower())
                for i, r in enumerate(matched)):
             held["source_identity_or_sha_mismatch"] += 1
             continue
-        titles = {str(r["model"] or "").strip() for r in matched}
+        titles = {str(r["title"] or "").strip() for r in matched}
         groups = {r["model_group_key"] for r in matched}
         if (len(titles) != 1 or not next(iter(titles)) or
                 next(iter(titles)).startswith("Modelo sem nome") or
