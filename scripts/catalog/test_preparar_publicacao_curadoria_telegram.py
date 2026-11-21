@@ -304,15 +304,17 @@ def test_existing_name_sync_read_only():
             con.commit()
         fields = ["model_id","studio","model","variant","sha256","image_id",
                   "telegram_group_key","telegram_revision","telegram_review_status",
-                  "telegram_name_provisional","telegram_rights_status","published"]
-        def record(model, mid, digest, old, group="", rev="0", rights="not_reviewed"):
+                  "telegram_name_provisional","telegram_rights_status","published",
+                  "image_count","gallery_version"]
+        def record(model, mid, digest, old, group="", rev="0", rights="not_reviewed", image_count="1"):
             return dict(model_id=model,studio="Abe3D",model=old,variant="",
                         sha256=digest,image_id=f"tg:{mid}",telegram_group_key=group,
                         telegram_revision=rev,telegram_review_status="pending",
-                        telegram_name_provisional="1",telegram_rights_status=rights,published="0")
+                        telegram_name_provisional="1",telegram_rights_status=rights,published="0",
+                        image_count=image_count,gallery_version="1")
         inputs = [
-            record("tg_"+"a"*24,101,one,"Modelo sem nome #101","c"*24),
-            record("tg_"+"a"*24,102,two,"Modelo sem nome #101","c"*24),
+            record("tg_"+"a"*24,101,one,"Modelo sem nome #101","c"*24,image_count="2"),
+            record("tg_"+"a"*24,102,two,"Modelo sem nome #101","c"*24,image_count="2"),
             record("tg_"+"b"*24,103,three,"Modelo sem nome #103"),
             record("tg_"+"d"*24,104,four,"Modelo sem nome #104"),
             record("tg_"+"e"*24,105,five,"Manually reviewed title"),
@@ -337,6 +339,35 @@ def test_existing_name_sync_read_only():
             w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
         mismatch,_=m.plan_existing_telegram_name_updates(db,csv_path)
         assert not mismatch, mismatch
+        # A missing group photo must not make a partial D1 export actionable.
+        inputs[1]["sha256"]=two
+        inputs[1]["image_count"]="3"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        incomplete,report=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert not incomplete and report["held"]["ambiguous_d1_gallery"]==1
+        # The other image now declares the same count: reject both as incomplete.
+        inputs[0]["image_count"]="3"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        incomplete,report=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert not incomplete and report["held"]["incomplete_or_unsupported_gallery"]==1
+        # Reset to a complete export and enforce stable source identities.
+        inputs[0]["image_count"]=inputs[1]["image_count"]="2"
+        # The CLI's names-only mode does not need source files.
+        import subprocess,sys
+        out=home/"names-only"
+        cmd=[sys.executable,str(SCRIPT),"--names-only","--db",str(db),
+             "--existing-drafts-csv",str(csv_path),"--expected-draft-count","5",
+             "--source-root",str(home/"absent-original-images"),"--out",str(out)]
+        result=subprocess.run(cmd,capture_output=True,text=True,check=True)
+        report=json.loads((out/"resumo_correcoes_fichas_existentes.json").read_text(encoding="utf8"))
+        assert report["ready"]==1 and not report["external_writes"], result.stdout
+        wrong=subprocess.run([*cmd[:], "--expected-draft-count","6"],
+                             capture_output=True,text=True)
+        assert wrong.returncode!=0 and "Snapshot D1 incompleto" in wrong.stderr
+        assert not (out/"operacoes_conciliadas.jsonl").exists()
+
 
 
 if __name__ == "__main__":

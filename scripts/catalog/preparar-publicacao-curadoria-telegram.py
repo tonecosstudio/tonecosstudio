@@ -508,12 +508,14 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
         "model_id", "studio", "model", "variant", "sha256", "image_id",
         "telegram_group_key", "telegram_revision", "telegram_review_status",
         "telegram_name_provisional", "telegram_rights_status", "published",
+        "image_count", "gallery_version",
     }
     if not rows or not needed <= set(rows[0]):
         raise ValueError("Snapshot D1 Telegram ausente/incompleto para sincronizar nomes")
     local = {int(row["message_id"]): row for row in read_curation(db)}
     models = defaultdict(list)
     image_owners = defaultdict(set)
+    hash_owners = defaultdict(set)
     for row in rows:
         model_id = row["model_id"]
         image_id = row["image_id"]
@@ -523,7 +525,10 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
         if not HASH.fullmatch(digest):
             raise ValueError("SHA-256 D1 invalido no snapshot")
         models[model_id].append(row)
-        image_owners[(image_id, digest)].add(model_id)
+        image_owners[image_id].add(model_id)
+        hash_owners[digest].add(model_id)
+    if not models:
+        raise ValueError("Export D1 sem fichas")
     ready, held = [], Counter()
     for model_id, images in sorted(models.items()):
         one = images[0]
@@ -531,11 +536,25 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
         # Refuse partial galleries, duplicate rows or conflicting D1 model fields.
         fields = ("studio", "model", "variant", "telegram_group_key",
                   "telegram_revision", "telegram_review_status",
-                  "telegram_name_provisional", "telegram_rights_status", "published")
+                  "telegram_name_provisional", "telegram_rights_status", "published",
+                  "image_count", "gallery_version")
         if (len(set(mid_ids)) != len(images)
+                or len({r["sha256"].lower() for r in images}) != len(images)
                 or any(any(row[k] != one[k] for k in fields) for row in images)
-                or any(len(image_owners[(r["image_id"], r["sha256"].lower())]) != 1 for r in images)):
+                or any(len(image_owners[r["image_id"]]) != 1
+                       or len(hash_owners[r["sha256"].lower()]) != 1 for r in images)):
             held["ambiguous_d1_gallery"] += 1
+            continue
+        # Do not trust a partial export: every image of the current gallery
+        # must be present, not only the cover or a convenient matching photo.
+        try:
+            expected_images = int(one["image_count"])
+            gallery_version = int(one["gallery_version"])
+        except (ValueError, TypeError):
+            held["invalid_gallery_metadata"] += 1
+            continue
+        if expected_images < 1 or expected_images != len(images) or gallery_version != 1:
+            held["incomplete_or_unsupported_gallery"] += 1
             continue
         old = (one["model"] or "").strip()
         if not re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old):
@@ -558,6 +577,8 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
         titles = {str(r["title"] or "").strip() for r in matched}
         groups = {r["model_group_key"] for r in matched}
         if (len(titles) != 1 or not next(iter(titles)) or
+                len(next(iter(titles))) > 160 or
+                any(ord(c) < 32 or ord(c) == 127 for c in next(iter(titles))) or
                 next(iter(titles)).startswith("Modelo sem nome") or
                 any(r["name_status"] not in {"confirmado", "provavel"} for r in matched) or
                 len(groups) != 1):
@@ -603,9 +624,26 @@ def main():
     parser.add_argument("--out", type=Path, default=OUT_DEFAULT)
     parser.add_argument("--existing-drafts-csv", type=Path,
                         help="Snapshot somente leitura do D1 Telegram para planejar correcao de nomes existentes")
+    parser.add_argument("--names-only", action="store_true",
+                        help="Somente reconciliar nomes de fichas D1 existentes; sem varrer imagens ou preparar importacao")
+    parser.add_argument("--expected-draft-count", type=int,
+                        help="Total de fichas Telegram no escopo exportado do D1; recusa export incompleto")
     args = parser.parse_args()
     source, out = args.source_root.resolve(), args.out.resolve()
     ensure_private_output(out, source)
+    if args.names_only:
+        if not args.existing_drafts_csv or not args.expected_draft_count or args.expected_draft_count < 1:
+            parser.error("--names-only exige --existing-drafts-csv e --expected-draft-count positivo")
+        updates, info = plan_existing_telegram_name_updates(args.db, args.existing_drafts_csv)
+        if info["d1_models_seen"] != args.expected_draft_count:
+            raise ValueError("Snapshot D1 incompleto: fichas esperadas %d, exportadas %d" %
+                             (args.expected_draft_count, info["d1_models_seen"]))
+        atomic_text(out / "correcoes_fichas_existentes.jsonl",
+                    "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in updates))
+        atomic_text(out / "resumo_correcoes_fichas_existentes.json",
+                    json.dumps(info, indent=2, ensure_ascii=False) + "\n")
+        print(json.dumps({"out": str(out), "summary": info}, ensure_ascii=False))
+        return
     rows, summary = build_plan(args.db, source, args.existing_csv, args.expected_model_count)
     write_plan(out, rows, summary)
     if args.existing_drafts_csv:
