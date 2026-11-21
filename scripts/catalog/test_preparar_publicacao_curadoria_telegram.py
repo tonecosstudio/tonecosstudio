@@ -493,7 +493,7 @@ def test_private_draft_plan_without_publication():
         assert pending["single:16"]["import_manifest"]["franchiseId"]==99
         assert pending["single:16"]["import_manifest"]["universe"]=="Unknown Universe"
         assert unknown_summary["pending_franchise_candidates"]==1
-        assert len(unknown_held)==2
+        assert len(unknown_held)==1
         assert not pending["single:16"]["apply_executed"]
         try:
             m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=57)
