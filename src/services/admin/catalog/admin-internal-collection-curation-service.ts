@@ -820,6 +820,16 @@ function parseMembership(value: unknown): CatalogCurationMembership {
   };
 }
 
+function hasUnsafeCurationCharacter(value: string): boolean {
+  return Array.from(value).some(
+    (char) =>
+      char === "<" ||
+      char === ">" ||
+      char.charCodeAt(0) < 32 ||
+      char.charCodeAt(0) === 127,
+  );
+}
+
 export function validateCanonicalCurationModelRef(
   model: CanonicalCurationModelRef,
 ): void {

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -27,6 +28,9 @@ import {
   verifyCatalogModelCharacterIdentity,
   unlinkCatalogModelCharacterIdentity,
 } from "./admin-internal-collection-curation-service";
+
+const readRepositorySource = (filePath: string): string =>
+  readFileSync(resolve(filePath), "utf8").replace(/\r\n/g, "\n");
 
 const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
 const MODEL_ID = "22222222-2222-4222-8222-222222222222";
@@ -110,9 +114,8 @@ describe("internal catalog curation service", () => {
   });
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
-    const gateway = readFileSync(
+    const gateway = readRepositorySource(
       "supabase/functions/admin-rpc/index.ts",
-      "utf8",
     );
     const entries = (registry: string): string[] => {
       const start = gateway.indexOf(`const ${registry} = new Set([`);
@@ -178,17 +181,13 @@ describe("internal catalog curation service", () => {
 
   it("keeps curation migrations atomic and character profile RPCs private", () => {
     const paths = [
-      "../../../../supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
-      "../../../../supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
-      "../../../../supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
-      "../../../../supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
+    const paths = [
+      "supabase/migrations/20261115154500_tonart_internal_collection_curation.sql",
+      "supabase/migrations/20261115154600_tonart_curation_controlled_tag_creation.sql",
+      "supabase/migrations/20261117040000_tonart_character_editorial_profiles.sql",
+      "supabase/migrations/20261118010000_tonart_public_character_approval_and_export.sql",
     ];
-    const migrations = paths.map((path) =>
-      readFileSync(new URL(path, import.meta.url), "utf8").replace(
-        /\r\n/g,
-        "\n",
-      ),
-    );
+    const migrations = paths.map((path) => readRepositorySource(path));
     for (const migration of migrations) {
       expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
       expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);

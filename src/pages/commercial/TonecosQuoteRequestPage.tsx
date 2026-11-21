@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import { CONTACT } from "@/config/constants";
@@ -10,7 +10,10 @@ import {
   submitCatalogQuoteRequest,
   type CatalogQuoteIntent,
 } from "@/services/customer/catalog-quote-service";
-import { getMyTonecosProfile, getTonecosCurrentUser } from "@/services/customer/tonecos-account-service";
+import {
+  getMyTonecosProfile,
+  getTonecosCurrentUser,
+} from "@/services/customer/tonecos-account-service";
 import {
   actionClass,
   CommercialPage,
@@ -30,15 +33,16 @@ function quotePhone(phone: string | null): string {
 }
 function savedQuotePostalCode(profile: CustomerProfile): string {
   const address = profile.delivery_address;
-  if (!address || typeof address !== "object" || Array.isArray(address)) return "";
+  if (!address || typeof address !== "object" || Array.isArray(address))
+    return "";
   const code = address.zipCode;
   return typeof code === "string" && /^[0-9]{8}$/.test(code) ? code : "";
 }
 
 /** Public email contact uses the existing studio inbox, not an anonymous Supabase write. */
-function guestQuoteEmailHref(
+function guestQuoteEmailDraft(
   models: readonly PublicCatalogModel[],
-): string | null {
+): { href: string; body: string; prefilled: boolean } | null {
   const recipient = buildSafeMailtoHref(CONTACT.CONTACT_EMAIL);
   if (!recipient) return null;
   const references = models.map((model, index) => {
@@ -67,14 +71,17 @@ function guestQuoteEmailHref(
     encodeURIComponent("Orçamento TONART — consulta por e-mail") +
     "&body=" +
     encodeURIComponent(body);
-  // Long mailto URLs fail silently in some email clients. Never omit models.
-  return href.length <= 7000 ? href : null;
+  // Keep every model in the copyable body even when mailto URLs become too long.
+  const prefilled = href.length <= 7000;
+  return { href: prefilled ? href : recipient, body, prefilled };
 }
 
 export default function TonecosQuoteRequestPage() {
   const { selectedModels, setSelectedModels } = useCatalogBrowsing();
   const navigate = useNavigate();
-  const guestEmailHref = guestQuoteEmailHref(selectedModels);
+  const guestEmailDraft = guestQuoteEmailDraft(selectedModels);
+  const guestQuoteTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [guestCopyFeedback, setGuestCopyFeedback] = useState("");
   const [searchParams] = useSearchParams();
   const [user, setUser] = useState<Identity | null | undefined>(undefined);
   const [authError, setAuthError] = useState(false);
@@ -84,7 +91,9 @@ export default function TonecosQuoteRequestPage() {
   const [authAttempt, setAuthAttempt] = useState(0);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState("");
-  const [profile, setProfile] = useState<CustomerProfile | null | undefined>(undefined);
+  const [profile, setProfile] = useState<CustomerProfile | null | undefined>(
+    undefined,
+  );
   const [profileError, setProfileError] = useState(false);
   const [profileAttempt, setProfileAttempt] = useState(0);
   const [scale, setScale] = useState<"a definir" | "1/10" | "1/6" | "outro">(
@@ -128,14 +137,48 @@ export default function TonecosQuoteRequestPage() {
     setProfile(undefined);
     setProfileError(false);
     getMyTonecosProfile()
-      .then((value) => { if (active) setProfile(value); })
-      .catch(() => { if (active) { setProfile(null); setProfileError(true); } });
-    return () => { active = false; };
+      .then((value) => {
+        if (active) setProfile(value);
+      })
+      .catch(() => {
+        if (active) {
+          setProfile(null);
+          setProfileError(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [user, authError, profileAttempt]);
+
+  async function copyGuestQuote() {
+    if (!guestEmailDraft) return;
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("clipboard_unavailable");
+      }
+      await navigator.clipboard.writeText(guestEmailDraft.body);
+      setGuestCopyFeedback(
+        "Mensagem copiada. Cole no seu e-mail e envie; ela não foi enviada automaticamente.",
+      );
+    } catch {
+      guestQuoteTextareaRef.current?.focus();
+      guestQuoteTextareaRef.current?.select();
+      setGuestCopyFeedback(
+        "Cópia automática indisponível. O texto foi selecionado; copie manualmente e envie por e-mail.",
+      );
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !user || !profile?.full_name?.trim() || selectedModels.length === 0) return;
+    if (
+      busy ||
+      !user ||
+      !profile?.full_name?.trim() ||
+      selectedModels.length === 0
+    )
+      return;
     setBusy(true);
     setError("");
     try {
@@ -175,9 +218,11 @@ export default function TonecosQuoteRequestPage() {
   return (
     <CommercialPage
       title="Solicitar orçamento"
-      intro={intent === "preorder"
-        ? "Escolha a pré-venda para solicitar sua peça com entrada de R$50 após a confirmação do valor e do prazo. O saldo é pago na finalização."
-        : "Selecione modelos do catálogo, informe as quantidades e envie sua solicitação. O estúdio analisará os itens e informará valores e prazos. Nenhum pagamento é realizado agora."}
+      intro={
+        intent === "preorder"
+          ? "Escolha a pré-venda para solicitar sua peça com entrada de R$50 após a confirmação do valor e do prazo. O saldo é pago na finalização."
+          : "Selecione modelos do catálogo, informe as quantidades e envie sua solicitação. O estúdio analisará os itens e informará valores e prazos. Nenhum pagamento é realizado agora."
+      }
     >
       <div className="max-w-3xl">
         {error && (
@@ -204,50 +249,101 @@ export default function TonecosQuoteRequestPage() {
             >
               Tentar novamente
             </button>
-            <Link className={secondaryClass + " ml-3"} to={PUBLIC_ROUTES.contact}>
+            <Link
+              className={secondaryClass + " ml-3"}
+              to={PUBLIC_ROUTES.contact}
+            >
               Contato por e-mail
             </Link>
           </div>
         ) : user === null && selectedModels.length > 0 ? (
           <div className={panelClass}>
             <p className="mb-5 text-sm leading-relaxed text-white/70">
-              Entre com sua conta para enviar a seleção e acompanhar a resposta
-              da TONART Studio.
+              {guestEmailDraft
+                ? "Você pode solicitar um orçamento por e-mail, sem criar conta. Para acompanhar pedidos em Meus Orçamentos, entre com sua conta existente."
+                : "Entre com sua conta para enviar a seleção e acompanhar a resposta da TONART Studio."}
               {signupAvailability === "disabled" &&
                 " Novos cadastros estão fechados nesta etapa."}
             </p>
             <div className="flex flex-wrap gap-3">
+              {guestEmailDraft && (
+                <a className={actionClass} href={guestEmailDraft.href}>
+                  Pedir orçamento por e-mail
+                </a>
+              )}
               <Link
-                className={actionClass}
-                to={TONECOS_COMMERCIAL_ROUTES.login + "?next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
+                className={guestEmailDraft ? secondaryClass : actionClass}
+                to={
+                  TONECOS_COMMERCIAL_ROUTES.login +
+                  "?next=" +
+                  encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)
+                }
               >
                 Entrar
               </Link>
               {signupAvailability === "enabled" && (
                 <Link
                   className={secondaryClass}
-                  to={TONECOS_COMMERCIAL_ROUTES.login + "?mode=signup&next=" + encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)}
+                  to={
+                    TONECOS_COMMERCIAL_ROUTES.login +
+                    "?mode=signup&next=" +
+                    encodeURIComponent(TONECOS_COMMERCIAL_ROUTES.request)
+                  }
                 >
                   Criar conta
                 </Link>
               )}
-              {guestEmailHref && (
-                <a className={secondaryClass} href={guestEmailHref}>
-                  Pedir orçamento por e-mail
-                </a>
-              )}
             </div>
-            {!guestEmailHref && selectedModels.length > 0 ? (
-              <p className="mt-4 text-xs leading-5 text-white/60">
-                Seleção extensa para e-mail automático. Reduza os modelos selecionados ou
-                <Link className="ml-1 underline" to={PUBLIC_ROUTES.contact}>entre em contato diretamente</Link>.
-              </p>
-            ) : null}
-            {guestEmailHref && (
-              <p className="mt-4 text-xs leading-5 text-white/60">
-                Sem conta? O e-mail inclui as referências selecionadas e abre no seu aplicativo de e-mail.
-                Revise e envie a mensagem. A resposta será por e-mail, sem protocolo em Meus Orçamentos.
-              </p>
+            {guestEmailDraft && (
+              <>
+                <p className="mt-4 text-xs leading-5 text-white/60">
+                  {guestEmailDraft.prefilled
+                    ? "O e-mail inclui as referências selecionadas. Revise e envie a mensagem no seu aplicativo de e-mail."
+                    : "A seleção é extensa para um link de e-mail preenchido. Abra seu aplicativo de e-mail e copie o texto completo abaixo; nenhuma referência será omitida."}{" "}
+                  A resposta será por e-mail, sem protocolo em Meus Orçamentos.
+                </p>
+                <details className="mt-4 border-t border-white/15 pt-4">
+                  <summary className="cursor-pointer text-sm text-white/80 underline-offset-4 hover:underline">
+                    Ver e copiar texto do orçamento
+                  </summary>
+                  <label
+                    htmlFor="tonart-guest-quote-copy"
+                    className="mt-4 block text-xs text-white/60"
+                  >
+                    Texto completo para enviar ao estúdio
+                  </label>
+                  <textarea
+                    id="tonart-guest-quote-copy"
+                    ref={guestQuoteTextareaRef}
+                    readOnly
+                    rows={8}
+                    value={guestEmailDraft.body}
+                    className={fieldClass + " mt-2 resize-y"}
+                  />
+                  <button
+                    type="button"
+                    className={secondaryClass + " mt-3"}
+                    onClick={() => {
+                      void copyGuestQuote();
+                    }}
+                  >
+                    Copiar mensagem
+                  </button>
+                  {guestCopyFeedback && (
+                    <p
+                      role="status"
+                      className="mt-2 text-xs leading-5 text-white/70"
+                    >
+                      {guestCopyFeedback}
+                    </p>
+                  )}
+                  <p className="mt-2 text-xs leading-5 text-white/60">
+                    Se seu aplicativo de e-mail não abrir, copie este texto e
+                    envie para {CONTACT.CONTACT_EMAIL}. Isso não envia a
+                    mensagem automaticamente.
+                  </p>
+                </details>
+              </>
             )}
           </div>
         ) : null}
@@ -265,18 +361,29 @@ export default function TonecosQuoteRequestPage() {
         ) : user && !authError && profileError ? (
           <div role="alert" className={panelClass}>
             <p className="mb-4 text-sm text-white/70">
-              Não foi possível carregar seus dados. A solicitação não será enviada sem conferir sua conta.
+              Não foi possível carregar seus dados. A solicitação não será
+              enviada sem conferir sua conta.
             </p>
-            <button type="button" className={secondaryClass} onClick={() => setProfileAttempt((n) => n + 1)}>
+            <button
+              type="button"
+              className={secondaryClass}
+              onClick={() => setProfileAttempt((n) => n + 1)}
+            >
               Tentar carregar dados
             </button>
           </div>
         ) : user && !authError && profile && !profile.full_name?.trim() ? (
           <div className={panelClass}>
             <p className="mb-4 text-sm text-white/70">
-              Complete seu nome na Minha Conta antes de solicitar o orçamento. Seus dados são cadastrados apenas uma vez.
+              Complete seu nome na Minha Conta antes de solicitar o orçamento.
+              Seus dados são cadastrados apenas uma vez.
             </p>
-            <Link className={actionClass} to={TONECOS_COMMERCIAL_ROUTES.account}>Completar Minha Conta</Link>
+            <Link
+              className={actionClass}
+              to={TONECOS_COMMERCIAL_ROUTES.account}
+            >
+              Completar Minha Conta
+            </Link>
           </div>
         ) : user && !authError && profile ? (
           <form
@@ -297,7 +404,9 @@ export default function TonecosQuoteRequestPage() {
               </p>
             </div>
             <fieldset className="space-y-3 border-y border-white/15 py-5">
-              <legend className="px-1 text-sm font-medium">Como deseja continuar?</legend>
+              <legend className="px-1 text-sm font-medium">
+                Como deseja continuar?
+              </legend>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="flex cursor-pointer items-start gap-3 border border-white/15 p-4 has-[:checked]:border-[hsl(var(--gold-accent))]">
                   <input
@@ -309,8 +418,12 @@ export default function TonecosQuoteRequestPage() {
                     className="mt-1 accent-[hsl(var(--gold-accent))]"
                   />
                   <span>
-                    <span className="block text-sm font-medium">Só quero o orçamento</span>
-                    <span className="mt-1 block text-xs leading-5 text-white/55">Sem compromisso de compra ou pagamento.</span>
+                    <span className="block text-sm font-medium">
+                      Só quero o orçamento
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-white/55">
+                      Sem compromisso de compra ou pagamento.
+                    </span>
                   </span>
                 </label>
                 <label className="flex cursor-pointer items-start gap-3 border border-white/15 p-4 has-[:checked]:border-[hsl(var(--gold-accent))]">
@@ -323,14 +436,21 @@ export default function TonecosQuoteRequestPage() {
                     className="mt-1 accent-[hsl(var(--gold-accent))]"
                   />
                   <span>
-                    <span className="block text-sm font-medium">Quero fazer pré-venda</span>
-                    <span className="mt-1 block text-xs leading-5 text-white/55">R$50 de entrada; saldo restante na finalização.</span>
+                    <span className="block text-sm font-medium">
+                      Quero fazer pré-venda
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-white/55">
+                      R$50 de entrada; saldo restante na finalização.
+                    </span>
                   </span>
                 </label>
               </div>
               {intent === "preorder" && (
                 <p className="text-xs leading-5 text-white/60">
-                  Primeiro a TONART confirma o preço total e o prazo. Depois você recebe os dados de pagamento, envia o comprovante de R$50 e acompanha a aprovação na sua conta. O saldo é calculado como valor total menos R$50.
+                  Primeiro a TONART confirma o preço total e o prazo. Depois
+                  você recebe os dados de pagamento, envia o comprovante de R$50
+                  e acompanha a aprovação na sua conta. O saldo é calculado como
+                  valor total menos R$50.
                 </p>
               )}
             </fieldset>

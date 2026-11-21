@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TONART | Curadoria Visual</title>
+<style>
+:root{color-scheme:dark;--bg:#101115;--panel:#191b20;--elev:#23252c;--ink:#f2eee8;--muted:#a9a6a3;--line:#34363f;--accent:#f49b60}
+[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px system-ui,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#17191e;border-bottom:1px solid var(--line);padding:15px 22px}
+h1{font-size:21px;margin:0;font-weight:700;letter-spacing:-.4px}h2{font-size:16px;margin:4px 0 16px}
+.logo{color:var(--accent);font-weight:900;letter-spacing:2px;font-size:11px}
+.sub{color:var(--muted);font-size:12px}main{display:grid;grid-template-columns:255px minmax(320px,1fr) 345px;min-height:calc(100vh - 73px)}
+aside{background:var(--panel);padding:18px;border-right:1px solid var(--line)}
+aside.right{border-right:0;border-left:1px solid var(--line);position:sticky;top:70px;height:calc(100vh - 70px);overflow:auto}
+aside.left{height:calc(100vh - 70px);position:sticky;top:70px;overflow:auto}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:var(--elev);color:var(--ink);border-radius:9px;padding:9px 12px}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#17100a;font-weight:700;border:0}
+button:disabled{opacity:.4;cursor:not-allowed}input,select,textarea{width:100%;background:#111217;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--ink)}
+textarea{resize:vertical;min-height:65px}label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.formfield{margin-bottom:13px}.stats{display:flex;gap:16px;flex-wrap:wrap}.stat strong{font-size:18px}
+.center{padding:22px;min-width:0}.toolbar{display:grid;grid-template-columns:1fr 180px;gap:9px;margin-bottom:17px}
+.list{display:flex;flex-direction:column;gap:3px}.topic{display:flex;justify-content:space-between;width:100%;text-align:left;border:0;background:transparent;font-size:13px;padding:10px;border-radius:7px}
+.topic.active{background:#493528;color:#ffcfaa}.topic span:last-child{color:var(--muted)}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.tile{min-width:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;background:var(--panel);text-align:left;padding:0}
+.tile.active{outline:2px solid var(--accent)}.tile img{display:block;width:100%;height:185px;object-fit:contain;background:#0b0c0f}
+.tile .details{padding:10px}.tile .details div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{display:inline-block;border-radius:4px;background:#31343b;color:#ddd;padding:3px 6px;font-size:11px}
+.preview{max-width:100%;max-height:300px;object-fit:contain;border-radius:9px;background:#0c0d0e}
+.buttons{display:flex;gap:8px;flex-wrap:wrap}.empty{color:var(--muted);padding:35px 0}
+small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
+#notice{min-height:19px;color:var(--accent);font-size:12px}.pages{display:flex;align-items:center;gap:12px;margin-top:18px}
+.sr{position:absolute;left:-99999px}@media(max-width:1100px){main{grid-template-columns:200px 1fr}aside.right{position:static;grid-column:1/-1;height:auto;border-top:1px solid var(--line)}}@media(max-width:650px){main{display:block}aside.left{height:190px;position:static}aside.right{height:auto}header{flex-wrap:wrap}.toolbar{grid-template-columns:1fr}}
+</style></head>
+<body>
+<header><div><div class="logo">TONART STUDIO</div><h1>Curadoria Visual</h1><div class="sub">Telegram é a origem preferencial · Revisão antes de publicar</div></div>
+<div class="stats"><div class="stat"><strong id="numImages">—</strong><div class="sub">Imagens</div></div><div class="stat"><strong id="numPending">—</strong><div class="sub">Pendentes</div></div><div class="stat"><strong id="numCheck">—</strong><div class="sub">ID sincronizado</div></div></div></header>
+<main>
+<aside class="left"><h2>Estúdios e tópicos</h2><div id="topics" class="list"></div></aside>
+<section class="center"><div class="toolbar"><input id="search" placeholder="Buscar personagem, modelo, legenda, ID..." autocomplete="off"><select id="statusFilter"><option value="">Todos os status</option><option value="pendente">Pendente</option><option value="revisar">Revisar</option><option value="provavel">Nome provável</option><option value="confirmado">Nome confirmado</option><option value="aprovado">Aprovado</option><option value="descartado">Descartado</option></select></div>
+<div class="buttons" style="margin-bottom:14px"><button class="primary" id="namesMode">1. Nomes propostos</button><button id="modelsMode">2. Galerias de modelos</button><button id="imagesMode">Imagens originais</button></div>
+<label id="unnamedFilter" hidden style="margin:0 0 12px;display:flex;align-items:center;gap:8px"><input id="onlyUnnamedModels" type="checkbox" style="width:auto"> Exibir apenas galerias sem nome</label><div id="smartSummary" class="sub" style="margin-bottom:12px">Processando propostas de identificação...</div>
+<div id="notice" aria-live="polite"></div><div class="sub" id="summary"></div>
+<div class="gallery" id="nameResults"></div>
+<div class="gallery" id="modelResults" hidden></div>
+<div class="gallery" id="gallery" hidden></div>
+<div class="pages"><button id="prev">Anterior</button><span id="page">Página 1</span><button id="next">Próxima</button></div>
+</section>
+<aside class="right"><div id="galleryCreate" hidden><h2>Reunir fotos da mesma estatueta</h2><div class="formfield"><label for="albumCandidate">Álbuns com fotos ainda livres</label><select id="albumCandidate"><option value="">Selecione um estúdio para carregar os álbuns</option></select></div><button id="loadAlbumCandidate">Pré-visualizar e preencher IDs</button><p class="sub">Marque somente as vistas da mesma escultura. Fotos já agrupadas aparecem para comparação e não podem ser selecionadas.</p><div id="albumCandidatePreview" class="gallery" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:10px 0"></div><div id="albumCandidateCaption" class="sub" style="white-space:pre-wrap;overflow-wrap:anywhere"></div><p id="albumSelectionCount" class="sub" aria-live="polite">Selecione um álbum para escolher as fotos.</p><div class="formfield"><label for="galleryIds">IDs das imagens após conferir os ângulos</label><input id="galleryIds" placeholder="Ex.: 17712, 17713, 17714, 17715"></div><p class="sub">Selecione o estúdio à esquerda. Reúna somente fotos da mesma escultura; modelos e versões diferentes devem permanecer separados.</p><button id="saveVisualGallery" class="primary">Criar galeria revisada</button><div class="sep"></div></div><div id="nameReview" hidden><h2>Revisar nome da imagem</h2><img id="namePreview" class="preview" alt="Modelo analisado"><div id="nameCaption" class="sub" style="white-space:pre-wrap;max-height:110px;overflow:auto"></div><div class="sep"></div><div class="formfield"><label for="nameTitle">Nome do modelo (título preservado)</label><input id="nameTitle"></div><div class="formfield"><label for="nameStudio">Estúdio</label><input id="nameStudio"></div><div class="formfield"><label for="nameUniverse">Universo / franquia</label><input id="nameUniverse"></div><div class="formfield"><label for="nameVariant">Versão comprovada pela legenda</label><input id="nameVariant"></div><div id="nameFilename" class="sub" style="overflow-wrap:anywhere;margin-bottom:9px"></div><div class="sep"></div><h2>Referências do próprio estúdio</h2><div id="nameOfficialProfiles" class="list" style="overflow-wrap:anywhere"></div><div class="sub" style="margin:8px 0 12px">Perfis do criador para comparar imagens e conferir o nome; não comprovam a identidade desta imagem por si só.</div><h2>Imagens locais semelhantes</h2><div id="nameVisualSuggestions" class="list" style="overflow-wrap:anywhere;margin:8px 0 12px"></div><div class="sub" style="margin:8px 0">Correspondências visuais são hipóteses e nunca são aprovadas automaticamente.</div><div class="sep"></div><div class="formfield"><label for="nameStatus">Decisão</label><select id="nameStatus"><option value="revisar">Manter em revisão</option><option value="confirmado">Confirmar nome com fonte oficial</option></select></div><div class="formfield"><label for="nameOfficialUrl">Link oficial para confirmação</label><input id="nameOfficialUrl" placeholder="https://..."><a id="nameSourceLink" target="_blank" rel="noopener noreferrer" hidden>Abrir a publicação vinculada</a></div><div class="formfield"><label for="nameNotes">Justificativa / observações</label><textarea id="nameNotes"></textarea></div><div class="buttons"><button class="primary" id="saveNameReview">Salvar nome</button><button id="nameOpenGallery" hidden>Ver galeria</button><button id="nameMessage">Abrir mensagem no Telegram</button></div><div class="sep"></div></div><div id="modelReview" hidden><h2 id="modelReviewTitle">Revisão por modelo</h2><div class="sub" id="modelReviewMeta"></div><p class="sub">Clique em "Nomear esta foto" para editar uma vista. As outras fotos da mesma escultura já revisada herdarão o nome como proposta, nunca como confirmação.</p><div id="modelReviewImages" class="gallery" style="grid-template-columns:repeat(2,minmax(0,1fr));margin:12px 0"></div><h2>Fontes e evidências</h2><div id="modelReviewEvidence" class="list" style="overflow-wrap:anywhere"></div><div class="sep"></div><div class="formfield"><label for="modelReviewState">Decisão editorial</label><select id="modelReviewState"><option value="revisar">Manter em revisão</option><option value="confirmado">Confirmar com fonte oficial</option></select></div><div class="formfield"><label for="modelOfficialUrl">Link da publicação oficial (obrigatório para confirmação)</label><input id="modelOfficialUrl" placeholder="https://..."></div><div class="formfield"><label for="modelReviewNotes">Justificativa da revisão</label><textarea id="modelReviewNotes"></textarea></div><button class="primary" id="saveModelReview">Registrar revisão do modelo</button><div class="sep"></div></div><h2>Identificação da imagem</h2>
+<div id="notSelected" class="empty">Selecione uma imagem para identificar, renomear virtualmente e estruturar.</div>
+<div id="editor" hidden><img id="large" class="preview" alt="Imagem selecionada"><div class="sub" id="fileId"></div><div class="sub" id="originalCaption" style="white-space:pre-wrap;margin-top:12px;max-height:130px;overflow:auto"></div><div class="sep"></div>
+<div class="formfield"><label for="studio">Estúdio / modelador</label><input id="studio" autocomplete="off"></div>
+<div class="formfield"><label for="model">Nome do modelo</label><input id="model" placeholder="Ex.: Frieren Witch"></div>
+<div class="formfield"><label for="character">Personagem</label><input id="character" placeholder="Ex.: Frieren"></div>
+<div class="formfield"><label for="universe">Obra / universo</label><input id="universe" placeholder="Ex.: Sousou no Frieren"></div>
+<div class="formfield"><label for="fileLabel">Nome desejado para exportação</label><input id="fileLabel" placeholder="Ex.: frieren-witch-frente"></div>
+<div class="formfield"><label for="status">Status da identificação</label><select id="status"><option value="pendente">Pendente</option><option value="revisar">Revisar</option><option value="aprovado">Aprovado para catálogo interno</option><option value="descartado">Descartado</option></select></div>
+<div class="formfield"><label for="notes">Observações</label><textarea id="notes"></textarea></div>
+<div class="buttons"><button class="primary" id="save">Salvar identificação</button><button id="original">Abrir mensagem</button></div>
+<div class="sub" style="margin-top:12px">Os nomes e descrições são salvos no banco de curadoria. O arquivo original permanece intacto.</div>
+</div><div class="sep"></div>
+<h2>Integração TONART</h2>
+<div class="sub">Comparações com o catálogo existente serão preparadas em staging. A imagem do Telegram tem prioridade em duplicatas confirmadas por hash; não haverá exclusão automática.</div>
+<div class="buttons" style="margin-top:12px"><button id="exportNames">Exportar nomes propostos</button><button id="materializeNames">Gerar nomes confirmados</button><button id="export">Exportar manifesto CSV</button><button id="materialize">Gerar pastas com nomes revisados</button></div>
+<p class="sub">Apenas modelos marcados como aprovados e com nome definido entram nas pastas de revisão, sem mover o original.</p>
+<div class="formfield"><label for="tonartFile">CSV de inventário TONART para comparação de SHA-256 (caminho local)</label><input id="tonartFile" placeholder="C:\\...\\inventario.csv"></div>
+<button id="compare">Comparar catálogo TONART</button>
+<p class="sub" id="exports"></p>
+</aside>
+</main>
+<script src="/curadoria.js" defer></script></body></html>

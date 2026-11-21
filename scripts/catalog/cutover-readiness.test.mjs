@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs'
 import { assessCutoverReadiness, inspectLiveReadOnly } from './cutover-readiness.mjs'
 
 const original = JSON.parse(readFileSync(new URL('../../config/catalog-code-consolidation.json', import.meta.url), 'utf8'))
+const schema = JSON.parse(readFileSync(new URL('../../services/catalogo/config/catalog-schema-contract.json', import.meta.url), 'utf8'))
+const showcaseTriggers = schema.requiredObjects.triggers.filter(name => name.startsWith('trg_telegram_showcase_'))
 const workflow = { id: 371358484, path: '.github/workflows/cloudflare.yml', state: 'disabled_manually' }
 const deployment = { versions: [{ version_id: original.productionObservation.currentVersionId, percentage: 100 }] }
 const bindings = [
@@ -44,6 +46,11 @@ const fullState = () => ({
   },
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
+  showcaseSchema: {
+    column: 'telegram_showcase_visible',
+    migration: schema.latestMigration,
+    triggers: [...showcaseTriggers],
+  },
 })
 
 test('current M5 state stays BLOCKED, even with a disabled source workflow', () => {
@@ -60,6 +67,84 @@ test('an approved flag cannot override an active source workflow', () => {
   const result = assessCutoverReadiness(approvedContract(), state)
   assert.equal(result.ready, false)
   assert.ok(result.blockers.includes('source_github_workflow_still_enabled'))
+})
+
+test('the live Telegram showcase schema must precede any Worker promotion', () => {
+  const fixture = fullState()
+  for (const mutation of [
+    state => { delete state.showcaseSchema },
+    state => { state.showcaseSchema.column = null },
+    state => { state.showcaseSchema.migration = null },
+    state => { state.showcaseSchema.triggers.pop() },
+  ]) {
+    const altered = structuredClone(fixture)
+    mutation(altered)
+    const verdict = assessCutoverReadiness(approvedContract(), altered)
+    assert.equal(verdict.ready, false)
+    assert.ok(verdict.blockers.includes('telegram_showcase_migration_0025_unverified'))
+  }
+})
+
+test('Cloudflare schema inspection is metadata-only and never runs DDL or model scans', async () => {
+  const previous = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    const u = String(url)
+    calls.push({ url: u, method: init.method, body: init.body })
+    if (u.endsWith('/repos/' + original.origin.repository)) {
+      return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
+    }
+    if (u.endsWith('/repos/' + original.target.repository)) {
+      return Response.json({ id: original.target.repositoryId,
+        full_name: original.target.repository, default_branch: 'main' })
+    }
+    if (u.endsWith('/git/ref/heads/main')) {
+      return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
+    }
+    if (u.endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
+      return Response.json({ number: original.staging.sourceFixPullRequest,
+        state: 'open', draft: true, merged: false,
+        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.origin.observedMainSha } })
+    }
+    if (u.includes('/runs?status=')) return Response.json({ total_count: 0 })
+    if (u.startsWith('https://api.github.com/')) return Response.json(workflow)
+    if (u.endsWith('/deployments')) {
+      return Response.json({ success: true, result: { deployments: [structuredClone(deployment)] } })
+    }
+    if (u.endsWith('/settings')) {
+      return Response.json({ success: true, result: { bindings: structuredClone(bindings) } })
+    }
+    if (u.endsWith('/query')) {
+      assert.equal(init.method, 'POST')
+      assert.equal(init.headers.Authorization, 'Bearer test-cloudflare-key')
+      const { sql } = JSON.parse(init.body)
+      assert.match(sql, /^SELECT 'column' AS category,name FROM pragma_table_info\('models'\)/)
+      assert.match(sql, /FROM d1_migrations WHERE name=/)
+      assert.match(sql, /FROM sqlite_master WHERE type='trigger'/)
+      assert.ok(!/\b(UPDATE|DELETE|INSERT|ALTER|DROP|REPLACE)\s+(?:TABLE|INTO|models|FROM)\b/i.test(sql))
+      assert.ok(!/FROM\s+models\b/i.test(sql))
+      return Response.json({ success: true, result: [{ results: [
+        { category: 'column', name: 'telegram_showcase_visible' },
+        { category: 'migration', name: schema.latestMigration },
+        ...showcaseTriggers.map(name => ({ category: 'trigger', name })),
+      ] }] })
+    }
+    throw Error('Unexpected preflight URL ' + u)
+  }
+  try {
+    const state = await inspectLiveReadOnly({
+      GITHUB_TOKEN: 'test-github-key', CLOUDFLARE_API_TOKEN: 'test-cloudflare-key',
+      CLOUDFLARE_ACCOUNT_ID: original.runtime.cloudflareAccountId,
+    })
+    assert.equal(state.showcaseSchema.migration, schema.latestMigration)
+    assert.equal(state.showcaseSchema.column, 'telegram_showcase_visible')
+    assert.deepEqual(state.showcaseSchema.triggers, showcaseTriggers)
+    assert.equal(calls.filter(x => x.method === 'POST').length, 1)
+    assert.equal(calls.filter(x => x.url.endsWith('/query')).length, 1)
+  } finally {
+    globalThis.fetch = previous
+  }
 })
 
 test('source activity, drift or missing live bindings block the cutover', () => {

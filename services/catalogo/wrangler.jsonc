@@ -9,10 +9,10 @@
     "enabled": true
   },
   "vars": {
-    "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app"
+    "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app,https://tonartstudio.com.br,https://www.tonartstudio.com.br"
   },
   "secrets": {
-    "required": ["TURNSTILE_SECRET_KEY"]
+    "required": ["TURNSTILE_SECRET_KEY", "ADMIN_SUPABASE_URL", "ADMIN_SUPABASE_ANON_KEY"]
   },
   "d1_databases": [
     {
@@ -26,6 +26,10 @@
     {
       "binding": "MEDIA",
       "bucket_name": "tonecos-catalogo-media"
+    },
+    {
+      "binding": "PRIVATE_TELEGRAM",
+      "bucket_name": "tonecos-catalogo-staging"
     }
   ],
   "observability": {

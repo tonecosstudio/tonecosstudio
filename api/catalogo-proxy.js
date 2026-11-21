@@ -1,4 +1,4 @@
-import { proxyCatalogRequest } from "../functions/catalogo-api/[[path]].js";
+import { proxyCatalogRequest, proxyTelegramAdminRequest } from "../functions/catalogo-api/[[path]].js";
 import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public-media-approval-policy.mjs";
 
 // The canonical Worker already controls browser cache headers. Extend only
@@ -7,6 +7,23 @@ import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public
 // Never cache account/quote operations, errors, Range responses or media here.
 const PUBLIC_MODEL_METADATA_ROUTE = /^(?:api\/catalog|api\/recent|api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?)$/;
 const PUBLIC_MODEL_EDGE_TTL = "public, s-maxage=300";
+
+/** Host-scoped public gallery policy; commercial domains retain their own routes. */
+export function isStandaloneTelegramCatalogHost(host) {
+  if (typeof host !== "string") return false;
+  const hostname = host.toLowerCase().split(":")[0];
+  return hostname === "catalogo.tonartstudio.com.br" ||
+    hostname === "tonart-catalogo-publico.vercel.app" ||
+    /^tonart-catalogo-publico-[a-z0-9-]+\.vercel\.app$/.test(hostname);
+}
+
+export function isAllowedStandaloneTelegramRoute(host, path, method) {
+  if (!isStandaloneTelegramCatalogHost(host)) return true;
+  if (method !== "GET") return false;
+  return path === "api/telegram-studios" ||
+    path === "api/telegram-studios/studios" ||
+    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(path);
+}
 
 /**
  * Vercel rewrites expose destination/client query parameters through
@@ -47,7 +64,23 @@ function publicQueryFromVercelRequest(req, incoming) {
 // Adapt the reviewed Pages read-only proxy; no parallel catalog implementation.
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
-  if (req.method !== "GET") {
+  // Private Telegram editor is the only non-GET exception to public read-only
+  // Vercel catalog routes. The canonical authenticated adapter owns the allowlist.
+  const rawCandidate =
+    req.query?.path ?? new URL(req.url || "/", "https://tonart.local").searchParams.get("path");
+  const candidate = Array.isArray(rawCandidate) ? rawCandidate.join("/") : rawCandidate;
+  const isTelegramPrivate =
+    typeof candidate === "string" &&
+    (candidate === "api/admin/telegram-drafts" ||
+      candidate.startsWith("api/admin/telegram-drafts/"));
+  // Separate public Telegram catalog: do not proxy the legacy commercial
+  // catalog, nor admin draft endpoints, on the dedicated public hostname.
+  if (!isAllowedStandaloneTelegramRoute(req.headers?.host, candidate, req.method)) {
+    res.statusCode = 404;
+    res.end("Not found");
+    return;
+  }
+  if (req.method !== "GET" && !isTelegramPrivate) {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
     res.end("Method not allowed");
@@ -63,6 +96,59 @@ export default async function handler(req, res) {
         path.split("/").some((part) => !part || part === "." || part === "..")) {
       res.statusCode = 404;
       res.end("Not found");
+      return;
+    }
+
+    if (isTelegramPrivate) {
+      // Reuse the same authenticated Pages adapter, Worker and D1; do not
+      // create a Vercel catalog data layer or forward browser cookies.
+      const search = publicQueryFromVercelRequest(req, incoming);
+      if (!search) {
+        res.statusCode = 400;
+        res.end("Invalid private catalog query");
+        return;
+      }
+      const url = new URL(
+        "/catalogo-api/" + path + (search.size ? "?" + search.toString() : ""),
+        "https://tonart.local",
+      );
+      const headers = new Headers();
+      for (const name of ["authorization", "accept", "content-type"]) {
+        const value = req.headers?.[name];
+        if (typeof value === "string") headers.set(name, value);
+      }
+      let body;
+      if (req.method === "POST" || req.method === "PATCH") {
+        // Vercel usually parses application/json before the handler runs.
+        // Only pass a bounded JSON body to the existing Worker path.
+        const length = Number(req.headers?.["content-length"] || 0);
+        if (!Number.isFinite(length) || length < 0 || length > 20000) {
+          res.statusCode = 413;
+          res.end("Invalid private catalog payload length");
+          return;
+        }
+        if (typeof req.body === "string") body = req.body;
+        else if (Buffer.isBuffer(req.body)) body = req.body.toString("utf8");
+        else if (req.body && typeof req.body === "object") body = JSON.stringify(req.body);
+        if (!body || body.length > 20000) {
+          res.statusCode = 400;
+          res.end("Invalid private catalog payload");
+          return;
+        }
+      }
+      const response = await proxyTelegramAdminRequest(
+        new Request(url, { method: req.method, headers, ...(body ? { body } : {}) }),
+        (upstreamUrl, options) => fetch(upstreamUrl, options),
+      );
+      res.statusCode = response.status;
+      response.headers.forEach((value, name) => {
+        if (!["content-length", "content-encoding", "set-cookie"].includes(name)) {
+          res.setHeader(name, value);
+        }
+      });
+      res.setHeader("Cache-Control", "private, no-store");
+      res.setHeader("Vercel-CDN-Cache-Control", "private, no-store");
+      res.end(Buffer.from(await response.arrayBuffer()));
       return;
     }
 

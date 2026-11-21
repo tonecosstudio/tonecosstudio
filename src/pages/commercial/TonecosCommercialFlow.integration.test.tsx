@@ -100,11 +100,16 @@ const model = {
   code: "TC-NARUTO",
   name: "Naruto",
 } as PublicCatalogModel;
-function SelectModel() {
+const DEFAULT_SEED_MODELS = [model];
+function SelectModel({
+  models = DEFAULT_SEED_MODELS,
+}: {
+  models?: PublicCatalogModel[];
+}) {
   const { setSelectedModels } = useCatalogBrowsing();
   useEffect(() => {
-    setSelectedModels([model]);
-  }, [setSelectedModels]);
+    setSelectedModels(models);
+  }, [setSelectedModels, models]);
   return null;
 }
 type RouteEntry =
@@ -113,12 +118,16 @@ type RouteEntry =
       pathname: string;
       state?: { recovered?: boolean; sent?: string };
     };
-function renderApp(entry: RouteEntry, seed = false) {
+function renderApp(
+  entry: RouteEntry,
+  seed = false,
+  models?: PublicCatalogModel[],
+) {
   return render(
     <MemoryRouter initialEntries={[entry]}>
       <HelmetProvider>
         <CatalogBrowsingProvider>
-          {seed && <SelectModel />}
+          {seed && <SelectModel models={models} />}
           <Routes>
             <Route path="/login" element={<TonecosAccountPage />} />
             <Route
@@ -217,65 +226,71 @@ describe("TONART commercial screens: account → request → history → respons
       total: 1,
       limit: 20,
       offset: 0,
-      rows: [{
-        id: QUOTE,
-        status: "answered",
-        createdAt: "2026-11-14T00:00:00Z",
-        deadline: null,
-        notes: null,
-        items: [{ slug: "terror-monster", quantity: 1 }],
-        quotedAmount: 100,
-        listAmount: 100,
-        discountPercent: 0,
-        discountAmount: 0,
-        responseMessage: "Frete confirmado.",
-        whatsapp: "5511999999999",
-        postalCode: "01310100",
-        scale: "1/10",
-        finishing: "pintado",
-        isPreorder: false,
-        depositAmount: null,
-        remainingAmount: null,
-        paymentStatus: "fully_paid",
-        paymentLink: null,
-        pixKey: null,
-        paymentInstructions: null,
-        paymentLinkSentAt: null,
-        finalPaymentNotifiedAt: null,
-        readyForFinalPayment: false,
-        paymentVoucherPath: null,
-        paymentVoucherType: null,
-        paymentVoucherRejectionReason: null,
-        coinAmountApplied: 100,
-        commercialShippingAmountBrl: 0,
-        commercialOfferSnapshot: {
-          schemaVersion: 1,
-          offerId: "22222222-2222-4222-8222-222222222222",
-          catalogModelSlug: "terror-monster",
+      rows: [
+        {
+          id: QUOTE,
+          status: "answered",
+          createdAt: "2026-11-14T00:00:00Z",
+          deadline: null,
+          notes: null,
+          items: [{ slug: "terror-monster", quantity: 1 }],
+          quotedAmount: 100,
+          listAmount: 100,
+          discountPercent: 0,
+          discountAmount: 0,
+          responseMessage: "Frete confirmado.",
+          whatsapp: "5511999999999",
+          postalCode: "01310100",
           scale: "1/10",
-          finishing: "painted",
-          contentsDescription: "Peça pintada.",
-          itemListPriceBrl: 100,
-          itemDiscountBrl: 0,
-          itemPriceBrl: 100,
-          subscriberDiscountEligible: false,
-          subscriberDiscountApplied: false,
-          subscriberDiscountBasisPoints: 0,
-          shippingMode: "fixed",
-          configuredShippingAmountBrl: 0,
-          deliveryTerms: "Prazo informado na oferta.",
-          coinsEligible: true,
-          coinsRequested: 100,
-          coinsApplied: 100,
-          initialCashAmountDueBrl: 0,
-          currency: "BRL",
+          finishing: "pintado",
+          isPreorder: false,
+          depositAmount: null,
+          remainingAmount: null,
+          paymentStatus: "fully_paid",
+          paymentLink: null,
+          pixKey: null,
+          paymentInstructions: null,
+          paymentLinkSentAt: null,
+          finalPaymentNotifiedAt: null,
+          readyForFinalPayment: false,
+          paymentVoucherPath: null,
+          paymentVoucherType: null,
+          paymentVoucherRejectionReason: null,
+          coinAmountApplied: 100,
+          commercialShippingAmountBrl: 0,
+          commercialOfferSnapshot: {
+            schemaVersion: 1,
+            offerId: "22222222-2222-4222-8222-222222222222",
+            catalogModelSlug: "terror-monster",
+            scale: "1/10",
+            finishing: "painted",
+            contentsDescription: "Peça pintada.",
+            itemListPriceBrl: 100,
+            itemDiscountBrl: 0,
+            itemPriceBrl: 100,
+            subscriberDiscountEligible: false,
+            subscriberDiscountApplied: false,
+            subscriberDiscountBasisPoints: 0,
+            shippingMode: "fixed",
+            configuredShippingAmountBrl: 0,
+            deliveryTerms: "Prazo informado na oferta.",
+            coinsEligible: true,
+            coinsRequested: 100,
+            coinsApplied: 100,
+            initialCashAmountDueBrl: 0,
+            currency: "BRL",
+          },
         },
-      }],
+      ],
     });
 
     renderApp("/meus-orcamentos");
-    fireEvent.click(await screen.findByRole("button", { name: "Cancelar pedido" }));
-    fireEvent.click(screen.getByRole("button", { name: "Confirmar cancelamento" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Cancelar pedido" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Confirmar cancelamento" }),
+    );
     await waitFor(() =>
       expect(mocks.cancelExtraOrder).toHaveBeenCalledExactlyOnceWith(QUOTE),
     );
@@ -287,9 +302,10 @@ describe("TONART commercial screens: account → request → history → respons
     expect(
       await screen.findByRole("link", { name: "Entrar" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Entrar" }),
-    ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fsolicitar-orcamento",
+    );
     expect(screen.getByRole("link", { name: "Criar conta" })).toHaveAttribute(
       "href",
       "/login?mode=signup&next=%2Fsolicitar-orcamento",
@@ -310,14 +326,127 @@ describe("TONART commercial screens: account → request → history → respons
     });
     const href = contact.getAttribute("href") ?? "";
     expect(href).toMatch(/^mailto:/);
+    expect(contact).toHaveClass("font-semibold");
+    const login = screen.getByRole("link", { name: "Entrar" });
+    expect(login).not.toHaveClass("font-semibold");
+    expect(
+      screen.getByText(/solicitar um orçamento por e-mail, sem criar conta/),
+    ).toBeInTheDocument();
     const message = decodeURIComponent(href);
     expect(message).toContain("Naruto");
     expect(message).toContain("TC-NARUTO");
     expect(message).toContain("CEP para estimativa de entrega:");
-    expect(screen.getByText(/sem protocolo em Meus Orçamentos/)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/sem protocolo em Meus Orçamentos/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enviar solicitação" }),
+    ).not.toBeInTheDocument();
+    const fallback = screen.getByText("Ver e copiar texto do orçamento");
+    fireEvent.click(fallback);
+    expect(
+      (
+        screen.getByLabelText(
+          "Texto completo para enviar ao estúdio",
+        ) as HTMLTextAreaElement
+      ).value,
+    ).toContain("TC-NARUTO");
     expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("preserves 50 model references when the guest mailto body exceeds safe URL length", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    const selected = Array.from({ length: 50 }, (_, index) => ({
+      ...model,
+      id: `model-${index}`,
+      slug: `model-${index}`,
+      name: `Escultura ${index + 1} ${"N".repeat(90)}`,
+      code: `TC-M${index + 1}-${"X".repeat(75)}`,
+    }));
+    renderApp("/solicitar-orcamento", true, selected);
+    const email = await screen.findByRole("link", {
+      name: "Pedir orçamento por e-mail",
+    });
+    expect(decodeURIComponent(email.getAttribute("href") ?? "")).toBe(
+      "mailto:atendimento@example.com",
+    );
+    expect(email).toHaveClass("font-semibold");
+    expect(
+      screen.getByText(/seleção é extensa para um link de e-mail preenchido/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Ver e copiar texto do orçamento"));
+    const body = (
+      screen.getByLabelText(
+        "Texto completo para enviar ao estúdio",
+      ) as HTMLTextAreaElement
+    ).value;
+    expect(body).toContain("TC-M1-");
+    expect(body).toContain("TC-M50-");
+    expect(body.match(/ — código /g)).toHaveLength(50);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "clipboard",
+    );
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    try {
+      fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
+      await waitFor(() => expect(writeText).toHaveBeenCalledWith(body));
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /não foi enviada automaticamente/,
+      );
+    } finally {
+      if (clipboardDescriptor) {
+        Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
+    expect(
+      screen.queryByRole("link", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+    expect(mocks.submit).not.toHaveBeenCalled();
+  });
+
+  it("keeps a selectable complete draft when clipboard access is unavailable", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    mocks.signupAvailability.mockReturnValue("disabled");
+    renderApp("/solicitar-orcamento", true);
+    const clipboardDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "clipboard",
+    );
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    });
+    try {
+      await screen.findByRole("link", { name: "Pedir orçamento por e-mail" });
+      fireEvent.click(screen.getByText("Ver e copiar texto do orçamento"));
+      const area = screen.getByLabelText(
+        "Texto completo para enviar ao estúdio",
+      ) as HTMLTextAreaElement;
+      fireEvent.click(screen.getByRole("button", { name: "Copiar mensagem" }));
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /copie manualmente e envie por e-mail/i,
+      );
+      expect(area.selectionStart).toBe(0);
+      expect(area.selectionEnd).toBe(area.value.length);
+      expect(mocks.submit).not.toHaveBeenCalled();
+    } finally {
+      if (clipboardDescriptor) {
+        Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+      } else {
+        Reflect.deleteProperty(navigator, "clipboard");
+      }
+    }
   });
 
   it("shows only the catalog chooser when a visitor has selected no models", async () => {
@@ -384,8 +513,12 @@ describe("TONART commercial screens: account → request → history → respons
         name: "Dados cadastrais da conta",
       }),
     ).toHaveTextContent("Cliente TONART");
-    expect(screen.getByRole("link", { name: "Editar na Minha Conta" })).toHaveAttribute("href", "/perfil");
-    expect(screen.queryByLabelText("WhatsApp para contato (opcional)")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Editar na Minha Conta" }),
+    ).toHaveAttribute("href", "/perfil");
+    expect(
+      screen.queryByLabelText("WhatsApp para contato (opcional)"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("CEP (opcional)")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
     await waitFor(() =>
@@ -393,7 +526,12 @@ describe("TONART commercial screens: account → request → history → respons
         USER,
         [{ slug: "naruto", quantity: 1 }],
         "",
-        { whatsapp: "71999999999", postalCode: "", scale: "a definir", finishing: "a definir" },
+        {
+          whatsapp: "71999999999",
+          postalCode: "",
+          scale: "a definir",
+          finishing: "a definir",
+        },
         "quote",
       ),
     );
@@ -402,9 +540,15 @@ describe("TONART commercial screens: account → request → history → respons
   it("routes a selected catalog model into the R$50 pre-sale request", async () => {
     mocks.submit.mockResolvedValue(QUOTE);
     renderApp("/solicitar-orcamento?tipo=pre-venda", true);
-    const submit = await screen.findByRole("button", { name: "Solicitar pré-venda" });
-    expect(screen.getByRole("radio", { name: /Quero fazer pré-venda/ })).toBeChecked();
-    expect(screen.getByText(/R\$50 só será solicitado após confirmação/)).toBeInTheDocument();
+    const submit = await screen.findByRole("button", {
+      name: "Solicitar pré-venda",
+    });
+    expect(
+      screen.getByRole("radio", { name: /Quero fazer pré-venda/ }),
+    ).toBeChecked();
+    expect(
+      screen.getByText(/R\$50 só será solicitado após confirmação/),
+    ).toBeInTheDocument();
     fireEvent.click(submit);
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith(
@@ -424,11 +568,18 @@ describe("TONART commercial screens: account → request → history → respons
 
   it("sends the saved WhatsApp and delivery CEP from one profile without duplicate quote inputs", async () => {
     mocks.getProfile.mockResolvedValueOnce({
-      id: USER, email: "cliente@example.com", full_name: "Cliente",
-      phone: "71999999999", whatsapp: "71988887777",
+      id: USER,
+      email: "cliente@example.com",
+      full_name: "Cliente",
+      phone: "71999999999",
+      whatsapp: "71988887777",
       delivery_address: {
-        street: "Rua Exemplo", number: "10", neighborhood: "Centro",
-        city: "Salvador", state: "BA", zipCode: "40000000",
+        street: "Rua Exemplo",
+        number: "10",
+        neighborhood: "Centro",
+        city: "Salvador",
+        state: "BA",
+        zipCode: "40000000",
         country: "BR",
       },
     });
@@ -440,7 +591,9 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.click(screen.getByRole("button", { name: "Enviar solicitação" }));
     await waitFor(() =>
       expect(mocks.submit).toHaveBeenCalledWith(
-        USER, [{ slug: "naruto", quantity: 1 }], "",
+        USER,
+        [{ slug: "naruto", quantity: 1 }],
+        "",
         {
           whatsapp: "71988887777",
           postalCode: "40000000",
@@ -451,24 +604,37 @@ describe("TONART commercial screens: account → request → history → respons
       ),
     );
     expect(screen.queryByLabelText("CEP (opcional)")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("WhatsApp para contato (opcional)")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("WhatsApp para contato (opcional)"),
+    ).not.toBeInTheDocument();
   });
 
   it("requires the saved customer profile before enabling an actual quote request", async () => {
     mocks.getProfile.mockRejectedValueOnce(new Error("profile offline"));
     renderApp("/solicitar-orcamento", true);
-    expect(await screen.findByRole("button", { name: "Tentar carregar dados" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Tentar carregar dados" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enviar solicitação" }),
+    ).not.toBeInTheDocument();
     expect(mocks.submit).not.toHaveBeenCalled();
   });
 
   it("sends an incomplete customer to the existing My Account", async () => {
     mocks.getProfile.mockResolvedValueOnce({
-      id: USER, email: "cliente@example.com", full_name: null, phone: null,
+      id: USER,
+      email: "cliente@example.com",
+      full_name: null,
+      phone: null,
     });
     renderApp("/solicitar-orcamento", true);
-    expect(await screen.findByRole("link", { name: "Completar Minha Conta" })).toHaveAttribute("href", "/perfil");
-    expect(screen.queryByRole("button", { name: "Enviar solicitação" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Completar Minha Conta" }),
+    ).toHaveAttribute("href", "/perfil");
+    expect(
+      screen.queryByRole("button", { name: "Enviar solicitação" }),
+    ).not.toBeInTheDocument();
   });
 
   it("submits quantities and notes, then navigates to the customer's history", async () => {
@@ -565,16 +731,18 @@ describe("TONART commercial screens: account → request → history → respons
           createdAt: "2026-11-14T00:00:00Z",
         },
         ...(quoteStatus === "answered"
-          ? [{
-              id: 2,
-              quoteId: QUOTE,
-              type: "answered",
-              fromStatus: "reviewing",
-              toStatus: "answered",
-              amount: quotedAmount,
-              responseText: responseMessage,
-              createdAt: "2026-11-14T01:00:00Z",
-            }]
+          ? [
+              {
+                id: 2,
+                quoteId: QUOTE,
+                type: "answered",
+                fromStatus: "reviewing",
+                toStatus: "answered",
+                amount: quotedAmount,
+                responseText: responseMessage,
+                createdAt: "2026-11-14T01:00:00Z",
+              },
+            ]
           : []),
       ],
     });
@@ -593,17 +761,19 @@ describe("TONART commercial screens: account → request → history → respons
       total: 1,
       limit: 25,
       offset: 0,
-      rows: [{
-        id: QUOTE,
-        userId: USER,
-        customerEmail: "cliente@example.com",
-        status: quoteStatus,
-        createdAt: "2026-11-14T00:00:00Z",
-        notes: "Escala 1/6",
-        quotedAmount,
-        responseMessage,
-        items: [{ slug: "naruto", quantity: 1 }],
-      }],
+      rows: [
+        {
+          id: QUOTE,
+          userId: USER,
+          customerEmail: "cliente@example.com",
+          status: quoteStatus,
+          createdAt: "2026-11-14T00:00:00Z",
+          notes: "Escala 1/6",
+          quotedAmount,
+          responseMessage,
+          items: [{ slug: "naruto", quantity: 1 }],
+        },
+      ],
     }));
     mocks.answerAdmin.mockImplementation(async (_quoteId, amount, message) => {
       quoteStatus = "answered";
@@ -617,15 +787,16 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/solicitar-orcamento", true);
     expect(await screen.findByText("Naruto")).toBeInTheDocument();
-    fireEvent.change(screen.getByRole("combobox", { name: "Escala desejada" }), {
-      target: { value: "1/6" },
-    });
+    fireEvent.change(
+      screen.getByRole("combobox", { name: "Escala desejada" }),
+      {
+        target: { value: "1/6" },
+      },
+    );
     fireEvent.click(
       await screen.findByRole("button", { name: "Enviar solicitação" }),
     );
-    expect(
-      await screen.findByText("Orçamento #22222222"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Orçamento #22222222")).toBeInTheDocument();
     expect(mocks.submit).toHaveBeenCalledWith(
       USER,
       [{ slug: "naruto", quantity: 1 }],
@@ -658,7 +829,9 @@ describe("TONART commercial screens: account → request → history → respons
     );
     fireEvent.click(screen.getByRole("button", { name: "Registrar resposta" }));
     expect(
-      await screen.findByText(/Resposta registrada e disponível na conta do cliente/),
+      await screen.findByText(
+        /Resposta registrada e disponível na conta do cliente/,
+      ),
     ).toBeInTheDocument();
     expect(mocks.answerAdmin).toHaveBeenCalledWith(
       QUOTE,
@@ -693,40 +866,47 @@ describe("TONART commercial screens: account → request → history → respons
       total: 1,
       limit: 1,
       offset: 0,
-      rows: [{
-        id: QUOTE,
-        status: "reviewing",
-        createdAt: "2026-11-14T00:00:00Z",
-        notes: null,
-        quotedAmount: null,
-        responseMessage: null,
-        deadline: null,
-        items: [{ slug: "naruto", quantity: 1 }],
-        whatsapp: null,
-        postalCode: null,
-        scale: "a definir",
-        finishing: "a definir",
-      }],
+      rows: [
+        {
+          id: QUOTE,
+          status: "reviewing",
+          createdAt: "2026-11-14T00:00:00Z",
+          notes: null,
+          quotedAmount: null,
+          responseMessage: null,
+          deadline: null,
+          items: [{ slug: "naruto", quantity: 1 }],
+          whatsapp: null,
+          postalCode: null,
+          scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
     });
     renderApp("/meus-orcamentos?quote=" + QUOTE);
     expect(
       await screen.findByRole("heading", { name: "Orçamento #22222222" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver todos os orçamentos" }))
-      .toHaveAttribute("href", "/meus-orcamentos");
+    expect(
+      screen.getByRole("link", { name: "Ver todos os orçamentos" }),
+    ).toHaveAttribute("href", "/meus-orcamentos");
     expect(mocks.listMine).toHaveBeenCalledWith(USER, {
       quoteId: QUOTE,
       limit: 1,
       offset: 0,
     });
     expect(mocks.history).toHaveBeenCalledWith([QUOTE]);
-    expect(screen.queryByRole("button", { name: "Próxima" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Próxima" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not claim an absent customer quote is an empty account", async () => {
     renderApp("/meus-orcamentos?quote=" + QUOTE);
     expect(
-      await screen.findByText("Esse orçamento não foi encontrado na sua conta."),
+      await screen.findByText(
+        "Esse orçamento não foi encontrado na sua conta.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Você ainda não enviou solicitações."),
@@ -740,9 +920,9 @@ describe("TONART commercial screens: account → request → history → respons
 
   it("rejects an invalid quote deep link without performing a protected lookup", async () => {
     renderApp("/meus-orcamentos?quote=../../admin");
-    expect(
-      await screen.findByRole("alert"),
-    ).toHaveTextContent("O link do orçamento é inválido");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "O link do orçamento é inválido",
+    );
     expect(mocks.listMine).not.toHaveBeenCalled();
   });
 
@@ -752,7 +932,9 @@ describe("TONART commercial screens: account → request → history → respons
       email: "cliente@example.com",
     });
     mocks.signIn.mockResolvedValue(USER);
-    renderApp("/login?next=" + encodeURIComponent("/meus-orcamentos?quote=" + QUOTE));
+    renderApp(
+      "/login?next=" + encodeURIComponent("/meus-orcamentos?quote=" + QUOTE),
+    );
     fireEvent.change(await screen.findByLabelText("E-mail"), {
       target: { value: "cliente@example.com" },
     });
@@ -780,9 +962,10 @@ describe("TONART commercial screens: account → request → history → respons
         "Sua sessão expirou. Entre novamente para continuar.",
       ),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Entrar" }),
-    ).toHaveAttribute("href", "/login?next=%2Fsolicitar-orcamento");
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      "/login?next=%2Fsolicitar-orcamento",
+    );
     expect(
       screen.queryByText("Nenhum modelo selecionado nesta visita."),
     ).not.toBeInTheDocument();
@@ -868,7 +1051,12 @@ describe("TONART commercial screens: account → request → history → respons
       paymentVoucherType: null,
       paymentVoucherRejectionReason: null,
     };
-    mocks.listMine.mockResolvedValue({ total: 1, limit: 20, offset: 0, rows: [preorder] });
+    mocks.listMine.mockResolvedValue({
+      total: 1,
+      limit: 20,
+      offset: 0,
+      rows: [preorder],
+    });
     mocks.submitVoucher.mockResolvedValue({
       quoteId: QUOTE,
       paymentType: "deposit",
@@ -877,20 +1065,26 @@ describe("TONART commercial screens: account → request → history → respons
     });
     renderApp("/meus-orcamentos");
     expect(await screen.findAllByText(/300,00/)).toHaveLength(1);
-    expect(screen.getByText(/Desconto Black Friday \(20%\)/)?.parentElement).toHaveTextContent(/60,00/);
-    expect(screen.getByText(/Valor total/)?.parentElement).toHaveTextContent(/240,00/);
+    expect(
+      screen.getByText(/Desconto Black Friday \(20%\)/)?.parentElement,
+    ).toHaveTextContent(/60,00/);
+    expect(screen.getByText(/Valor total/)?.parentElement).toHaveTextContent(
+      /240,00/,
+    );
     expect(screen.getByText("pix@tonart.example")).toBeInTheDocument();
     const file = new File(["proof"], "pix.png", { type: "image/png" });
     fireEvent.change(screen.getByLabelText("Comprovante de pagamento"), {
       target: { files: [file] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Enviar comprovante" }));
-    await waitFor(() => expect(mocks.submitVoucher).toHaveBeenCalledWith({
-      quoteId: QUOTE,
-      paymentType: "deposit",
-      file,
-      previousVoucherPath: null,
-    }));
+    await waitFor(() =>
+      expect(mocks.submitVoucher).toHaveBeenCalledWith({
+        quoteId: QUOTE,
+        paymentType: "deposit",
+        file,
+        previousVoucherPath: null,
+      }),
+    );
   });
 
   it("refreshes quote status after a voucher response cannot be confirmed", async () => {
@@ -925,17 +1119,24 @@ describe("TONART commercial screens: account → request → history → respons
       paymentVoucherRejectionReason: null,
     };
     mocks.listMine
-      .mockResolvedValueOnce({ total: 1, limit: 20, offset: 0, rows: [preorder] })
       .mockResolvedValueOnce({
         total: 1,
         limit: 20,
         offset: 0,
-        rows: [{
-          ...preorder,
-          paymentStatus: "under_review",
-          paymentVoucherPath: `quotes/${USER}/${QUOTE}/1788130800000-a1b2c3d4e5f60708.png`,
-          paymentVoucherType: "deposit",
-        }],
+        rows: [preorder],
+      })
+      .mockResolvedValueOnce({
+        total: 1,
+        limit: 20,
+        offset: 0,
+        rows: [
+          {
+            ...preorder,
+            paymentStatus: "under_review",
+            paymentVoucherPath: `quotes/${USER}/${QUOTE}/1788130800000-a1b2c3d4e5f60708.png`,
+            paymentVoucherType: "deposit",
+          },
+        ],
       });
     mocks.submitVoucher.mockRejectedValueOnce(
       new Error("catalog_preorder_voucher_response_invalid"),
@@ -948,7 +1149,9 @@ describe("TONART commercial screens: account → request → history → respons
     fireEvent.click(screen.getByRole("button", { name: "Enviar comprovante" }));
 
     await waitFor(() => expect(mocks.listMine).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("Comprovante em análise")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Comprovante em análise"),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Enviar comprovante" }),
     ).not.toBeInTheDocument();
@@ -1050,33 +1253,39 @@ describe("TONART commercial screens: account → request → history → respons
       total: 1,
       limit: 20,
       offset: 0,
-      rows: [{
-        id: QUOTE,
-        status: "answered",
-        createdAt: "2026-11-14T00:00:00Z",
-        notes: null,
-        quotedAmount: 150,
-        listAmount: 300,
-        discountPercent: 50,
-        discountAmount: 150,
-        responseMessage: "Oferta Black Friday aplicada.",
-        deadline: null,
-        items: [{ slug: "naruto", quantity: 1 }],
-        whatsapp: null,
-        postalCode: null,
-        scale: "a definir",
-        finishing: "a definir",
-      }],
+      rows: [
+        {
+          id: QUOTE,
+          status: "answered",
+          createdAt: "2026-11-14T00:00:00Z",
+          notes: null,
+          quotedAmount: 150,
+          listAmount: 300,
+          discountPercent: 50,
+          discountAmount: 150,
+          responseMessage: "Oferta Black Friday aplicada.",
+          deadline: null,
+          items: [{ slug: "naruto", quantity: 1 }],
+          whatsapp: null,
+          postalCode: null,
+          scale: "a definir",
+          finishing: "a definir",
+        },
+      ],
     });
 
     renderApp("/meus-orcamentos");
 
-    const listAmountLabel = await screen.findByText("Valor antes da Black Friday");
+    const listAmountLabel = await screen.findByText(
+      "Valor antes da Black Friday",
+    );
     expect(listAmountLabel.parentElement).toHaveTextContent(/300,00/);
-    expect(screen.getByText("Desconto Black Friday (50%)").parentElement)
-      .toHaveTextContent(/150,00/);
-    expect(screen.getByText("Valor total").parentElement)
-      .toHaveTextContent(/150,00/);
+    expect(
+      screen.getByText("Desconto Black Friday (50%)").parentElement,
+    ).toHaveTextContent(/150,00/);
+    expect(screen.getByText("Valor total").parentElement).toHaveTextContent(
+      /150,00/,
+    );
     expect(screen.queryByText(/Valor final:/)).not.toBeInTheDocument();
     expect(screen.getAllByText("Desconto Black Friday (50%)")).toHaveLength(1);
   });
@@ -1123,10 +1332,16 @@ describe("TONART commercial screens: account → request → history → respons
 
     renderApp("/meus-orcamentos");
 
-    expect(await screen.findByText("Orçamento respondido.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Orçamento respondido."),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Use seus Coins")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Quantos Coins deseja usar?")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Usar Coins" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Quantos Coins deseja usar?"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Usar Coins" }),
+    ).not.toBeInTheDocument();
     expect(mocks.coinBalance).not.toHaveBeenCalled();
     expect(mocks.applyCoins).not.toHaveBeenCalled();
   });
@@ -1383,11 +1598,21 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.getUser.mockResolvedValue(null);
     mocks.signupAvailability.mockReturnValue("disabled");
     renderApp("/login?mode=signup&next=%2Fsolicitar-orcamento");
-    expect(await screen.findByRole("button", { name: "Entrar" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Cadastrar" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Criar conta" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Novos cadastros estão fechados nesta etapa/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Esqueci minha senha" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Entrar" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Cadastrar" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Novos cadastros estão fechados nesta etapa/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Esqueci minha senha" }),
+    ).toBeInTheDocument();
     expect(mocks.signUp).not.toHaveBeenCalled();
   });
 
@@ -1396,10 +1621,15 @@ describe("TONART commercial screens: account → request → history → respons
     mocks.signupAvailability.mockReturnValue("disabled");
     renderApp("/solicitar-orcamento", true);
     expect(await screen.findByRole("link", { name: "Entrar" })).toHaveAttribute(
-      "href", "/login?next=%2Fsolicitar-orcamento",
+      "href",
+      "/login?next=%2Fsolicitar-orcamento",
     );
-    expect(screen.queryByRole("link", { name: "Criar conta" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Novos cadastros estão fechados nesta etapa/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Criar conta" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Novos cadastros estão fechados nesta etapa/),
+    ).toBeInTheDocument();
   });
 
   it("shows account confirmation instead of claiming that signup is already active", async () => {

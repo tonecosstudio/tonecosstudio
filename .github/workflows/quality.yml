@@ -252,6 +252,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 2
 
       - name: Use Node.js 24
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -298,6 +299,15 @@ jobs:
 
       - name: Verify monorepo ownership and Git blobs
         run: npm run catalog:monorepo:check
+
+      - name: Typecheck TONART admin editor
+        run: npm run typecheck:app
+
+      - name: Test TONART admin continuous curation
+        run: npx vitest run src/pages/commercial/TonartTelegramDrafts.test.tsx
+
+      - name: Test TONART index navigation contract
+        run: node --test scripts/catalog/tonart-telegram-navigation.test.mjs
 
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
