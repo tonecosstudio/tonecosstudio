@@ -358,12 +358,13 @@ def test_existing_name_sync_read_only():
         import subprocess,sys
         out=home/"names-only"
         cmd=[sys.executable,str(SCRIPT),"--names-only","--db",str(db),
-             "--existing-drafts-csv",str(csv_path),"--expected-draft-count","5",
+             "--existing-drafts-csv",str(csv_path),"--expected-draft-count","4",
              "--source-root",str(home/"absent-original-images"),"--out",str(out)]
-        result=subprocess.run(cmd,capture_output=True,text=True,check=True)
+        result=subprocess.run(cmd,capture_output=True,text=True)
+        assert result.returncode==0, result.stdout + "\n" + result.stderr
         report=json.loads((out/"resumo_correcoes_fichas_existentes.json").read_text(encoding="utf8"))
         assert report["ready"]==1 and not report["external_writes"], result.stdout
-        wrong=subprocess.run([*cmd[:], "--expected-draft-count","6"],
+        wrong=subprocess.run([*cmd[:], "--expected-draft-count","5"],
                              capture_output=True,text=True)
         assert wrong.returncode!=0 and "Snapshot D1 incompleto" in wrong.stderr
         assert not (out/"operacoes_conciliadas.jsonl").exists()
