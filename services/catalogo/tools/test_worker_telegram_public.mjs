@@ -266,3 +266,28 @@ test("showcase migration preserves existing visible rows and keeps new drafts pr
   assert.equal(status("new-private"),0,"revoking rights withdraws the public preview");
  }finally{db.close()}
 });
+
+test("Telegram showcase alphabetical pagination uses the visibility-scoped D1 index", () => {
+ const db = new DatabaseSync(":memory:");
+ try {
+  db.exec("CREATE TABLE models(id TEXT PRIMARY KEY,name TEXT NOT NULL,telegram_studio TEXT NOT NULL,telegram_group_key TEXT,telegram_showcase_visible INTEGER NOT NULL,telegram_review_status TEXT NOT NULL,telegram_rights_status TEXT NOT NULL)");
+  const put = db.prepare("INSERT INTO models VALUES(?,?,?,?,?,?,?)");
+  for(const row of [
+   ["z","Zeta","Studio A","group-z",1,"pending","not_reviewed"],
+   ["aB","Alpha","Studio B","group-a",1,"pending","not_reviewed"],
+   ["aA","alpha","Studio A","group-b",1,"pending","not_reviewed"],
+   ["hidden","Aardvark","Studio A","group-c",0,"pending","not_reviewed"],
+   ["rejected","Aardvark","Studio A","group-d",1,"rejected","not_reviewed"],
+   ["no-rights","Aardvark","Studio A","group-e",1,"pending","rejected"],
+   ["no-group","Aardvark","Studio A",null,1,"pending","not_reviewed"],
+  ]) put.run(...row);
+  const migration = readFileSync(new URL("../migrations/0028_telegram_showcase_listing_index.sql",import.meta.url),"utf8");
+  db.exec(migration);
+  const query = "SELECT m.id FROM models m WHERE m.telegram_group_key IS NOT NULL AND m.telegram_showcase_visible=1 AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?";
+  const plan = db.prepare("EXPLAIN QUERY PLAN " + query).all(24,0).map(row=>row.detail).join("\n");
+  assert.match(plan,/USING INDEX idx_models_telegram_showcase_name/);
+  assert.doesNotMatch(plan,/USE TEMP B-TREE/);
+  assert.deepEqual(db.prepare(query).all(24,0).map(x=>x.id),["aA","aB","z"]);
+  assert.deepEqual(db.prepare(query).all(2,1).map(x=>x.id),["aB","z"]);
+ } finally { db.close(); }
+});
