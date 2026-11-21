@@ -255,7 +255,7 @@ const importBundle = await esbuild.build({
 const { importPrivateTelegramDraft } = await import('data:text/javascript;base64,' +
   Buffer.from(importBundle.outputFiles[0].text).toString('base64'))
 
-function draftImportFixture(overrides = {}) {
+function draftImportFixture(overrides = {}, options = {}) {
   const key = 'b2b99222c387716d35aba4c3'
   const input = {
     originId: '2370335738', studio: 'Abe3D', groupKey: key,
@@ -279,6 +279,12 @@ function draftImportFixture(overrides = {}) {
           async first() {
             if (sql.includes('FROM franchises')) return {id:197}
             if (sql.includes('WHERE telegram_origin_id=?')) return stored?.groupKey === statement.values[1] ? stored : null
+            if (sql.includes('FROM models') && sql.includes('telegram_studio=?')) {
+              assert.equal(statement.values[0], input.studio, 'dedupe must scope to a single studio')
+              assert.equal(statement.values[1], input.name)
+              assert.equal(statement.values[2], input.variant)
+              return options.sameStudioCandidate ? {id:'another_sculpture'} : null
+            }
             if (sql.includes('FROM models')) return null
             return null
           },
@@ -359,6 +365,26 @@ test('canonical group importer creates once, verifies every private R2 HEAD and 
   assert.equal(second.data.name,x.input.name,'manually maintained commercial title survives reimport')
   assert.equal(x.getBatches(),1,'reimport cannot insert images or models again')
   assert.equal(x.heads.length,4,'no R2 rewrite or needless HEAD on idempotent replay')
+})
+
+test('identical character names in different studios are not duplicate sculpture identities',async()=>{
+  // The original global lower(name) lookup rejected a legitimate second
+  // studio's independently sourced image when the character name matched.
+  const x=draftImportFixture({name:'Batman',studio:'Abe3D'})
+  const created=await x.run(x.input)
+  assert.equal(created.status,201)
+  assert.equal(created.data.published,false)
+  assert.equal(x.getBatches(),1)
+  assert.equal(x.heads.length,4)
+})
+
+test('same studio, exact name and variant stays under manual duplicate review',async()=>{
+  const x=draftImportFixture({}, {sameStudioCandidate:true})
+  const held=await x.run(x.input)
+  assert.equal(held.status,409)
+  assert.equal(held.data.error,'possible_same_studio_sculpture')
+  assert.equal(x.getBatches(),0)
+  assert.equal(x.heads.length,0)
 })
 
 test('Curadoria single message identity has stable D1 key and replay cannot duplicate a draft',async()=>{

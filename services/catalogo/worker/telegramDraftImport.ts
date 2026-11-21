@@ -174,10 +174,16 @@ export async function importPrivateTelegramDraft(
     'SELECT id FROM models WHERE id=? LIMIT 1',
   ).bind(id).first()
   if (existingSameId) return error(409, 'draft_id_conflict')
-  const oldName = await env.DB.prepare(
-    'SELECT id FROM models WHERE lower(name)=lower(?) LIMIT 1',
-  ).bind((name as string).trim()).first()
-  if (oldName) return error(409, 'possible_existing_commercial_model')
+  // A character name is not a sculpture identity: different studios and
+  // variants legitimately create different models. A same-studio/same-variant
+  // title is a review candidate, not proof of duplicate bytes.
+  // Group key and SHA owners have already been checked above.
+  const possibleSameSculpture = await env.DB.prepare(
+    'SELECT id FROM models WHERE telegram_studio=? AND name=? COLLATE NOCASE' +
+    ' AND COALESCE(variant_name, \'\')=? COLLATE NOCASE AND id<>? LIMIT 1',
+  ).bind((studio as string).trim(), (name as string).trim(),
+    (variant as string).trim(), id).first()
+  if (possibleSameSculpture) return error(409, 'possible_same_studio_sculpture')
   const franchise = await env.DB.prepare(
     'SELECT id FROM franchises WHERE id=? LIMIT 1',
   ).bind(body.franchiseId).first()
