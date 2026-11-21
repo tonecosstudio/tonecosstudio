@@ -7,11 +7,11 @@
 
 | Superfície | Endereço planejado | Entrada de build | Acesso |
 |---|---|---|---|
-| Catálogo público | `catalogo.tonartstudio.com.br` | `src/PublicCatalogApp.tsx` / `src/CatalogMvpShell.tsx` | Anônimo, somente aprovados |
+| Catálogo público | `catalogo.tonartstudio.com.br` | `src/PublicCatalogApp.tsx` / `src/TelegramStudioCatalog.tsx` | Anônimo, visualização de rascunhos em curadoria; indexação bloqueada, direitos ainda não aprovados |
 | Site TONART principal | `tonartstudio.com.br` | landing existente | Público sem recursos incompletos |
 | Comercial / administração | Ambiente interno separado | `src/TonecosCommercialApp.tsx` | Autenticado + autorização no backend, protegido também no hosting |
 
-**Não** usar `src/App.tsx` para criar outra cópia do catálogo e **não** expor o app local da Curadoria na Internet. O catálogo aprovado segue servido pelo Worker e armazenamento canônicos existentes em `services/catalogo/`; o frontend público não pode importar módulos de conta, pagamento ou administração.
+**Não** usar `src/App.tsx` para criar outra cópia do catálogo e **não** expor o app local da Curadoria na Internet. A vitrine de rascunhos Telegram é servida pelo Worker/D1/R2 canônicos existentes; o frontend público não pode importar módulos de conta, pagamento ou administração.
 
 Para Vercel, o build do catálogo público deve configurar:
 
@@ -48,7 +48,7 @@ Não reutilizar o mesmo *build* comercial na origem `catalogo.`. O projeto `tona
    - `scripts/cloudflare/upload-catalog-webp-to-r2.mjs`
    - `scripts/cloudflare/import-r2-catalog-queue.mjs`
    Nunca fazer upload direto do app local ou criar D1/R2/Worker paralelos.
-8. **Publicação**: somente referências revisadas e assinadas pelo backend canônico ficam visíveis em `catalogo.`. Página pública não pode indexar pendentes nem importar diretórios de download. Preservar rollback e IDs permanentes.
+8. **Publicação comercial**: somente referências revisadas e autorizadas podem adquirir status comercial de publicadas. A vitrine Telegram em pré-lançamento atualmente expõe também rascunhos (`published=0`); isso **não comprova direitos ou revisão**. Bloquear indexação, impedir importação de diretórios privados pelo frontend e preservar rollback e IDs permanentes.
 
 ## 4. Comando de pré-publicação
 
@@ -163,3 +163,16 @@ identidade e modelo existente (quando comprovado). Reexecuções e retomadas
 reutilizam a mesma identidade; fotos idênticas no grupo não geram transferência
 duplicada. O plano marca produção e direitos como **não autorizados** até a
 integração pelos serviços comerciais existentes.
+
+## 10. Auditoria de integridade e revisão — 20/11/2026 (Bahia)
+
+**Fontes verificadas:** D1 `tonecos-catalogo` (consultas SELECT), catálogo público existente e SQLite local de Curadoria somente leitura; nenhum upload ou alteração de D1/R2/curadoria neste diagnóstico.
+
+- `catalogo.tonartstudio.com.br` funciona como **vitrine Telegram anônima, estritamente visual**, sem login, cadastro, carrinho ou orçamento. O domínio já redireciona essas rotas comerciais para 404; mantém `X-Robots-Tag: noindex` e `robots.txt` restritivo. **Noindex não é controle de acesso**.
+- Vitrine atual: **1.228 modelos de 5 estúdios** (Ydeval 444, Wicked 379, 3DXM 271, Abe3D 72, Luftmensch 62). Todos têm `telegram_name_provisional=1`, `telegram_review_status='pending'`, `telegram_rights_status='not_reviewed'` e `published=0`. São rascunhos **tecnicamente exibidos**, não imagens editorialmente/licencialmente aprovadas. Não tratar o site como lançamento autorizado nem abrir indexação sem decisão editorial.
+- Integridade D1: nenhuma galeria vazia, divergência de `image_count`, duplicata de SHA entre fichas Telegram ou posição de mídia inconsistente. Fonte comum atual: `telegram_origin_id='2370335738'`.
+- Base comercial canônica: **3.837 modelos e 4.639 imagens com SHA-256 válido**. O CSV privado de conciliação foi reconstruído no local já usado pelo pré-publicador, não versionado no Git.
+- Curadoria local: **27.202 imagens** e **4.431 grupos**. O pré-publicador existente `scripts/catalog/preparar-publicacao-curadoria-telegram.py` foi executado com `--expected-model-count 3837`: **5 candidatos Sekai 3D Models** tecnicamente aptos ao staging, **27.197 imagens retidas**. Os cinco têm `rights_verified=false` e `production_write_authorized=false`; nenhum foi publicado.
+- A ordem da galeria e a capa editadas no workbench privado ficam em `telegram_gallery_order` e `cover_storage_key`. O Worker público deve ler **esses mesmos campos**, sem segundo inventário ou cópia da galeria; quando a ordem armazenada é inválida, usar a ordem original de `model_image_sources.position`. A auditoria encontrou zero galerias reordenadas até este checkpoint; a proteção deve cobrir as próximas curadorias.
+
+**Critério para novos lotes:** confirmação da identidade do grupo, integridade do arquivo original, conciliação por hash/ID com todos os modelos comerciais, evidência de direitos e autorização editorial explícita. Candidatos locais não devem ser inseridos automaticamente na vitrine. Não alterar estados de revisão/direitos em massa para obter números maiores.
