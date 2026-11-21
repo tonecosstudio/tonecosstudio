@@ -11,7 +11,7 @@ import {
   type TelegramStudioIndexPage,
 } from "@/services/catalog/tonart-telegram-drafts";
 import { canNavigateTelegramIndex, resolveTelegramIndexNeighbor } from "@/services/catalog/tonart-telegram-navigation";
-import { actionClass, secondaryClass } from "./CommercialPage";
+import { actionClass } from "./CommercialPage";
 
 const inputClass =
   "min-h-11 w-full rounded-md border border-[#594737] bg-[#171411] px-3 py-2.5 text-sm text-[#f2e7d7] outline-none transition placeholder:text-[#80776b] focus:border-[#d4a66e] focus:ring-1 focus:ring-[#d4a66e]/30";

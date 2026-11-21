@@ -2,7 +2,7 @@
  * Admin-only bridge to the existing Cloudflare catalog Worker.
  * No public R2 URL, Supabase mirror, or direct D1 credentials in the browser.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { getCurrentAuthSession } from "@/services/auth/auth-session-service";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 
@@ -68,15 +68,14 @@ function base() {
 
 async function request(path: string, init?: RequestInit) {
   await requireTonecosAdminAccess();
-  const { data, error } = await supabase.auth.getSession();
-  if (error || !data.session?.access_token)
-    throw new Error("admin_session_missing");
+  const session = await getCurrentAuthSession();
+  if (!session?.access_token) throw new Error("admin_session_missing");
   const url = base() + path;
   const response = await fetch(url, {
     ...init,
     cache: "no-store",
     headers: {
-      authorization: "Bearer " + data.session.access_token,
+      authorization: "Bearer " + session.access_token,
       ...(init?.body ? { "content-type": "application/json" } : {}),
     },
   });
