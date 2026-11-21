@@ -294,6 +294,8 @@ function draftImportFixture() {
         if (statements[0].sql.includes('INSERT INTO models')) {
           assert.equal(statements.length, 3)
           assert.equal(statements[0].values[10],0,'new drafts cannot be published')
+          assert.match(statements[0].sql,/telegram_showcase_visible/,'new drafts must store visibility explicitly')
+          assert.equal(statements[0].values.at(-1),0,'new drafts must not appear in public showcase')
           stored = {
             id:'tg_'+key, name:input.name, published:0,
             image_count:2,telegram_revision:0,telegram_gallery_order:JSON.stringify([17278,17279]),
