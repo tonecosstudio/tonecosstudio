@@ -29,6 +29,9 @@ assert '/api/append-gallery' in js
 assert '/api/capabilities' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'async function openBoard(' in js
 assert 'id="catalogSyncButton"' in html and '/api/catalog-sync' in js
+assert 'id="loadMoreAlbums"' in html
+assert 'el("loadMoreAlbums").onclick' in js
+assert 'page=next?albumCandidatePage+1:1' in js
 assert 'catalogSyncStudio' in html and 'renderCatalogSync' in js
 assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js

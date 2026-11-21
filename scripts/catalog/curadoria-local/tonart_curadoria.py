@@ -381,7 +381,7 @@ class Handler(BaseHTTPRequestHandler):
                 p=parse_qs(route.query)
                 return self.respond(gallery.list_album_candidates(DB_PATH,
                     topic=p.get("topic",[""])[0][:120],
-                    limit=p.get("limit",["60"])[0]))
+                    limit=p.get("limit",["60"])[0],page=p.get("page",["1"])[0]))
             if route.path=="/api/models":
                 p=parse_qs(route.query)
                 return self.respond(smart.list_models(DB_PATH,

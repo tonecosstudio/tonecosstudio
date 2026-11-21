@@ -89,7 +89,7 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
     return {"group_key":group_key,"image_count":len(ids),"title":title,
             "studio":studio,"state":"revisar","created":old is None}
 
-def list_album_candidates(db_path,topic="",limit=60):
+def list_album_candidates(db_path,topic="",limit=60,page=1):
     """Álbuns com ao menos duas fotos livres, inclusive álbuns parciais.
 
     As fotos já agrupadas aparecem somente como contexto de revisão; os IDs
@@ -97,6 +97,7 @@ def list_album_candidates(db_path,topic="",limit=60):
     """
     topic=str(topic or "").strip()
     limit=max(1,min(int(limit),100))
+    page=max(1,int(page))
     clauses=["TRIM(COALESCE(a.source_album,''))!=''"]
     params=[]
     if topic:
@@ -113,10 +114,10 @@ def list_album_candidates(db_path,topic="",limit=60):
             GROUP BY a.original_topic,a.source_album
             HAVING COUNT(*)>=2
               AND SUM(CASE WHEN m.message_id IS NULL THEN 1 ELSE 0 END)>=2
-            ORDER BY image_count DESC,sample_message LIMIT ?""",
-            params+[limit]).fetchall()
+            ORDER BY image_count DESC,sample_message LIMIT ? OFFSET ?""",
+            params+[limit+1,(page-1)*limit]).fetchall()
         items=[]
-        for row in rows:
+        for row in rows[:limit]:
             photos=db.execute("""SELECT a.message_id,a.source_caption,
                 m.group_key,p.title,p.variant
                 FROM assets a LEFT JOIN model_group_members m USING(message_id)
@@ -139,7 +140,7 @@ def list_album_candidates(db_path,topic="",limit=60):
                                "variant":x["variant"] or ""} for x in photos
                                if x["group_key"]],
                           "caption":captions[0][:500] if captions else ""})
-        return {"items":items,"limit":limit}
+        return {"items":items,"limit":limit,"page":page,"has_more":len(rows)>limit}
 
 
 def refresh_titles(db_path,group_keys=None):

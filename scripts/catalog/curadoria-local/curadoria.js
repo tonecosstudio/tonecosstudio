@@ -28,24 +28,39 @@ refresh();setInterval(()=>{if(!typing)refresh()},10000);
 
 /* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
 let viewMode="models",chosenGroup=null,modelTotal=0;
-let albumCandidates=[];
-async function refreshAlbumCandidates(){
+let albumCandidates=[],albumCandidatePage=0,albumCandidateTopic="",albumCandidateBusy=false;
+async function refreshAlbumCandidates(next=false){
+ const requestedTopic=topic;
+ if(albumCandidateBusy)return;
+ if(!next&&albumCandidateTopic===requestedTopic&&albumCandidatePage>0)return;
+ albumCandidateBusy=true;
  const select=el("albumCandidate"),previous=select.value;
- albumCandidates=[];select.replaceChildren();
- const first=document.createElement("option");first.value="";
- first.textContent=topic?"Selecione um álbum para comparar as vistas":"Selecione um estúdio à esquerda";
- select.append(first);
- if(!topic)return;
- const data=await api("/api/album-candidates?"+new URLSearchParams({topic,limit:60}));
- albumCandidates=data.items||[];
- for(const item of albumCandidates){
-  const option=document.createElement("option");
-  option.value=item.album_id;
-  option.textContent=item.image_count+" livres / "+(item.album_image_count||item.image_count)+" fotos · #"+item.message_ids[0]+(item.caption?" · "+item.caption.slice(0,35):"");
-  select.append(option);
- }
- if(albumCandidates.some(x=>x.album_id===previous))select.value=previous;
+ try{
+  if(!next){
+   albumCandidates=[];albumCandidatePage=0;albumCandidateTopic=requestedTopic;
+   select.replaceChildren();
+   const first=document.createElement("option");first.value="";
+   first.textContent=requestedTopic?"Selecione um álbum para comparar as vistas":"Selecione um estúdio à esquerda";
+   select.append(first);
+  }
+  if(!requestedTopic){el("loadMoreAlbums").hidden=true;return;}
+  const page=next?albumCandidatePage+1:1;
+  const data=await api("/api/album-candidates?"+new URLSearchParams({topic:requestedTopic,limit:60,page}));
+  if(topic!==requestedTopic)return;
+  for(const item of data.items||[]){
+   if(albumCandidates.some(x=>x.album_id===item.album_id))continue;
+   albumCandidates.push(item);
+   const option=document.createElement("option");
+   option.value=item.album_id;
+   option.textContent=item.image_count+" livres / "+(item.album_image_count||item.image_count)+" fotos · #"+item.message_ids[0]+(item.caption?" · "+item.caption.slice(0,35):"");
+   select.append(option);
+  }
+  albumCandidatePage=page;
+  el("loadMoreAlbums").hidden=!data.has_more;
+  if(albumCandidates.some(x=>x.album_id===previous))select.value=previous;
+ }finally{albumCandidateBusy=false;}
 }
+el("loadMoreAlbums").onclick=()=>refreshAlbumCandidates(true);
 el("loadAlbumCandidate").onclick=()=>{
  const item=albumCandidates.find(x=>x.album_id===el("albumCandidate").value);
  if(!item||item.topic!==topic){notify("Selecione um álbum do estúdio antes de revisar.");return;}

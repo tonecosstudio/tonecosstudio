@@ -100,6 +100,12 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
                  "Kuton Sculpts","",""+album,"2026-11-19",smart.utc()))
     candidates=gallery.list_album_candidates(db,"Kuton Sculpts")
     assert len(candidates["items"])==2,candidates
+    page_one=gallery.list_album_candidates(db,"Kuton Sculpts",limit=1,page=1)
+    page_two=gallery.list_album_candidates(db,"Kuton Sculpts",limit=1,page=2)
+    assert page_one["has_more"] and not page_two["has_more"]
+    assert len(page_one["items"])==len(page_two["items"])==1
+    assert page_one["items"][0]["album_id"]!=page_two["items"][0]["album_id"]
+    assert gallery.list_album_candidates(db,"Kuton Sculpts",limit=1,page=3)["items"]==[]
     assert candidates["items"][0]["message_ids"]==[107,108,109],candidates
     assert all(x["image_count"]==3 for x in candidates["items"])
     gallery.register_visual_gallery(db,[110,111],"Kuton Sculpts")
