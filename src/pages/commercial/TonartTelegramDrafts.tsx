@@ -114,13 +114,17 @@ export default function TonartTelegramDrafts() {
   }, []);
 
   // The existing D1 index handles global search and pagination, not an in-page filter.
+  // Skip the initial debounce when the search did not change: resetting offset
+  // after a fast 24→25 navigation strands the selected model outside its page.
   useEffect(() => {
+    const nextQuery = searchText.trim();
+    if (nextQuery === query) return;
     const timer = window.setTimeout(() => {
       setOffset(0);
-      setQuery(searchText.trim());
+      setQuery(nextQuery);
     }, 280);
     return () => window.clearTimeout(timer);
-  }, [searchText]);
+  }, [searchText, query]);
 
   useEffect(() => {
     let live = true;
