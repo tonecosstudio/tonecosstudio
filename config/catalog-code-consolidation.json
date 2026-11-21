@@ -116,6 +116,28 @@
     },
     "apiDeployWorkflowId": 371358484,
     "apiDeployPipeline": ".github/workflows/cloudflare.yml",
+    "additionalWriterWorkflows": [
+      {
+        "path": ".github/workflows/external-batch-release.yml",
+        "id": 384544141,
+        "authority": "D1 and R2 production batch"
+      },
+      {
+        "path": ".github/workflows/exact-source-gallery-promotion.yml",
+        "id": 385740730,
+        "authority": "D1 and R2 exact gallery"
+      },
+      {
+        "path": ".github/workflows/existing-gallery-promotion.yml",
+        "id": 385342502,
+        "authority": "D1 and R2 existing gallery"
+      },
+      {
+        "path": ".github/workflows/external-media-staging.yml",
+        "id": 385318875,
+        "authority": "R2 staging objects"
+      }
+    ],
     "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
   },
   "runtime": {
