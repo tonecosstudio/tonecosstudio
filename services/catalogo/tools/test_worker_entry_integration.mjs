@@ -49,7 +49,7 @@ test('bundled Worker entrypoint builds for the edge and exports a fetch handler'
   assert.equal(typeof worker.fetch, 'function')
   assert.ok(source.length > 10000)
   assert.doesNotMatch(source, /process\.env\.CLOUDFLARE_API_TOKEN|process\.env\.TURNSTILE_SECRET_KEY/)
-  assert.match(readFileSync(join(root, 'worker/entry.ts'), 'utf8'), /return apiWorker\.fetch\(request, env\)/)
+  assert.match(readFileSync(join(root, 'worker/entry.ts'), 'utf8'), /return apiWorker\.fetch\(request, env, ctx\)/)
 })
 
 test('bundled edge entrypoint serves public R2 GET and HEAD as 200 without DB reads', async () => {
