@@ -72,7 +72,7 @@ O preparador utiliza o inventário do catálogo existente e a Curadoria. Os nome
 2. Exposição somente de itens identificados e validados no Worker, com as permissões do backend.
 3. Ficha, galeria, pesquisa, filtros, carregamento progressivo, SEO e mobile testados no domínio de staging; não exigir login para navegar.
 4. Processo de importação idempotente (hash, IDs canônicos, staging → revisão → commit, sem duplicar modelo ou bytes), testes de amostra e rollback.
-5. Conta/assinaturas continuam em desenvolvimento interno; o contato para orçamento pode usar fluxo de visitante já aprovado no projeto, sem inventar um segundo backend.
+5. Este subdomínio Telegram não oferece conta, cadastro, carrinho nem orçamento (inclusive para visitantes); recursos comerciais pertencem exclusivamente ao site principal, fora da vitrine.
 6. Verificar domínios e ambiente Vercel, registrar deployment exato aprovado, apontar `catalogo.` somente depois. O endereço `tonartstudio.com.br/catalogo` pode redirecionar para o subdomínio após a implantação.
 
 **Não executar publicação de imagens privadas, alterações de DNS, fusão destrutiva ou lançamento completo como efeito automático deste plano.**
