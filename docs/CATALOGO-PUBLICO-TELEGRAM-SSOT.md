@@ -201,3 +201,68 @@ integração pelos serviços comerciais existentes.
 - **Causa operacional que continua aberta:** a conta ainda permite publicação Wrangler fora da sequência M5, embora `releaseAuthorized=false` no manifesto. O incidente ocorreu mesmo após rollback anterior. **Não afirmar que o risco de reincidência foi removido apenas com rollback.** Investigar o publicador efetivo da implantação de 03:52 e vincular seu preflight ao ledger D1 e à autoridade única; nunca publicar a versão v9 antes de aplicar/atestar a migration `0025` no D1 canônico, nem reativar um pipeline paralelo para contornar o bloqueio.
 
 **Regra de release obrigatória:** verificar imediatamente antes da publicação `latestMigration>=0025_telegram_showcase_private_visibility.sql`, coluna `telegram_showcase_visible` presente, testes de 1.228 modelos preservados e publicador único autorizado em M5; se qualquer condição faltar, **bloquear deploy**, mantendo `81d141df` ativa. Só migrar e publicar pelo fluxo canônico após testes, sem recriar Worker/D1/R2. As PRs #31/#33 são editoriais e não concedem essa autorização.
+
+## 13. Estado transversal de todos os estúdios e sincronização — 21/11/2026
+
+> **Checkpoint operacional datado.** Esta seção registra observações reais do SQLite em `DESKTOP-4UFL03B`, do Cloudflare D1 e do catálogo HTTP. Não equivale a autorização de publicação nem substitui uma auditoria fresca antes de executar writes. A cópia operacional local é `C:\Users\ordax\Documents\TONART-Telegram-Import\espelho-telegram\CURADORIA-DIVISAO-POR-ESTUDIO.md` (inventário de tópicos, não segunda base).
+
+### Escopo, números e terminologia
+
+| Medida | Observação de 21/11/2026 |
+|---|---:|
+| Telegram no SQLite, **todos os tópicos** | 27.202 imagens |
+| Tópico separado `Geral + 50k` | 18.556 imagens; fora do lote de estúdios |
+| Demais tópicos (podem incluir tópicos numéricos sem estúdio designado) | 106 tópicos, 8.646 imagens |
+| Imagens desses tópicos com título local preenchido | 8.183 (94,6%); 463 ainda sem título |
+| Status das propostas: `confirmado` / `provavel` / `revisar` | 627 / 7.435 / 584 |
+| `annotations.status='aprovado'` nesses tópicos | **0** |
+| Grupos locais / imagens individuais não agrupadas | 4.431 grupos / 1.064 imagens |
+| Identidades candidatas (grupo + individual; **não** número de modelos aprovados) | 5.495 |
+| D1: todos os modelos / publicados no **catálogo comercial** | 3.837 / 2.575 |
+| D1: rascunhos Telegram na **vitrine visual**, de cinco estúdios | 1.228 fichas, 1.960 imagens ligadas |
+
+**Não misturar unidades:** 8.183 são *imagens com nome no SQLite*, não 8.183 modelos distintos nem 8.183 fichas publicadas. Os 106 são *tópicos fora do Geral*, não 106 estúdios validados para exibição. `published=0` das fichas Telegram refere-se ao catálogo comercial; a vitrine visual existente tem consulta separada. Nome preenchido ou `confirmado` não é aprovação de licença/direitos.
+
+**Composição D1 Telegram observada:** Ydeval 444 modelos/508 imagens; Wicked 379/623; 3DXM 271/296; Abe3D 72/267; Luftmensch 62/266. Todas as 1.228 fichas mantinham `telegram_review_status='pending'`, `telegram_name_provisional=1`, `telegram_rights_status='not_reviewed'` no levantamento, não importando aprovação editorial.
+
+**Diferença comprovada por `message_id` na origem Telegram** (apenas os cinco já presentes): Wicked 197 imagens locais ainda não ligadas ao D1; 3DXM 149; Abe3D 64; Luftmensch 21; Ydeval 18: **449 no total**. São mídias, *não* 449 modelos novos; exigir reconciliação com as galerias existentes. Os demais tópicos, inclusive Kuton, C27, Momoji e Merge/Nostalgic, não possuíam fichas Telegram em D1 nesse checkpoint. As 85 mídias Merge/Nostalgic têm backup privado de curadoria e pares WebP verificados no R2 de staging; isso **não comprova** cobertura R2 para todos os 8.646 itens.
+
+### Diagnóstico: por que os nomes locais não chegam ao site
+
+1. O SQLite `curadoria-local/curadoria.sqlite3` recebe `name_proposals`, `annotations`, grupos e eventos, mas **não há propagação contínua completa** destas revisões para o D1. O pré-publicador `scripts/catalog/preparar-publicacao-curadoria-telegram.py` é **somente leitura**, gera plano e exige revisão; ele não faz writes de catálogo, e não deve ser confundido com um sincronizador operacional.
+2. Correções de texto numa **ficha que já existe** devem ser reconciliadas pelo `message_id`, SHA-256, estúdio, `model_id`, versão da galeria e comparação otimista de `telegram_revision`. O nome do personagem, sozinho, **nunca** justifica merge. Preservar nomes já editados no site. Alterar texto **não** deve marcar `review_status='confirmed'`, `rights_status='approved'`, `published=1` nem abrir visibilidade automaticamente.
+3. Itens sem ficha D1 seguem o **importador canônico existente** `services/catalogo/worker/telegramDraftImport.ts` como rascunhos privados, somente após verificar franquia, identidade de galeria, hash, escopo e ausência de duplicações. Identidade local `single:<message_id>` foi suportada na `main@a2760e1f` com derivação determinística do grupo; grupos existentes de 24 hex mantêm o contrato anterior. Não criar segundo importador, D1, bucket, catálogo ou reprocessar WebP já válido.
+4. Propostas `provavel`/`revisar` podem ser guardadas e exibidas no painel **privado** como candidatos, mas não recebem confirmação nem exposição pública implícita. A decisão do proprietário de tornar comuns renders visualizáveis deve ser implementada no controle editorial/licencial correto, sem usar `noindex` como substituto de autorização e preservando a quarentena SpecialSTL.
+
+### Incidente operacional e correção comprovada
+
+- D1 permaneceu na migration `0024_telegram_draft_gallery_order.sql`, sem `models.telegram_showcase_visible` da `0025`. Implantar o Worker v9 antes da migração produziu **HTTP 503** (`schema_not_ready` e `catalog_studios_unavailable`). Houve **reimplantações Wrangler após rollbacks**: recuperação momentânea não equivale a impedir reincidência. Antes de cada deploy, verificar novamente o Worker ativo, D1, ledger, coluna/triggers e autorização M5; não fixar como 'versão atual' uma versão vista em um instante.
+- A versão Cloudflare `81d141df-b4e6-4f3f-8548-eb6a6dcaf4a0` foi comprovada como **recuperação temporária compatível**: `/api/categories` e `/api/telegram-studios/studios` voltaram a HTTP 200 após rollback, preservando D1/R2. Não é versão destinada a substituir permanentemente o release canônico.
+- **44 fichas Abe3D existentes**, antes intituladas `Modelo sem nome #<message_id>`, foram corrigidas **no próprio D1** por correspondência de estúdio, `message_id` e SHA-256 dos arquivos da galeria, preservando IDs e `pending/provisional`. Conferência posterior: 44/44 com nome atualizado; endpoint público da ficha `tg_0f67f617ac379ae7a1e1ddf7` respondeu HTTP 200 exibindo **Selene Gallio**. Uma ficha Luftmensch `#20483` permaneceu sem novo título no SQLite, portanto **não** deve receber nome inventado. Isto foi **reconciliação manual pontual**, não automação de sincronização pronta.
+- A Quality Gate de `main@ce4eeb47` terminou **SUCCESS** ([run 44891849278](https://github.com/tonecosstudio/tonecosstudio/actions/runs/44891849278)). Os commits `ce312e82` e `ce4eeb47` corrigiram lint e pin/overlay de arquitetura, sem aprovar deploy. Este sucesso da CI **não** valida a migração D1 ausente nem autoriza cutover M5.
+- Fonte histórica `washingtonmsdj/catalogo`: cinco workflows com metadados GitHub `active` (`cloudflare.yml`, `external-batch-release.yml`, `exact-source-gallery-promotion.yml`, `existing-gallery-promotion.yml`, `external-media-staging.yml`). O `AGENTS.md` registra jobs de escrita inibidos no código, mas **não** administrativamente desativados. Tentativa de desativação pela credencial disponível retornou HTTP 403 (`Must have admin rights to Repository`). O bloqueio administrativo e a identificação do writer real ainda precisam ser resolvidos pelo proprietário/conta autorizada; não chamar isso de concluído.
+
+### Ordem canônica de execução — sem microtarefas e sem duplicação
+
+1. **Estabilidade e ownership:** manter API pública compatível e operacional (testar origem Worker e proxy GET do domínio); impedir writers concorrentes no repositório legado, completar autoridade única/cutover M5. Revalidar o estado em cada execução, porque outros agentes podem implantar. **Não** aplicar `0025` nem implantar v9 antes dos gates canônicos.
+2. **Reconciliação dos cinco estúdios existentes:** comparar todas as imagens por `message_id` + hash + ID + revisão, corrigir nomes já identificados sem reclassificar direitos; anexar somente mídias adicionais da mesma escultura quando a identidade for comprovada. Preservar os 44 nomes Abe3D já corrigidos; não sobrescrever revisões feitas no site.
+3. **Importação restante:** percorrer os 106 tópicos (validar quais são de fato estúdios), agrupar os 4.431 álbuns e as 1.064 imagens individuais, confrontar com o inventário completo de 3.837 modelos e o R2 já existente; criar somente rascunhos privados quando não houver identidade correspondente. Manter `Geral +50k` e tópicos não designados fora de lotes de estúdio.
+4. **Sincronização persistente:** evoluir o fluxo **existente** para consumir revisões/eventos da Curadoria com checkpoint/recibo por estúdio, CAS de revisão, deduplicação e retry idempotente; preservar backup privado dos dados, sem rebaixar o D1 a uma cópia desconectada e sem mover/modificar mídia original. Publicar visivelmente apenas itens elegíveis depois de autorização editorial/licencial específica.
+5. **Aceite por métricas reais:** consultar contagens e títulos no SQLite e D1, testar amostra por estúdio via `/api/telegram-studios`, testar travessia de imagens/galerias e direitos, comprovar nenhuma duplicação por hash/ID e **zero divergências não explicadas** para os itens sincronizados. HTTP 200 da página HTML sozinho **não** prova a API ou os nomes.
+
+### Como outro agente deve retomar
+
+**Ler, nesta ordem:** `AGENTS.md`, `URGENTE.md`, este documento, `config/catalog-code-consolidation.json` e o SQLite existente no desktop autorizado via OrdaX MCP. Observar `main`/D1/Worker atuais, não confiar exclusivamente neste snapshot. Usar OrdaX MCP para o desktop; Remote Desktop Commander somente para recuperar o próprio MCP indisponível. Não duplicar banco, arquivo, mecanismo de sincronização, Worker, bucket, importador nem reprocessar imagens sem necessidade. Trabalhar apenas no estúdio atribuído quando estiver fazendo curadoria; coordenação de catálogo é transversal, respeitando revisões concorrentes.
+
+**Consultas de observação úteis:**
+
+```sql
+-- D1, somente leitura; a publicação comercial não é a visibilidade da vitrine Telegram
+SELECT telegram_studio, COUNT(*) AS modelos, SUM(published) AS publicados_comerciais,
+       SUM(telegram_name_provisional) AS nomes_provisorios
+  FROM models WHERE telegram_group_key IS NOT NULL GROUP BY telegram_studio;
+SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 1;
+SELECT name FROM pragma_table_info('models') WHERE name='telegram_showcase_visible';
+```
+
+**Regras de conclusão:** atualizar esta seção e o inventário local com novo checkpoint apenas após provas; documentar commit exato/CI/versão ativa, contagens, o que entrou ou não no D1 e qualquer bloqueio. Não declarar os 106 tópicos alinhados antes de comprovar conciliação e visibilidade modelo a modelo.
