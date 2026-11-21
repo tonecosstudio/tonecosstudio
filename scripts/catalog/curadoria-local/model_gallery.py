@@ -6,12 +6,13 @@ Não nomeia personagens por semelhança, não modifica originais e não publica.
 from __future__ import annotations
 import hashlib
 import json
+import re
 import smart_curadoria as smart
 
 def register_visual_gallery(db_path,message_ids,topic,note=""):
     """Agrupa apenas imagens da mesma escultura INSPECIONADAS visualmente."""
-    if not isinstance(message_ids,(list,tuple)) or not 2<=len(message_ids)<=40:
-        raise ValueError("Galeria exige 2 a 40 imagens")
+    if not isinstance(message_ids,(list,tuple)) or not 2<=len(message_ids)<=500:
+        raise ValueError("Galeria exige de 2 a 500 imagens por lote; novas fotos podem ser adicionadas à mesma ficha")
     ids=[int(x) for x in message_ids]
     if len(set(ids))!=len(ids) or min(ids)<=0:raise ValueError("IDs repetidos ou inválidos")
     ids.sort()
@@ -110,7 +111,7 @@ def list_album_candidates(db_path,topic="",limit=60):
             FROM assets a LEFT JOIN model_group_members m USING(message_id)
             WHERE """+" AND ".join(clauses)+"""
             GROUP BY a.original_topic,a.source_album
-            HAVING COUNT(*) BETWEEN 2 AND 40
+            HAVING COUNT(*)>=2
               AND SUM(CASE WHEN m.message_id IS NULL THEN 1 ELSE 0 END)>=2
             ORDER BY image_count DESC,sample_message LIMIT ?""",
             params+[limit]).fetchall()

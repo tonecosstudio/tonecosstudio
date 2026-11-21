@@ -189,6 +189,28 @@ A segunda etapa utilizou páginas específicas no catálogo oficial do Abe3D (Cu
 Os totais variam porque o downloader continua acrescentando imagens e galerias de outras fontes ao banco. A validação de identidade exata e dos direitos comerciais segue como etapa distinta da organização visual.
 
 
+
+### Contrato dinâmico host ↔ OrdaX MCP
+
+O host anuncia `GET /api/capabilities` (versão `tonart.curadoria.host/2`)
+com os mesmos caminhos semânticos que sua interface utiliza. Isso permite
+que clientes autorizados (inclusive o OrdaX MCP, via acesso local existente)
+descubram operações e seus efeitos sem espelhar regras de curadoria no Runtime.
+
+- `GET /api/gallery-candidates?group_key=...&page=...&q=...` oferece fotos
+  ainda livres do mesmo álbum, ou busca textual explícita no tópico.
+- `POST /api/append-gallery` recebe `group_key`, `revision` e
+  `message_ids`, faz inclusão atômica e não cria outra ficha. Se ultrapassar
+  500 itens por requisição, repetir em lotes usando a nova revisão retornada.
+- A interface usa `gallery_ui.js` e as mesmas rotas, com seleção de fotos,
+  paginação e inclusão na prancha existente. A criação inicial de álbuns
+  também usa lotes de 500 e continua incrementalmente.
+
+A limitação de lote é de transporte/transação, não um limite de tamanho
+de galeria. Nomes contraditórios, tópicos diferentes, revisão concorrente,
+grupo confirmado e imagens já pertencentes a outras galerias bloqueiam
+a operação. Não sincronizar imagens ou fichas com D1/R2 automaticamente.
+
 ## Host MCP-first: pranchas e conciliacao de catalogo
 
 O **host local da Curadoria** e a unica interface de operacao de nomes, fotos,

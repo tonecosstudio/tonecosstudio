@@ -120,6 +120,7 @@ async function openModel(key){
  try{
   const g=await api("/api/model/"+key);
   chosenGroup=g;
+  resetGalleryCandidates();
   const uniquePhotos=new Map();
   for(const item of g.images){
    const digest=(item.sha256||"").trim();
@@ -369,16 +370,26 @@ el("nameOpenGallery").onclick=async()=>{
 el("saveVisualGallery").onclick=async()=>{
  if(!topic){notify("Selecione um estúdio na coluna esquerda antes de reunir imagens.");return;}
  const ids=el("galleryIds").value.split(/[,;\s]+/).filter(Boolean);
- if(ids.length<2||ids.length>40||ids.some(x=>!/^\d+$/.test(x))){
-   notify("Informe entre 2 e 40 IDs de mensagens, separados por vírgulas.");return;
+ if(ids.length<2||ids.some(x=>!/^\d+$/.test(x)||!Number.isSafeInteger(Number(x)))){
+   notify("Informe pelo menos 2 IDs válidos de mensagens.");return;
  }
  if(new Set(ids).size!==ids.length){notify("Há IDs repetidos.");return;}
  try{
+  const allIds=ids.map(Number);
   const response=await post("/api/create-gallery",{
-   message_ids:ids.map(Number),topic,
+   message_ids:allIds.slice(0,500),topic,
    note:"Mesma escultura e diferentes vistas verificadas na Curadoria Visual local; identidade e direitos não confirmados."
   });
-  notify("Galeria com "+response.image_count+" fotos vinculada sem alterar os originais.");
+  let revision=(await api("/api/model/"+response.group_key)).revision;
+  let total=response.image_count;
+  for(let i=500;i<allIds.length;i+=200){
+   const result=await post("/api/append-gallery",{
+    group_key:response.group_key,revision,message_ids:allIds.slice(i,i+200),
+    note:"Fotos adicionais da mesma prancha conferidas visualmente."
+   });
+   revision=result.revision;total+=result.added;
+  }
+  notify("Galeria com "+total+" fotos vinculada sem alterar os originais.");
   el("galleryIds").value="";
   await refreshModels();await openModel(response.group_key);
  }catch(e){notify("Galeria não criada: "+e.message);}

@@ -139,5 +139,26 @@ with tempfile.TemporaryDirectory(prefix="tonart-gallery-") as tmp:
     assert conflict["sha256"]==original and "Same Statue" in conflict["titles"]
     assert "Other Statue" in conflict["titles"] and conflict["message_count"]==2
     assert len(detail["images"])==2 and detail["state"]=="revisar"
+    # Mesmo group_key recebe novas fotos, sem limite total e sem nova ficha.
+    expanded=gallery.register_visual_gallery(db,[107,108],"Kuton Sculpts")
+    from gallery_operations import candidates,append
+    first=candidates(db,expanded["group_key"])
+    assert first["total"]==1 and first["items"][0]["message_id"]==109,first
+    assert candidates(db,expanded["group_key"],query="album-two")["total"]>=3
+    revision=smart.model_detail(db,expanded["group_key"])["revision"]
+    result=append(db,expanded["group_key"],revision,[109],"mesma escultura revista")
+    assert result["added"]==1 and result["total_images"]==3,result
+    assert append(db,expanded["group_key"],result["revision"],[109])["added"]==0
+    try:append(db,expanded["group_key"],revision,[112])
+    except RuntimeError:pass
+    else:raise AssertionError("Expected optimistic revision conflict")
+    try:append(db,expanded["group_key"],result["revision"],[104])
+    except ValueError:pass
+    else:raise AssertionError("Cross-topic gallery append must reject")
+    try:append(db,expanded["group_key"],result["revision"],[110])
+    except ValueError:pass
+    else:raise AssertionError("Cannot move photo from another gallery")
+    assert [item["message_id"] for item in smart.model_detail(db,expanded["group_key"])["images"]]==[107,108,109]
+    assert gallery.stats(db)["galleries"]>=3
     print("E2E GALERIA APROVADO: múltiplos ângulos, idempotência, "
           "conflitos, metadados, nomes pendentes, integridade dos originais")

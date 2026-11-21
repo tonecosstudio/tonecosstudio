@@ -20,6 +20,13 @@ assert 'min_images:el("multiplePhotosOnly").checked?2:1' in js
 assert 'id="multiplePhotosOnly"' in html
 assert 'id="boardDialog"' in html and 'id="openBoardBtn"' in html
 assert 'id="propagateGalleryName"' in html and '/api/propagate-gallery-name' in js
+assert 'galleryCandidateTiles' in html and 'galleryAppendSave' in html
+assert '<script src="/gallery_ui.js" defer></script>' in html
+assert (root/'gallery_ui.js').exists()
+assert '/api/append-gallery' in (root/'gallery_ui.js').read_text(encoding='utf-8')
+assert '/api/gallery-candidates' in (root/'gallery_ui.js').read_text(encoding='utf-8')
+assert '/api/append-gallery' in js
+assert '/api/capabilities' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'async function openBoard(' in js
 assert 'id="catalogSyncButton"' in html and '/api/catalog-sync' in js
 assert 'catalogSyncStudio' in html and 'renderCatalogSync' in js
@@ -53,6 +60,9 @@ assert 'async function refresh' in js
 assert '__LOCAL_CSRF__' in js
 result=subprocess.run(["node","--check",str(script)],capture_output=True,text=True)
 assert result.returncode==0,result.stderr
+for extra in ('gallery_ui.js',):
+    check=subprocess.run(['node','--check',str(root/extra)],capture_output=True,text=True)
+    assert check.returncode==0,check.stderr
 # Simula a seleção dos álbuns sem abrir navegador ou acessar as fotos reais.
 # Foto já agrupada aparece para comparação, mas nunca recebe checkbox.
 selection_script=r"""

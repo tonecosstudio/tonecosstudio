@@ -24,6 +24,7 @@ import smart_curadoria as smart
 import name_curadoria as naming
 import visual_name_suggestions as visual
 import model_gallery as gallery
+import gallery_operations as gallery_ops
 import catalog_sync_status as catalog_sync
 import telegram_curadoria_adapter as telegram_identity
 
@@ -304,10 +305,34 @@ class Handler(BaseHTTPRequestHandler):
             if route.path=="/":
                 data=UI_PATH.read_text(encoding="utf-8").replace("__LOCAL_CSRF__",TOKEN)
                 return self.respond(data,ctype="text/html; charset=utf-8")
+            if route.path=="/gallery_ui.js":
+                return self.respond((ROOT/"gallery_ui.js").read_text(encoding="utf-8"),
+                                    ctype="text/javascript; charset=utf-8")
             if route.path=="/curadoria.js":
                 script=(ROOT/"curadoria.js").read_text(encoding="utf-8").replace(
                     "__LOCAL_CSRF__", TOKEN)
                 return self.respond(script,ctype="text/javascript; charset=utf-8")
+            if route.path=="/api/capabilities":
+                return self.respond({
+                  "contract":"tonart.curadoria.host/2",
+                  "transport":"loopback-http",
+                  "operations":[
+                    {"id":"catalog.compare","method":"GET","path":"/api/catalog-sync","effect":"read"},
+                    {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True},
+                    {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
+                    {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
+                    {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
+                    {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
+                    {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
+                    {"id":"models.review","method":"POST","path":"/api/review-model","effect":"write"},
+                    {"id":"images.review_name","method":"POST","path":"/api/review-name","effect":"write"},
+                    {"id":"images.list","method":"GET","path":"/api/items","effect":"read","pagination":True},
+                    {"id":"images.preview","method":"GET","path":"/media/{message_id}","effect":"read"}
+                  ],
+                  "writes":"loopback origin + local token; optimistic revisions",
+                  "gallery":"single persistent group_key; add photos in repeated batches",
+                  "publication":"never automatic; D1/R2 canonical owner",
+                })
             if route.path=="/health":
                 return self.respond({"ok":True,"service":"tonart-curadoria-local","source":str(SOURCE)})
             if route.path.startswith("/media/"):
@@ -346,6 +371,11 @@ class Handler(BaseHTTPRequestHandler):
                    status=p.get("status",[""])[0][:20]))
             if route.path=="/api/catalog-sync":
                 return self.respond(catalog_sync.compare(DB_PATH))
+            if route.path=="/api/gallery-candidates":
+                p=parse_qs(route.query)
+                return self.respond(gallery_ops.candidates(DB_PATH,
+                   p.get("group_key",[""])[0],page=p.get("page",["1"])[0],
+                   limit=p.get("limit",["48"])[0],query=p.get("q",[""])[0]))
             if route.path=="/api/album-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery.list_album_candidates(DB_PATH,
@@ -395,6 +425,10 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("ID de galeria invalido")
                 return self.respond(naming.propagate_reviewed_gallery_names(
                     DB_PATH,limit=40,group_key=key))
+            if self.path=="/api/append-gallery":
+                return self.respond(gallery_ops.append(DB_PATH,
+                   obj.get("group_key",""),obj.get("revision",-1),
+                   obj.get("message_ids",[]),obj.get("note","")))
             if self.path=="/api/create-gallery":
                 return self.respond(gallery.register_visual_gallery(DB_PATH,
                     obj.get("message_ids",[]),obj.get("topic",""),
