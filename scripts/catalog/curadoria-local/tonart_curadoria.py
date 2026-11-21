@@ -330,6 +330,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"images.preview","method":"GET","path":"/media/{message_id}","effect":"read"}
                   ],
                   "writes":"loopback origin + local token; optimistic revisions",
+                  "write_auth":{"type":"local-token","header":"X-Tonart-Token","origin_required":True},
                   "gallery":"single persistent group_key; add photos in repeated batches",
                   "publication":"never automatic; D1/R2 canonical owner",
                 })
