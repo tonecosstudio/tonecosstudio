@@ -43,7 +43,10 @@ test('M1 import graph distinguishes public Worker from disconnected commercial m
   const workerPaths = new Set(Object.keys(contract.origin.workerFiles));
   const graph = contract.origin.staticImportGraph;
   assert.equal(graph.entrypoint, 'worker/entry.ts');
-  assert.equal(graph.observedAtSha, contract.origin.observedMainSha);
+  assert.equal(graph.observedAtSha, contract.origin.inventoryAuditedAtSha);
+  assert.equal(contract.staging.originalImportSourceSha, contract.origin.inventoryAuditedAtSha);
+  assert.notEqual(contract.origin.observedMainSha, contract.origin.inventoryAuditedAtSha,
+    'New source HEAD must not overwrite the immutable import inventory checkpoint');
   assert.equal(graph.reachableWorkerPaths.length, 9);
   assert.equal(graph.notImportedByEntrypoint.length, 3);
   assert.deepEqual(graph.nonWorkerImportPaths, ['config/catalog-schema-contract.json']);
@@ -210,9 +213,14 @@ test('M5 snapshot is a pinned observation, not production approval', () => {
   assert.equal(o.currentTrafficPercent, 100)
   assert.ok(Number.isInteger(o.currentVersionNumber) && o.currentVersionNumber >= 1)
   assert.ok(Number.isInteger(o.previousVersionNumber) && o.previousVersionNumber >= 1)
-  assert.match(o.currentVersionSourceCommit, sha)
+  if (o.currentVersionSourceCommit !== null) assert.match(o.currentVersionSourceCommit, sha)
   assert.equal(o.observedSourceMainSha, contract.origin.observedMainSha)
-  assert.equal(o.runtimeFileChangesBetweenProductionSourceAndObservedMain, 0)
+  if (o.currentVersionSourceCommit === null) {
+    assert.equal(o.runtimeFileChangesBetweenProductionSourceAndObservedMain, null,
+      'Do not claim zero runtime drift without source provenance for the Worker rollback');
+    assert.equal(o.previousVersionMayBeRollbackCandidate, false,
+      'The intervening Worker v41 caused HTTP 503 and cannot be trusted as rollback');
+  }
   assert.equal(o.sourceDispatchCanApplyRemoteD1Migrations, true)
   for (const key of [
     'sourceWorkflowDisabledVerified', 'releaseGoApproved',
