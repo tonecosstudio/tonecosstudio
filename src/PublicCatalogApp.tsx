@@ -20,13 +20,14 @@ export default function PublicCatalogApp() {
   // or quote UI under the catalog hostname.
   if (
     typeof window !== "undefined" &&
-    !["/", "/index.html"].includes(window.location.pathname)
+    !["/", "/index.html", "/estudios"].includes(window.location.pathname)
   ) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center gap-5 bg-[#110e0c] px-5 text-center text-[#f1e9df]">
         <h1 className="text-3xl font-semibold">Página não encontrada</h1>
         <p className="max-w-md text-[#c2b5a7]">
-          Este endereço contém somente o catálogo visual dos estúdios.
+          Este endereço contém somente a biblioteca de modelos e as coleções por
+          estúdio.
         </p>
         <a
           className="rounded-md border border-[#907351] px-5 py-3 text-[#f0d3ad] hover:bg-[#413023]"

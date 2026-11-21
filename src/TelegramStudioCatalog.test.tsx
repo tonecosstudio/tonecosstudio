@@ -102,7 +102,32 @@ describe("Telegram-only public studio gallery", () => {
       ).toBe(true),
     );
   });
-  it("explores all cataloged studios with an accent-insensitive local search", async () => {
+  it("shows models, curadoria status and real tags without studio promotion on the main page", async () => {
+    const fetcher = mockCatalog();
+    render(<TelegramStudioCatalog />);
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Modelos" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(
+      screen.queryByRole("region", { name: /coleções por estúdio/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("3DXM")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chibi" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls.some(([uri]) =>
+          String(uri).includes("provisional=1"),
+        ),
+      ).toBe(true),
+    );
+    expect(window.location.search).toContain("situacao=1");
+  });
+
+  it("lists studios alphabetically and opens a separate studio collection", async () => {
+    window.history.replaceState(null, "", "/estudios");
     const sampleStudios = [
       { studio: "3DXM", total: 359 },
       { studio: "Estúdio Águia", total: 12 },
@@ -122,40 +147,39 @@ describe("Telegram-only public studio gallery", () => {
       return Response.json({ total: 1, offset: 0, limit: 24, items: [model] });
     });
     vi.stubGlobal("fetch", fetcher);
-
     render(<TelegramStudioCatalog />);
-    const expand = await screen.findByRole("button", {
-      name: /ver todos os 10 estúdios/i,
+    const studioSearch = await screen.findByRole("searchbox", {
+      name: /pesquisar estúdios/i,
     });
-    fireEvent.click(expand);
-
-    const studioSearch = screen.getByRole("searchbox", {
-      name: /buscar estúdios/i,
-    });
+    expect(
+      screen.getByRole("heading", { name: /coleções por estúdio/i }),
+    ).toBeInTheDocument();
+    expect(
+      fetcher.mock.calls.filter(([uri]) => String(uri).includes("limit=24")),
+    ).toHaveLength(0);
     fireEvent.change(studioSearch, { target: { value: "aguia" } });
-
     const studioSection = screen.getByRole("region", {
-      name: /conheça os estúdios/i,
+      name: /coleções por estúdio/i,
     });
     expect(
-      within(studioSection).getByText("1 estúdio encontrado"),
+      await within(studioSection).findByText("1 estúdio"),
     ).toBeInTheDocument();
-    expect(
-      within(studioSection).getByRole("button", { name: /estúdio águia/i }),
-    ).toBeInTheDocument();
-    expect(
-      within(studioSection).queryByRole("button", { name: /outro estúdio/i }),
-    ).not.toBeInTheDocument();
-
-    fireEvent.click(
-      within(studioSection).getByRole("button", { name: /estúdio águia/i }),
-    );
-    await waitFor(() => {
+    const selectedStudio = within(studioSection).getByRole("button", {
+      name: /estúdio águia/i,
+    });
+    fireEvent.click(selectedStudio);
+    expect(window.location.pathname).toBe("/estudios");
+    expect(window.location.search).toContain("studio=Est%C3%BAdio+%C3%81guia");
+    await waitFor(() =>
       expect(
         fetcher.mock.calls.some(([uri]) =>
           String(uri).includes("studio=Est%C3%BAdio+%C3%81guia"),
         ),
-      ).toBe(true);
-    });
+      ).toBe(true),
+    );
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /todos os estúdios/i }),
+    ).toHaveAttribute("href", "/estudios");
   });
 });
