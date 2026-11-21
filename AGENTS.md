@@ -1,5 +1,13 @@
 # AGENTS — TONART Studio
 
+## Checkpoint global da Curadoria Telegram — 21/11/2026
+
+- **Leitura obrigatória antes de trabalhar no catálogo/curadoria:** [docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md, seção 13](docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md#13-estado-transversal-de-todos-os-estúdios-e-sincronização--21112026) e, no desktop autorizado, `C:\Users\ordax\Documents\TONART-Telegram-Import\espelho-telegram\CURADORIA-DIVISAO-POR-ESTUDIO.md` (inventário atualizado; consultar SQLite real). Não depender de mensagens anteriores de chat.
+- **Abrangência auditada:** 27.202 mídias Telegram, inclusive 18.556 do Geral +50k; fora desse tópico, 106 tópicos com 8.646 mídias, 8.183 títulos, 463 sem título e 5.495 identidades candidatas por galeria/imagem individual. Esses números **não** são modelos ou licenças aprovados.
+- **D1 da vitrine:** 1.228 modelos de cinco estúdios, 1.960 imagens vinculadas; ainda 449 imagens locais desses cinco sem vínculo D1 e demais tópicos não importados. 44 placeholders do Abe3D foram corrigidos **nas mesmas fichas**, por ID/hash, sem abrir direitos/visibilidade. Sincronização persistente das correções da Curadoria para D1 **ainda não foi implementada**.
+- **Obrigação arquitetural:** corrigir nome de ficha existente via `message_id`/SHA-256/`model_id`/revisão, preservar galerias e revisões concorrentes, importar modelos ausentes só pelo importador/Worker existentes como rascunhos privados e evitar reupload do R2. Não converter cada imagem em modelo, aprovar nomes ou licenças em massa, nem criar banco/importador/worker paralelo.
+- **Produção sujeita a corrida:** D1 em `0024` sem `telegram_showcase_visible` (`0025`), Worker v9 já gerou HTTP 503 e reimplantações após rollback; checar schema/ledger, versão Worker, cinco workflows legados e M5 em cada execução, sem declarar deploy/autoridade homologados por checkpoint datado. Não mover D1/R2 nem publicar dados nesta atualização documental.
+
 ## Ordem de verdade e limites
 
 1. Instruções expressas do proprietário e escopo da PR atual.
