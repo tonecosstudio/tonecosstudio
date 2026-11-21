@@ -9,7 +9,7 @@
   "origin": {
     "repository": "washingtonmsdj/catalogo",
     "repositoryId": 1398242143,
-    "observedMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedMainSha": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
     "openPullRequestsAtAudit": [
       266,
       264,
@@ -167,7 +167,7 @@
   "lastVerifiedDate": "2026-11-04",
   "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy.",
   "staging": {
-    "sourceMain": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "sourceMain": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
     "sourceFixPullRequest": 266,
     "sourceFixHead": "59983806acb7a338ae3b9c1ddfd524561ff8a02f",
     "sourceFixStatusAtImport": "open-draft-not-merged",
@@ -328,25 +328,28 @@
       "runUrl": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/41789856366",
       "generalJobs": "skipped-on-pull-request",
       "catalogSteps": "all-success"
-    }
+    },
+    "sourceFixStatusAtReconciliation": "merged-in-main",
+    "sourceFixMergedHead": "bc766f75579691d9cbff933fef46dff0af87dee3",
+    "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2"
   },
   "productionObservation": {
-    "observedDate": "2026-11-04",
+    "observedDate": "2026-11-21",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "a9f13dd7-537d-4106-bfcf-30510cca388b",
-    "currentVersionId": "a32b09a0-377d-4ff7-b313-4e5a7bf994b6",
-    "currentVersionNumber": 28,
+    "currentDeploymentId": "72409d0f-5081-4e28-a8f1-ec3965446a4e",
+    "currentVersionId": "81d141df-b4e6-4f3f-8548-eb6a6dcaf4a0",
+    "currentVersionNumber": 39,
     "currentTrafficPercent": 100,
-    "currentVersionSourceCommit": "77ff9b0559c911de992ae9c84b78fdaa5e0fed6b",
-    "currentVersionDeployedAt": "2026-11-01T10:35:46.410856Z",
-    "previousVersionId": "3fdef475-a483-4439-a778-bd87f9f76bb1",
-    "previousVersionNumber": 27,
-    "previousVersionMayBeRollbackCandidate": true,
+    "currentVersionSourceCommit": null,
+    "currentVersionDeployedAt": "2026-11-21T03:13:05.530069Z",
+    "previousVersionId": "7db9b4ff-c711-44ee-9f49-a0aaae51c923",
+    "previousVersionNumber": 41,
+    "previousVersionMayBeRollbackCandidate": false,
     "rollbackTestedAgainstProduction": false,
-    "observedMainAheadOfProductionByCommits": 21,
-    "runtimeFileChangesBetweenProductionSourceAndObservedMain": 0,
-    "observedSourceMainSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "observedMainAheadOfProductionByCommits": null,
+    "runtimeFileChangesBetweenProductionSourceAndObservedMain": null,
+    "observedSourceMainSha": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
     "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
     "sourceWorkflowTriggers": [
       "push/main with runtime paths",
@@ -364,6 +367,6 @@
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "Read-only metadata and Git compare snapshot. Recheck remote active version, source workflow status, in-progress releases, credential presence and rollback viability immediately before cutover. Do not treat former version as tested rollback."
+    "note": "Read-only 2026-11-21 audit: production rollback to Worker v39/81d141df after 503 caused by missing D1 migration 0025. Former v41/7db9b4ff is incompatible and must not be selected as rollback. Production Worker source SHA is not independently attested; runtime delta is unverified. Washington origin writer workflows remain administratively active despite if:false job guards; no M5 authorization. Recheck all live identities, schema, queues and rollback/credentials before cutover."
   }
 }
