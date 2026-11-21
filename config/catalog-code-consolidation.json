@@ -138,7 +138,8 @@
         "authority": "R2 staging objects"
       }
     ],
-    "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
+    "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline.",
+    "inventoryAuditedAtSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c"
   },
   "runtime": {
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
@@ -332,7 +333,8 @@
     "sourceFixStatusAtReconciliation": "merged-in-main",
     "sourceFixMergedHead": "bc766f75579691d9cbff933fef46dff0af87dee3",
     "sourceFixMergeCommit": "7444cce0db67c0dca9ec5ec7fd1608d473c0cee2",
-    "sourceFixBaseShaAtMerge": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c"
+    "sourceFixBaseShaAtMerge": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c",
+    "originalImportSourceSha": "a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c"
   },
   "productionObservation": {
     "observedDate": "2026-11-21",
