@@ -1,5 +1,15 @@
 # AGENTS — TONART Studio
 
+## PRODUÇÃO AGORA: 69 ESTÚDIOS E 2.207 PRÉVIAS — 21/11/2026
+
+- **Estado comprovado no D1 e nas rotas HTTP 200 do domínio público:** 2.207 fichas Telegram, 3.183 imagens associadas, 69 estúdios com modelos visíveis. Antes: 1.228 fichas e cinco estúdios. Uma imagem nova de RinArtPoke retornou HTTP 200 e assinatura WebP válida.
+- **Migrações aplicadas:** `0025_telegram_showcase_private_visibility.sql` e `0026_telegram_owner_authorized_preview.sql` no D1 existente, sem cópia de banco. O Worker existente foi promovido à versão 49 `d2f5333c-6285-47c5-a917-746f79cab4b0` com verificação do domínio. Não fazer rollback automático para a versão 39 apenas por instruções **anteriores** a estas migrações.
+- **Importação executada:** 979 novos modelos/1.223 imagens, checados por SHA, grupo, franquia, estúdio e comparação de galeria pós-gravação. Outros 59 candidatos do lote foram retidos por duplicidade de nome/variante ou imagem.
+- **Autorização expressa do proprietário:** 979 concessões registradas em `telegram_showcase_owner_preview_grants`, escopo `noncommercial_readonly_preview`. A exibição é **somente vitrine**, com `published=0`, `telegram_review_status=pending`, `telegram_rights_status=not_reviewed`, `telegram_name_provisional=1`. NÃO declarar licença, aprovação ou disponibilidade para venda. Rejeição editorial/de direitos e revogação da concessão retiram a prévia.
+- **Pendente:** a Curadoria tem cerca de 5.072 identidades com título; 3.267 candidatos do primeiro preflight ficaram retidos por falta de franquia exata, conflito de atribuição de estúdio, grupos em revisão ou fontes duplicadas. Corrigir no preflight/curadoria canônicos, sem inventar classificações, reutilizando o R2. Não declarar esses modelos no site antes de prova.
+- **Autoridade única ainda necessária:** interromper deploys Wrangler concorrentes fora do publicador validado. Alterações de código continuam na `main`, sem criar segundo Worker, D1, R2 ou importador. Estas observações prevalecem sobre o alerta datado de 10h35Z da seção histórica abaixo.
+
+
 ## INCIDENTE ATIVO — BLOQUEAR NOVOS DEPLOYS WRANGLER ATÉ GATE M5 (21/11/2026)
 
 - **NÃO executar `wrangler deploy`, nem scripts que promovam `tonecos-catalogo-api`, enquanto o D1 real estiver na migration `0024`, sem `models.telegram_showcase_visible` da `0025` e sem aprovação M5.** O Worker v9 responde HTTP 503 nesse estado. Esta ordem vale também para outros chats e automações com a mesma conta Cloudflare.
