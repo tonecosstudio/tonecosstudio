@@ -1,11 +1,16 @@
 import { getCorsHeaders, handleOptions } from "../_shared/cors.ts";
 import { checkRateLimit, RATE_LIMITS } from "../_shared/rate-limit.ts";
 import { logAdminAction } from "../_shared/security-logger.ts";
-import { assertAdmin, errorToStatus, getServiceClient } from "../_shared/supabase.ts";
+import {
+  assertAdmin,
+  errorToStatus,
+  getServiceClient,
+} from "../_shared/supabase.ts";
 
 type JsonObject = Record<string, unknown>;
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const ADMIN_RPC_ALLOWLIST = new Set([
   "create_admin_notification",
@@ -102,6 +107,10 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_upsert_catalog_curation_tags",
   "admin_upsert_collection_curation_models",
   "admin_verify_catalog_model_identity",
+  "admin_unlink_catalog_model_character",
+  "admin_get_catalog_character_editorial_profile",
+  "admin_save_catalog_character_editorial_profile",
+  "admin_set_catalog_character_publication_approval",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",
@@ -189,9 +198,8 @@ function parseRequestBody(value: unknown): {
   args: JsonObject;
 } {
   const body = asObject(value, "request body");
-  const functionName = typeof body.functionName === "string"
-    ? body.functionName.trim()
-    : "";
+  const functionName =
+    typeof body.functionName === "string" ? body.functionName.trim() : "";
 
   if (!/^[a-z0-9_]+$/.test(functionName)) {
     throw new Error("Invalid admin RPC function name");
@@ -207,6 +215,14 @@ function parseRequestBody(value: unknown): {
 }
 
 function mapRpcError(message: string): { status: number; error: string } {
+  if (message.includes("changed; reload before saving")) {
+    return {
+      status: 409,
+      error:
+        "Ficha editorial atualizada por outra pessoa. Recarregue antes de salvar.",
+    };
+  }
+
   if (
     message.includes("Forbidden") ||
     message.includes("FORBIDDEN") ||
@@ -252,9 +268,10 @@ async function updateCollectionBasePrice(
   service: ReturnType<typeof getServiceClient>,
   args: JsonObject,
 ): Promise<JsonObject> {
-  const collectionTypeId = typeof args.p_collection_type_id === "string"
-    ? args.p_collection_type_id.trim()
-    : "";
+  const collectionTypeId =
+    typeof args.p_collection_type_id === "string"
+      ? args.p_collection_type_id.trim()
+      : "";
   const newBasePrice = args.p_new_base_price_coins;
 
   if (!UUID_PATTERN.test(collectionTypeId)) {
@@ -277,7 +294,10 @@ async function updateCollectionBasePrice(
   const oldPrice = current.base_price_coins;
   const { data: updated, error: updateError } = await service
     .from("collection_base_pricing")
-    .update({ base_price_coins: newBasePrice as number, updated_at: new Date().toISOString() })
+    .update({
+      base_price_coins: newBasePrice as number,
+      updated_at: new Date().toISOString(),
+    })
     .eq("collection_type_id", collectionTypeId)
     .select("collection_type_id, base_price_coins")
     .single();
@@ -340,7 +360,16 @@ Deno.serve(async (req) => {
     const rpcClient = ADMIN_USER_CONTEXT_RPCS.has(functionName)
       ? admin.client
       : service;
-    const { data, error } = await rpcClient.rpc(functionName, args);
+    // The only database role allowed to reach private curation RPCs is the
+    // service role. Pass the reviewer identity from the already-authenticated
+    // admin context; never trust an ID supplied in the request body.
+    const rpcArgs =
+      functionName === "admin_save_catalog_character_editorial_profile"
+        ? { ...args, p_reviewer_id: admin.userId }
+        : functionName === "admin_set_catalog_character_publication_approval"
+          ? { ...args, p_approver_id: admin.userId }
+          : args;
+    const { data, error } = await rpcClient.rpc(functionName, rpcArgs);
 
     if (error) {
       const mapped = mapRpcError(error.message || "");

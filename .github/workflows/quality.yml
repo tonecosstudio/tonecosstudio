@@ -242,6 +242,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      npm_config_onnxruntime_node_install_cuda: skip
     permissions:
       contents: read
 
@@ -260,6 +262,32 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci --onnxruntime-node-install-cuda=skip
+
+      # Run only when the canonical editorial migration is present.
+      # PostgreSQL is ephemeral, has no network, mounts source read-only,
+      # and never receives Supabase/D1 credentials or production data.
+      - name: Test editorial approval and revocation on disposable PostgreSQL
+        if: hashFiles('supabase/migrations/20261121033200_tonart_public_character_approval_and_export.sql') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --detach --rm --name tonart-editorial-ci-pg \
+            --network none \
+            -e POSTGRES_PASSWORD=isolated-test-only \
+            -v "${GITHUB_WORKSPACE}:/src:ro" \
+            postgres:17 >/dev/null
+          trap 'docker rm -f tonart-editorial-ci-pg >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 45); do
+            if docker exec tonart-editorial-ci-pg \
+              pg_isready -U postgres -d postgres >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec tonart-editorial-ci-pg pg_isready -U postgres -d postgres
+          docker exec tonart-editorial-ci-pg \
+            psql -X -v ON_ERROR_STOP=1 -U postgres -d postgres \
+            -f /src/supabase/tests/tonart_character_approval_ephemeral_postgres.sql
 
       # Validate the read-only MVP before the independent backend ownership
       # gate; a stale backend pin must not suppress frontend test evidence.

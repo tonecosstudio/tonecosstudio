@@ -25,26 +25,27 @@ export type InternalCollectionTemplate = {
   description: string;
 };
 
-export const INTERNAL_COLLECTION_TEMPLATES: readonly InternalCollectionTemplate[] = [
-  {
-    name: "Terror",
-    slug: "terror",
-    description:
-      "Candidatos editoriais para uma futura coleção de terror. A associação interna não publica nem autoriza venda.",
-  },
-  {
-    name: "Digimon",
-    slug: "digimon",
-    description:
-      "Candidatos editoriais encontrados pela franquia canônica Digimon. A associação interna não publica nem autoriza venda.",
-  },
-  {
-    name: "Inimigos da Vizinhança",
-    slug: "inimigos-da-vizinhanca",
-    description:
-      "Candidatos editoriais a antagonistas relacionados ao universo do Homem-Aranha. Cada associação exige revisão e evidência.",
-  },
-] as const;
+export const INTERNAL_COLLECTION_TEMPLATES: readonly InternalCollectionTemplate[] =
+  [
+    {
+      name: "Terror",
+      slug: "terror",
+      description:
+        "Candidatos editoriais para uma futura coleção de terror. A associação interna não publica nem autoriza venda.",
+    },
+    {
+      name: "Digimon",
+      slug: "digimon",
+      description:
+        "Candidatos editoriais encontrados pela franquia canônica Digimon. A associação interna não publica nem autoriza venda.",
+    },
+    {
+      name: "Inimigos da Vizinhança",
+      slug: "inimigos-da-vizinhanca",
+      description:
+        "Candidatos editoriais a antagonistas relacionados ao universo do Homem-Aranha. Cada associação exige revisão e evidência.",
+    },
+  ] as const;
 
 export type AdminInternalCollection = {
   id: string;
@@ -76,14 +77,102 @@ export type CatalogCurationMembershipTag = {
   evidenceNote: string | null;
 };
 
+export type CatalogVerifiedCharacter = {
+  id: string;
+  name: string;
+  franchise: string;
+  evidenceOrigin: string;
+  evidenceNote: string | null;
+};
+
+export type CatalogEditorialEvidenceKind =
+  | "official"
+  | "publisher"
+  | "licensor"
+  | "institution"
+  | "reputable_reference"
+  | "other";
+
+export type CatalogEditorialEvidenceSource = {
+  title: string;
+  url: string;
+  kind: CatalogEditorialEvidenceKind;
+};
+
+export type CatalogCharacterEditorialClaim = {
+  name: string;
+  sources: CatalogEditorialEvidenceSource[];
+};
+
+export type CatalogCharacterEditorialProfile = {
+  slug: string | null;
+  aliases: CatalogCharacterEditorialClaim[];
+  biography: string;
+  biographySources: CatalogEditorialEvidenceSource[];
+  ageContext: string | null;
+  ageSources: CatalogEditorialEvidenceSource[];
+  originWork: string;
+  originWorkSources: CatalogEditorialEvidenceSource[];
+  characteristics: CatalogCharacterEditorialClaim[];
+  nameSources: CatalogEditorialEvidenceSource[];
+  franchiseSources: CatalogEditorialEvidenceSource[];
+};
+
+export type AdminCatalogCharacterEditorialProfile = {
+  identityId: string;
+  name: string;
+  franchise: string;
+  profile: CatalogCharacterEditorialProfile;
+  activeModelLinks: Array<{
+    modelId: string;
+    modelSlug: string;
+    evidenceUrl: string;
+    evidenceTitle: string | null;
+  }>;
+  status: "draft" | "reviewed";
+  revision: number;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  publicationStatus: "not_approved" | "approved";
+  publicationRevision: number | null;
+  relationRevision: number;
+  approvedRelationRevision: number | null;
+  publicationApprovalRef: string | null;
+  publicationApprovedAt: string | null;
+  publicationApprovedBy: string | null;
+  publicationHistory: unknown[];
+};
+
+export const EMPTY_CATALOG_CHARACTER_EDITORIAL_PROFILE: CatalogCharacterEditorialProfile =
+  {
+    slug: null,
+    aliases: [],
+    biography: "",
+    biographySources: [],
+    ageContext: null,
+    ageSources: [],
+    originWork: "",
+    originWorkSources: [],
+    characteristics: [],
+    nameSources: [],
+    franchiseSources: [],
+  };
+
+export type CatalogUnlinkedCharacter = CatalogVerifiedCharacter & {
+  unlinkedAt: string;
+  unlinkReason: string;
+  reviewCount: number;
+};
+
 export type CatalogCurationMembership = {
   modelId: string;
   slug: string;
   state: CatalogCurationState;
   evidenceOrigin: string;
   evidenceNote: string | null;
-  identityVerified: boolean;
-  characterIdentityId: string | null;
+  characters: CatalogVerifiedCharacter[];
+  inactiveCharacters: CatalogUnlinkedCharacter[];
+  inactiveCharacterCount: number;
   tags: CatalogCurationMembershipTag[];
 };
 
@@ -125,6 +214,14 @@ const tagDimensions = new Set<CatalogCurationTagDimension>([
   "characteristic",
   "narrative_role",
 ]);
+const editorialEvidenceKinds = new Set<CatalogEditorialEvidenceKind>([
+  "official",
+  "publisher",
+  "licensor",
+  "institution",
+  "reputable_reference",
+  "other",
+]);
 
 function asRecord(value: unknown, error: string): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -148,6 +245,357 @@ function asString(value: unknown, error: string): string {
 function asOptionalString(value: unknown, error: string): string | null {
   if (value === null || value === undefined) return null;
   return asString(value, error);
+}
+
+function parseEditorialText(
+  value: unknown,
+  maxLength: number,
+  error: string,
+  required = false,
+): string {
+  if (value === null || value === undefined) {
+    if (required) throw new Error(error);
+    return "";
+  }
+  if (
+    typeof value !== "string" ||
+    value.length > maxLength ||
+    hasUnsafeCurationCharacter(value) ||
+    (required && !value.trim())
+  ) {
+    throw new Error(error);
+  }
+  return value.trim();
+}
+
+function parseEditorialSources(
+  value: unknown,
+  error: string,
+): CatalogEditorialEvidenceSource[] {
+  if (!Array.isArray(value) || value.length > 10) throw new Error(error);
+  return value.map((item) => {
+    const row = asRecord(item, error);
+    if (
+      Object.keys(row).some((key) => !["title", "url", "kind"].includes(key))
+    ) {
+      throw new Error(error);
+    }
+    const title = parseEditorialText(row.title, 200, error, true);
+    const url = parseEditorialText(row.url, 2048, error, true);
+    const kind = row.kind;
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(url);
+    } catch {
+      throw new Error(error);
+    }
+    if (
+      parsedUrl.protocol !== "https:" ||
+      parsedUrl.username ||
+      parsedUrl.password ||
+      !parsedUrl.hostname ||
+      ["localhost", "127.0.0.1", "::1"].includes(parsedUrl.hostname) ||
+      typeof kind !== "string" ||
+      !editorialEvidenceKinds.has(kind as CatalogEditorialEvidenceKind)
+    ) {
+      throw new Error(error);
+    }
+    return { title, url, kind: kind as CatalogEditorialEvidenceKind };
+  });
+}
+
+function parseEditorialClaims(
+  value: unknown,
+  error: string,
+  maxNameLength = 240,
+) {
+  if (!Array.isArray(value) || value.length > 30) throw new Error(error);
+  const parsed = value.map((item) => {
+    const row = asRecord(item, error);
+    if (Object.keys(row).some((key) => !["name", "sources"].includes(key))) {
+      throw new Error(error);
+    }
+    return {
+      name: parseEditorialText(row.name, maxNameLength, error, true),
+      sources: parseEditorialSources(row.sources, error),
+    };
+  });
+  if (
+    new Set(parsed.map((item) => item.name.toLocaleLowerCase())).size !==
+    parsed.length
+  ) {
+    throw new Error(error);
+  }
+  return parsed;
+}
+
+function parseCharacterEditorialProfile(
+  value: unknown,
+): CatalogCharacterEditorialProfile {
+  const row = asRecord(value, "catalog_character_editorial_profile_invalid");
+  const allowedFields = new Set([
+    "slug",
+    "aliases",
+    "biography",
+    "biographySources",
+    "ageContext",
+    "ageSources",
+    "originWork",
+    "originWorkSources",
+    "characteristics",
+    "nameSources",
+    "franchiseSources",
+  ]);
+  if (Object.keys(row).some((key) => !allowedFields.has(key))) {
+    throw new Error("catalog_character_editorial_profile_invalid");
+  }
+  const slug =
+    row.slug === null || row.slug === undefined
+      ? null
+      : parseEditorialText(
+          row.slug,
+          120,
+          "catalog_character_editorial_profile_invalid",
+          true,
+        );
+  if (slug !== null && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+    throw new Error("catalog_character_editorial_profile_invalid");
+  }
+  const aliases = parseEditorialClaims(
+    row.aliases ?? [],
+    "catalog_character_editorial_profile_invalid",
+    160,
+  );
+  const biography = parseEditorialText(
+    row.biography ?? "",
+    6000,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const biographySources = parseEditorialSources(
+    row.biographySources ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  const ageContext =
+    row.ageContext === null || row.ageContext === undefined
+      ? null
+      : parseEditorialText(
+          row.ageContext,
+          500,
+          "catalog_character_editorial_profile_invalid",
+          true,
+        );
+  const ageSources = parseEditorialSources(
+    row.ageSources ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  const originWork = parseEditorialText(
+    row.originWork ?? "",
+    240,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const originWorkSources = parseEditorialSources(
+    row.originWorkSources ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  const characteristics = parseEditorialClaims(
+    row.characteristics ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  const nameSources = parseEditorialSources(
+    row.nameSources ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  const franchiseSources = parseEditorialSources(
+    row.franchiseSources ?? [],
+    "catalog_character_editorial_profile_invalid",
+  );
+  return {
+    slug,
+    aliases,
+    biography,
+    biographySources,
+    ageContext,
+    ageSources,
+    originWork,
+    originWorkSources,
+    characteristics,
+    nameSources,
+    franchiseSources,
+  };
+}
+
+function assertReviewedEditorialProfile(
+  profile: CatalogCharacterEditorialProfile,
+): void {
+  if (
+    !profile.slug ||
+    !profile.originWork ||
+    !profile.nameSources.length ||
+    !profile.franchiseSources.length ||
+    (profile.biography.trim().length > 0 && !profile.biographySources.length) ||
+    (profile.biography.trim().length === 0 && profile.biographySources.length > 0) ||
+    !profile.originWorkSources.length ||
+    (profile.ageContext !== null && !profile.ageSources.length) ||
+    profile.aliases.some((claim) => claim.sources.length === 0) ||
+    profile.characteristics.some((claim) => claim.sources.length === 0)
+  ) {
+    throw new Error("catalog_character_editorial_review_evidence_required");
+  }
+}
+
+function parseAdminCharacterEditorialProfile(
+  value: unknown,
+): AdminCatalogCharacterEditorialProfile {
+  const row = asRecord(value, "catalog_character_editorial_profile_invalid");
+  const identityId = asString(
+    row.identityId,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const name = asString(
+    row.name,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const franchise = asString(
+    row.franchise,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const rawLinks = row.activeModelLinks;
+  if (!Array.isArray(rawLinks) || rawLinks.length > 10000) {
+    throw new Error("catalog_character_editorial_links_invalid");
+  }
+  const seenModels = new Set<string>();
+  const activeModelLinks = rawLinks.map((rawLink) => {
+    const link = asRecord(rawLink, "catalog_character_editorial_links_invalid");
+    if (Object.keys(link).some((key) => ![
+      "modelId", "modelSlug", "evidenceUrl", "evidenceTitle",
+    ].includes(key))) {
+      throw new Error("catalog_character_editorial_links_invalid");
+    }
+    const modelId = parseEditorialText(
+      link.modelId, 160, "catalog_character_editorial_links_invalid", true,
+    );
+    const modelSlug = parseEditorialText(
+      link.modelSlug, 240, "catalog_character_editorial_links_invalid", true,
+    );
+    const evidenceUrl = parseEditorialText(
+      link.evidenceUrl, 240, "catalog_character_editorial_links_invalid", true,
+    );
+    const evidenceTitle = link.evidenceTitle === null
+      ? null
+      : parseEditorialText(
+          link.evidenceTitle, 1000, "catalog_character_editorial_links_invalid", true,
+        );
+    if (seenModels.has(modelId)) {
+      throw new Error("catalog_character_editorial_links_invalid");
+    }
+    seenModels.add(modelId);
+    return { modelId, modelSlug, evidenceUrl, evidenceTitle };
+  });
+  const status = row.status;
+  const revision = asNonNegativeInteger(
+    row.revision,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const reviewedAt = asOptionalString(
+    row.reviewedAt,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const reviewedBy = asOptionalString(
+    row.reviewedBy,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationStatus = row.publicationStatus;
+  const publicationRevision =
+    row.publicationRevision === null
+      ? null
+      : asNonNegativeInteger(
+          row.publicationRevision,
+          "catalog_character_editorial_profile_invalid",
+        );
+  const relationRevision = asNonNegativeInteger(
+    row.relationRevision,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const approvedRelationRevision =
+    row.approvedRelationRevision === null
+      ? null
+      : asNonNegativeInteger(
+          row.approvedRelationRevision,
+          "catalog_character_editorial_profile_invalid",
+        );
+  const publicationApprovalRef = asOptionalString(
+    row.publicationApprovalRef,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationApprovedAt = asOptionalString(
+    row.publicationApprovedAt,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationApprovedBy = asOptionalString(
+    row.publicationApprovedBy,
+    "catalog_character_editorial_profile_invalid",
+  );
+  const publicationHistory = Array.isArray(row.publicationHistory)
+    ? row.publicationHistory
+    : null;
+  if (
+    !UUID_PATTERN.test(identityId) ||
+    name.length > 160 ||
+    franchise.length > 160 ||
+    typeof status !== "string" ||
+    (status !== "draft" && status !== "reviewed") ||
+    (reviewedAt !== null &&
+      (!Number.isFinite(Date.parse(reviewedAt)) || reviewedAt.length > 64)) ||
+    (reviewedBy !== null && !UUID_PATTERN.test(reviewedBy)) ||
+    (status === "reviewed" && (!reviewedAt || !reviewedBy)) ||
+    (status === "draft" && (reviewedAt || reviewedBy)) ||
+    (publicationStatus !== "not_approved" &&
+      publicationStatus !== "approved") ||
+    (publicationApprovedAt !== null &&
+      (!Number.isFinite(Date.parse(publicationApprovedAt)) ||
+        publicationApprovedAt.length > 64)) ||
+    (publicationApprovedBy !== null &&
+      !UUID_PATTERN.test(publicationApprovedBy)) ||
+    (publicationApprovalRef !== null && publicationApprovalRef.length > 120) ||
+    publicationHistory === null ||
+    publicationHistory.length > 25 ||
+    (publicationStatus === "approved" &&
+      (publicationRevision !== revision ||
+        approvedRelationRevision !== relationRevision ||
+        !publicationApprovalRef ||
+        !publicationApprovedAt ||
+        !publicationApprovedBy ||
+        status !== "reviewed")) ||
+    (publicationStatus === "not_approved" &&
+      (publicationRevision !== null ||
+        approvedRelationRevision !== null ||
+        publicationApprovalRef !== null ||
+        publicationApprovedAt !== null ||
+        publicationApprovedBy !== null))
+  ) {
+    throw new Error("catalog_character_editorial_profile_invalid");
+  }
+  const profile = parseCharacterEditorialProfile(row.profile);
+  if (status === "reviewed") assertReviewedEditorialProfile(profile);
+  return {
+    identityId,
+    name,
+    franchise,
+    profile,
+    activeModelLinks,
+    status,
+    revision,
+    reviewedAt,
+    reviewedBy,
+    publicationStatus,
+    publicationRevision,
+    relationRevision,
+    approvedRelationRevision,
+    publicationApprovalRef,
+    publicationApprovedAt,
+    publicationApprovedBy,
+    publicationHistory,
+  };
 }
 
 function parseCollection(value: unknown): AdminInternalCollection {
@@ -246,6 +694,80 @@ function parseMembershipTag(value: unknown): CatalogCurationMembershipTag {
   };
 }
 
+function hasUnsafeCurationCharacter(value: string): boolean {
+  return Array.from(value).some(
+    (char) =>
+      char === "<" ||
+      char === ">" ||
+      char.charCodeAt(0) < 32 ||
+      char.charCodeAt(0) === 127,
+  );
+}
+
+function parseVerifiedCharacter(value: unknown): CatalogVerifiedCharacter {
+  const row = asRecord(value, "catalog_curation_character_invalid");
+  const id = asString(row.id, "catalog_curation_character_invalid");
+  const name = asString(row.name, "catalog_curation_character_invalid");
+  const franchise = asString(
+    row.franchise,
+    "catalog_curation_character_invalid",
+  );
+  const evidenceOrigin = asString(
+    row.evidenceOrigin,
+    "catalog_curation_character_invalid",
+  );
+  const evidenceNote = asOptionalString(
+    row.evidenceNote,
+    "catalog_curation_character_invalid",
+  );
+
+  if (
+    !UUID_PATTERN.test(id) ||
+    name.length > 160 ||
+    franchise.length > 160 ||
+    evidenceOrigin.length > 240 ||
+    hasUnsafeCurationCharacter(name) ||
+    hasUnsafeCurationCharacter(franchise) ||
+    hasUnsafeCurationCharacter(evidenceOrigin) ||
+    evidenceOrigin.toLowerCase().startsWith("automatic:") ||
+    (evidenceNote !== null &&
+      (evidenceNote.length > 1000 || hasUnsafeCurationCharacter(evidenceNote)))
+  ) {
+    throw new Error("catalog_curation_character_invalid");
+  }
+  return { id, name, franchise, evidenceOrigin, evidenceNote };
+}
+
+function parseUnlinkedCharacter(value: unknown): CatalogUnlinkedCharacter {
+  const row = asRecord(value, "catalog_curation_unlinked_character_invalid");
+  const character = parseVerifiedCharacter(value);
+  const unlinkedAt = asString(
+    row.unlinkedAt,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  const unlinkReason = asString(
+    row.unlinkReason,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  const reviewCount = asNonNegativeInteger(
+    row.reviewCount,
+    "catalog_curation_unlinked_character_invalid",
+  );
+  if (
+    unlinkedAt.length > 64 ||
+    !Number.isFinite(Date.parse(unlinkedAt)) ||
+    hasUnsafeCurationCharacter(unlinkedAt) ||
+    unlinkReason.length < 3 ||
+    unlinkReason.length > 1000 ||
+    hasUnsafeCurationCharacter(unlinkReason) ||
+    reviewCount < 1 ||
+    reviewCount > 100
+  ) {
+    throw new Error("catalog_curation_unlinked_character_invalid");
+  }
+  return { ...character, unlinkedAt, unlinkReason, reviewCount };
+}
+
 function parseMembership(value: unknown): CatalogCurationMembership {
   const row = asRecord(value, "catalog_curation_membership_invalid");
   const modelId = asString(row.modelId, "catalog_curation_membership_invalid");
@@ -256,20 +778,27 @@ function parseMembership(value: unknown): CatalogCurationMembership {
     !CATALOG_SLUG.test(slug) ||
     typeof state !== "string" ||
     !curationStates.has(state as CatalogCurationState) ||
-    typeof row.identityVerified !== "boolean" ||
+    !Array.isArray(row.characters) ||
+    !Array.isArray(row.inactiveCharacters) ||
+    row.inactiveCharacters.length > 12 ||
     !Array.isArray(row.tags)
   ) {
     throw new Error("catalog_curation_membership_invalid");
   }
-  const identityId = row.characterIdentityId;
+  const characters = row.characters.map(parseVerifiedCharacter);
+  const inactiveCharacters = row.inactiveCharacters.map(parseUnlinkedCharacter);
+  const inactiveCharacterCount = asNonNegativeInteger(
+    row.inactiveCharacterCount,
+    "catalog_curation_membership_invalid",
+  );
+  const allCharacterIds = [
+    ...characters.map((character) => character.id),
+    ...inactiveCharacters.map((character) => character.id),
+  ];
   if (
-    identityId !== null &&
-    identityId !== undefined &&
-    (typeof identityId !== "string" || !UUID_PATTERN.test(identityId))
+    new Set(allCharacterIds).size !== allCharacterIds.length ||
+    inactiveCharacterCount < inactiveCharacters.length
   ) {
-    throw new Error("catalog_curation_membership_invalid");
-  }
-  if (row.identityVerified !== (typeof identityId === "string")) {
     throw new Error("catalog_curation_membership_invalid");
   }
   return {
@@ -284,20 +813,11 @@ function parseMembership(value: unknown): CatalogCurationMembership {
       row.evidenceNote,
       "catalog_curation_membership_invalid",
     ),
-    identityVerified: row.identityVerified,
-    characterIdentityId: (identityId as string | null | undefined) ?? null,
+    characters,
+    inactiveCharacters,
+    inactiveCharacterCount,
     tags: row.tags.map(parseMembershipTag),
   };
-}
-
-function hasUnsafeCurationCharacter(value: string): boolean {
-  return Array.from(value).some(
-    (char) =>
-      char === "<" ||
-      char === ">" ||
-      char.charCodeAt(0) < 32 ||
-      char.charCodeAt(0) === 127,
-  );
 }
 
 export function validateCanonicalCurationModelRef(
@@ -341,7 +861,9 @@ export function assertCurrentCanonicalCurationModels(
   current: readonly CanonicalCurationModelRef[],
 ): void {
   assertUniqueCanonicalCurationModels(selected);
-  const currentById = new Map(current.map((model) => [model.modelId, model.slug]));
+  const currentById = new Map(
+    current.map((model) => [model.modelId, model.slug]),
+  );
   if (
     selected.some(
       (model) =>
@@ -357,7 +879,8 @@ export async function listAdminInternalCollections(): Promise<
   AdminInternalCollection[]
 > {
   const data = await callAdminRpc<unknown>("admin_list_internal_collections");
-  if (!Array.isArray(data)) throw new Error("catalog_internal_collections_invalid");
+  if (!Array.isArray(data))
+    throw new Error("catalog_internal_collections_invalid");
   return data.map(parseCollection);
 }
 
@@ -437,7 +960,13 @@ export async function createCatalogCurationTag(input: {
     typeof input.label !== "string" ||
     !input.label.trim() ||
     input.label.trim().length > 120 ||
-    Array.from(input.label).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 || char === "<" || char === ">")
+    Array.from(input.label).some(
+      (char) =>
+        char.charCodeAt(0) < 32 ||
+        char.charCodeAt(0) === 127 ||
+        char === "<" ||
+        char === ">",
+    )
   ) {
     throw new Error("catalog_curation_tag_definition_invalid");
   }
@@ -446,11 +975,14 @@ export async function createCatalogCurationTag(input: {
   if (!CURATION_ALIAS_SLUG.test(slug)) {
     throw new Error("catalog_curation_tag_definition_invalid");
   }
-  const data = await callAdminRpc<unknown>("admin_create_catalog_curation_tag", {
-    p_dimension: input.dimension,
-    p_slug: slug,
-    p_label: label,
-  });
+  const data = await callAdminRpc<unknown>(
+    "admin_create_catalog_curation_tag",
+    {
+      p_dimension: input.dimension,
+      p_slug: slug,
+      p_label: label,
+    },
+  );
   const tag = parseTag(data);
   if (
     tag.dimension !== input.dimension ||
@@ -531,7 +1063,10 @@ export async function getInternalCollectionCurationSummary(
     "catalog_curation_summary_invalid",
   );
   return {
-    modelCount: asNonNegativeInteger(data.modelCount, "catalog_curation_summary_invalid"),
+    modelCount: asNonNegativeInteger(
+      data.modelCount,
+      "catalog_curation_summary_invalid",
+    ),
     distinctVerifiedCharacterCount: asNonNegativeInteger(
       data.distinctVerifiedCharacterCount,
       "catalog_curation_summary_invalid",
@@ -601,9 +1136,16 @@ export async function getInternalCollectionCurationPage(input: {
     }),
     "catalog_curation_page_invalid",
   );
-  if (!Array.isArray(data.items)) throw new Error("catalog_curation_page_invalid");
-  const parsedOffset = asNonNegativeInteger(data.offset, "catalog_curation_page_invalid");
-  const parsedLimit = asNonNegativeInteger(data.limit, "catalog_curation_page_invalid");
+  if (!Array.isArray(data.items))
+    throw new Error("catalog_curation_page_invalid");
+  const parsedOffset = asNonNegativeInteger(
+    data.offset,
+    "catalog_curation_page_invalid",
+  );
+  const parsedLimit = asNonNegativeInteger(
+    data.limit,
+    "catalog_curation_page_invalid",
+  );
   if (parsedLimit < 1 || parsedLimit > 20 || parsedOffset !== offset) {
     throw new Error("catalog_curation_page_invalid");
   }
@@ -622,14 +1164,18 @@ export async function saveInternalCollectionCuration(input: {
   evidenceOrigin: string;
   evidenceNote?: string;
 }): Promise<number> {
-  if (!UUID_PATTERN.test(input.collectionId) || !curationStates.has(input.state)) {
+  if (
+    !UUID_PATTERN.test(input.collectionId) ||
+    !curationStates.has(input.state)
+  ) {
     throw new Error("catalog_curation_save_invalid");
   }
   if (input.models.length < 1 || input.models.length > 50) {
     throw new Error("catalog_curation_save_invalid");
   }
   assertUniqueCanonicalCurationModels(input.models);
-  if (!input.evidenceOrigin.trim()) throw new Error("catalog_curation_save_invalid");
+  if (!input.evidenceOrigin.trim())
+    throw new Error("catalog_curation_save_invalid");
   if (input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")) {
     if (input.state !== "suggested") {
       throw new Error("catalog_curation_automatic_must_be_suggested");
@@ -655,7 +1201,10 @@ export async function saveInternalCollectionCuration(input: {
   if (data.id !== input.collectionId) {
     throw new Error("catalog_curation_save_result_invalid");
   }
-  const count = asNonNegativeInteger(data.count, "catalog_curation_save_result_invalid");
+  const count = asNonNegativeInteger(
+    data.count,
+    "catalog_curation_save_result_invalid",
+  );
   if (count !== input.models.length) {
     throw new Error("catalog_curation_save_result_invalid");
   }
@@ -670,11 +1219,26 @@ export async function verifyCatalogModelCharacterIdentity(input: {
   evidenceNote?: string;
 }): Promise<string> {
   validateCanonicalCurationModelRef(input.model);
+  let evidenceUrl: URL | null = null;
+  try {
+    evidenceUrl = new URL(input.evidenceOrigin.trim());
+  } catch {
+    evidenceUrl = null;
+  }
+  const evidenceNote = input.evidenceNote?.trim() ?? "";
   if (
     !input.characterName.trim() ||
     !input.franchise.trim() ||
-    !input.evidenceOrigin.trim() ||
-    input.evidenceOrigin.trim().toLowerCase().startsWith("automatic:")
+    !evidenceUrl ||
+    evidenceUrl.protocol !== "https:" ||
+    evidenceUrl.username.length > 0 ||
+    evidenceUrl.password.length > 0 ||
+    evidenceUrl.hostname === "localhost" ||
+    evidenceUrl.hostname === "127.0.0.1" ||
+    input.evidenceOrigin.trim().length > 240 ||
+    !evidenceNote ||
+    evidenceNote.length > 1000 ||
+    hasUnsafeCurationCharacter(evidenceNote)
   ) {
     throw new Error("catalog_character_identity_verification_invalid");
   }
@@ -684,8 +1248,8 @@ export async function verifyCatalogModelCharacterIdentity(input: {
       p_model_slug: input.model.slug,
       p_character_name: input.characterName.trim(),
       p_franchise: input.franchise.trim(),
-      p_evidence_origin: input.evidenceOrigin,
-      p_evidence_note: input.evidenceNote?.trim() || null,
+      p_evidence_origin: evidenceUrl.toString(),
+      p_evidence_note: evidenceNote,
     }),
     "catalog_character_identity_verification_result_invalid",
   );
@@ -700,6 +1264,132 @@ export async function verifyCatalogModelCharacterIdentity(input: {
     throw new Error("catalog_character_identity_verification_result_invalid");
   }
   return identityId;
+}
+
+export async function getCatalogCharacterEditorialProfile(
+  identityId: string,
+): Promise<AdminCatalogCharacterEditorialProfile> {
+  if (!UUID_PATTERN.test(identityId)) {
+    throw new Error("catalog_character_editorial_identity_invalid");
+  }
+  const response = await callAdminRpc<unknown>(
+    "admin_get_catalog_character_editorial_profile",
+    { p_identity_id: identityId },
+  );
+  const parsed = parseAdminCharacterEditorialProfile(response);
+  if (parsed.identityId !== identityId) {
+    throw new Error("catalog_character_editorial_profile_invalid");
+  }
+  return parsed;
+}
+
+export async function saveCatalogCharacterEditorialProfile(input: {
+  identityId: string;
+  profile: CatalogCharacterEditorialProfile;
+  status: "draft" | "reviewed";
+  expectedRevision: number;
+}): Promise<AdminCatalogCharacterEditorialProfile> {
+  if (
+    !UUID_PATTERN.test(input.identityId) ||
+    (input.status !== "draft" && input.status !== "reviewed") ||
+    !Number.isSafeInteger(input.expectedRevision) ||
+    input.expectedRevision < 0
+  ) {
+    throw new Error("catalog_character_editorial_profile_invalid");
+  }
+  const profile = parseCharacterEditorialProfile(input.profile);
+  if (input.status === "reviewed") assertReviewedEditorialProfile(profile);
+  const response = await callAdminRpc<unknown>(
+    "admin_save_catalog_character_editorial_profile",
+    {
+      p_identity_id: input.identityId,
+      p_profile: profile,
+      p_status: input.status,
+      p_expected_revision: input.expectedRevision,
+    },
+  );
+  const parsed = parseAdminCharacterEditorialProfile(response);
+  if (
+    parsed.identityId !== input.identityId ||
+    parsed.status !== input.status
+  ) {
+    throw new Error("catalog_character_editorial_profile_save_result_invalid");
+  }
+  return parsed;
+}
+
+export async function setCatalogCharacterPublicationApproval(input: {
+  identityId: string;
+  expectedRevision: number;
+  expectedRelationRevision: number;
+  approved: boolean;
+}): Promise<AdminCatalogCharacterEditorialProfile> {
+  if (
+    !UUID_PATTERN.test(input.identityId) ||
+    typeof input.approved !== "boolean" ||
+    !Number.isSafeInteger(input.expectedRevision) ||
+    input.expectedRevision < 0 ||
+    !Number.isSafeInteger(input.expectedRelationRevision) ||
+    input.expectedRelationRevision < 0
+  ) {
+    throw new Error("catalog_character_publication_approval_invalid");
+  }
+  const response = await callAdminRpc<unknown>(
+    "admin_set_catalog_character_publication_approval",
+    {
+      p_identity_id: input.identityId,
+      p_expected_revision: input.expectedRevision,
+      p_expected_relation_revision: input.expectedRelationRevision,
+      p_approved: input.approved,
+    },
+  );
+  const parsed = parseAdminCharacterEditorialProfile(response);
+  if (
+    parsed.identityId !== input.identityId ||
+    parsed.relationRevision !== input.expectedRelationRevision ||
+    (input.approved && (parsed.publicationStatus !== "approved" ||
+      parsed.approvedRelationRevision !== input.expectedRelationRevision)) ||
+    (!input.approved && parsed.publicationStatus !== "not_approved")
+  ) {
+    throw new Error("catalog_character_publication_approval_result_invalid");
+  }
+  return parsed;
+}
+
+/** Remove only the reviewed link, never the character identity or other models.
+ * An orphaned catalog model can be cleaned up with its stored exact ID/slug.
+ */
+export async function unlinkCatalogModelCharacterIdentity(input: {
+  model: CanonicalCurationModelRef;
+  characterId: string;
+  reason: string;
+}): Promise<void> {
+  validateCanonicalCurationModelRef(input.model);
+  const reason = input.reason.trim();
+  if (
+    !UUID_PATTERN.test(input.characterId) ||
+    reason.length < 3 ||
+    reason.length > 1000 ||
+    hasUnsafeCurationCharacter(reason)
+  ) {
+    throw new Error("catalog_character_identity_unlink_invalid");
+  }
+  const data = asRecord(
+    await callAdminRpc<unknown>("admin_unlink_catalog_model_character", {
+      p_model_id: input.model.modelId,
+      p_model_slug: input.model.slug,
+      p_character_identity_id: input.characterId,
+      p_reason: reason,
+    }),
+    "catalog_character_identity_unlink_result_invalid",
+  );
+  if (
+    data.modelId !== input.model.modelId ||
+    data.identityId !== input.characterId ||
+    data.unlinked !== true
+  ) {
+    throw new Error("catalog_character_identity_unlink_result_invalid");
+  }
 }
 
 export async function saveCatalogModelClassifications(input: {

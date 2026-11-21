@@ -22,6 +22,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { CharacterEditorialProfileEditor } from "@/components/admin/collections/CharacterEditorialProfileEditor";
+import {
+  findEditorialResearchMatches,
+  getEditorialResearchClaimValue,
+  MAX_EDITORIAL_RESEARCH_IMPORT_BYTES,
+  parseEditorialResearchPreparation,
+  type EditorialResearchMatch,
+  type EditorialResearchPreparation,
+} from "@/components/admin/collections/character-editorial-research-import";
 import {
   addCatalogCurationTagAlias,
   assertCurrentCanonicalCurationModels,
@@ -37,6 +46,7 @@ import {
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
   verifyCatalogModelCharacterIdentity,
+  unlinkCatalogModelCharacterIdentity,
   type CatalogCurationState,
   type CatalogCurationTag,
   type CatalogCurationTagDimension,
@@ -66,10 +76,7 @@ const dimensionLabels: Record<CatalogCurationTagDimension, string> = {
   narrative_role: "Papel narrativo",
 };
 
-function modelLabel(model: {
-  name: string;
-  variantName: string;
-}) {
+function modelLabel(model: { name: string; variantName: string }) {
   return model.variantName
     ? `${model.name} · ${model.variantName}`
     : model.name;
@@ -95,8 +102,7 @@ export function InternalCollectionCuration() {
   const [offset, setOffset] = useState(0);
   const [candidateIds, setCandidateIds] = useState<string[]>([]);
   const [memberIds, setMemberIds] = useState<string[]>([]);
-  const [bulkState, setBulkState] =
-    useState<CatalogCurationState>("suggested");
+  const [bulkState, setBulkState] = useState<CatalogCurationState>("suggested");
   const [tagId, setTagId] = useState("");
   const [tagReviewState, setTagReviewState] =
     useState<CatalogCurationTagReviewState>("suggested");
@@ -106,10 +112,23 @@ export function InternalCollectionCuration() {
   const [newTagLabel, setNewTagLabel] = useState("");
   const [newCollectionName, setNewCollectionName] = useState("");
   const [newCollectionDescription, setNewCollectionDescription] = useState("");
+  const [editorialResearch, setEditorialResearch] =
+    useState<EditorialResearchPreparation | null>(null);
+  const [editorialResearchError, setEditorialResearchError] = useState("");
   const [identityReview, setIdentityReview] = useState<{
     model: SubscriptionCatalogModel;
     characterName: string;
     franchise: string;
+    restoreId?: string;
+    updateProof?: boolean;
+    evidenceUrl: string;
+    evidenceNote: string;
+  } | null>(null);
+  const [unlinkReview, setUnlinkReview] = useState<{
+    model: { modelId: string; slug: string };
+    characterId: string;
+    characterName: string;
+    reason: string;
   } | null>(null);
 
   const collectionsQuery = useQuery({
@@ -133,11 +152,13 @@ export function InternalCollectionCuration() {
     setMemberIds([]);
     setCandidateIds([]);
     setIdentityReview(null);
+    setUnlinkReview(null);
   }, [collection?.id, stateFilter, tagFilterId]);
 
   useEffect(() => {
     setMemberIds([]);
     setIdentityReview(null);
+    setUnlinkReview(null);
   }, [offset]);
 
   const tagsQuery = useQuery({
@@ -175,6 +196,27 @@ export function InternalCollectionCuration() {
     enabled: Boolean(collection),
   });
   const page = pageQuery.data;
+  const editorialResearchByModel = useMemo(() => {
+    const result = new Map<string, EditorialResearchMatch[]>();
+    if (!editorialResearch) return result;
+    for (const item of page?.items ?? []) {
+      const matches = findEditorialResearchMatches(editorialResearch, {
+        modelId: item.modelId,
+        slug: item.slug,
+      });
+      if (matches.length) result.set(item.modelId, matches);
+    }
+    return result;
+  }, [editorialResearch, page?.items]);
+  const characterProfileAnchors = useMemo(() => {
+    const anchors = new Map<string, string>();
+    for (const item of page?.items ?? []) {
+      for (const character of item.characters) {
+        if (!anchors.has(character.id)) anchors.set(character.id, item.modelId);
+      }
+    }
+    return anchors;
+  }, [page?.items]);
   const pageSlugs = useMemo(
     () => page?.items.map((item) => item.slug) ?? [],
     [page?.items],
@@ -239,7 +281,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível preparar a coleção",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -304,7 +347,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível adicionar os candidatos",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -347,14 +391,16 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível atualizar a curadoria",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
 
   const tagMutation = useMutation({
     mutationFn: async () => {
-      if (!page || !tagId) throw new Error("Selecione modelos e classificação.");
+      if (!page || !tagId)
+        throw new Error("Selecione modelos e classificação.");
       const selected = page.items.filter((item) =>
         memberIds.includes(item.modelId),
       );
@@ -388,7 +434,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível classificar os modelos",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -411,7 +458,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível criar a classificação",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -435,7 +483,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível registrar o sinônimo",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -458,7 +507,8 @@ export function InternalCollectionCuration() {
     onError: (error) =>
       toast({
         title: "Não foi possível remover o sinônimo",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -470,24 +520,56 @@ export function InternalCollectionCuration() {
         model: modelRef(review.model),
         characterName: review.characterName.trim(),
         franchise: review.franchise.trim(),
-        evidenceOrigin: "manual_admin:reviewed_character_identity",
-        evidenceNote:
-          "Nome do personagem e franquia revisados explicitamente pelo administrador; variante preservada no modelo canônico.",
+        evidenceOrigin: review.evidenceUrl.trim(),
+        evidenceNote: review.evidenceNote.trim(),
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (_identityId, review) => {
       setIdentityReview(null);
       await refreshCollection();
       toast({
-        title: "Identidade verificada",
-        description:
-          "Esculturas com o mesmo nome de personagem e franquia verificados agora podem ser contadas como um personagem distinto.",
+        title: review.updateProof
+          ? "Evidência atualizada"
+          : review.restoreId
+            ? "Vínculo restaurado"
+            : "Identidade verificada",
+        description: review.updateProof
+          ? "A nova fonte foi vinculada ao modelo e a evidência anterior ficou registrada no histórico editorial."
+          : review.restoreId
+            ? "A associação foi reavaliada e restaurada na curadoria privada; o histórico foi preservado."
+            : "Vínculo revisado e adicionado sem substituir os demais personagens desta estatueta. Não foi publicado no catálogo.",
       });
     },
     onError: (error) =>
       toast({
         title: "Não foi possível verificar a identidade",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      }),
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: async (review: NonNullable<typeof unlinkReview>) =>
+      unlinkCatalogModelCharacterIdentity({
+        model: review.model,
+        characterId: review.characterId,
+        reason: review.reason,
+      }),
+    onSuccess: async () => {
+      setUnlinkReview(null);
+      await refreshCollection();
+      toast({
+        title: "Vínculo desvinculado",
+        description:
+          "A justificativa ficou registrada na curadoria desta estatueta. A identidade do personagem e seus outros vínculos foram preservados.",
+      });
+    },
+    onError: (error) =>
+      toast({
+        title: "Não foi possível desvincular o personagem",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
         variant: "destructive",
       }),
   });
@@ -499,7 +581,10 @@ export function InternalCollectionCuration() {
     .filter(isPresent);
 
   const tagsByDimension = useMemo(() => {
-    const grouped = new Map<CatalogCurationTagDimension, CatalogCurationTag[]>();
+    const grouped = new Map<
+      CatalogCurationTagDimension,
+      CatalogCurationTag[]
+    >();
     tags.forEach((tag) => {
       grouped.set(tag.dimension, [...(grouped.get(tag.dimension) ?? []), tag]);
     });
@@ -514,23 +599,116 @@ export function InternalCollectionCuration() {
             <CardTitle>Curadoria interna de modelos</CardTitle>
             <CardDescription className="mt-2 max-w-4xl leading-6">
               Organize candidatos editoriais usando os mesmos IDs do catálogo.
-              Esta área é privada: aprovar, classificar ou selecionar para oferta
-              não publica a coleção, não altera preços e não autoriza direitos
-              comerciais.
+              Esta área é privada: aprovar, classificar ou selecionar para
+              oferta não publica a coleção, não altera preços e não autoriza
+              direitos comerciais.
             </CardDescription>
           </div>
           <Badge variant="outline">Privado por padrão</Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-7">
+        <section
+          className="space-y-3 rounded-lg border p-4"
+          aria-labelledby="editorial-research-import-heading"
+        >
+          <div>
+            <h3
+              id="editorial-research-import-heading"
+              className="font-semibold"
+            >
+              Dossiês de pesquisa para revisão
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Carregue manualmente um pacote editorial review-only. O arquivo
+              fica apenas nesta sessão do navegador e não é enviado ao banco.
+              Sugestões aparecem somente para o mesmo ID e slug do catálogo.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="editorial-research-import-file">
+              Arquivo JSON de preparação editorial
+            </Label>
+            <Input
+              id="editorial-research-import-file"
+              type="file"
+              accept="application/json,.json"
+              aria-describedby="editorial-research-import-help"
+              onChange={async (event) => {
+                const input = event.currentTarget;
+                const file = input.files?.[0];
+                input.value = "";
+                if (!file) return;
+                try {
+                  if (file.size > MAX_EDITORIAL_RESEARCH_IMPORT_BYTES) {
+                    throw new Error("O arquivo excede o limite de 5 MB.");
+                  }
+                  const preparation = parseEditorialResearchPreparation(
+                    await file.text(),
+                  );
+                  setEditorialResearch(preparation);
+                  setEditorialResearchError("");
+                } catch (error) {
+                  setEditorialResearch(null);
+                  setEditorialResearchError(
+                    error instanceof Error
+                      ? error.message
+                      : "Não foi possível validar o pacote editorial.",
+                  );
+                }
+              }}
+            />
+            <p
+              id="editorial-research-import-help"
+              className="text-xs text-muted-foreground"
+            >
+              Somente dossiês e vínculos pendentes são aceitos. O pacote não
+              fornece evidência visual do render e não pode aprovar ou publicar.
+            </p>
+          </div>
+          {editorialResearchError && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{editorialResearchError}</AlertDescription>
+            </Alert>
+          )}
+          {editorialResearch && (
+            <Alert role="status">
+              <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+                <span>
+                  {editorialResearch.candidates.length} dossiês carregados nesta
+                  sessão,{" "}
+                  {editorialResearch.candidates.reduce(
+                    (count, candidate) =>
+                      count + candidate.candidateModelLinks.length,
+                    0,
+                  )}{" "}
+                  relações candidatas; nenhum foi revisado, salvo ou aprovado.
+                  As sugestões dependem de vínculo visual e decisão humana por
+                  modelo.
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setEditorialResearch(null);
+                    setEditorialResearchError("");
+                  }}
+                >
+                  Limpar arquivo desta sessão
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </section>
         <section className="space-y-3" aria-labelledby="curation-seeds-heading">
           <div>
             <h3 id="curation-seeds-heading" className="font-semibold">
               Coleções editoriais privadas
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Use um tema inicial ou crie sua própria coleção privada.
-              Nenhum modelo é inventado, associado ou colocado à venda automaticamente.
+              Use um tema inicial ou crie sua própria coleção privada. Nenhum
+              modelo é inventado, associado ou colocado à venda automaticamente.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -550,7 +728,11 @@ export function InternalCollectionCuration() {
                       : createCollection.mutate(template)
                   }
                 >
-                  {existing ? <Check className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                  {existing ? (
+                    <Check className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
                   {template.name}
                 </Button>
               );
@@ -568,7 +750,9 @@ export function InternalCollectionCuration() {
               aria-label="Descrição da nova coleção editorial"
               maxLength={2000}
               value={newCollectionDescription}
-              onChange={(event) => setNewCollectionDescription(event.target.value)}
+              onChange={(event) =>
+                setNewCollectionDescription(event.target.value)
+              }
               placeholder="Critérios para selecionar os candidatos"
             />
             <Button
@@ -592,7 +776,9 @@ export function InternalCollectionCuration() {
                   toast({
                     title: "Coleção editorial inválida",
                     description:
-                      error instanceof Error ? error.message : "Revise nome e descrição.",
+                      error instanceof Error
+                        ? error.message
+                        : "Revise nome e descrição.",
                     variant: "destructive",
                   });
                 }
@@ -611,35 +797,40 @@ export function InternalCollectionCuration() {
             </AlertDescription>
           </Alert>
         ) : collectionsQuery.isLoading ? (
-          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+          <p
+            role="status"
+            className="flex items-center gap-2 text-sm text-muted-foreground"
+          >
             <Loader2 className="h-4 w-4 animate-spin" /> Carregando curadoria...
           </p>
         ) : collections.length === 0 ? (
           <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-            Nenhuma coleção interna foi preparada. Use uma das opções acima; isso
-            não cria modelos nem publica ofertas.
+            Nenhuma coleção interna foi preparada. Use uma das opções acima;
+            isso não cria modelos nem publica ofertas.
           </p>
         ) : (
           <>
             {summaryQuery.isError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  Não foi possível carregar as estatísticas desta coleção.
-                  Os indicadores não representam valores zerados.
+                  Não foi possível carregar as estatísticas desta coleção. Os
+                  indicadores não representam valores zerados.
                 </AlertDescription>
               </Alert>
             )}
             {tagsQuery.isError && (
               <Alert variant="destructive">
                 <AlertDescription>
-                  Não foi possível carregar o vocabulário de classificações.
-                  A indisponibilidade não significa ausência de tags.
+                  Não foi possível carregar o vocabulário de classificações. A
+                  indisponibilidade não significa ausência de tags.
                 </AlertDescription>
               </Alert>
             )}
             <section className="grid gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2fr)]">
               <div className="space-y-2">
-                <Label htmlFor="internal-curation-collection">Coleção interna</Label>
+                <Label htmlFor="internal-curation-collection">
+                  Coleção interna
+                </Label>
                 <select
                   id="internal-curation-collection"
                   value={collection?.id ?? ""}
@@ -655,7 +846,9 @@ export function InternalCollectionCuration() {
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-lg border p-4">
-                  <p className="text-xs text-muted-foreground">Modelos candidatos</p>
+                  <p className="text-xs text-muted-foreground">
+                    Modelos candidatos
+                  </p>
                   <p className="mt-2 text-2xl font-semibold tabular-nums">
                     {summaryQuery.data?.modelCount ?? "—"}
                   </p>
@@ -679,7 +872,10 @@ export function InternalCollectionCuration() {
               </div>
             </section>
 
-            <section className="space-y-3" aria-labelledby="candidate-search-heading">
+            <section
+              className="space-y-3"
+              aria-labelledby="candidate-search-heading"
+            >
               <div>
                 <h3 id="candidate-search-heading" className="font-semibold">
                   Encontrar candidatos no catálogo
@@ -753,7 +949,10 @@ export function InternalCollectionCuration() {
                               loading="lazy"
                             />
                           ) : (
-                            <span className="h-14 w-14 shrink-0 rounded-md bg-muted" aria-hidden="true" />
+                            <span
+                              className="h-14 w-14 shrink-0 rounded-md bg-muted"
+                              aria-hidden="true"
+                            />
                           )}
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-medium">
@@ -763,8 +962,15 @@ export function InternalCollectionCuration() {
                               {model.franchise} · {model.category}
                             </span>
                           </span>
-                          <span className="shrink-0 text-primary" aria-hidden="true">
-                            {selected ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                          <span
+                            className="shrink-0 text-primary"
+                            aria-hidden="true"
+                          >
+                            {selected ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Plus className="h-4 w-4" />
+                            )}
                           </span>
                         </button>
                       );
@@ -772,15 +978,19 @@ export function InternalCollectionCuration() {
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">
-                      {candidateIds.length}/50 candidato(s) selecionado(s). Entram
-                      como “Sugerido” com origem manual registrada.
+                      {candidateIds.length}/50 candidato(s) selecionado(s).
+                      Entram como “Sugerido” com origem manual registrada.
                     </p>
                     <Button
                       type="button"
-                      disabled={!candidateIds.length || candidateMutation.isPending}
+                      disabled={
+                        !candidateIds.length || candidateMutation.isPending
+                      }
                       onClick={() => candidateMutation.mutate()}
                     >
-                      {candidateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {candidateMutation.isPending && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       Adicionar candidatos
                     </Button>
                   </div>
@@ -788,7 +998,10 @@ export function InternalCollectionCuration() {
               )}
             </section>
 
-            <section className="space-y-4" aria-labelledby="curation-list-heading">
+            <section
+              className="space-y-4"
+              aria-labelledby="curation-list-heading"
+            >
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h3 id="curation-list-heading" className="font-semibold">
@@ -799,7 +1012,9 @@ export function InternalCollectionCuration() {
                   </p>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="internal-curation-state-filter">Filtrar estado</Label>
+                  <Label htmlFor="internal-curation-state-filter">
+                    Filtrar estado
+                  </Label>
                   <select
                     id="internal-curation-state-filter"
                     value={stateFilter}
@@ -821,7 +1036,9 @@ export function InternalCollectionCuration() {
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="internal-curation-tag-filter">Filtrar classificação</Label>
+                  <Label htmlFor="internal-curation-tag-filter">
+                    Filtrar classificação
+                  </Label>
                   <select
                     id="internal-curation-tag-filter"
                     value={tagFilterId}
@@ -857,8 +1074,8 @@ export function InternalCollectionCuration() {
                   <Alert variant="destructive">
                     <AlertDescription>
                       Alguns candidatos não foram confirmados no catálogo atual.
-                      A aprovação e a classificação desses modelos serão recusadas.
-                      Você pode descartá-los da curadoria.
+                      A aprovação e a classificação desses modelos serão
+                      recusadas. Você pode descartá-los da curadoria.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -882,7 +1099,11 @@ export function InternalCollectionCuration() {
                   {page?.items.map((item) => {
                     const canonicalModel = liveModelsById.get(item.modelId);
                     const model =
-                      canonicalModel?.slug === item.slug ? canonicalModel : undefined;
+                      canonicalModel?.slug === item.slug
+                        ? canonicalModel
+                        : undefined;
+                    const researchMatches =
+                      editorialResearchByModel.get(item.modelId) ?? [];
                     const selected = memberIds.includes(item.modelId);
                     return (
                       <article
@@ -911,21 +1132,29 @@ export function InternalCollectionCuration() {
                               loading="lazy"
                             />
                           ) : (
-                            <span className="h-16 w-16 rounded-md bg-muted" aria-hidden="true" />
+                            <span
+                              className="h-16 w-16 rounded-md bg-muted"
+                              aria-hidden="true"
+                            />
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <h4 className="font-medium">
                                 {model ? modelLabel(model) : item.slug}
                               </h4>
-                              <Badge variant="outline">{stateLabels[item.state]}</Badge>
-                              {item.identityVerified ? (
+                              <Badge variant="outline">
+                                {stateLabels[item.state]}
+                              </Badge>
+                              {item.characters.length > 0 ? (
                                 <Badge variant="secondary">
                                   <ShieldCheck className="mr-1 h-3 w-3" />
-                                  Personagem verificado
+                                  {item.characters.length} personagem(ns)
+                                  verificado(s)
                                 </Badge>
                               ) : (
-                                <Badge variant="outline">Identidade pendente</Badge>
+                                <Badge variant="outline">
+                                  Identidade pendente
+                                </Badge>
                               )}
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
@@ -933,22 +1162,345 @@ export function InternalCollectionCuration() {
                                 ? `${model.franchise} · ${model.category} · ${model.slug}`
                                 : `Referência canônica: ${item.slug}`}
                             </p>
+                            {researchMatches.map((match) => {
+                              const sourceById = new Map(
+                                match.sources.map((source) => [
+                                  source.id,
+                                  source,
+                                ]),
+                              );
+                              const linkedCharacter = item.characters.find(
+                                (character) =>
+                                  [
+                                    match.candidate.candidateName,
+                                    match.candidate.catalogDisplayNameCandidate,
+                                    getEditorialResearchClaimValue(
+                                      match.candidate,
+                                      "identity.canonical_name_candidate",
+                                    ) ?? "",
+                                  ].some(
+                                    (candidateName) =>
+                                      candidateName
+                                        .trim()
+                                        .toLocaleLowerCase() ===
+                                      character.name.trim().toLocaleLowerCase(),
+                                  ),
+                              );
+                              return (
+                                <section
+                                  key={`${match.candidate.candidateName}-${match.modelLink.modelId}`}
+                                  className="mt-3 space-y-3 rounded-md border border-dashed p-3"
+                                  aria-label={`Dossiê pendente para ${match.candidate.candidateName}`}
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Badge variant="outline">
+                                      Pesquisa pendente
+                                    </Badge>
+                                    <span className="text-sm font-medium">
+                                      {match.candidate.candidateName}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      · {match.candidate.franchiseCandidate}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    Rótulo do catálogo:{" "}
+                                    {
+                                      match.candidate
+                                        .catalogDisplayNameCandidate
+                                    }
+                                    . Coincidência por ID e slug; isso não
+                                    verifica a escultura nem o vínculo.
+                                  </p>
+                                  <p className="break-all text-xs text-muted-foreground">
+                                    Modelo candidato: {match.modelLink.modelId}{" "}
+                                    · {match.modelLink.modelSlug} · sem
+                                    evidência visual independente
+                                  </p>
+                                  <details className="space-y-2 text-sm">
+                                    <summary className="cursor-pointer font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                                      Conferir biografia, claims, fontes e
+                                      ambiguidades
+                                    </summary>
+                                    <p className="whitespace-pre-wrap text-sm">
+                                      {match.candidate.biographyDraft}
+                                    </p>
+                                    <ul className="space-y-2">
+                                      {match.candidate.claims.map(
+                                        (claim, index) => (
+                                          <li
+                                            key={`${claim.attribute}-${index}`}
+                                            className="rounded border p-2"
+                                          >
+                                            <p className="text-xs font-medium text-muted-foreground">
+                                              {claim.attribute} · pendente
+                                            </p>
+                                            <p>{claim.value}</p>
+                                            <ul className="mt-1 space-y-1">
+                                              {claim.sourceIds.map(
+                                                (sourceId) => {
+                                                  const source =
+                                                    sourceById.get(sourceId);
+                                                  if (!source) return null;
+                                                  return (
+                                                    <li key={sourceId}>
+                                                      <a
+                                                        className="break-all text-xs underline underline-offset-2"
+                                                        href={source.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                      >
+                                                        {source.publisher}:{" "}
+                                                        {source.title}
+                                                      </a>
+                                                      <span className="ml-1 text-xs text-muted-foreground">
+                                                        · consultada em{" "}
+                                                        {source.consultedOn}
+                                                      </span>
+                                                    </li>
+                                                  );
+                                                },
+                                              )}
+                                            </ul>
+                                          </li>
+                                        ),
+                                      )}
+                                    </ul>
+                                    <div>
+                                      <p className="text-xs font-semibold">
+                                        Ambiguidades a preservar
+                                      </p>
+                                      <ul className="list-disc space-y-1 pl-5 text-xs">
+                                        {match.candidate.ambiguities.map(
+                                          (ambiguity) => (
+                                            <li key={ambiguity}>{ambiguity}</li>
+                                          ),
+                                        )}
+                                      </ul>
+                                    </div>
+                                  </details>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={
+                                        !model ||
+                                        Boolean(linkedCharacter) ||
+                                        identityMutation.isPending
+                                      }
+                                      onClick={() => {
+                                        if (!model) return;
+                                        setUnlinkReview(null);
+                                        setIdentityReview({
+                                          model,
+                                          characterName:
+                                            getEditorialResearchClaimValue(
+                                              match.candidate,
+                                              "identity.canonical_name_candidate",
+                                            ) ??
+                                            match.candidate
+                                              .catalogDisplayNameCandidate,
+                                          franchise:
+                                            getEditorialResearchClaimValue(
+                                              match.candidate,
+                                              "franchise.candidate",
+                                            ) ??
+                                            match.candidate.franchiseCandidate,
+                                          evidenceUrl: "",
+                                          evidenceNote: "",
+                                        });
+                                      }}
+                                    >
+                                      {linkedCharacter
+                                        ? "Identidade já vinculada"
+                                        : "Revisar vínculo deste modelo"}
+                                    </Button>
+                                    {linkedCharacter && (
+                                      <span className="text-xs text-muted-foreground">
+                                        A ficha já está associada a{" "}
+                                        {linkedCharacter.name}.
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    A fonte biográfica não comprova este render.
+                                    O formulário exige evidência visual
+                                    independente antes de criar o vínculo.
+                                  </p>
+                                </section>
+                              );
+                            })}
+                            {item.characters.length > 0 && (
+                              <div
+                                className="mt-3 flex flex-wrap gap-2"
+                                aria-label="Personagens com identidade revisada"
+                              >
+                                {item.characters.map((character) => (
+                                  <div
+                                    key={character.id}
+                                    className="w-full space-y-2"
+                                  >
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Badge variant="outline">
+                                        {character.name} · {character.franchise}
+                                      </Badge>
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled={
+                                          unlinkMutation.isPending ||
+                                          identityMutation.isPending
+                                        }
+                                        aria-label={`Desvincular ${character.name} desta estatueta`}
+                                        onClick={() => {
+                                          setIdentityReview(null);
+                                          setUnlinkReview({
+                                            model: {
+                                              modelId: item.modelId,
+                                              slug: item.slug,
+                                            },
+                                            characterId: character.id,
+                                            characterName: character.name,
+                                            reason: "",
+                                          });
+                                        }}
+                                      >
+                                        Desvincular
+                                      </Button>
+                                      {model && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="ghost"
+                                          disabled={
+                                            unlinkMutation.isPending ||
+                                            identityMutation.isPending
+                                          }
+                                          onClick={() => {
+                                            setUnlinkReview(null);
+                                            setIdentityReview({
+                                              model,
+                                              characterName: character.name,
+                                              franchise: character.franchise,
+                                              updateProof: true,
+                                              evidenceUrl:
+                                                character.evidenceOrigin.startsWith(
+                                                  "https://",
+                                                )
+                                                  ? character.evidenceOrigin
+                                                  : "",
+                                              evidenceNote:
+                                                character.evidenceNote ?? "",
+                                            });
+                                          }}
+                                        >
+                                          Atualizar evidência
+                                        </Button>
+                                      )}
+                                    </div>
+                                    {characterProfileAnchors.get(
+                                      character.id,
+                                    ) === item.modelId && (
+                                      <CharacterEditorialProfileEditor
+                                        identityId={character.id}
+                                        characterName={character.name}
+                                        editorialResearch={editorialResearch}
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {item.inactiveCharacterCount > 0 && (
+                              <div
+                                className="mt-3 space-y-2 border-t pt-3"
+                                aria-label="Personagens anteriormente desvinculados"
+                              >
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  Desvinculados ({item.inactiveCharacterCount})
+                                </p>
+                                {item.inactiveCharacters.map((character) => (
+                                  <div
+                                    key={character.id}
+                                    className="rounded-md border p-3 text-xs"
+                                  >
+                                    <div className="flex flex-wrap items-center justify-between gap-2">
+                                      <span className="font-medium">
+                                        {character.name} · {character.franchise}
+                                      </span>
+                                      {model && (
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          disabled={
+                                            identityMutation.isPending ||
+                                            unlinkMutation.isPending
+                                          }
+                                          onClick={() => {
+                                            setUnlinkReview(null);
+                                            setIdentityReview({
+                                              model,
+                                              characterName: character.name,
+                                              franchise: character.franchise,
+                                              restoreId: character.id,
+                                              evidenceUrl:
+                                                character.evidenceOrigin.startsWith(
+                                                  "https://",
+                                                )
+                                                  ? character.evidenceOrigin
+                                                  : "",
+                                              evidenceNote:
+                                                character.evidenceNote ?? "",
+                                            });
+                                          }}
+                                        >
+                                          Revisar restauração
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <p className="mt-1 text-muted-foreground">
+                                      Motivo registrado:{" "}
+                                      {character.unlinkReason}
+                                    </p>
+                                    <p className="mt-1 text-muted-foreground">
+                                      {character.reviewCount} eventos editoriais
+                                      registrados
+                                    </p>
+                                  </div>
+                                ))}
+                                {item.inactiveCharacterCount >
+                                  item.inactiveCharacters.length && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Exibindo os {item.inactiveCharacters.length}{" "}
+                                    registros mais recentes.
+                                  </p>
+                                )}
+                              </div>
+                            )}
                             {item.tags.length > 0 && (
                               <div className="mt-3 flex flex-wrap gap-2">
                                 {item.tags.map((tag) => (
                                   <Badge key={tag.id} variant="secondary">
-                                    {dimensionLabels[tag.dimension]}: {tag.label}
-                                    {tag.reviewState === "suggested" ? " · sugestão" : ""}
+                                    {dimensionLabels[tag.dimension]}:{" "}
+                                    {tag.label}
+                                    {tag.reviewState === "suggested"
+                                      ? " · sugestão"
+                                      : ""}
                                   </Badge>
                                 ))}
                               </div>
                             )}
                             <p className="mt-3 text-xs text-muted-foreground">
                               Origem: {item.evidenceOrigin}
-                              {item.evidenceNote ? ` · ${item.evidenceNote}` : ""}
+                              {item.evidenceNote
+                                ? ` · ${item.evidenceNote}`
+                                : ""}
                             </p>
                           </div>
-                          {model && !item.identityVerified && (
+                          {model && (
                             <Button
                               type="button"
                               size="sm"
@@ -957,48 +1509,184 @@ export function InternalCollectionCuration() {
                               onClick={() =>
                                 setIdentityReview({
                                   model,
-                                  characterName: model.name,
+                                  characterName: item.characters.length
+                                    ? ""
+                                    : model.name,
                                   franchise: model.franchise,
+                                  evidenceUrl: "",
+                                  evidenceNote: "",
                                 })
                               }
                             >
                               <ShieldCheck className="mr-2 h-4 w-4" />
-                              Revisar identidade
+                              {item.characters.length
+                                ? "Adicionar personagem"
+                                : "Revisar identidade"}
                             </Button>
                           )}
                         </div>
+                        {unlinkReview?.model.modelId === item.modelId && (
+                          <div
+                            role="group"
+                            aria-label="Confirmar desvinculação de personagem"
+                            className="mt-4 space-y-3 rounded-md border border-destructive/50 p-4"
+                          >
+                            <p className="text-sm">
+                              Desvincular{" "}
+                              <strong>{unlinkReview.characterName}</strong>{" "}
+                              desta estatueta? A identidade e suas associações
+                              com outros modelos permanecem preservadas. A
+                              justificativa ficará registrada no histórico
+                              editorial.
+                            </p>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-unlink-reason">
+                                Motivo da desvinculação
+                              </Label>
+                              <Input
+                                id="curation-character-unlink-reason"
+                                maxLength={1000}
+                                value={unlinkReview.reason}
+                                placeholder="Descreva a associação incorreta"
+                                onChange={(event) =>
+                                  setUnlinkReview((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          reason: event.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                disabled={
+                                  unlinkMutation.isPending ||
+                                  unlinkReview.reason.trim().length < 3
+                                }
+                                onClick={() =>
+                                  unlinkMutation.mutate(unlinkReview)
+                                }
+                              >
+                                {unlinkMutation.isPending && (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Confirmar desvinculação
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={unlinkMutation.isPending}
+                                onClick={() => setUnlinkReview(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                         {identityReview?.model.id === item.modelId && (
                           <div className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-2">
                             <p className="text-sm text-muted-foreground sm:col-span-2">
-                              Confirme o personagem e o universo desta escultura. Os
-                              valores do catálogo são apenas sugestões: o nome do
-                              modelo pode incluir edição, pose ou variante.
+                              {identityReview.restoreId
+                                ? "Confirme a restauração deste personagem previamente desvinculado. Atualize a fonte HTTPS e a nota do vínculo; o evento anterior será preservado no histórico."
+                                : identityReview.updateProof
+                                  ? "Atualize a prova desta associação. A evidência anterior será preservada no histórico editorial."
+                                  : "Confirme personagem e franquia com fontes confiáveis. Cada vínculo exige inspeção visual independente do render; a fonte biográfica não comprova esta estatueta. Registre a prova visual em URL HTTPS e explique os detalhes conferidos. O nome do modelo é apenas uma sugestão."}
                             </p>
                             <div className="space-y-1">
-                              <Label htmlFor="curation-character-name">Personagem</Label>
+                              <Label htmlFor="curation-character-name">
+                                Personagem
+                              </Label>
                               <Input
                                 id="curation-character-name"
                                 maxLength={160}
+                                disabled={Boolean(
+                                  identityReview.restoreId ||
+                                  identityReview.updateProof,
+                                )}
                                 value={identityReview.characterName}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current
-                                      ? { ...current, characterName: event.target.value }
+                                      ? {
+                                          ...current,
+                                          characterName: event.target.value,
+                                        }
                                       : null,
                                   )
                                 }
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="curation-character-franchise">Universo / franquia</Label>
+                              <Label htmlFor="curation-character-franchise">
+                                Universo / franquia
+                              </Label>
                               <Input
                                 id="curation-character-franchise"
                                 maxLength={160}
+                                disabled={Boolean(
+                                  identityReview.restoreId ||
+                                  identityReview.updateProof,
+                                )}
                                 value={identityReview.franchise}
                                 onChange={(event) =>
                                   setIdentityReview((current) =>
                                     current
-                                      ? { ...current, franchise: event.target.value }
+                                      ? {
+                                          ...current,
+                                          franchise: event.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-evidence-url">
+                                Evidência independente do vínculo (HTTPS)
+                              </Label>
+                              <Input
+                                id="curation-character-evidence-url"
+                                type="url"
+                                inputMode="url"
+                                autoComplete="url"
+                                maxLength={240}
+                                required
+                                value={identityReview.evidenceUrl}
+                                placeholder="https://..."
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          evidenceUrl: event.target.value,
+                                        }
+                                      : null,
+                                  )
+                                }
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="curation-character-evidence-note">
+                                Título ou trecho da fonte
+                              </Label>
+                              <Input
+                                id="curation-character-evidence-note"
+                                maxLength={1000}
+                                required
+                                value={identityReview.evidenceNote}
+                                placeholder="Descreva o detalhe visual e a versão que confirmam este modelo"
+                                onChange={(event) =>
+                                  setIdentityReview((current) =>
+                                    current
+                                      ? {
+                                          ...current,
+                                          evidenceNote: event.target.value,
+                                        }
                                       : null,
                                   )
                                 }
@@ -1010,14 +1698,24 @@ export function InternalCollectionCuration() {
                                 disabled={
                                   identityMutation.isPending ||
                                   !identityReview.characterName.trim() ||
-                                  !identityReview.franchise.trim()
+                                  !identityReview.franchise.trim() ||
+                                  !identityReview.evidenceUrl
+                                    .trim()
+                                    .startsWith("https://") ||
+                                  !identityReview.evidenceNote.trim()
                                 }
-                                onClick={() => identityMutation.mutate(identityReview)}
+                                onClick={() =>
+                                  identityMutation.mutate(identityReview)
+                                }
                               >
                                 {identityMutation.isPending && (
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 )}
-                                Confirmar identidade revisada
+                                {identityReview.updateProof
+                                  ? "Salvar nova evidência"
+                                  : identityReview.restoreId
+                                    ? "Confirmar restauração revisada"
+                                    : "Confirmar identidade revisada"}
                               </Button>
                               <Button
                                 type="button"
@@ -1042,17 +1740,22 @@ export function InternalCollectionCuration() {
                     type="button"
                     variant="outline"
                     disabled={offset === 0 || pageQuery.isFetching}
-                    onClick={() => setOffset((value) => Math.max(0, value - PAGE_SIZE))}
+                    onClick={() =>
+                      setOffset((value) => Math.max(0, value - PAGE_SIZE))
+                    }
                   >
                     Anterior
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    {offset + 1}–{Math.min(offset + PAGE_SIZE, page.total)} de {page.total}
+                    {offset + 1}–{Math.min(offset + PAGE_SIZE, page.total)} de{" "}
+                    {page.total}
                   </span>
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={offset + PAGE_SIZE >= page.total || pageQuery.isFetching}
+                    disabled={
+                      offset + PAGE_SIZE >= page.total || pageQuery.isFetching
+                    }
                     onClick={() => setOffset((value) => value + PAGE_SIZE)}
                   >
                     Próxima
@@ -1068,9 +1771,9 @@ export function InternalCollectionCuration() {
                   <h3 className="font-semibold">Comparar variantes</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Os quatro primeiros modelos selecionados aparecem lado a
-                  lado; a ação em lote pode incluir toda a página. O personagem
-                  só é agrupado depois da confirmação explícita da identidade.
+                  Os quatro primeiros modelos selecionados aparecem lado a lado;
+                  a ação em lote pode incluir toda a página. O personagem só é
+                  agrupado depois da confirmação explícita da identidade.
                 </p>
                 {compareModels.length === 0 ? (
                   <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
@@ -1082,7 +1785,8 @@ export function InternalCollectionCuration() {
                       <div key={model.id} className="rounded-lg border p-3">
                         <p className="font-medium">{model.name}</p>
                         <p className="mt-1 text-sm">
-                          Variante: {model.variantName || "Sem variante informada"}
+                          Variante:{" "}
+                          {model.variantName || "Sem variante informada"}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
                           {model.franchise} · {model.slug}
@@ -1117,13 +1821,15 @@ export function InternalCollectionCuration() {
                     disabled={!memberIds.length || stateMutation.isPending}
                     onClick={() => stateMutation.mutate()}
                   >
-                    {stateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {stateMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
                     Aplicar estado a {memberIds.length || 0} modelo(s)
                   </Button>
                   {bulkState === "selected_for_offer" && (
                     <p className="text-xs text-muted-foreground">
-                      “Selecionado para oferta” é somente decisão editorial.
-                      A seleção comercial existente continua separada e exige sua
+                      “Selecionado para oferta” é somente decisão editorial. A
+                      seleção comercial existente continua separada e exige sua
                       própria aprovação.
                     </p>
                   )}
@@ -1174,33 +1880,44 @@ export function InternalCollectionCuration() {
                   ))}
                 </div>
                 <div className="space-y-3 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Definir nova classificação</p>
+                  <p className="text-sm font-medium">
+                    Definir nova classificação
+                  </p>
                   <p className="text-xs text-muted-foreground">
-                    Acrescente uma classificação ao vocabulário privado, separada
-                    por dimensão. Isso não atribui a tag a nenhum modelo.
+                    Acrescente uma classificação ao vocabulário privado,
+                    separada por dimensão. Isso não atribui a tag a nenhum
+                    modelo.
                   </p>
                   <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                     <div className="space-y-1">
-                      <Label htmlFor="internal-curation-new-tag-dimension">Dimensão</Label>
+                      <Label htmlFor="internal-curation-new-tag-dimension">
+                        Dimensão
+                      </Label>
                       <select
                         id="internal-curation-new-tag-dimension"
                         value={newTagDimension}
                         onChange={(event) =>
-                          setNewTagDimension(event.target.value as CatalogCurationTagDimension)
+                          setNewTagDimension(
+                            event.target.value as CatalogCurationTagDimension,
+                          )
                         }
                         className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
                       >
-                        {(Object.keys(dimensionLabels) as CatalogCurationTagDimension[]).map(
-                          (dimension) => (
-                            <option key={dimension} value={dimension}>
-                              {dimensionLabels[dimension]}
-                            </option>
-                          ),
-                        )}
+                        {(
+                          Object.keys(
+                            dimensionLabels,
+                          ) as CatalogCurationTagDimension[]
+                        ).map((dimension) => (
+                          <option key={dimension} value={dimension}>
+                            {dimensionLabels[dimension]}
+                          </option>
+                        ))}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="internal-curation-new-tag-name">Nome</Label>
+                      <Label htmlFor="internal-curation-new-tag-name">
+                        Nome
+                      </Label>
                       <Input
                         id="internal-curation-new-tag-name"
                         value={newTagLabel}
@@ -1213,7 +1930,9 @@ export function InternalCollectionCuration() {
                   <Button
                     type="button"
                     variant="outline"
-                    disabled={!newTagLabel.trim() || createTagMutation.isPending}
+                    disabled={
+                      !newTagLabel.trim() || createTagMutation.isPending
+                    }
                     onClick={() => createTagMutation.mutate()}
                   >
                     {createTagMutation.isPending && (
@@ -1248,18 +1967,20 @@ export function InternalCollectionCuration() {
                     type="button"
                     variant="outline"
                     disabled={
-                      !memberIds.length ||
-                      !selectedTag ||
-                      tagMutation.isPending
+                      !memberIds.length || !selectedTag || tagMutation.isPending
                     }
                     onClick={() => tagMutation.mutate()}
                   >
-                    {tagMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Aplicar {selectedTag?.label ?? "classificação"} a {memberIds.length || 0}
+                    {tagMutation.isPending && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Aplicar {selectedTag?.label ?? "classificação"} a{" "}
+                    {memberIds.length || 0}
                   </Button>
                   <p className="text-xs text-muted-foreground">
                     A classificação registra a origem da revisão. Ela não
-                    presume licença, direito comercial ou elegibilidade de venda.
+                    presume licença, direito comercial ou elegibilidade de
+                    venda.
                   </p>
                 </div>
 
