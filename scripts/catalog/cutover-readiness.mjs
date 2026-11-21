@@ -20,7 +20,9 @@ const SOURCE_REPO = CANONICAL.origin.repository
 const SOURCE_REPO_ID = CANONICAL.origin.repositoryId
 const SOURCE_MAIN_SHA = CANONICAL.origin.observedMainSha
 const SOURCE_FIX_PR = CANONICAL.staging.sourceFixPullRequest
-const SOURCE_FIX_HEAD = CANONICAL.staging.sourceFixHead
+const SOURCE_FIX_HEAD = CANONICAL.staging.sourceFixMergedHead
+const SOURCE_FIX_MERGE_SHA = CANONICAL.staging.sourceFixMergeCommit
+const SOURCE_FIX_BASE_SHA = CANONICAL.staging.sourceFixBaseShaAtMerge
 const TARGET_REPO = CANONICAL.target.repository
 const TARGET_REPO_ID = CANONICAL.target.repositoryId
 const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
@@ -57,19 +59,27 @@ export function assessCutoverReadiness(contract, state) {
       observed.sourceMainSha === SOURCE_MAIN_SHA,
     'source_main_drift_or_unverified',
   )
-  // The staged R2 media fix came from a still-open source PR, not source main.
-  // Never accept an outdated or substituted patch as a promoted Worker candidate.
+  // PR #266 has been merged into source main. The historical draft head
+  // remains provenance, but only a verified merged head, merge commit,
+  // original base and exact media blob can prove current source ownership.
   const patch = observed.sourceFix
   add(
     Number.isInteger(SOURCE_FIX_PR) && SOURCE_FIX_PR > 0 &&
       typeof SOURCE_FIX_HEAD === 'string' && /^[0-9a-f]{40}$/.test(SOURCE_FIX_HEAD) &&
+      typeof SOURCE_FIX_MERGE_SHA === 'string' && /^[0-9a-f]{40}$/.test(SOURCE_FIX_MERGE_SHA) &&
+      typeof SOURCE_FIX_BASE_SHA === 'string' && /^[0-9a-f]{40}$/.test(SOURCE_FIX_BASE_SHA) &&
       contract?.staging?.sourceFixPullRequest === SOURCE_FIX_PR &&
-      contract?.staging?.sourceFixHead === SOURCE_FIX_HEAD &&
       contract?.staging?.sourceFixStatusAtImport === 'open-draft-not-merged' &&
-      patch?.number === SOURCE_FIX_PR && patch?.state === 'open' &&
-      patch?.draft === true && patch?.merged === false &&
+      contract?.staging?.sourceFixStatusAtReconciliation === 'merged-in-main' &&
+      contract?.staging?.sourceFixMergedHead === SOURCE_FIX_HEAD &&
+      contract?.staging?.sourceFixMergeCommit === SOURCE_FIX_MERGE_SHA &&
+      contract?.staging?.sourceFixBaseShaAtMerge === SOURCE_FIX_BASE_SHA &&
+      patch?.number === SOURCE_FIX_PR && patch?.state === 'closed' &&
+      patch?.draft === false && patch?.merged === true &&
       patch?.headSha === SOURCE_FIX_HEAD &&
-      patch?.baseSha === SOURCE_MAIN_SHA && patch?.headRepo === SOURCE_REPO,
+      patch?.mergeCommitSha === SOURCE_FIX_MERGE_SHA &&
+      patch?.baseSha === SOURCE_FIX_BASE_SHA && patch?.headRepo === SOURCE_REPO &&
+      observed.sourceMediaBlobSha === contract?.staging?.fileBlobs?.['worker/media.ts'],
     'source_media_patch_drift_or_unverified',
   )
   add(contract?.origin?.apiDeployWorkflowId === SOURCE_WORKFLOW_ID && contract?.origin?.apiDeployPipeline === SOURCE_WORKFLOW_PATH, 'github_workflow_identity_unverified')
@@ -217,11 +227,12 @@ export async function inspectLiveReadOnly(env = process.env) {
   // for the live release preflight. Never use a Cloudflare token for GitHub.
   const githubToken = env.GITHUB_TOKEN || env.GH_TOKEN
   if (githubToken) ghHeaders.Authorization = 'Bearer ' + githubToken
-  const [sourceRepo, targetRepo, sourceMain, mediaPatch, workflow, active, queued, requested, waiting, pending] = await Promise.all([
+  const [sourceRepo, targetRepo, sourceMain, mediaPatch, mediaFile, workflow, active, queued, requested, waiting, pending] = await Promise.all([
     getJSON(sourceUrl, ghHeaders),
     getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders),
     getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
     getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, ghHeaders),
+    getJSON(sourceUrl + '/contents/worker/media.ts?ref=main', ghHeaders),
     getJSON(prefix, ghHeaders),
     getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
     getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
@@ -237,8 +248,10 @@ export async function inspectLiveReadOnly(env = process.env) {
     sourceFix: {
       number: mediaPatch.number, state: mediaPatch.state, draft: mediaPatch.draft,
       merged: mediaPatch.merged, headSha: mediaPatch.head?.sha,
+      mergeCommitSha: mediaPatch.merge_commit_sha,
       baseSha: mediaPatch.base?.sha, headRepo: mediaPatch.head?.repo?.full_name,
     },
+    sourceMediaBlobSha: mediaFile.sha,
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
   }
@@ -299,6 +312,7 @@ async function main() {
       sourceMainSha: state.sourceMainSha ?? null,
       targetRepositoryId: state.targetRepositoryId ?? null,
       sourceMediaPatchSha: state.sourceFix?.headSha ?? null,
+      sourceMediaBlobSha: state.sourceMediaBlobSha ?? null,
       sourceInProgress: state.running ?? null,
       sourceQueued: state.queued ?? null,
       sourceRequested: state.requested ?? null,
