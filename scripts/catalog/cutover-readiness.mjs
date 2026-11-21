@@ -218,7 +218,9 @@ async function getVerifiedShowcaseSchema(account, token) {
   }
 }
 
-export async function inspectLiveReadOnly(env = process.env) {
+export async function inspectLiveReadOnly(env = process.env, options = {}) {
+  // Ownership audits never query D1, even when the operator has a Cloudflare token.
+  // A schema result absent from this mode cannot satisfy the release gate.
   const workflowName = SOURCE_WORKFLOW_PATH.split('/').at(-1)
   const sourceUrl = 'https://api.github.com/repos/' + SOURCE_REPO
   const prefix = sourceUrl + '/actions/workflows/' + workflowName
@@ -284,7 +286,8 @@ export async function inspectLiveReadOnly(env = process.env) {
   const [deploy, settings, showcaseSchema] = await Promise.all([
     getJSON(host + '/deployments', headers),
     getJSON(host + '/settings', headers),
-    getVerifiedShowcaseSchema(account, env.CLOUDFLARE_API_TOKEN),
+    options.verifyShowcaseSchema === false ? Promise.resolve(null) :
+      getVerifiedShowcaseSchema(account, env.CLOUDFLARE_API_TOKEN),
   ])
   if (deploy.success !== true || settings.success !== true) {
     throw new Error('cloudflare_metadata_not_verified')
@@ -292,22 +295,28 @@ export async function inspectLiveReadOnly(env = process.env) {
   state.cloudflareAccountId = account
   state.deployment = (deploy.result?.deployments ?? [])[0]
   state.bindings = settings.result?.bindings
-  state.showcaseSchema = showcaseSchema
+  if (showcaseSchema !== null) state.showcaseSchema = showcaseSchema
   return state
 }
 
 async function main() {
-  if (process.argv.length !== 3 || process.argv[2] !== '--live') {
-    console.error('Read-only gate: use --live. No deployment option exists.')
+  if (process.argv.length !== 3 || !['--live', '--ownership-only'].includes(process.argv[2])) {
+    console.error('Read-only gate: use --ownership-only (no D1) or --live (full schema). No deployment option exists.')
     process.exitCode = 2
     return
   }
   const contract = CANONICAL
+  const ownershipOnly = process.argv[2] === '--ownership-only'
   try {
-    const state = await inspectLiveReadOnly()
+    const state = await inspectLiveReadOnly(process.env, { verifyShowcaseSchema: !ownershipOnly })
     const verdict = assessCutoverReadiness(contract, state)
+    const blockers = ownershipOnly
+      ? [...new Set([...verdict.blockers, 'd1_schema_not_checked_in_ownership_only_mode'])]
+      : verdict.blockers
     console.log(JSON.stringify({
-      status: verdict.ready ? 'READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER' : 'BLOCKED',
+      status: verdict.ready && !ownershipOnly ? 'READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER' : 'BLOCKED',
+      mode: ownershipOnly ? 'ownership-only' : 'full-live',
+      d1SchemaCheck: ownershipOnly ? 'skipped_by_design' : 'required',
       sourceWorkflow: state.workflow?.state ?? 'unverified',
       sourceMainSha: state.sourceMainSha ?? null,
       targetRepositoryId: state.targetRepositoryId ?? null,
@@ -321,9 +330,9 @@ async function main() {
       sourceAdditionalWriters: state.additionalWriters?.map(x => ({ path: x.path, state: x.state })) ?? null,
       liveWorkerVersionId: state.deployment?.versions?.[0]?.version_id ?? null,
       verifiedShowcaseMigration: state.showcaseSchema?.migration ?? null,
-      blockers: verdict.blockers,
+      blockers,
     }, null, 2))
-    if (!verdict.ready) process.exitCode = 2
+    if (!verdict.ready || ownershipOnly) process.exitCode = 2
   } catch (error) {
     console.log(JSON.stringify({ status: 'BLOCKED', blockers: [
       'live_preflight_unavailable_' + (error?.message ?? 'unknown'),

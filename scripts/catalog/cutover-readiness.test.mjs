@@ -403,6 +403,40 @@ test('the private target repository identity is confirmed from GitHub, not only 
   assert.ok(assessCutoverReadiness(approvedContract(), absent).blockers.includes('target_repository_mismatch'))
 })
 
+test('ownership-only checks live GitHub and Cloudflare metadata without a D1 request', async () => {
+  const prior = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    const address = String(url)
+    calls.push({address, method: init.method})
+    assert.equal(init.method, 'GET')
+    assert.ok(!address.includes('/d1/database/'), 'must not query D1 under quota pressure')
+    if (address.endsWith('/deployments')) {
+      return Response.json({ success: true, result: { deployments: [
+        { versions: [{version_id: original.productionObservation.currentVersionId, percentage: 100}] },
+      ] } })
+    }
+    if (address.endsWith('/settings')) return Response.json({ success: true, result: { bindings: [] } })
+    return Response.json({ id: 1, total_count: 0, result: [] })
+  }
+  try {
+    const state = await inspectLiveReadOnly({
+      GITHUB_TOKEN: 'github-readonly-test',
+      CLOUDFLARE_API_TOKEN: 'cloudflare-readonly-test',
+      CLOUDFLARE_ACCOUNT_ID: original.runtime.cloudflareAccountId,
+    }, { verifyShowcaseSchema: false })
+    assert.equal(state.showcaseSchema, undefined)
+    assert.equal(state.cloudflareAccountId, original.runtime.cloudflareAccountId)
+    assert.equal(calls.filter(x => x.address.includes('api.cloudflare.com')).length, 2)
+    assert.equal(calls.length, 13 + 6 * retiringWriters.length)
+    assert.equal(assessCutoverReadiness(approvedContract(), state).ready, false)
+    assert.ok(assessCutoverReadiness(approvedContract(), state).blockers.includes(
+      'telegram_showcase_migration_0025_unverified'))
+  } finally {
+    globalThis.fetch = prior
+  }
+})
+
 test('a read-only GitHub token is used only for metadata GET requests', async () => {
   const savedFetch = globalThis.fetch
   const requests = []
