@@ -19,6 +19,8 @@ type ModelRow = {
   telegram_origin_id: string; variant_name: string | null; image_count: number
   telegram_name_provisional: number
   telegram_gallery_order: string | null
+  category?: string
+  category_slug?: string
 }
 type ImageRow = { image_id: string; source_sha256: string; position: number }
 
@@ -91,6 +93,7 @@ function normalize(m: ModelRow) {
     id: m.id, name: m.name, studio: m.telegram_studio, character: m.telegram_character,
     variant: m.variant_name || '', imageCount: Number(m.image_count),
     provisional: m.telegram_name_provisional === 1,
+    category: m.category || '', categorySlug: m.category_slug || '',
   }
 }
 export async function routeTelegramStudioShowcase(
@@ -113,11 +116,13 @@ export async function routeTelegramStudioShowcase(
       const studio = url.searchParams.get('studio') ?? ''
       const q = url.searchParams.get('q')?.trim() ?? ''
       const provisional = url.searchParams.get('provisional')
+      const category = url.searchParams.get('category') ?? ''
       const rawOffset = url.searchParams.get('offset') ?? '0'
       const rawLimit = url.searchParams.get('limit') ?? '24'
-      const allowed = new Set(['studio', 'q', 'provisional', 'offset', 'limit'])
+      const allowed = new Set(['studio', 'q', 'category', 'provisional', 'offset', 'limit'])
       if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
           studio.length > 120 || /\p{Cc}/u.test(studio) ||
+          category.length > 80 || (category !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)) ||
           q.length > 80 || /\p{Cc}/u.test(q) ||
           (provisional !== null && provisional !== '0' && provisional !== '1') ||
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
@@ -127,6 +132,7 @@ export async function routeTelegramStudioShowcase(
       const where = [VISIBLE]
       const values: unknown[] = []
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
+      if (category) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f JOIN categories c ON c.id=f.category_id WHERE c.slug=?)'); values.push(category) }
       if (provisional !== null) {
         where.push('m.telegram_name_provisional=' + (provisional === '1' ? '1' : '0'))
       }
@@ -140,6 +146,8 @@ export async function routeTelegramStudioShowcase(
         .bind(...values).first<{ total: number }>()
       const rows = (await env.DB.prepare(
         'SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,m.variant_name,m.image_count,m.telegram_name_provisional,' +
+        ' (SELECT c.name FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category,' +
+        ' (SELECT c.slug FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category_slug,' +
         ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1' +
         ' ORDER BY CASE WHEN m.cover_storage_key=(' +
         " 'telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +

@@ -9,7 +9,7 @@ const {routeTelegramStudioShowcase} = await import("data:text/javascript;base64,
 const id="tg_abcdef0123456789abcdef01",sha="a".repeat(64),base="https://worker.test/api/telegram-studios";
 function fixture(){
  const queries=[],keys=[],bindings=[];
- const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,telegram_gallery_order:'[1212]',image_count:1,cover_sha:sha};
+ const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,telegram_gallery_order:'[1212]',image_count:1,cover_sha:sha,category:"Anime",category_slug:"anime"};
  const sources=[{image_id:"tg:1212",source_sha256:sha,position:0}];
  return {row,sources,queries,keys,bindings,env:{
   DB:{prepare(sql){queries.push(sql);let params=[];return {
@@ -145,6 +145,22 @@ test("global index search checks name, character and variant with bound values",
  assert.deepEqual(bound.values,["Studio A","%Chibi%","%Chibi%","%Chibi%",24,0]);
 });
 
+test("category filter binds canonical taxonomy and rejects invalid slugs",async()=>{
+ const {env,queries,bindings}=fixture();
+ const response=await routeTelegramStudioShowcase(request("?category=anime&limit=24"),env);
+ assert.equal(response.status,200);
+ assert.equal((await response.json()).items[0].category,"Anime");
+ const countSql=queries.find(x=>x.includes("SELECT COUNT(*) AS total"));
+ assert.match(countSql,/m.franchise_id IN \(SELECT f.id FROM franchises f JOIN categories c ON c.id=f.category_id WHERE c.slug=\?\)/);
+ assert.ok(!countSql.includes('FROM models m JOIN'));
+ assert.match(countSql,/c.slug=\?/);
+ const sql=queries.find(x=>x.includes("AS category_slug"));
+ assert.match(sql,/c.slug=\?/);
+ assert.deepEqual(bindings.find(x=>x.sql===sql)?.values,["anime",24,0]);
+ for(const url of ["?category=Anime","?category=anime%20game","?category=anime&category=anime","?category=-anime"]){
+  assert.equal((await routeTelegramStudioShowcase(request(url),env)).status,400,url);
+ }
+});
 test("provisional filter is server-side and rejects unexpected values",async()=>{
  const {env,queries}=fixture();
  const filtered=await routeTelegramStudioShowcase(request("?provisional=1&limit=24"),env);

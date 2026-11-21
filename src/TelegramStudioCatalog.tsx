@@ -9,6 +9,8 @@ type Model = {
   variant: string;
   imageCount: number;
   provisional: boolean;
+  category?: string;
+  categorySlug?: string;
   cover: string | null;
 };
 type GalleryImage = { position: number; thumb: string; display: string };
@@ -18,6 +20,7 @@ type Studio = { studio: string; total: number };
 type Route = {
   view: "models" | "studios";
   studio: string;
+  category: string;
   provisional: "" | "0" | "1";
   query: string;
   offset: number;
@@ -44,6 +47,7 @@ function readRoute(): Route {
     return {
       view: "models",
       studio: "",
+      category: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -56,6 +60,12 @@ function readRoute(): Route {
       : "models";
   const studio =
     view === "studios" ? (params.get("studio") || "").slice(0, 120) : "";
+  const requestedCategory = params.get("categoria") || "";
+  const category =
+    requestedCategory.length <= 80 &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(requestedCategory)
+      ? requestedCategory
+      : "";
   const provisionalParam = params.get("situacao");
   const provisional =
     provisionalParam === "0" || provisionalParam === "1"
@@ -70,6 +80,7 @@ function readRoute(): Route {
   return {
     view,
     studio,
+    category,
     provisional,
     query,
     offset,
@@ -83,6 +94,7 @@ function urlForRoute(route: Route): string {
   url.pathname = route.view === "studios" ? "/estudios" : "/";
   if (route.view === "studios" && route.studio)
     params.set("studio", route.studio);
+  if (route.category) params.set("categoria", route.category);
   if (route.provisional) params.set("situacao", route.provisional);
   if (route.query) params.set("q", route.query);
   if (route.offset > 0)
@@ -120,7 +132,8 @@ export default function TelegramStudioCatalog() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [copyMessage, setCopyMessage] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
-  const { view, studio, provisional, query, offset, selected } = route;
+  const { view, studio, category, provisional, query, offset, selected } =
+    route;
 
   function navigate(next: Route, replace = false) {
     const path = urlForRoute(next);
@@ -174,6 +187,7 @@ export default function TelegramStudioCatalog() {
       limit: String(PAGE_SIZE),
     });
     if (studio) params.set("studio", studio);
+    if (category) params.set("category", category);
     if (query) params.set("q", query);
     if (provisional) params.set("provisional", provisional);
     setLoading(true);
@@ -193,7 +207,7 @@ export default function TelegramStudioCatalog() {
         if (!c.signal.aborted) setLoading(false);
       });
     return () => c.abort();
-  }, [view, studio, provisional, query, offset, reloadVersion]);
+  }, [view, studio, category, provisional, query, offset, reloadVersion]);
 
   useEffect(() => {
     const c = new AbortController();
@@ -287,6 +301,7 @@ export default function TelegramStudioCatalog() {
     navigate({
       view: "studios",
       studio: nextStudio,
+      category: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -324,6 +339,20 @@ export default function TelegramStudioCatalog() {
         .includes(normalizedStudioSearch),
     )
     .sort((a, b) => a.studio.localeCompare(b.studio, "pt-BR"));
+  const categoryMap = new Map<string, string>();
+  for (const item of page?.items ?? []) {
+    if (
+      item.category &&
+      item.categorySlug &&
+      item.categorySlug !== "curadoria-pendente"
+    ) {
+      categoryMap.set(item.categorySlug, item.category);
+    }
+  }
+  const modelCategories = Array.from(categoryMap, ([slug, name]) => ({
+    slug,
+    name,
+  })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const modelTags = Array.from(
     new Set(
       (page?.items ?? [])
@@ -435,7 +464,7 @@ export default function TelegramStudioCatalog() {
                 <div className="mt-12 flex flex-wrap gap-9 border-t border-[#ffffff1c] pt-6">
                   <div>
                     <span className="block font-serif text-3xl text-[#eeddbb]">
-                      {!studio && !query && page
+                      {!studio && !query && !category && !provisional && page
                         ? page.total.toLocaleString("pt-BR")
                         : "—"}
                     </span>
@@ -559,7 +588,53 @@ export default function TelegramStudioCatalog() {
               </button>
             </form>
 
-            <div className="mt-5 grid gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-2">
+            <div className="mt-5 grid gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
+                  Categorias
+                </p>
+                <p className="mt-1 text-xs text-[#929c90]">
+                  Categorias reais dos modelos desta página.
+                </p>
+                <div
+                  className="mt-3 flex flex-wrap gap-2"
+                  role="group"
+                  aria-label="Categorias dos modelos"
+                >
+                  {modelCategories.map((item) => (
+                    <button
+                      type="button"
+                      key={item.slug}
+                      aria-pressed={category === item.slug}
+                      onClick={() =>
+                        navigate({
+                          ...route,
+                          category: category === item.slug ? "" : item.slug,
+                          offset: 0,
+                          selected: null,
+                        })
+                      }
+                      className={
+                        "rounded-full border px-3 py-2 text-xs transition hover:border-[#d6b484] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
+                        (category === item.slug
+                          ? "border-[#d6b484] bg-[#5b4931] text-[#fff1db]"
+                          : "border-[#555b4e] text-[#c0c4b8]")
+                      }
+                    >
+                      {item.name}
+                    </button>
+                  ))}
+                  {modelCategories.length === 0 && (
+                    <p className="text-xs text-[#949c91]">
+                      Nenhuma categoria classificada nesta página.
+                    </p>
+                  )}
+                </div>
+                <p className="mt-3 text-xs leading-5 text-[#949c91]">
+                  O filtro pesquisa todo o acervo. Classificações pendentes não
+                  são apresentadas como categorias oficiais.
+                </p>
+              </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Situação da curadoria
@@ -675,7 +750,7 @@ export default function TelegramStudioCatalog() {
                       ? page.total.toLocaleString("pt-BR") + " modelos"
                       : "Indisponível"}
                 </span>
-                {(query || provisional) && (
+                {(query || provisional || category) && (
                   <button
                     type="button"
                     className="text-sm text-[#e5bd8c] underline underline-offset-4"
@@ -684,6 +759,7 @@ export default function TelegramStudioCatalog() {
                       navigate({
                         ...route,
                         query: "",
+                        category: "",
                         provisional: "",
                         offset: 0,
                         selected: null,
@@ -772,6 +848,13 @@ export default function TelegramStudioCatalog() {
                             {model.character}
                           </p>
                         )}
+                        {view === "models" &&
+                          model.category &&
+                          model.categorySlug !== "curadoria-pendente" && (
+                            <p className="mt-2 text-[11px] uppercase tracking-wider text-[#b1c5a5]">
+                              {model.category}
+                            </p>
+                          )}
                         <h3 className="mt-2 line-clamp-2 font-semibold leading-5">
                           {model.name}
                         </h3>

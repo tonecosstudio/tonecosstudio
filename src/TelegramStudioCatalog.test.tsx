@@ -19,6 +19,8 @@ const model = {
   variant: "Chibi",
   imageCount: 2,
   provisional: true,
+  category: "Anime",
+  categorySlug: "anime",
   cover: media("thumb"),
 };
 const detail = {
@@ -134,6 +136,28 @@ describe("Telegram-only public studio gallery", () => {
       ).toBe(true),
     );
     expect(window.location.search).toContain("situacao=1");
+  });
+
+  it("filters the complete library by its canonical category", async () => {
+    const fetcher = mockCatalog();
+    render(<TelegramStudioCatalog />);
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+    const categories = screen.getByRole("group", {
+      name: "Categorias dos modelos",
+    });
+    fireEvent.click(within(categories).getByRole("button", { name: "Anime" }));
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls.some(([uri]) =>
+          String(uri).includes("category=anime"),
+        ),
+      ).toBe(true),
+    );
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toContain("categoria=anime");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
+    expect(window.location.search).not.toContain("categoria=");
   });
 
   it("lists studios alphabetically and opens a separate studio collection", async () => {
