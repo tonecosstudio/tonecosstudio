@@ -95,7 +95,12 @@ describe("Cloudflare Pages canonical public catalog", () => {
     expect(pagesHeaders).not.toContain("workers.dev");
     // Domain is served by Vercel, but source pushes never auto-publish.
     expect(vercelConfig.git?.deploymentEnabled).toBe(false);
-    expect(vercelConfig.rewrites[0]).toEqual({
+    const apiRewriteIndex = vercelConfig.rewrites.findIndex(
+      (rule) => rule.source === "/catalogo-api/:path*",
+    );
+    expect(apiRewriteIndex).toBeGreaterThanOrEqual(0);
+    expect(apiRewriteIndex).toBeLessThan(vercelConfig.rewrites.length - 1);
+    expect(vercelConfig.rewrites[apiRewriteIndex]).toEqual({
       source: "/catalogo-api/:path*",
       destination: "/api/catalogo-proxy?path=:path*",
     });
