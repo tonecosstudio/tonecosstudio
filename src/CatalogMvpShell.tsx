@@ -78,7 +78,12 @@ export function CatalogMvpShell({
             <ArcadeFrame nav={navigation ?? <ArcadeNavView />} footer={<ArcadeFooterView />}>
               <Suspense fallback={<div role="status" className="min-h-[50vh] p-12 text-center">Carregando catálogo...</div>}>
                 <Routes>
-                  <Route path={PUBLIC_ROUTES.home} element={<Home />} />
+                  <Route path={PUBLIC_ROUTES.home} element={
+                    import.meta.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
+                    import.meta.env.VITE_CATALOG_GALLERY_HOME === "true"
+                      ? <Navigate to={PUBLIC_ROUTES.catalogModels} replace />
+                      : <Home />
+                  } />
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />

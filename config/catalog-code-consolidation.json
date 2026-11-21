@@ -116,6 +116,28 @@
     },
     "apiDeployWorkflowId": 371358484,
     "apiDeployPipeline": ".github/workflows/cloudflare.yml",
+    "additionalWriterWorkflows": [
+      {
+        "path": ".github/workflows/external-batch-release.yml",
+        "id": 384544141,
+        "authority": "D1 and R2 production batch"
+      },
+      {
+        "path": ".github/workflows/exact-source-gallery-promotion.yml",
+        "id": 385740730,
+        "authority": "D1 and R2 exact gallery"
+      },
+      {
+        "path": ".github/workflows/existing-gallery-promotion.yml",
+        "id": 385342502,
+        "authority": "D1 and R2 existing gallery"
+      },
+      {
+        "path": ".github/workflows/external-media-staging.yml",
+        "id": 385318875,
+        "authority": "R2 staging objects"
+      }
+    ],
     "toolingAnalysisNote": "18 direct references from API deploy workflow, one additional transitive import from worker_release_smoke. Tooling selection is provisional, not a copied/activated pipeline. Other scripts and tests must still be classified; CORS and Wrangler path relocation must be tested offline."
   },
   "runtime": {
@@ -208,8 +230,18 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "bca4114e7b7aa61f58b3d2b48b87570a8817feb8",
-        "reason": "Staged Tonecos folder cover lookup plus removal of unused gallery import for full release lint; source blob remains immutable and production Worker stays untouched"
+        "localBlob": "d9d6f23a292effae707c27f35506a10f88bc2a1e",
+        "reason": "Reviewed local overlay: route Telegram studios through existing catalog Worker and D1 without touching immutable imported source pins; production Worker cutover remains blocked until source writer is disabled and release gate is authorized."
+      },
+      "wrangler.jsonc": {
+        "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
+        "localBlob": "8a4d6330bd06cf8795270d109ead2ba6c350691e",
+        "reason": "Stage the existing private TONART R2 bucket binding and admin Supabase secrets without deploying or creating Cloudflare resources; source pin remains immutable"
+      },
+      "config/catalog-schema-contract.json": {
+        "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
+        "localBlob": "ad9fc51a13366ca1e18dffd6e99eebceeec86579",
+        "reason": "Reviewed additive D1 schema checks for private Telegram public-showcase visibility, preserving existing public listings, private gallery order and immutable origin source pins; release still gated on migration 0025 before Worker deploy."
       }
     },
     "excludedModules": [

@@ -216,6 +216,10 @@ export default function CatalogModelsArcade() {
       !invalidCatalogScope,
     retry: false,
     staleTime: 60 * 1000,
+    // Public gallery follows the canonical Worker; no parallel catalog
+    // snapshot or client-side upload channel. Background tabs do not poll.
+    refetchInterval: publicReadOnly ? 2 * 60 * 1000 : false,
+    refetchIntervalInBackground: false,
   });
 
   const editorialCharacters = useQuery({

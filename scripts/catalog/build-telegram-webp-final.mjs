@@ -1,4 +1,6 @@
 import fs from "node:fs/promises";
+import crypto from "node:crypto";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import {
@@ -14,6 +16,7 @@ import {
   universeRoot,
 } from "./catalog-taxonomy-rules.mjs";
 import { defaultTelegramRoot, defaultTelegramWebpOutput } from "./telegram-paths.mjs";
+import { isPrivateCuradoriaRecord } from "./telegram-private-staging-gate.mjs";
 
 function argValue(name, fallback = null) {
   const equalsArg = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -52,6 +55,7 @@ const MANIFEST = path.resolve(
 const LIMIT = Number.parseInt(argValue("limit", "500"), 10);
 const CHECKPOINT_SIZE = Number.parseInt(argValue("checkpoint-size", "100"), 10);
 const DRY_RUN = argFlag("dry-run");
+const PRIVATE_CURADORIA = argFlag("private-curadoria");
 const INCLUDE_LOW = argFlag("include-low-confidence");
 const OVERWRITE = argFlag("overwrite");
 const RETRY_FAILED = argFlag("retry-failed");
@@ -385,7 +389,9 @@ function acceptedConfidence(value) {
 
 function acceptedRecord(record) {
   const status = String(record.status || "");
-  if (!["copied", "already_cataloged"].includes(status)) return false;
+  if (isPrivateCuradoriaRecord(record)) {
+    if (!PRIVATE_CURADORIA || status !== "prepared_private") return false;
+  } else if (!["copied", "already_cataloged"].includes(status)) return false;
   if (!record.source_name || !record.catalog_relpath) return false;
   const { category } = catalogRelParts(record);
   if (SKIPPED_CATEGORIES.has(normalizeComparable(category))) return false;
@@ -535,6 +541,7 @@ function finalRecord(record, inputPath, relpaths, display, thumb) {
     built_at: new Date().toISOString(),
     profile_version: PROFILE.version,
     source_type: "telegram",
+    private_staging_only: isPrivateCuradoriaRecord(record),
     source_name: record.source_name || null,
     message_id: record.message_id || null,
     source_sha256: record.sha256 || null,
@@ -558,7 +565,7 @@ function finalRecord(record, inputPath, relpaths, display, thumb) {
     public_name_pt_br: null,
     original_name: cleanName(record.folder || record.filename || record.source_name),
     aliases: [],
-    curation_status: "needs_ptbr_name",
+    curation_status: record.private_staging_only === true ? "private_not_authorized" : "needs_ptbr_name",
   };
 }
 
@@ -586,6 +593,7 @@ async function main() {
     manifest: MANIFEST,
     final_manifest: FINAL_MANIFEST,
     dry_run: DRY_RUN,
+    private_curadoria: PRIVATE_CURADORIA,
     limit: LIMIT,
     checkpoint_size: CHECKPOINT_SIZE,
     retry_failed: RETRY_FAILED,
@@ -692,7 +700,277 @@ async function main() {
   if (stats.failed > 0) process.exitCode = 1;
 }
 
-main().catch((error) => {
+
+const PRIVATE_ORIGIN_ID = "2370335738";
+const PRIVATE_FORMATS = new Set(["jpeg", "png", "webp", "gif", "tiff", "avif", "heif"]);
+function privateKey(record) {
+  return ["telegram", String(record.telegram_origin_id || PRIVATE_ORIGIN_ID),
+    String(record.sha256 || record.source_sha256 || "").toLowerCase(), PROFILE.version].join(":");
+}
+function privateMessageKey(record) {
+  return privateKey(record) + ":" + String(record.message_id);
+}
+function privateAllowed(record) {
+  const topic = String(record.original_topic || "").trim().toLowerCase().replace(/\s+/g, " ");
+  return record.status === "prepared_private" && record.private_staging_only === true &&
+    topic.length > 0 && topic !== "geral + 50k" &&
+    /^\d+$/.test(String(record.message_id || "")) &&
+    /^\d+$/.test(String(record.telegram_origin_id || "")) &&
+    /^[a-f0-9]{64}$/i.test(String(record.sha256 || "")) &&
+    typeof record.source_name === "string" && record.source_name.length > 0;
+}
+function privatePath(root, rel) {
+  const base = path.resolve(root);
+  const result = path.resolve(base, rel);
+  if (!result.toLowerCase().startsWith((base + path.sep).toLowerCase())) {
+    throw new Error("path_outside_private_root");
+  }
+  return result;
+}
+async function privateSha(file) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash("sha256");
+    createReadStream(file).on("data", (chunk) => hash.update(chunk))
+      .on("error", reject).on("end", () => resolve(hash.digest("hex")));
+  });
+}
+function privatePaths(record) {
+  const sha = String(record.sha256).toLowerCase();
+  const sub = path.join("telegram-" + record.telegram_origin_id,
+    PROFILE.version, sha.slice(0, 2), sha + ".webp");
+  return { display: path.join("display", sub), thumb: path.join("thumb", sub) };
+}
+async function privateInspect(rel, maxSize) {
+  const file = privatePath(OUTPUT, rel);
+  if (!(await exists(file))) return null;
+  const m = await sharp(file).metadata();
+  const stat = await fs.stat(file);
+  if (m.format !== "webp" || !m.width || !m.height ||
+      Math.max(m.width, m.height) > maxSize || stat.size < 16) {
+    throw new Error("invalid_webp:" + rel);
+  }
+  return { bytes: stat.size, width: m.width, height: m.height,
+    sha256: await privateSha(file), reused: true };
+}
+async function privatePair(rel) {
+  const display = await privateInspect(rel.display, PROFILE.display.maxSize);
+  const thumb = await privateInspect(rel.thumb, PROFILE.thumb.maxSize);
+  return display && thumb ? { rel, display, thumb } : null;
+}
+async function privateCreate(source, relative, params) {
+  const cached = await privateInspect(relative, params.maxSize);
+  if (cached) return cached;
+  const dest = privatePath(OUTPUT, relative);
+  await fs.mkdir(path.dirname(dest), { recursive: true });
+  const tmp = dest + "." + process.pid + ".partial.webp";
+  try {
+    const buffer = await sharp(source, { limitInputPixels: false }).rotate()
+      .resize({ width: params.maxSize, height: params.maxSize, fit: "inside",
+        withoutEnlargement: true })
+      .webp({ quality: params.quality, effort: params.effort }).toBuffer();
+    const meta = await sharp(buffer).metadata();
+    if (meta.format !== "webp" || Math.max(meta.width, meta.height) > params.maxSize) {
+      throw new Error("invalid_converted_webp");
+    }
+    // O Windows pode segurar o handle do arquivo temporário; grava com exclusão (wx).
+    try { await fs.writeFile(dest, buffer, { flag: "wx" }); }
+    catch (error) {
+      if (error.code !== "EEXIST") throw error;
+      return await privateInspect(relative, params.maxSize);
+    }
+    return { ...(await privateInspect(relative, params.maxSize)), reused: false };
+  } finally {
+    await fs.rm(tmp, { force: true }).catch(() => {});
+  }
+}
+function privateRecord(record, asset) {
+  return {
+    built_at: new Date().toISOString(),
+    profile_version: PROFILE.version,
+    asset_key: privateKey(record),
+    telegram_origin_id: String(record.telegram_origin_id),
+    source_type: "telegram", private_staging_only: true,
+    message_id: Number(record.message_id), original_topic: record.original_topic,
+    source_name: record.source_name, source_sha256: String(record.sha256).toLowerCase(),
+    source_date: record.source_date || null,
+    source_caption: record.source_caption || null,
+    source_album: record.source_album || null,
+    source_indexed_at: record.source_indexed_at || null,
+    curation_studio: record.curation_studio || null,
+    curation_universe: record.curation_universe || null,
+    curation_variant: record.curation_variant || null,
+    name_review_status: record.name_review_status || "sem-nome",
+    model_review_status: record.model_review_status || "pendente",
+    display_relpath: asset.rel.display.replaceAll("\\", "/"),
+    thumb_relpath: asset.rel.thumb.replaceAll("\\", "/"),
+    display_bytes: asset.display.bytes, display_width: asset.display.width,
+    display_height: asset.display.height, display_sha256: asset.display.sha256,
+    thumb_bytes: asset.thumb.bytes, thumb_width: asset.thumb.width,
+    thumb_height: asset.thumb.height, thumb_sha256: asset.thumb.sha256,
+    source_category: "curadoria-privada",
+    original_name: String(record.franchise || "sem-nome"),
+    curation_status: "private_not_authorized", public_name_pt_br: null
+  };
+}
+async function privateCheckpoint(rows) {
+  const tmp = FINAL_MANIFEST + "." + process.pid + ".tmp";
+  await fs.writeFile(tmp, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
+  await fs.rename(tmp, FINAL_MANIFEST);
+}
+async function privateCuradoriaMain() {
+  const inputs = await readJsonl(MANIFEST);
+  const rows = await exists(FINAL_MANIFEST) ? await readJsonl(FINAL_MANIFEST) : [];
+  const byMessage = new Map(), byAsset = new Map();
+  for (const item of rows) {
+    if (item.profile_version !== PROFILE.version ||
+        !/^[a-f0-9]{64}$/i.test(String(item.source_sha256 || ""))) continue;
+    const record = { telegram_origin_id: item.telegram_origin_id || PRIVATE_ORIGIN_ID,
+      source_sha256: item.source_sha256, message_id: item.message_id };
+    byMessage.set(privateMessageKey(record), item);
+    if (!byAsset.has(privateKey(record)) && item.display_relpath && item.thumb_relpath) {
+      byAsset.set(privateKey(record), {
+        display: item.display_relpath, thumb: item.thumb_relpath
+      });
+    }
+  }
+  const failures = await exists(FAILURE_LOG) ? await readJsonl(FAILURE_LOG) : [];
+  const failedKeys = new Set(failures.map((row) => row.message_key).filter(Boolean));
+  const stats = {
+    root: ROOT, output: OUTPUT, manifest: MANIFEST,
+    final_manifest: FINAL_MANIFEST, profile: PROFILE,
+    input_records: inputs.length, old_records: rows.length,
+    accepted: 0, new_records: 0, reconciled_legacy_records: 0,
+    reused_existing_outputs: 0, new_unique_derivations: 0,
+    skipped_checkpoint: 0, skipped_out_of_scope: 0,
+    skipped_not_failed: 0, failed: 0, missing: 0,
+    checkpoints_written: 0, private_curadoria: true,
+    dry_run: DRY_RUN, public_upload_performed: false,
+    errors: []
+  };
+  let dirty = 0;
+  if (!DRY_RUN) await fs.mkdir(RUNS_DIR, { recursive: true });
+  for (const item of inputs) {
+    if (!privateAllowed(item)) { stats.skipped_out_of_scope++; continue; }
+    const messageKey = privateMessageKey(item);
+    if (RETRY_FAILED && !failedKeys.has(messageKey)) {
+      stats.skipped_not_failed++; continue;
+    }
+    if (Number.isFinite(LIMIT) && stats.accepted >= LIMIT) break;
+    stats.accepted++;
+    const sourceKey = privateKey(item), current = byMessage.get(messageKey);
+    try {
+      const src = privatePath(ROOT, item.source_name);
+      if (!(await exists(src))) { stats.missing++; throw new Error("original_missing"); }
+      if (!current) {
+        const meta = await sharp(src).metadata();
+        if (!PRIVATE_FORMATS.has(meta.format) || !meta.width || !meta.height) {
+          throw new Error("unsupported_or_invalid_original");
+        }
+        if (await privateSha(src) !== String(item.sha256).toLowerCase()) {
+          throw new Error("original_sha256_mismatch_before");
+        }
+      }
+      let asset = null;
+      if (current) {
+        asset = await privatePair({
+          display: current.display_relpath, thumb: current.thumb_relpath
+        });
+        if (asset) {
+          const enriched = { ...current, asset_key: sourceKey,
+            telegram_origin_id: String(item.telegram_origin_id),
+            original_topic: item.original_topic,
+            source_name: item.source_name,
+            source_sha256: String(item.sha256).toLowerCase(),
+            source_date: item.source_date || null,
+            source_caption: item.source_caption || null,
+            source_album: item.source_album || null,
+            source_indexed_at: item.source_indexed_at || null,
+            curation_studio: item.curation_studio || null,
+            curation_universe: item.curation_universe || null,
+            curation_variant: item.curation_variant || null,
+            name_review_status: item.name_review_status || "sem-nome",
+            model_review_status: item.model_review_status || "pendente",
+            original_name: String(item.franchise || "sem-nome"),
+            display_sha256: asset.display.sha256,
+            thumb_sha256: asset.thumb.sha256,
+            curation_status: "private_not_authorized",
+            private_staging_only: true };
+          delete enriched.input_path;
+          delete enriched.original_catalog_relpath;
+          if (JSON.stringify(enriched) !== JSON.stringify(current)) {
+            rows[rows.indexOf(current)] = enriched;
+            byMessage.set(messageKey, enriched);
+            stats.reconciled_legacy_records++;
+            dirty++;
+          }
+          byAsset.set(sourceKey, asset.rel);
+          stats.skipped_checkpoint++;
+          if (dirty >= CHECKPOINT_SIZE && !DRY_RUN) {
+            await privateCheckpoint(rows); dirty = 0; stats.checkpoints_written++;
+          }
+          continue;
+        }
+      }
+
+      if (DRY_RUN) { stats.new_records++; continue; }
+      const rel = byAsset.get(sourceKey) || privatePaths(item);
+      asset = await privatePair(rel);
+      if (asset) {
+        stats.reused_existing_outputs++;
+      } else {
+        const display = await privateCreate(src, rel.display, PROFILE.display);
+        const thumb = await privateCreate(src, rel.thumb, PROFILE.thumb);
+        asset = { rel, display, thumb };
+        if (!display.reused || !thumb.reused) stats.new_unique_derivations++;
+      }
+      if (await privateSha(src) !== String(item.sha256).toLowerCase()) {
+        throw new Error("original_sha256_mismatch_after");
+      }
+      const updated = privateRecord(item, asset);
+      if (current) {
+        rows[rows.indexOf(current)] = updated;
+        stats.reconciled_legacy_records++;
+      } else {
+        rows.push(updated);
+        stats.new_records++;
+      }
+      byMessage.set(messageKey, updated);
+      byAsset.set(sourceKey, asset.rel);
+      dirty++;
+      if (dirty >= CHECKPOINT_SIZE) {
+        await privateCheckpoint(rows); dirty = 0; stats.checkpoints_written++;
+      }
+    } catch (error) {
+      stats.failed++;
+      const failure = {
+        failed_at: new Date().toISOString(),
+        message_key: messageKey, asset_key: sourceKey,
+        message_id: item.message_id, source_name: item.source_name,
+        original_topic: item.original_topic, profile_version: PROFILE.version,
+        message: String(error.message)
+      };
+      stats.errors.push(failure);
+      if (!DRY_RUN) await fs.appendFile(FAILURE_LOG, JSON.stringify(failure) + "\n");
+    }
+  }
+  if (dirty && !DRY_RUN) {
+    await privateCheckpoint(rows);
+    stats.checkpoints_written++;
+  }
+  stats.final_records = rows.length;
+  stats.final_unique_assets = new Set(rows.map((row) =>
+    privateKey({ telegram_origin_id: row.telegram_origin_id,
+      source_sha256: row.source_sha256 }))).size;
+  if (!DRY_RUN) await fs.writeFile(reportPath(), JSON.stringify(stats, null, 2) + "\n");
+  console.log(JSON.stringify(stats, null, 2));
+  if (stats.failed) process.exitCode = 1;
+}
+
+
+
+
+
+(PRIVATE_CURADORIA ? privateCuradoriaMain() : main()).catch((error) => {
   console.error(error);
   process.exit(1);
 });

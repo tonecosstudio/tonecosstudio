@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { onRequest, proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
+import { onRequest, proxyCatalogRequest, proxyTelegramAdminRequest } from "../../functions/catalogo-api/[[path]].js";
+import vercelCatalogHandler, { isStandaloneTelegramCatalogHost, isAllowedStandaloneTelegramRoute } from "../../api/catalogo-proxy.js";
 
 const SITE = "https://tonecosstudio.pages.dev";
 const WORKER = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
@@ -32,6 +33,28 @@ test("only same-origin public catalog GET is forwarded", async () => {
     );
     assert.equal(response.status, 200);
     assert.equal(io.calls[0].url, WORKER + "/" + path);
+  }
+});
+
+test("Telegram provisional filter passes only bounded values through the same catalog proxy", async () => {
+  for (const suffix of ["?provisional=1", "?provisional=0", "?studio=3DXM&q=Chibi&provisional=1&limit=24"]) {
+    const io = mockFetch();
+    const route = "api/telegram-studios" + suffix;
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + route), io.fetcher,
+    );
+    assert.equal(response.status, 200, route);
+    assert.equal(io.calls.length, 1, route);
+    assert.equal(io.calls[0].url, WORKER + "/" + route);
+  }
+  for (const suffix of ["?provisional=2", "?provisional=true", "?provisional=1&provisional=0", "?provisional=1&extra=1"]) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/api/telegram-studios" + suffix),
+      io.fetcher,
+    );
+    assert.equal(response.status, 400, suffix);
+    assert.equal(io.calls.length, 0, suffix);
   }
 });
 
@@ -454,4 +477,149 @@ test("Pages blocks confirmed SpecialSTL media but forwards unrelated images", as
   });
   assert.equal(visible.status, 200);
   assert.equal(workerCalls, 1);
+});
+
+
+const DRAFT_ID = 'tg_04e28eadb6e1811af4f37845';
+const DRAFT_PREFIX = '/catalogo-api/api/admin/telegram-drafts';
+
+test("private Pages draft gateway rejects anonymous requests before the Worker", async () => {
+  for (const method of ['GET', 'PATCH']) {
+    const io = mockFetch('{}', 200, { 'content-type':'application/json' });
+    const r = await proxyTelegramAdminRequest(
+      new Request(SITE + DRAFT_PREFIX, {
+        method, ...(method === 'PATCH' ? { body:'{}',headers:{'content-type':'application/json'} } : {}),
+      }), io.fetcher);
+    assert.equal(r.status, method === 'PATCH' ? 404 : 403);
+    assert.equal(io.calls.length,0);
+  }
+});
+
+test("authenticated draft reads traverse the existing binding with no cookies or public cache", async () => {
+  const auth = 'Bearer ' + 'a'.repeat(100);
+  const io = mockFetch(JSON.stringify({ id:DRAFT_ID, imageCount:4 }),200, {
+    'content-type':'application/json', 'set-cookie':'foreign=secret', 'cache-control':'public,max-age=900',
+  });
+  const request = new Request(SITE + DRAFT_PREFIX + '/' + DRAFT_ID, {
+    headers:{ authorization:auth,cookie:'session=secret','x-draft-actor':'ignored' },
+  });
+  const r = await proxyTelegramAdminRequest(request,io.fetcher);
+  assert.equal(r.status,200);
+  assert.equal((await r.json()).imageCount,4);
+  assert.equal(io.calls.length,1);
+  assert.equal(io.calls[0].url, WORKER+'/api/admin/telegram-drafts/'+DRAFT_ID);
+  assert.equal(io.calls[0].options.headers.get('authorization'),auth);
+  assert.equal(io.calls[0].options.headers.has('cookie'),false);
+  assert.equal(io.calls[0].options.headers.has('x-draft-actor'),false);
+  assert.equal(r.headers.get('cache-control'),'private, no-store');
+  assert.equal(r.headers.has('set-cookie'),false);
+});
+
+test("authenticated draft edits remain scoped; public catalog mutations still blocked", async () => {
+  const auth = 'Bearer ' + 'b'.repeat(100);
+  const body = {revision:0,name:'Monica Rambeau — revisão',studio:'Abe3D',character:'Monica Rambeau',variant:'',reviewStatus:'reviewing'};
+  const io=mockFetch(JSON.stringify({ id:DRAFT_ID,revision:1,name:body.name }),200,{'content-type':'application/json'});
+  const request = new Request(SITE + DRAFT_PREFIX + '/' + DRAFT_ID,{
+    method:'PATCH',headers:{authorization:auth,'content-type':'application/json'},
+    body:JSON.stringify(body),
+  });
+  const response = await proxyTelegramAdminRequest(request,io.fetcher);
+  assert.equal(response.status,200);
+  assert.equal((await response.json()).revision,1);
+  assert.equal(io.calls[0].options.method,'PATCH');
+  assert.equal(io.calls[0].options.body,JSON.stringify(body));
+  assert.equal(io.calls[0].options.headers.get('authorization'),auth);
+  const bad=await proxyTelegramAdminRequest(new Request(SITE+DRAFT_PREFIX,{method:'PUT',headers:{authorization:auth}}),io.fetcher);
+  assert.equal(bad.status,405);
+  assert.equal(io.calls.length,1);
+  const publicCall=await proxyCatalogRequest(new Request(SITE+'/catalogo-api/api/catalog',{method:'PATCH',headers:{authorization:auth},body:'{}'}),io.fetcher);
+  assert.equal(publicCall.status,405);
+  assert.equal(io.calls.length,1);
+});
+
+test("private media is exact-key scoped and only image/webp is allowed",async()=>{
+  const auth='Bearer '+'c'.repeat(100);
+  const sha='3c7f50718e6cab3787df0443404f01a9b5e5976036a542c13daff9e51e4884e7';
+  const io=mockFetch('RIFF____WEBP',200,{'content-type':'image/webp'});
+  const path=DRAFT_PREFIX+'/'+DRAFT_ID+'/media/'+sha+'/thumb';
+  const r=await proxyTelegramAdminRequest(new Request(SITE+path,{headers:{authorization:auth}}),io.fetcher);
+  assert.equal(r.status,200);
+  assert.equal(r.headers.get('content-type'),'image/webp');
+  const bad=await proxyTelegramAdminRequest(new Request(SITE+DRAFT_PREFIX+'/'+DRAFT_ID+'/media/'+sha+'/../thumb',{headers:{authorization:auth}}),io.fetcher);
+  assert.equal(bad.status,404);
+  assert.equal(io.calls.length,1);
+});
+
+test("private group ingestion uses the same first-party catalog Worker, never public routes",async()=>{
+  const token='Bearer '+'d'.repeat(100);
+  const path=DRAFT_PREFIX+'/import';
+  const group={
+    originId:'2370335738',studio:'Abe3D',
+    groupKey:'b2b99222c387716d35aba4c3',name:'Bowsette',
+    universe:'Super Mario',variant:'',franchiseId:197,
+    images:[{messageId:17278,sha256:'1'.repeat(64)}],
+  };
+  const io=mockFetch(JSON.stringify({id:'tg_'+group.groupKey,created:true}),201,{
+    'content-type':'application/json',
+    'cache-control':'public,max-age=500',
+    'set-cookie':'test=bad',
+  });
+  const req=new Request(SITE+path,{
+    method:'POST',headers:{authorization:token,'content-type':'application/json'},
+    body:JSON.stringify(group),
+  });
+  const res=await proxyTelegramAdminRequest(req,io.fetcher);
+  assert.equal(res.status,201);
+  assert.equal((await res.json()).created,true);
+  assert.equal(io.calls.length,1);
+  assert.equal(io.calls[0].url,WORKER+'/api/admin/telegram-drafts/import');
+  assert.equal(io.calls[0].options.method,'POST');
+  assert.equal(io.calls[0].options.headers.get('authorization'),token);
+  assert.equal(io.calls[0].options.body,JSON.stringify(group));
+  assert.equal(res.headers.get('cache-control'),'private, no-store');
+  assert.equal(res.headers.has('set-cookie'),false);
+  const anon=await proxyTelegramAdminRequest(new Request(SITE+path,{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify(group),
+  }),io.fetcher);
+  assert.equal(anon.status,403);
+  assert.equal(io.calls.length,1);
+});
+
+
+test("the standalone Telegram catalog never exposes commercial or admin API routes", async () => {
+  const hosts = [
+    "catalogo.tonartstudio.com.br",
+    "tonart-catalogo-publico.vercel.app",
+    "tonart-catalogo-publico-git-main-jogo-brasils-projects.vercel.app",
+  ];
+  const publicModel = "api/telegram-studios/tg_" + "a".repeat(24);
+  for (const host of hosts) {
+    assert.equal(isStandaloneTelegramCatalogHost(host), true);
+    for (const route of ["api/catalog", "api/categories", "api/models/model-one", "media/images/demo.webp", "api/admin/telegram-drafts"]) {
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "GET"), false, host + " " + route);
+    }
+    for (const route of ["api/telegram-studios", "api/telegram-studios/studios", publicModel, publicModel + "/media/" + "b".repeat(64) + "/thumb"]) {
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "GET"), true, host + " " + route);
+      assert.equal(isAllowedStandaloneTelegramRoute(host, route, "POST"), false, host + " " + route);
+    }
+  }
+  assert.equal(isStandaloneTelegramCatalogHost("tonartstudio.com.br"), false);
+  assert.equal(isAllowedStandaloneTelegramRoute("tonartstudio.com.br", "api/catalog", "GET"), true);
+
+  const res = {
+    statusCode: 200,
+    headers: new Map(),
+    body: "",
+    setHeader(name, value) { this.headers.set(name, value); },
+    end(body) { this.body = body; },
+  };
+  await vercelCatalogHandler({
+    method: "GET",
+    headers: { host: "catalogo.tonartstudio.com.br" },
+    query: { path: "api/catalog" },
+    url: "/api/catalogo-proxy?path=api/catalog",
+  }, res);
+  assert.equal(res.statusCode, 404);
+  assert.equal(res.body, "Not found");
 });

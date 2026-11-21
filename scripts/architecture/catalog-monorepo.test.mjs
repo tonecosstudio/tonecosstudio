@@ -86,9 +86,12 @@ test('only the existing Cloudflare resources may serve requests', () => {
   assert.equal(worker.d1_databases[0].database_name, contract.runtime.d1);
   assert.equal(worker.d1_databases[0].database_id, '87006366-60f3-4937-af73-2ef5a5f901fb');
   assert.equal(worker.d1_databases[0].migrations_dir, 'migrations');
-  assert.equal(worker.r2_buckets?.length, 1);
+  assert.equal(worker.r2_buckets?.length, 2);
   assert.equal(worker.r2_buckets[0].binding, 'MEDIA');
   assert.equal(worker.r2_buckets[0].bucket_name, contract.runtime.r2);
+  assert.deepEqual(worker.r2_buckets[1], { binding: 'PRIVATE_TELEGRAM', bucket_name: 'tonecos-catalogo-staging' });
+  assert.ok(worker.secrets?.required?.includes('ADMIN_SUPABASE_ANON_KEY'));
+  assert.ok(worker.secrets?.required?.includes('ADMIN_SUPABASE_URL'));
   assert.ok(worker.secrets?.required?.includes('TURNSTILE_SECRET_KEY'));
   assert.match(source('functions/catalogo-api/[[path]].js'), /CATALOG_WORKER/);
   assert.ok(!existsSync(join(root,'wrangler.jsonc')), 'No active root Wrangler config for a second Worker');
@@ -142,7 +145,7 @@ test('M5 ownership transition is possible only after source disablement and expl
   }
 })
 
-test('staged files preserve immutable import pins and explicit local overlays, without commercial code', () => {
+test('staged files preserve immutable import pins and reviewed Telegram draft overlays', () => {
   assert.ok(['staged-offline', 'cutover-approved', 'cutover-complete'].includes(contract.migration.phase));
   assert.equal(contract.staging.sourceMain, contract.origin.observedMainSha);
   assert.equal(contract.staging.sourceFixPullRequest, 266);
@@ -151,12 +154,14 @@ test('staged files preserve immutable import pins and explicit local overlays, w
   assert.equal(Object.keys(stage).length, 46);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('worker/')).length, 9);
   assert.equal(Object.keys(stage).filter(p => p.startsWith('migrations/')).length, 22);
-  // Preserve the 46 immutable source Git pins; allow only two separately
-  // pinned, reviewed Tonecos-local changes while cutover remains blocked.
+  // Preserve the 46 immutable source Git pins; allow reviewed separately
+  // pinned Tonecos-local changes while cutover remains blocked.
   const overlays = contract.staging.localOverlays ?? {};
   assert.deepEqual(Object.keys(overlays).sort(), [
+    'config/catalog-schema-contract.json',
     'tools/test_worker_folder_counts.mjs',
     'worker/index.ts',
+    'wrangler.jsonc',
   ]);
   assert.equal(contract.migration.phase, 'staged-offline',
     'Reconcile local overlays before authorizing cutover');

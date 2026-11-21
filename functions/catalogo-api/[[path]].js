@@ -12,6 +12,8 @@ const PUBLIC_LIST_ROUTES = new Set([
   "api/franchises",
   "api/folders",
   "api/recent",
+  "api/telegram-studios",
+  "api/telegram-studios/studios",
 ]);
 
 // The external publisher cannot set arbitrary headers on our first-party site.
@@ -86,6 +88,7 @@ function isCompleteMediaRange(contentRange) {
 function isPublicCatalogRoute(path) {
   return PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
+    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(path) ||
     isSafeMediaPath(path);
 }
 
@@ -97,7 +100,11 @@ function isBoundedPublicQuery(route, searchParams) {
   // Media keys are immutable; irrelevant query arguments merely fragment
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
-  const routeKeys = route === "api/catalog"
+  const routeKeys = route === "api/telegram-studios"
+    ? ["studio", "q", "provisional", "offset", "limit"]
+    : route === "api/telegram-studios/studios" || /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(route)
+      ? []
+    : route === "api/catalog"
     ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
     : route === "api/franchises"
       ? ["category", "q", "limit"]
@@ -118,8 +125,14 @@ function isBoundedPublicQuery(route, searchParams) {
         value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false;
     seen.add(key);
     if (key === "limit") {
-      const max = route === "api/recent" ? 24 : route === "api/franchises" ? 48 : 60;
+      const max = route === "api/recent" ? 24 : route === "api/franchises" || route === "api/telegram-studios" ? 48 : 60;
       if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false;
+    } else if (key === "offset") {
+      if (!/^(0|[1-9][0-9]{0,4})$/.test(value)) return false;
+    } else if (key === "studio") {
+      if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
+    } else if (key === "provisional") {
+      if (route !== "api/telegram-studios" || !/^[01]$/.test(value)) return false;
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;
     } else if (key === "v") {
@@ -253,8 +266,95 @@ export async function proxyCatalogRequest(request, fetcher) {
   }
 }
 
+
+// Private, authenticated administration lives behind the SAME first-party
+// Pages → CATALOG_WORKER binding; public routes retain the read-only proxy.
+// Never forward browser cookies, custom headers, unknown methods or public caches.
+const PRIVATE_DRAFT_ROUTE =
+  /^api\/admin\/telegram-drafts(?:\/import|\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
+const BEARER_TOKEN = /^Bearer [A-Za-z0-9._~-]{60,8192}$/;
+
+export async function proxyTelegramAdminRequest(request, fetcher) {
+  const incoming = new URL(request.url);
+  if (!incoming.pathname.startsWith(PREFIX)) {
+    return new Response("Not found", { status: 404 });
+  }
+  const route = incoming.pathname.slice(PREFIX.length);
+  if (!PRIVATE_DRAFT_ROUTE.test(route) ||
+      incoming.pathname.length + incoming.search.length > 4096 ||
+      incoming.search.length > 2048) {
+    return new Response("Not found", { status: 404 });
+  }
+  const method = request.method;
+  if (!["GET", "PATCH", "POST"].includes(method)) {
+    return new Response("Method not allowed", { status: 405,
+      headers: { Allow: "GET, PATCH, POST", "Cache-Control": "no-store" } });
+  }
+  const targetIsModel = /^api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}$/.test(route);
+  if ((method === "PATCH" && (incoming.search || !targetIsModel)) ||
+      (method === "POST" && (incoming.search || route !== "api/admin/telegram-drafts/import")) ||
+      (method === "GET" && route === "api/admin/telegram-drafts/import")) {
+    return new Response("Not found", { status: 404 });
+  }
+  const authorization = request.headers.get("authorization") || "";
+  if (!BEARER_TOKEN.test(authorization)) {
+    return new Response("Admin required", { status: 403,
+      headers: { "Cache-Control": "no-store" } });
+  }
+  const upstream = new URL("/" + route + incoming.search, CATALOG_ORIGIN);
+  const headers = new Headers({ Authorization: authorization,
+    Accept: request.headers.get("Accept") || "application/json" });
+  let body;
+  if (method === "PATCH" || method === "POST") {
+    if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) {
+      return new Response("Invalid body", { status: 400 });
+    }
+    body = await request.text();
+    if (!body || body.length > (method === "POST" ? 20000 : 8192)) return new Response("Invalid body", { status: 400 });
+    headers.set("Content-Type", "application/json");
+  }
+  try {
+    const response = await fetcher(upstream, {
+      method, headers, ...(body === undefined ? {} : { body }),
+      redirect: "manual", signal: request.signal,
+    });
+    if (response.status >= 300 && response.status < 400) {
+      await response.body?.cancel().catch(() => undefined);
+      return new Response("Upstream redirect rejected", { status: 502,
+        headers: { "Cache-Control": "no-store" } });
+    }
+    const type = response.headers.get("content-type") || "";
+    if (!type.startsWith("application/json") && !type.startsWith("image/webp")) {
+      await response.body?.cancel().catch(() => undefined);
+      return new Response("Invalid upstream content", { status: 502,
+        headers: { "Cache-Control": "no-store" } });
+    }
+    const safe = new Headers({
+      "Content-Type": type, "Cache-Control": "private, no-store",
+      "Vary": "Authorization",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "sandbox",
+      "Referrer-Policy": "no-referrer",
+    });
+    return new Response(response.body, { status: response.status, headers: safe });
+  } catch {
+    return new Response("Private catalog unavailable", { status: 502,
+      headers: { "Cache-Control": "no-store" } });
+  }
+}
+
 /** Pages Functions entrypoint. */
 export function onRequest({ request, env }) {
+  const pathname = new URL(request.url).pathname;
+  if (pathname === "/catalogo-api/api/admin/telegram-drafts" ||
+      pathname.startsWith("/catalogo-api/api/admin/telegram-drafts/")) {
+    return proxyTelegramAdminRequest(request, (url, options) => {
+      if (typeof env?.CATALOG_WORKER?.fetch !== "function") {
+        throw new Error("catalog_service_binding_unavailable");
+      }
+      return env.CATALOG_WORKER.fetch(String(url), options);
+    });
+  }
   // Block the same confirmed SpecialSTL keys at the server boundary.
   const incomingPath = new URL(request.url).pathname;
   if (incomingPath.startsWith(PREFIX) &&

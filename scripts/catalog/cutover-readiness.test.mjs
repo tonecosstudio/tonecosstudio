@@ -4,6 +4,12 @@ import { readFileSync } from 'node:fs'
 import { assessCutoverReadiness, inspectLiveReadOnly } from './cutover-readiness.mjs'
 
 const original = JSON.parse(readFileSync(new URL('../../config/catalog-code-consolidation.json', import.meta.url), 'utf8'))
+const schema = JSON.parse(readFileSync(new URL('../../services/catalogo/config/catalog-schema-contract.json', import.meta.url), 'utf8'))
+const showcaseTriggers = schema.requiredObjects.triggers.filter(name => name.startsWith('trg_telegram_showcase_'))
+const retiringWriters = original.origin.additionalWriterWorkflows
+const writerFromApiUrl = url => retiringWriters.find(
+  w => String(url).endsWith('/actions/workflows/' + w.path.split('/').at(-1)))
+
 const workflow = { id: 371358484, path: '.github/workflows/cloudflare.yml', state: 'disabled_manually' }
 const deployment = { versions: [{ version_id: original.productionObservation.currentVersionId, percentage: 100 }] }
 const bindings = [
@@ -28,6 +34,10 @@ function approvedContract() {
 }
 const fullState = () => ({
   workflow: { ...workflow }, running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  additionalWriters: retiringWriters.map(w => ({
+    id: w.id, path: w.path, state: 'disabled_manually',
+    running: 0, queued: 0, requested: 0, waiting: 0, pending: 0,
+  })),
   sourceRepositoryId: original.origin.repositoryId,
   sourceRepositoryName: original.origin.repository,
   targetRepositoryId: original.target.repositoryId,
@@ -44,6 +54,11 @@ const fullState = () => ({
   },
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
+  showcaseSchema: {
+    column: 'telegram_showcase_visible',
+    migration: schema.latestMigration,
+    triggers: [...showcaseTriggers],
+  },
 })
 
 test('current M5 state stays BLOCKED, even with a disabled source workflow', () => {
@@ -60,6 +75,110 @@ test('an approved flag cannot override an active source workflow', () => {
   const result = assessCutoverReadiness(approvedContract(), state)
   assert.equal(result.ready, false)
   assert.ok(result.blockers.includes('source_github_workflow_still_enabled'))
+})
+
+test('all retiring D1/R2 writers must be disabled administratively with empty queues', () => {
+  assert.equal(retiringWriters.length, 4)
+  for (const w of retiringWriters) {
+    const active = fullState()
+    active.additionalWriters.find(x => x.id === w.id).state = 'active'
+    const result = assessCutoverReadiness(approvedContract(), active)
+    assert.equal(result.ready, false)
+    assert.ok(result.blockers.includes('source_additional_writers_active_or_unverified'))
+    for (const status of ['running', 'queued', 'requested', 'waiting', 'pending']) {
+      const busy = fullState()
+      busy.additionalWriters.find(x => x.id === w.id)[status] = 1
+      const blocked = assessCutoverReadiness(approvedContract(), busy)
+      assert.ok(blocked.blockers.includes('source_additional_writers_active_or_unverified'))
+    }
+  }
+  const missing = fullState()
+  missing.additionalWriters.pop()
+  assert.ok(assessCutoverReadiness(approvedContract(), missing).blockers.includes('source_additional_writers_active_or_unverified'))
+  const invalidContract = approvedContract()
+  invalidContract.origin.additionalWriterWorkflows.pop()
+  assert.ok(assessCutoverReadiness(invalidContract, fullState()).blockers.includes('source_additional_writers_active_or_unverified'))
+})
+
+test('the live Telegram showcase schema must precede any Worker promotion', () => {
+  const fixture = fullState()
+  for (const mutation of [
+    state => { delete state.showcaseSchema },
+    state => { state.showcaseSchema.column = null },
+    state => { state.showcaseSchema.migration = null },
+    state => { state.showcaseSchema.triggers.pop() },
+  ]) {
+    const altered = structuredClone(fixture)
+    mutation(altered)
+    const verdict = assessCutoverReadiness(approvedContract(), altered)
+    assert.equal(verdict.ready, false)
+    assert.ok(verdict.blockers.includes('telegram_showcase_migration_0025_unverified'))
+  }
+})
+
+test('Cloudflare schema inspection is metadata-only and never runs DDL or model scans', async () => {
+  const previous = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    const u = String(url)
+    calls.push({ url: u, method: init.method, body: init.body })
+    if (u.endsWith('/repos/' + original.origin.repository)) {
+      return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
+    }
+    if (u.endsWith('/repos/' + original.target.repository)) {
+      return Response.json({ id: original.target.repositoryId,
+        full_name: original.target.repository, default_branch: 'main' })
+    }
+    if (u.endsWith('/git/ref/heads/main')) {
+      return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
+    }
+    if (u.endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
+      return Response.json({ number: original.staging.sourceFixPullRequest,
+        state: 'open', draft: true, merged: false,
+        head: { sha: original.staging.sourceFixHead, repo: { full_name: original.origin.repository } },
+        base: { sha: original.origin.observedMainSha } })
+    }
+    if (u.includes('/runs?status=')) return Response.json({ total_count: 0 })
+    if (u.startsWith('https://api.github.com/')) {
+      const writer = writerFromApiUrl(u)
+      return Response.json(writer ? { id: writer.id, path: writer.path, state: 'disabled_manually' } : workflow)
+    }
+    if (u.endsWith('/deployments')) {
+      return Response.json({ success: true, result: { deployments: [structuredClone(deployment)] } })
+    }
+    if (u.endsWith('/settings')) {
+      return Response.json({ success: true, result: { bindings: structuredClone(bindings) } })
+    }
+    if (u.endsWith('/query')) {
+      assert.equal(init.method, 'POST')
+      assert.equal(init.headers.Authorization, 'Bearer test-cloudflare-key')
+      const { sql } = JSON.parse(init.body)
+      assert.match(sql, /^SELECT 'column' AS category,name FROM pragma_table_info\('models'\)/)
+      assert.match(sql, /FROM d1_migrations WHERE name=/)
+      assert.match(sql, /FROM sqlite_master WHERE type='trigger'/)
+      assert.ok(!/\b(UPDATE|DELETE|INSERT|ALTER|DROP|REPLACE)\s+(?:TABLE|INTO|models|FROM)\b/i.test(sql))
+      assert.ok(!/FROM\s+models\b/i.test(sql))
+      return Response.json({ success: true, result: [{ results: [
+        { category: 'column', name: 'telegram_showcase_visible' },
+        { category: 'migration', name: schema.latestMigration },
+        ...showcaseTriggers.map(name => ({ category: 'trigger', name })),
+      ] }] })
+    }
+    throw Error('Unexpected preflight URL ' + u)
+  }
+  try {
+    const state = await inspectLiveReadOnly({
+      GITHUB_TOKEN: 'test-github-key', CLOUDFLARE_API_TOKEN: 'test-cloudflare-key',
+      CLOUDFLARE_ACCOUNT_ID: original.runtime.cloudflareAccountId,
+    })
+    assert.equal(state.showcaseSchema.migration, schema.latestMigration)
+    assert.equal(state.showcaseSchema.column, 'telegram_showcase_visible')
+    assert.deepEqual(state.showcaseSchema.triggers, showcaseTriggers)
+    assert.equal(calls.filter(x => x.method === 'POST').length, 1)
+    assert.equal(calls.filter(x => x.url.endsWith('/query')).length, 1)
+  } finally {
+    globalThis.fetch = previous
+  }
 })
 
 test('source activity, drift or missing live bindings block the cutover', () => {
@@ -144,7 +263,8 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
         default_branch: 'main',
       })
     }
-    return Response.json(workflow)
+    const writer = writerFromApiUrl(url)
+    return Response.json(writer ? { id: writer.id, path: writer.path, state: 'disabled_manually' } : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({})
@@ -153,9 +273,11 @@ test('read-only inspection queries every non-terminal GitHub status without Clou
     assert.equal(state.requested, 0)
     assert.equal(state.waiting, 0)
     assert.equal(state.pending, 0)
+    assert.equal(state.additionalWriters.length, retiringWriters.length)
+    assert.ok(state.additionalWriters.every(x => x.state === 'disabled_manually' && x.pending === 0))
     assert.equal(state.deployment, undefined)
     assert.equal(state.cloudflareAccountId, undefined)
-    assert.equal(requests.length, 10)
+    assert.equal(requests.length, 10 + 6 * retiringWriters.length)
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
     assert.equal(state.targetDefaultBranch, 'main')
     assert.ok(requests.some(url => url.endsWith('/repos/' + original.target.repository)))
@@ -283,12 +405,13 @@ test('a read-only GitHub token is used only for metadata GET requests', async ()
       })
     }
     if (String(url).includes('/runs?status=')) return Response.json({ total_count: 0 })
-    return Response.json(workflow)
+    const writer = writerFromApiUrl(url)
+    return Response.json(writer ? { id: writer.id, path: writer.path, state: 'disabled_manually' } : workflow)
   }
   try {
     const state = await inspectLiveReadOnly({ GITHUB_TOKEN: 'test-github-token' })
     assert.equal(state.targetRepositoryId, original.target.repositoryId)
-    assert.equal(requests.length, 10)
+    assert.equal(requests.length, 10 + 6 * retiringWriters.length)
     assert.ok(requests.every(r => r.method === 'GET' && r.token === 'Bearer test-github-token'))
     assert.ok(requests.every(r => r.url.startsWith('https://api.github.com/')))
   } finally {
