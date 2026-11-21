@@ -305,7 +305,7 @@ export default function TelegramStudioCatalog() {
                     className={"group relative overflow-hidden rounded-xl border border-[#ffffff1c] bg-[#292e26] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " + (index === 0 ? "row-span-2" : "")}>
                     <img src={imageUrl(item.cover)} alt="" className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]" />
                     <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d110e] to-transparent" />
-                    <span className="absolute bottom-4 left-4 right-3 line-clamp-2 text-sm font-semibold text-white">{item.name}</span>
+                    <span className="sr-only">Abrir modelo do estúdio {item.studio}</span>
                   </button>
                 ) : <div key={index} className={"rounded-xl border border-[#ffffff18] bg-gradient-to-br from-[#353a2e] to-[#181c17] " + (index === 0 ? "row-span-2" : "")} />;
               })}
