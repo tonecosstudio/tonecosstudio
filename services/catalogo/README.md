@@ -3,9 +3,9 @@
 **STATUS: STAGED-OFFLINE. NÃO EXECUTAR WRANGLER DEPLOY NEM D1 MIGRATIONS.**
 
 - Repositório canônico de destino: `tonecosstudio/tonecosstudio`. Código-fonte de origem: `washingtonmsdj/catalogo` (repo ID `1398242143`), main auditada `a4bf22bb8044a88f0c5d0b54b3e9d3fdead0b34c`.
-- `worker/media.ts` e `tools/test_worker_media_contract.mjs` vieram da PR de origem **#266**, head `59983806acb7a338ae3b9c1ddfd524561ff8a02f`; ainda está draft/unmerged. Revalidar sempre antes do cutover.
+- `worker/media.ts` e `tools/test_worker_media_contract.mjs` vieram da PR de origem **#266**. O head `59983806…` é histórico da primeira importação; a PR foi **integrada** com head final `bc766f75…` e merge `7444cce0…`. O pré-corte confere a integração e o blob real de `worker/media.ts` na `main` de origem.
 - `worker/entry.ts` importa 8 módulos próprios alcançáveis. Os módulos `quoteAdminAccess`, `quoteAdminApi` e `quoteWorkflow` não fazem parte dessa closure e não foram importados nesta fase.
-- `migrations/` são as **22 migrations existentes do D1 Cloudflare**; **não** executá-las contra produção nem confundi-las com `supabase/migrations/`.
+- `migrations/` contém as **25 migrações canônicas** do D1 Cloudflare. Em 21/11/2026, o ledger de produção continha **24 aplicadas (até `0024`)**; a migração `0025_telegram_showcase_private_visibility.sql` ainda estava pendente. **Não** executar migrações contra produção sem o GO específico nem confundi-las com `supabase/migrations/`.
 - `wrangler.jsonc` é espelho local do serviço EXISTENTE `tonecos-catalogo-api`, binding `DB` para D1 `tonecos-catalogo`, `MEDIA` para R2 `tonecos-catalogo-media`. Seus CORS ainda contêm origens do frontend legado; não alterar/implantar sem plano de cutover.
 - A autoridade atual de publicação remota permanece `washingtonmsdj/catalogo`; **nenhum deploy** foi criado no GitHub Tonecos, nem deve existir um segundo writer.
 - `config/catalog-code-consolidation.json` contém os Git blob SHAs exatos dos 46 arquivos de origem copiados, incluindo o patch #266; `npm run catalog:monorepo:check` valida bytes e bloqueia mudança de publicador prematura.
@@ -26,7 +26,7 @@ A verificação `tools/test_worker_entry_integration.mjs` é teste **próprio do
 
 ### Validação da origem antes da M5
 
-O preflight `scripts/catalog/cutover-readiness.mjs --live` consulta **somente metadados GitHub** da origem (ID do repositório e `refs/heads/main`) além do workflow e seus estados não terminais. Para liberar o cutover, o SHA observado deve coincidir com os três pins do manifesto (`origin.observedMainSha`, `staging.sourceMain` e `productionObservation.observedSourceMainSha`). O patch de mídia R2 importado da PR de origem também precisa manter o mesmo número, HEAD e base, permanecer aberto/draft e pertencer ao repositório aprovado. Se a PR for alterada, mesclada, fechada ou substituída, a promoção bloqueia até reconciliar o código e o manifesto. Divergência, ausência da referência ou troca de identidade bloqueiam a operação. As consultas não acessam o D1 nem o R2; nenhum deploy ou migração é executado. A autorização explícita, a desativação comprovada do publicador antigo e o rollback continuam obrigatórios.
+O preflight `scripts/catalog/cutover-readiness.mjs --live` consulta metadados GitHub da origem e do destino, incluindo `refs/heads/main`, o estado **mesclado** da PR #266, seu head final/merge/base históricos e o SHA do blob `worker/media.ts` atualmente na origem. O SHA da `main` deve coincidir com os três pins do manifesto (`origin.observedMainSha`, `staging.sourceMain`, `productionObservation.observedSourceMainSha`). Exige os **cinco workflows de escrita** da origem administrativamente `disabled_manually` e sem execuções não terminais, além de aprovação de corte, credenciais e rollback. Faz uma consulta **somente de metadados** ao D1 para verificar coluna, ledger e triggers da migração `0025`, sem varrer modelos ou alterar o banco. Divergência ou indisponibilidade falham fechadas; não há deploy, escrita R2 ou aplicação de migração pelo preflight.
 
 ### Identidade do repositório de destino (M5)
 
