@@ -22,6 +22,8 @@ type Photo = { messageId: number; sha256: string }
 type ImportResult = { status: number; data: Record<string, unknown> }
 const sha64 = /^[a-f0-9]{64}$/
 const group24 = /^[a-f0-9]{24}$/
+// Existing Curadoria uses single:<message_id> for an ungrouped photo.
+const singleGroup = /^single:([1-9][0-9]{0,15})$/
 const sourceId = '2370335738'
 const root = 'telegram-studios/v1/' + sourceId + '/telegram-webp-final-v1/'
 const allowedFields = ['originId', 'studio', 'groupKey', 'name', 'universe', 'variant', 'franchiseId', 'images']
@@ -61,7 +63,7 @@ export async function importPrivateTelegramDraft(
   if (body.originId !== sourceId || typeof studio !== 'string' || !present(studio, 120) ||
       /geral\s*\+?\s*50k/i.test(studio) || !present(name, 160) ||
       !optional(universe, 160) || !optional(variant, 160) ||
-      typeof group !== 'string' || !group24.test(group) ||
+      typeof group !== 'string' || (!group24.test(group) && !singleGroup.test(group)) ||
       !Number.isSafeInteger(body.franchiseId) || (body.franchiseId as number) <= 0 ||
       !Array.isArray(ids) || ids.length < 1 || ids.length > 80) {
     return error(400, 'invalid_group_identity')
@@ -81,11 +83,23 @@ export async function importPrivateTelegramDraft(
       new Set(images.map(x => x.sha256)).size !== images.length) {
     return error(400, 'duplicate_group_photos')
   }
+  // One image remains a Curadoria single, not a fabricated multi-photo gallery.
+  // Derive a stable D1-compatible ID from the origin and the original message ID.
+  let canonicalGroup = group as string
+  const solo = singleGroup.exec(canonicalGroup)
+  if (solo) {
+    if (images.length !== 1 || !Number.isSafeInteger(Number(solo[1])) ||
+        images[0].messageId !== Number(solo[1])) return error(400, 'invalid_group_identity')
+    const bytes = new TextEncoder().encode(sourceId + ':' + canonicalGroup)
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    canonicalGroup = Array.from(new Uint8Array(digest).slice(0, 12), b =>
+      b.toString(16).padStart(2, '0')).join('')
+  }
   if (!env.PRIVATE_TELEGRAM?.head) return error(503, 'private_storage_unavailable')
-  const id = 'tg_' + group
+  const id = 'tg_' + canonicalGroup
   const already = await env.DB.prepare(
     'SELECT id,name,published,image_count,telegram_revision,telegram_gallery_order FROM models WHERE telegram_origin_id=? AND telegram_group_key=? LIMIT 1',
-  ).bind(sourceId, group).first<{
+  ).bind(sourceId, canonicalGroup).first<{
     id: string; name: string; published: number; image_count: number;
     telegram_revision: number; telegram_gallery_order: string
   }>()
@@ -199,7 +213,7 @@ export async function importPrivateTelegramDraft(
       id, body.franchiseId, 'telegram-' + studioName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + group,
       'TG-' + group.toUpperCase(), modelName, 'Telegram Studios · Rascunhos',
       images.length, cover, null, 1, 0, [studioName, modelName, universeName].filter(Boolean).join(' '),
-      variantName, group, sourceId, studioName, modelName, 'pending', 1, 'not_reviewed',
+      variantName, canonicalGroup, sourceId, studioName, modelName, 'pending', 1, 'not_reviewed',
       0, JSON.stringify(groupIds), 0,
     ),
     ...images.map((photo, i) => env.DB.prepare(

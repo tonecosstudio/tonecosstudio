@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -254,7 +255,7 @@ const importBundle = await esbuild.build({
 const { importPrivateTelegramDraft } = await import('data:text/javascript;base64,' +
   Buffer.from(importBundle.outputFiles[0].text).toString('base64'))
 
-function draftImportFixture() {
+function draftImportFixture(overrides = {}) {
   const key = 'b2b99222c387716d35aba4c3'
   const input = {
     originId: '2370335738', studio: 'Abe3D', groupKey: key,
@@ -264,6 +265,7 @@ function draftImportFixture() {
       { messageId: 17278, sha256: '1'.repeat(64) },
       { messageId: 17279, sha256: '2'.repeat(64) },
     ],
+    ...overrides,
   }
   let stored = null
   let batches = 0
@@ -276,7 +278,7 @@ function draftImportFixture() {
           bind(...args) { this.values = args; return this },
           async first() {
             if (sql.includes('FROM franchises')) return {id:197}
-            if (sql.includes('WHERE telegram_origin_id=?')) return stored
+            if (sql.includes('WHERE telegram_origin_id=?')) return stored?.groupKey === statement.values[1] ? stored : null
             if (sql.includes('FROM models')) return null
             return null
           },
@@ -292,13 +294,14 @@ function draftImportFixture() {
       async batch(statements) {
         batches++
         if (statements[0].sql.includes('INSERT INTO models')) {
-          assert.equal(statements.length, 3)
+          assert.equal(statements.length, input.images.length + 1)
           assert.equal(statements[0].values[10],0,'new drafts cannot be published')
           assert.match(statements[0].sql,/telegram_showcase_visible/,'new drafts must store visibility explicitly')
           assert.equal(statements[0].values.at(-1),0,'new drafts must not appear in public showcase')
           stored = {
-            id:'tg_'+key, name:input.name, published:0,
-            image_count:2,telegram_revision:0,telegram_gallery_order:JSON.stringify([17278,17279]),
+            id:statements[0].values[0],groupKey:statements[0].values[13],
+            name:input.name, published:0, image_count:input.images.length,
+            telegram_revision:0,telegram_gallery_order:JSON.stringify(input.images.map(x=>x.messageId)),
             photos:statements.slice(1).map(x=>({
               image_id:x.values[1],position:x.values[2],source_sha256:x.values[4],
             })),
@@ -356,6 +359,37 @@ test('canonical group importer creates once, verifies every private R2 HEAD and 
   assert.equal(second.data.name,x.input.name,'manually maintained commercial title survives reimport')
   assert.equal(x.getBatches(),1,'reimport cannot insert images or models again')
   assert.equal(x.heads.length,4,'no R2 rewrite or needless HEAD on idempotent replay')
+})
+
+test('Curadoria single message identity has stable D1 key and replay cannot duplicate a draft',async()=>{
+  const x=draftImportFixture({
+    groupKey:'single:17278', images:[{messageId:17278,sha256:'1'.repeat(64)}],
+  })
+  for(const bad of [
+    {...x.input,groupKey:'single:17279'},
+    {...x.input,groupKey:'single:017278'},
+    {...x.input,images:[...x.input.images,{messageId:17279,sha256:'2'.repeat(64)}]},
+  ]){
+    const rejected=await x.run(bad)
+    assert.equal(rejected.status,400)
+    assert.equal(x.getBatches(),0)
+    assert.equal(x.heads.length,0)
+  }
+  const created=await x.run(x.input)
+  assert.equal(created.status,201)
+  const expected='tg_'+createHash('sha256').update('2370335738:single:17278')
+    .digest('hex').slice(0,24)
+  assert.equal(created.data.id,expected)
+  assert.equal(created.data.published,false)
+  assert.equal(created.data.imageCount,1)
+  assert.equal(x.getBatches(),1)
+  assert.equal(x.heads.length,2)
+  const replay=await x.run({...x.input,name:'Overridden title'})
+  assert.equal(replay.status,200)
+  assert.equal(replay.data.id,expected)
+  assert.equal(replay.data.name,x.input.name)
+  assert.equal(x.getBatches(),1)
+  assert.equal(x.heads.length,2)
 })
 
 test('import refuses excluded General +50k and corrupt input without touching catalog or R2',async()=>{
