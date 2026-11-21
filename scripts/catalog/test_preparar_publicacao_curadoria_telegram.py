@@ -452,6 +452,7 @@ def test_private_draft_plan_without_publication():
             for mid,topic,proposal,title,universe in [
                 (19,"Studio A _ Secondary","Studio A","Mudkip","Pokémon"),
                 (20,"Studio A","Studio A","Goku","Dragon Ball Z"),
+                (21,"Studio A _ Secondary","Secondary","Raichu","Pokémon"),
             ]:
                 sha=hashlib.sha256(str(mid).encode()).hexdigest()
                 con.execute("INSERT INTO assets VALUES(?,?,?,?,?)",
@@ -467,13 +468,16 @@ def test_private_draft_plan_without_publication():
                 {"id":77,"name":"Dragon Ball"},
             ])
         extended,held,report=m.plan_private_telegram_drafts(db,known,1,fr,2)
-        assert len(extended)==4,extended
+        assert len(extended)==5,extended
         assert len(held)==2
         assert report["franchises_in_d1"]==2
         imported={x["import_manifest"]["groupKey"]:x for x in extended}
-        assert imported["single:19"]["studio"]=="Studio A _ Secondary"
+        assert imported["single:19"]["studio"]=="Studio A"
+        assert imported["single:19"]["import_manifest"]["studio"]=="Studio A"
         assert imported["single:20"]["import_manifest"]["franchiseId"]==77
         assert imported["single:20"]["import_manifest"]["universe"]=="Dragon Ball Z"
+        assert imported["single:21"]["studio"]=="Secondary"
+        assert imported["single:21"]["import_manifest"]["studio"]=="Secondary"
 
 
 

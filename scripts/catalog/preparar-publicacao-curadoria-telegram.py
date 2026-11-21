@@ -713,6 +713,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         digests = [str(x["sha256"] or "").lower() for x in members]
         label = str(head["title"] or "").strip()
         topic = str(head["original_topic"] or "").strip()
+        credited_studio = str(head["studio"] or "").strip()
         group_key = group_id
         if group_id.startswith("single:"):
             if len(members) != 1 or group_id != "single:" + str(mids[0]):
@@ -727,7 +728,8 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
                 any(len(owners[sha]) > 1 for sha in digests)):
             reject(group_id, members, "duplicate_or_ambiguous_media")
             continue
-        if any((x["original_topic"] != topic or not studio_member_of_topic(x["studio"], topic)) for x in members):
+        if any((x["original_topic"] != topic or x["studio"] != credited_studio or
+                not studio_member_of_topic(x["studio"], topic)) for x in members):
             reject(group_id, members, "studio_identity_conflict")
             continue
         if (not label or len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)
@@ -742,14 +744,14 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             continue
         if not group_id.startswith("single:"):
             if any(x["model_group_state"] != "provavel" or
-                   not studio_member_of_topic(x["group_studio"], topic) or
+                   x["group_studio"] not in {topic, credited_studio} or
                    key(x["group_title"]) != key(label) or
                    int(x["group_image_count"] or 0) != len(members) for x in members):
                 reject(group_id, members, "group_needs_review")
                 continue
         old = known.get(group_key)
         if old:
-            if old["studio"] != topic:
+            if old["studio"] != credited_studio:
                 reject(group_id, members, "existing_d1_group_studio_conflict")
             else:
                 reasons["already_in_d1"] += 1
@@ -770,7 +772,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             continue
         media = sorted(zip(mids, digests))
         import_manifest = {
-            "originId": "2370335738", "studio": topic, "groupKey": group_id,
+            "originId": "2370335738", "studio": credited_studio, "groupKey": group_id,
             "name": label, "universe": universe, "variant": variant,
             "franchiseId": next(iter(ids)),
             "images": [{"messageId": mid, "sha256": sha} for mid, sha in media],
@@ -781,7 +783,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             [model_id, import_manifest], sort_keys=True,
             ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()
         candidates.append({
-            "operation_id": operation_id, "model_id": model_id, "studio": topic,
+            "operation_id": operation_id, "model_id": model_id, "studio": credited_studio,
             "admin_endpoint": "POST /api/admin/telegram-drafts/import",
             "import_manifest": import_manifest, "new_private_draft_only": True,
             "rights_verified": False, "showcase_visible": False,
