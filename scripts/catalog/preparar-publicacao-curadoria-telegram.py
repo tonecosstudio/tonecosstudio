@@ -616,6 +616,34 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
 
 
 
+# Real cultural title aliases, NOT invented franchise identities. Each target
+# must still exist uniquely in the live D1 franchises snapshot.
+CANONICAL_UNIVERSE_ALIASES = {
+    "marvel comics": "marvel",
+    "saint seiya": "cavaleiros do zodiaco",
+    "my hero academia": "boku no hero",
+    "teenage mutant ninja turtles": "as tartarugas ninja",
+    "the legend of zelda": "zelda",
+    "the legend of zelda tears of the kingdom": "zelda",
+    "kimetsu no yaiba": "demon slayer",
+    "dragon ball z": "dragon ball",
+    "dragon ball super": "dragon ball",
+    "baldur s gate 3": "baldur s gate",
+    "final fantasy vii": "final fantasy",
+    "x men": "marvel",
+    "spider man": "marvel",
+}
+
+
+def studio_member_of_topic(studio: str, topic: str) -> bool:
+    # An original Telegram topic may legally encompass several credited studios,
+    # e.g. 'MPPrints _ My Poke Prints' or 'Merge Project Figures _ Nostalgic Studios'.
+    # Match only a complete explicitly named component, not a substring.
+    candidate = str(studio or "").strip()
+    return candidate == topic or bool(candidate and candidate in
+                                      [x.strip() for x in topic.split(" _ ")])
+
+
 def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_models: int,
                                  franchises_csv: Path, expected_franchises: int):
     """Read-only plan for the EXISTING private Telegram draft importer.
@@ -699,7 +727,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
                 any(len(owners[sha]) > 1 for sha in digests)):
             reject(group_id, members, "duplicate_or_ambiguous_media")
             continue
-        if any((x["original_topic"] != topic or x["studio"] != topic) for x in members):
+        if any((x["original_topic"] != topic or not studio_member_of_topic(x["studio"], topic)) for x in members):
             reject(group_id, members, "studio_identity_conflict")
             continue
         if (not label or len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)
@@ -714,7 +742,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             continue
         if not group_id.startswith("single:"):
             if any(x["model_group_state"] != "provavel" or
-                   x["group_studio"] != topic or
+                   not studio_member_of_topic(x["group_studio"], topic) or
                    key(x["group_title"]) != key(label) or
                    int(x["group_image_count"] or 0) != len(members) for x in members):
                 reject(group_id, members, "group_needs_review")
@@ -735,7 +763,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         if len(variant) > 160 or len(universe) > 160:
             reject(group_id, members, "metadata_too_long")
             continue
-        ids = franchise_map.get(key(universe), set()) if universe else set()
+        ids = franchise_map.get(CANONICAL_UNIVERSE_ALIASES.get(key(universe), key(universe)), set()) if universe else set()
         if len(ids) != 1:
             reject(group_id, members,
                    "franchise_missing_or_unmapped" if not ids else "franchise_ambiguous")

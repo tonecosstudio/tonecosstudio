@@ -446,6 +446,35 @@ def test_private_draft_plan_without_publication():
         except ValueError as exc:
             assert "franquias D1 incompleto" in str(exc)
         assert not any(path.suffix==".webp" for path in home.iterdir())
+        # Original topic may list two credited studios; proposal remains
+        # 'Studio A' while the Telegram topic includes that exact component.
+        with closing(sqlite3.connect(db)) as con:
+            for mid,topic,proposal,title,universe in [
+                (19,"Studio A _ Secondary","Studio A","Mudkip","Pokémon"),
+                (20,"Studio A","Studio A","Goku","Dragon Ball Z"),
+            ]:
+                sha=hashlib.sha256(str(mid).encode()).hexdigest()
+                con.execute("INSERT INTO assets VALUES(?,?,?,?,?)",
+                            (mid,sha,f"{topic}/src_{mid}.jpg",topic,"2026-11-21"))
+                con.execute("INSERT INTO annotations VALUES(?,?,?)",(mid,"revisar",title))
+                con.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (mid,"provavel",proposal,title,universe,"",f"{mid}.jpg","","caption",0.7))
+            con.commit()
+        with fr.open("w",encoding="utf8",newline="") as file:
+            w=csv.DictWriter(file,fieldnames=["id","name"])
+            w.writeheader();w.writerows([
+                {"id":57,"name":"Pokémon"},
+                {"id":77,"name":"Dragon Ball"},
+            ])
+        extended,held,report=m.plan_private_telegram_drafts(db,known,1,fr,2)
+        assert len(extended)==4,extended
+        assert len(held)==2
+        assert report["franchises_in_d1"]==2
+        imported={x["import_manifest"]["groupKey"]:x for x in extended}
+        assert imported["single:19"]["studio"]=="Studio A _ Secondary"
+        assert imported["single:20"]["import_manifest"]["franchiseId"]==77
+        assert imported["single:20"]["import_manifest"]["universe"]=="Dragon Ball Z"
+
 
 
 if __name__ == "__main__":
