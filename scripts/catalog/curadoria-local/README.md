@@ -252,3 +252,20 @@ acontece por uma chamada de leitura do host.
 Teste offline:
 `python -m unittest -v teste_catalog_sync_status teste_ui
 teste_smart_curadoria teste_model_gallery teste_name_curadoria`
+
+## Host Windows persistente (independente do OrdaX MCP)
+
+Copie `INICIAR_CURADORIA.ps1` junto com `tonart_curadoria.py` para a pasta de curadoria
+existente (onde fica `.venv`) e execute uma vez:
+`powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\INICIAR_CURADORIA.ps1 -NoBrowser`.
+
+O comando registra a única tarefa do Windows **TONART Curadoria Host**,
+iniciada no logon e com restart em falha, executando diretamente
+`.venv\Scripts\pythonw.exe tonart_curadoria.py`. O menu e o
+`INICIAR_LOCAL.cmd` acionam a mesma tarefa; não criam outro servidor.
+
+O Agendador mantém o processo independente do ciclo de vida do OrdaX MCP.
+O host segue na porta loopback 8769 e reutiliza o mesmo SQLite,
+token local, imagens e galerias, sem duplicar serviços e sem publicação
+automática. Tarefas homônimas com outro owner/comando são recusadas.
+Para desinstalação intencional: `INICIAR_CURADORIA.ps1 -Uninstall`.
