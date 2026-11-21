@@ -301,6 +301,11 @@ function draftImportFixture(overrides = {}, options = {}) {
         batches++
         if (statements[0].sql.includes('INSERT INTO models')) {
           assert.equal(statements.length, input.images.length + 1)
+          // Single-message identities are canonical 24-hex IDs, never
+          // raw "single:<message_id>" fragments in public slugs/codes.
+          assert.match(statements[0].values[2],/^telegram-abe3d-[a-f0-9]{24}$/)
+          assert.match(statements[0].values[3],/^TG-[A-F0-9]{24}$/)
+          assert.equal(statements[0].values[2].includes(':'),false)
           assert.equal(statements[0].values[10],0,'new drafts cannot be published')
           assert.match(statements[0].sql,/telegram_showcase_visible/,'new drafts must store visibility explicitly')
           assert.equal(statements[0].values.at(-1),0,'new drafts must not appear in public showcase')

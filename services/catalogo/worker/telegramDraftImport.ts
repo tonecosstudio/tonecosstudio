@@ -216,8 +216,8 @@ export async function importPrivateTelegramDraft(
       'telegram_review_status,telegram_name_provisional,telegram_rights_status,' +
       'telegram_revision,telegram_gallery_order,telegram_showcase_visible) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
     ).bind(
-      id, body.franchiseId, 'telegram-' + studioName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + group,
-      'TG-' + group.toUpperCase(), modelName, 'Telegram Studios · Rascunhos',
+      id, body.franchiseId, 'telegram-' + studioName.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + canonicalGroup,
+      'TG-' + canonicalGroup.toUpperCase(), modelName, 'Telegram Studios · Rascunhos',
       images.length, cover, null, 1, 0, [studioName, modelName, universeName].filter(Boolean).join(' '),
       variantName, canonicalGroup, sourceId, studioName, modelName, 'pending', 1, 'not_reviewed',
       0, JSON.stringify(groupIds), 0,
