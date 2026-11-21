@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, ArrowUpRight, Search, UsersRound, Images } from "lucide-react";
 
 type Model = {
   id: string;
@@ -25,7 +26,7 @@ const API = "/catalogo-api/api/telegram-studios";
 const PAGE_SIZE = 24;
 const MODEL_ID = /^tg_[a-f0-9]{24}$/;
 const classes =
-  "min-h-11 rounded-md border border-[#907351] bg-[#211c17] px-4 py-2 text-[#f0d3ad] transition hover:bg-[#413023] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792] disabled:cursor-not-allowed disabled:opacity-40";
+  "min-h-11 rounded-lg border border-[#75644b] bg-[#22251f] px-4 py-2 text-[#f2dbb6] transition hover:border-[#d0ae7d] hover:bg-[#32342a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792] disabled:cursor-not-allowed disabled:opacity-40";
 
 function imageUrl(path: string | null | undefined): string | undefined {
   return path &&
@@ -264,43 +265,62 @@ export default function TelegramStudioCatalog() {
   const lastPage = page ? Math.ceil(page.total / PAGE_SIZE) : 0;
 
   return (
-    <div className="min-h-screen bg-[#110e0c] text-[#f1e9df]">
-      <header className="border-b border-[#43372d] bg-[#191410]">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-6">
-          <a
-            href="/"
-            className="block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
-          >
-            <span className="text-2xl font-black tracking-[0.2em] sm:text-3xl">
-              TONART
-            </span>
-            <span className="block text-[11px] uppercase tracking-[0.22em] text-[#d7ae7d]">
-              Acervo dos estúdios
-            </span>
+    <div className="min-h-screen bg-[#0e120f] text-[#f4eee4] selection:bg-[#c7ac80] selection:text-[#10140e]">
+      <a href="#colecao" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:bg-[#dfbd8d] focus:p-3 focus:text-[#11140e]">Ir para os modelos</a>
+      <header className="sticky top-0 z-30 border-b border-[#ffffff16] bg-[#0e120f]/95 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[78px] max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
+          <a href="/" aria-label="TONART — início do catálogo" className="flex items-center gap-3 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c3a678] font-serif text-2xl text-[#e9ce9f]">T</span>
+            <span><span className="block text-lg font-bold tracking-[0.22em]">TONART</span><span className="block text-[9px] uppercase tracking-[0.2em] text-[#bba888]">Acervo de esculturas 3D</span></span>
           </a>
-          <p className="max-w-sm text-right text-xs leading-5 text-[#bcb0a4]">
-            Catálogo visual de referências · sem vendas ou orçamentos
-          </p>
+          <nav aria-label="Navegação do catálogo" className="flex items-center gap-4 text-xs text-[#d7d0be] sm:gap-8 sm:text-sm">
+            <a href="#colecao" className="hover:text-[#eacb98]">Modelos</a>
+            <a href="#estudios" className="hover:text-[#eacb98]">Estúdios</a>
+            <a href="#criadores" className="hidden hover:text-[#eacb98] sm:inline">Criadores</a>
+          </nav>
         </div>
       </header>
-
-      <main className="mx-auto max-w-7xl px-5 pb-20 pt-10 sm:pt-14">
-        <div className="max-w-3xl">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.28em] text-[#d5aa74]">
-            Coleção Telegram
-          </p>
-          <h1 className="text-4xl font-semibold leading-tight tracking-tight sm:text-6xl">
-            Esculturas de cada estúdio, em um só lugar.
-          </h1>
-          <p className="mt-5 leading-7 text-[#c2b5a7]">
-            Explore personagens, modelos e diferentes versões. Identificações e
-            galerias continuam em curadoria.
-          </p>
-        </div>
-
+      <main className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
+        <section aria-labelledby="catalog-hero-heading" className="relative isolate overflow-hidden border-b border-[#ffffff18] py-14 sm:py-20">
+          <div aria-hidden="true" className="pointer-events-none absolute -right-48 -top-64 -z-10 h-[680px] w-[680px] rounded-full bg-[#927c59]/10 blur-[95px]" />
+          <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+            <div className="max-w-[670px]">
+              <p className="mb-6 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.23em] text-[#c7ab7c] sm:text-xs"><span className="h-px w-8 bg-[#c7ab7c]" />A arte que inspira colecionadores</p>
+              <h1 id="catalog-hero-heading" className="font-serif text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[-0.045em]">Um universo de <span className="block italic text-[#ccb18a]">esculturas 3D.</span></h1>
+              <p className="mt-7 max-w-xl text-base leading-8 text-[#b9b9ae] sm:text-lg">Explore personagens, encontre versões especiais e descubra os estúdios por trás de cada criação. Um acervo dedicado à arte digital e à paixão por estatuetas.</p>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <a href="#colecao" className="inline-flex min-h-12 items-center gap-3 rounded-lg bg-[#d2b58a] px-6 text-sm font-semibold text-[#171b13] transition hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]">Explorar modelos <ArrowUpRight className="h-4 w-4" aria-hidden="true" /></a>
+                <a href="#estudios" className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#776c52] px-5 text-sm text-[#eee0c9] hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]">Conhecer estúdios <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+              </div>
+              <div className="mt-12 flex flex-wrap gap-9 border-t border-[#ffffff1c] pt-6">
+                <div><span className="block font-serif text-3xl text-[#eeddbb]">{!studio && !query && page ? page.total.toLocaleString("pt-BR") : "—"}</span><span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[#9ba297]">Modelos no acervo</span></div>
+                <div><span className="block font-serif text-3xl text-[#eeddbb]">{studios.length ? studios.length.toLocaleString("pt-BR") : "—"}</span><span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[#9ba297]">Estúdios catalogados</span></div>
+              </div>
+            </div>
+            <div aria-label="Prévia de modelos do catálogo" className="relative mx-auto grid h-[330px] w-full max-w-[560px] grid-cols-[1fr_0.83fr] gap-3 sm:h-[460px] lg:h-[520px]">
+              {[0, 1, 2].map((index) => {
+                const item = page?.items[index];
+                return item && imageUrl(item.cover) ? (
+                  <button type="button" key={item.id} onClick={() => navigate({ ...route, selected: item.id })} aria-label={"Abrir prévia de " + item.name + ", " + item.studio}
+                    className={"group relative overflow-hidden rounded-xl border border-[#ffffff1c] bg-[#292e26] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " + (index === 0 ? "row-span-2" : "")}>
+                    <img src={imageUrl(item.cover)} alt="" className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]" />
+                    <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d110e] to-transparent" />
+                    <span className="absolute bottom-4 left-4 right-3 line-clamp-2 text-sm font-semibold text-white">{item.name}</span>
+                  </button>
+                ) : <div key={index} className={"rounded-xl border border-[#ffffff18] bg-gradient-to-br from-[#353a2e] to-[#181c17] " + (index === 0 ? "row-span-2" : "")} />;
+              })}
+              <span className="pointer-events-none absolute -bottom-4 -left-2 inline-flex items-center gap-2 rounded-md border border-[#7e7058] bg-[#171c16] px-4 py-3 text-[11px] text-[#e8d4b2] shadow-xl sm:-left-5"><Images aria-hidden="true" className="h-4 w-4" /> Galeria de renders digitais</span>
+            </div>
+          </div>
+        </section>
+        <section id="colecao" aria-label="Buscar modelos" className="scroll-mt-28 pt-12 sm:pt-16">
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div><span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#c7ab7c]">Explore o acervo</span><h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">Encontre sua próxima inspiração.</h2></div>
+            <p className="max-w-sm text-sm leading-6 text-[#aeb1a5]">Busque personagens e variantes ou navegue pelos estúdios de sua preferência.</p>
+          </div>
         <form
           onSubmit={search}
-          className="mt-9 grid gap-3 rounded-xl border border-[#463628] bg-[#1c1713] p-4 sm:grid-cols-[minmax(0,1fr)_minmax(180px,240px)_auto]"
+          className="grid gap-3 rounded-xl border border-[#ffffff22] bg-[#1a2019] p-4 sm:grid-cols-[minmax(0,1fr)_minmax(180px,240px)_auto] sm:p-5"
         >
           <div>
             <label
@@ -322,7 +342,7 @@ export default function TelegramStudioCatalog() {
               aria-describedby={
                 searchError ? "catalog-search-error" : undefined
               }
-              className="min-h-11 w-full rounded-md border border-[#76614b] bg-[#120f0d] px-4 text-[#f1e9df] outline-none placeholder:text-[#9e9082] focus:border-[#e1b784]"
+              className="min-h-12 w-full rounded-lg border border-[#565c50] bg-[#101610] px-4 text-[#f1e9df] outline-none placeholder:text-[#959b8f] focus:border-[#e1b784]"
             />
           </div>
           <div>
@@ -336,7 +356,7 @@ export default function TelegramStudioCatalog() {
               id="catalog-studio"
               value={studio}
               onChange={(event) => changeStudio(event.target.value)}
-              className="min-h-11 w-full rounded-md border border-[#76614b] bg-[#120f0d] px-3 text-[#f1e9df] focus:border-[#e1b784]"
+              className="min-h-12 w-full rounded-lg border border-[#565c50] bg-[#101610] px-3 text-[#f1e9df] focus:border-[#e1b784]"
             >
               <option value="">Todos os estúdios</option>
               {studios.map((item) => (
@@ -346,8 +366,8 @@ export default function TelegramStudioCatalog() {
               ))}
             </select>
           </div>
-          <button type="submit" className={classes + " self-end"}>
-            Pesquisar
+          <button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 self-end rounded-lg bg-[#d2b58a] px-5 font-semibold text-[#141810] hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]">
+            <Search aria-hidden="true" className="h-4 w-4" /> Pesquisar
           </button>
         </form>
         {searchError && (
@@ -392,10 +412,10 @@ export default function TelegramStudioCatalog() {
           </div>
         )}
 
-        <div className="mt-11 flex flex-wrap items-end justify-between gap-3 border-b border-[#493b30] pb-4">
+        <div className="mt-12 flex flex-wrap items-end justify-between gap-3 border-b border-[#ffffff20] pb-5">
           <div>
-            <h2 className="text-xl font-semibold">
-              {studio || "Todos os estúdios"}
+            <h2 className="font-serif text-2xl sm:text-3xl">
+              {studio || "Galeria de modelos"}
             </h2>
             {query && (
               <p className="mt-1 text-sm text-[#b7a99a]">
@@ -472,7 +492,7 @@ export default function TelegramStudioCatalog() {
           </div>
         )}
         {!loading && page && (
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
             {page.items.map((model) => (
               <button
                 key={model.id}
@@ -481,9 +501,9 @@ export default function TelegramStudioCatalog() {
                 aria-label={
                   "Abrir galeria de " + model.name + ", " + model.studio
                 }
-                className="group overflow-hidden rounded-lg border border-[#423429] bg-[#211a15] text-left transition hover:-translate-y-0.5 hover:border-[#d7a772] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
+                className="group overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] text-left transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
               >
-                <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[#2d241d]">
+                <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[#2b3028]">
                   {imageUrl(model.cover) ? (
                     <img
                       src={imageUrl(model.cover)}
@@ -493,7 +513,7 @@ export default function TelegramStudioCatalog() {
                     />
                   ) : (
                     <span className="p-3 text-center text-sm text-[#b6a496]">
-                      Fotografia em preparação
+                      Render em preparação
                     </span>
                   )}
                 </div>
@@ -511,7 +531,7 @@ export default function TelegramStudioCatalog() {
                   )}
                   <p className="mt-3 text-xs text-[#b6a496]">
                     {model.imageCount}{" "}
-                    {model.imageCount === 1 ? "foto" : "fotos"}
+                    {model.imageCount === 1 ? "imagem" : "imagens"}
                     {model.provisional ? " · Em curadoria" : ""}
                   </p>
                 </div>
@@ -548,6 +568,35 @@ export default function TelegramStudioCatalog() {
             </button>
           </nav>
         )}
+        </section>
+        <section id="estudios" aria-labelledby="studios-heading" className="mt-20 scroll-mt-28 border-t border-[#ffffff1b] pt-16 sm:mt-24">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#c7ab7c]">A origem de cada criação</p>
+          <h2 id="studios-heading" className="mt-3 font-serif text-3xl tracking-tight sm:text-5xl">Conheça os estúdios.</h2>
+          <p className="mt-4 max-w-xl text-base leading-7 text-[#acb2a7]">Explore esculturas de diferentes criadores e descubra os modelos reunidos por estúdio no TONART.</p>
+          {featuredStudios.length ? (
+            <div className="mt-9 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredStudios.map(item => (
+                <button key={item.studio} type="button" aria-pressed={studio === item.studio}
+                  onClick={() => { changeStudio(item.studio); document.getElementById("colecao")?.scrollIntoView({ behavior: "smooth" }); }}
+                  className={"group flex min-h-[148px] flex-col justify-between rounded-xl border p-5 text-left hover:border-[#cbb086] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " + (studio === item.studio ? "border-[#cbb086] bg-[#34372b]" : "border-[#ffffff1b] bg-[#1b221b]")}>
+                  <span className="flex items-center justify-between"><span aria-hidden="true" className="font-serif text-3xl text-[#d4bb90]">{item.studio.charAt(0).toUpperCase()}</span><ArrowUpRight aria-hidden="true" className="h-4 w-4 text-[#d4bb90]" /></span>
+                  <span><span className="block truncate font-medium">{item.studio}</span><span className="mt-1 block text-xs text-[#abb0a4]">{item.total.toLocaleString("pt-BR")} {item.total === 1 ? "modelo" : "modelos"}</span></span>
+                </button>
+              ))}
+              <div className="flex min-h-[148px] flex-col justify-center rounded-xl border border-dashed border-[#75634a] bg-[#171c16] p-5"><p className="font-medium">Muitos estilos. Novas descobertas.</p><p className="mt-2 text-xs leading-5 text-[#a9b0a2]">Consulte a lista completa no filtro de estúdios do catálogo.</p></div>
+            </div>
+          ) : <p className="mt-7 text-sm text-[#b8b7ad]">A lista de estúdios aparecerá quando o catálogo estiver disponível.</p>}
+        </section>
+        <section id="criadores" aria-labelledby="creators-heading" className="mt-20 scroll-mt-28 rounded-2xl border border-[#ffffff1c] bg-[#1d281f] p-7 sm:mt-24 sm:p-12">
+          <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+            <div className="flex flex-col justify-between gap-7 lg:border-r lg:border-[#ffffff20] lg:pr-12"><UsersRound aria-hidden="true" className="h-9 w-9 text-[#d1b586]" strokeWidth={1.3} /><div><p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#c8ae84]">Por trás dos modelos</p><h2 id="creators-heading" className="mt-4 font-serif text-3xl leading-tight sm:text-4xl">A arte começa com quem cria.</h2></div></div>
+            <div className="flex flex-col justify-center gap-5"><p className="text-base leading-8 text-[#c7cbbf]">O TONART reúne referências de esculturas digitais e valoriza os estúdios de origem. Cada obra merece ser descoberta junto de quem a criou.</p><p className="text-sm leading-7 text-[#aeb7a9]">Identificações, galerias e atribuições seguem em curadoria. Os créditos individuais serão exibidos conforme as informações forem verificadas.</p><a href="#estudios" className="inline-flex w-fit min-h-11 items-center gap-2 text-sm font-medium text-[#edd0a3] hover:underline">Explorar estúdios <ArrowRight aria-hidden="true" className="h-4 w-4" /></a></div>
+          </div>
+        </section>
+        <aside aria-label="Informações sobre o acervo" className="mt-8 flex flex-wrap items-center justify-between gap-5 rounded-xl border border-[#ffffff1a] bg-[#161b16] px-6 py-5 text-sm text-[#aeb6a8]">
+          <p className="max-w-3xl leading-6"><strong className="font-medium text-[#e8dbc5]">Sobre as imagens:</strong> galerias digitais de esculturas 3D, não fotografias de peças fabricadas. A exibição não implica disponibilidade comercial ou autorização de reprodução.</p>
+          <span className="rounded-full border border-[#807052] px-3 py-1 text-[10px] uppercase tracking-widest text-[#e2c79c]">Vitrine visual</span>
+        </aside>
       </main>
 
       {selected && (
@@ -601,7 +650,7 @@ export default function TelegramStudioCatalog() {
                 )}
                 <p className="mt-3 text-sm text-[#bba99a]">
                   {detail.images.length}{" "}
-                  {detail.images.length === 1 ? "fotografia" : "fotografias"} ·{" "}
+                  {detail.images.length === 1 ? "imagem" : "imagens"} ·{" "}
                   {detail.provisional
                     ? "Identificação em curadoria"
                     : "Identificação do acervo"}
@@ -615,7 +664,7 @@ export default function TelegramStudioCatalog() {
                           src={imageUrl(selectedImage.display)}
                           alt={
                             detail.name +
-                            ", fotografia " +
+                            ", imagem " +
                             (photoIndex + 1) +
                             " de " +
                             detail.images.length
@@ -669,7 +718,7 @@ export default function TelegramStudioCatalog() {
                             type="button"
                             key={item.position + ":" + index}
                             onClick={() => setPhotoIndex(index)}
-                            aria-label={"Mostrar fotografia " + (index + 1)}
+                            aria-label={"Mostrar imagem " + (index + 1)}
                             aria-pressed={index === photoIndex}
                             className={
                               "h-20 w-16 shrink-0 overflow-hidden rounded border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
@@ -694,11 +743,11 @@ export default function TelegramStudioCatalog() {
                 )}
                 {!detail.images.length && (
                   <p className="mt-6 text-sm text-[#b6a496]">
-                    Fotografias em preparação.
+                    Imagens em preparação.
                   </p>
                 )}
                 <p className="mt-6 text-xs text-[#a99c8e]">
-                  Use as setas do teclado para navegar pelas fotos e Esc para
+                  Use as setas do teclado para navegar pelas imagens e Esc para
                   fechar.
                 </p>
               </>
@@ -707,9 +756,7 @@ export default function TelegramStudioCatalog() {
         </div>
       )}
 
-      <footer className="border-t border-[#43372d] px-5 py-6 text-center text-xs text-[#b5a89a]">
-        TONART Studio · Catálogo visual de estúdios · Conteúdo em curadoria
-      </footer>
+      <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]"><div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8 lg:px-12"><div><p className="font-semibold tracking-[0.22em]">TONART</p><p className="mt-1 text-xs text-[#a9afa5]">Modelos 3D, estúdios e criatividade reunidos.</p></div><span className="text-xs text-[#aaa99d]">Acervo visual · Conteúdo em curadoria</span></div></footer>
     </div>
   );
 }
