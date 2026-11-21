@@ -144,8 +144,13 @@ export async function routeTelegramStudioShowcase(
       const condition = where.join(' AND ')
       const count = await env.DB.prepare('SELECT COUNT(*) AS total FROM models m WHERE ' + condition)
         .bind(...values).first<{ total: number }>()
+      // Materialize only the page IDs before resolving cover/gallery and taxonomy.
+      // Prevent correlated image-source lookups across the entire filtered set.
       const rows = (await env.DB.prepare(
-        'SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,m.variant_name,m.image_count,m.telegram_name_provisional,' +
+        'WITH page AS MATERIALIZED (' +
+        ' SELECT m.id FROM models m WHERE ' + condition +
+        ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?)' +
+        ' SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,m.variant_name,m.image_count,m.telegram_name_provisional,' +
         ' (SELECT c.name FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category,' +
         ' (SELECT c.slug FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category_slug,' +
         ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1' +
@@ -153,8 +158,8 @@ export async function routeTelegramStudioShowcase(
         " 'telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +
         " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
         ' THEN 0 ELSE 1 END, s.position LIMIT 1) AS cover_sha' +
-        ' FROM models m WHERE ' + condition +
-        ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?')
+        ' FROM page p JOIN models m ON m.id=p.id' +
+        ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id')
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results
       return json({ total: count?.total ?? 0, offset: Number(rawOffset), limit: Number(rawLimit),
         items: rows.map(m => ({...normalize(m), cover: m.cover_sha && SHA.test(m.cover_sha)

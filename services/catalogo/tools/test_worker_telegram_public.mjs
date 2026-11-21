@@ -132,6 +132,97 @@ test("Worker cache never stores private, invalid, detail, media or D1-error resp
  }
 });
 
+test("indexed page is materialized before resolving gallery covers (4,200-model SQLite fixture)",async()=>{
+ const db=new DatabaseSync(":memory:");
+ try {
+   db.exec(`
+    CREATE TABLE models(
+      id TEXT PRIMARY KEY,name TEXT,telegram_studio TEXT,telegram_character TEXT,
+      telegram_origin_id TEXT,variant_name TEXT,image_count INTEGER,
+      telegram_name_provisional INTEGER,telegram_group_key TEXT,
+      telegram_showcase_visible INTEGER,telegram_review_status TEXT,
+      telegram_rights_status TEXT,franchise_id INTEGER,cover_storage_key TEXT
+    );
+    CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT,slug TEXT);
+    CREATE TABLE franchises(id INTEGER PRIMARY KEY,category_id INTEGER);
+    CREATE TABLE model_image_sources(
+      model_id TEXT,gallery_version INTEGER,source_sha256 TEXT,position INTEGER
+    );
+    CREATE INDEX source_page_cover ON model_image_sources(model_id,gallery_version);
+    CREATE INDEX idx_models_telegram_showcase_name
+      ON models(telegram_showcase_visible,name COLLATE NOCASE,
+                telegram_studio COLLATE NOCASE,id)
+      WHERE telegram_group_key IS NOT NULL
+        AND telegram_review_status <> 'rejected'
+        AND telegram_rights_status <> 'rejected';
+    INSERT INTO categories VALUES (1,'Anime','anime');
+    INSERT INTO franchises VALUES (1,1);
+   `);
+   const insertModel=db.prepare("INSERT INTO models VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+   const insertImage=db.prepare("INSERT INTO model_image_sources VALUES (?,?,?,?)");
+   const a="a".repeat(64), b="b".repeat(64);
+   db.exec("BEGIN");
+   for(let i=0;i<4200;i++){
+     const modelId="tg_"+i.toString(16).padStart(24,"0");
+     const studio=i%2===0?"Studio A":"Studio B";
+     const cover="telegram-studios/v1/2370335738/telegram-webp-final-v1/bb/"+b+"/display.webp";
+     insertModel.run(modelId,"Modelo "+String(i).padStart(5,"0"),studio,"Escultura",
+                     "2370335738","Busto",2,0,modelId,1,"pending","not_reviewed",1,cover);
+     insertImage.run(modelId,1,a,0);
+     insertImage.run(modelId,1,b,1);
+   }
+   db.exec("COMMIT");
+   const statements=[];
+   const env={
+     DB:{prepare(sql){
+       statements.push(sql);
+       const native=db.prepare(sql);
+       let params=[];
+       return {
+         bind(...values){params=values;return this},
+         async first(){return native.get(...params)||null},
+         async all(){return {results:native.all(...params)}},
+       };
+     }},
+     PRIVATE_TELEGRAM:{async get(){throw Error("list must never fetch R2")}},
+   };
+   const result=await routeTelegramStudioShowcase(request("?limit=24&offset=1000"),env);
+   assert.equal(result.status,200);
+   const payload=await result.json();
+   assert.equal(payload.total,4200);
+   assert.equal(payload.items.length,24);
+   assert.equal(payload.items[0].name,"Modelo 01000");
+   assert.equal(payload.items.at(-1).name,"Modelo 01023");
+   assert.ok(payload.items.every(x=>x.cover.endsWith("/"+b+"/thumb")));
+   const sql=statements.find(x=>x.includes("WITH page AS MATERIALIZED"));
+   assert.ok(sql,"the real production list query must materialize a bounded page");
+   assert.match(sql,/FROM page p JOIN models m ON m.id=p.id/);
+   assert.ok(!sql.includes("ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id LIMIT ? OFFSET ?' +\n        ' FROM"),"cover lookup must not precede limiting the IDs");
+   const plan=db.prepare("EXPLAIN QUERY PLAN "+sql).all(24,1000);
+   assert.ok(plan.some(x=>x.detail.includes("MATERIALIZE page")),JSON.stringify(plan));
+   // SQLite instrumentation: a valid 24-item page has 48 source images.
+   // Without page materialization the correlated cover calculation could
+   // execute for every candidate model before LIMIT/OFFSET.
+   let coverVisits=0;
+   db.function("cover_probe",(_modelId)=>{coverVisits++;return 1});
+   const traced=sql.replace(
+     "ORDER BY CASE WHEN m.cover_storage_key=",
+     "ORDER BY CASE WHEN cover_probe(m.id)=1 AND m.cover_storage_key=",
+   );
+   assert.notEqual(traced,sql);
+   const tracedPage=db.prepare(traced).all(24,1000);
+   assert.equal(tracedPage.length,24);
+   assert.ok(coverVisits >= 24 && coverVisits <= 48,
+     "cover evaluation must be bounded by the returned page, not 4,200 candidates: "+coverVisits);
+   const filtered=await routeTelegramStudioShowcase(request("?studio=Studio%20B&category=anime&limit=24&offset=100"),env);
+   assert.equal(filtered.status,200);
+   const page=await filtered.json();
+   assert.equal(page.total,2100);
+   assert.equal(page.items[0].name,"Modelo 00201");
+   assert.equal(page.items.length,24);
+ }finally{db.close()}
+});
+
 test("global index search checks name, character and variant with bound values",async()=>{
  const {env,queries,bindings}=fixture();
  const response=await routeTelegramStudioShowcase(request("?studio=Studio%20A&q=Chibi&limit=24"),env);
