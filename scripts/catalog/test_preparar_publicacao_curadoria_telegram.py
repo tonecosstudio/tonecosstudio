@@ -478,6 +478,29 @@ def test_private_draft_plan_without_publication():
         assert imported["single:20"]["import_manifest"]["universe"]=="Dragon Ball Z"
         assert imported["single:21"]["studio"]=="Secondary"
         assert imported["single:21"]["import_manifest"]["studio"]=="Secondary"
+        with fr.open("w",encoding="utf8",newline="") as file:
+            w=csv.DictWriter(file,fieldnames=["id","name"])
+            w.writeheader();w.writerows([
+                {"id":57,"name":"Pokémon"},
+                {"id":77,"name":"Dragon Ball"},
+                {"id":99,"name":"Franquia a identificar"},
+            ])
+        provisional,unknown_held,unknown_summary=m.plan_private_telegram_drafts(
+            db,known,1,fr,3,pending_franchise_id=99)
+        assert len(provisional)==6,provisional
+        pending={x["import_manifest"]["groupKey"]:x for x in provisional}
+        assert pending["single:16"]["franchise_pending"]
+        assert pending["single:16"]["import_manifest"]["franchiseId"]==99
+        assert pending["single:16"]["import_manifest"]["universe"]=="Unknown Universe"
+        assert unknown_summary["pending_franchise_candidates"]==1
+        assert len(unknown_held)==2
+        assert not pending["single:16"]["apply_executed"]
+        try:
+            m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=57)
+            assert False,"wrong provisional ID must be rejected"
+        except ValueError as exc:
+            assert "Franquia provisoria" in str(exc)
+
 
 
 

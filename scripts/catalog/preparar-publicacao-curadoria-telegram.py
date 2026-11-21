@@ -645,7 +645,8 @@ def studio_member_of_topic(studio: str, topic: str) -> bool:
 
 
 def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_models: int,
-                                 franchises_csv: Path, expected_franchises: int):
+                                 franchises_csv: Path, expected_franchises: int,
+                                 pending_franchise_id: int | None = None):
     """Read-only plan for the EXISTING private Telegram draft importer.
 
     No franchise invention, no image read/reupload, no D1 or publication write.
@@ -685,6 +686,12 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         franchise_map[key(row["name"])].add(fid)
     if len(franchise_ids) != expected_franchises:
         raise ValueError("Snapshot franquias D1 incompleto")
+    if pending_franchise_id is not None:
+        pending_row = [x for x in franchise_rows if
+                       int(x["id"]) == pending_franchise_id and
+                       key(x["name"]) == "franquia a identificar"]
+        if len(pending_row) != 1:
+            raise ValueError("Franquia provisoria exige ID D1 exclusivo de Franquia a identificar")
 
     groups, owners = defaultdict(list), defaultdict(set)
     for row in read_curation(db):
@@ -766,15 +773,19 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             reject(group_id, members, "metadata_too_long")
             continue
         ids = franchise_map.get(CANONICAL_UNIVERSE_ALIASES.get(key(universe), key(universe)), set()) if universe else set()
-        if len(ids) != 1:
+        fallback = not ids and pending_franchise_id is not None
+        if len(ids) != 1 and not fallback:
             reject(group_id, members,
                    "franchise_missing_or_unmapped" if not ids else "franchise_ambiguous")
             continue
+        franchise_id = pending_franchise_id if fallback else next(iter(ids))
+        if fallback:
+            reasons["pending_franchise"] += 1
         media = sorted(zip(mids, digests))
         import_manifest = {
             "originId": "2370335738", "studio": credited_studio, "groupKey": group_id,
             "name": label, "universe": universe, "variant": variant,
-            "franchiseId": next(iter(ids)),
+            "franchiseId": franchise_id,
             "images": [{"messageId": mid, "sha256": sha} for mid, sha in media],
         }
         # Importer validates every R2 HEAD, live identity/hash conflicts and
@@ -788,12 +799,13 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             "import_manifest": import_manifest, "new_private_draft_only": True,
             "rights_verified": False, "showcase_visible": False,
             "r2_verified": False, "production_write_authorized": False,
-            "apply_executed": False,
+            "franchise_pending": fallback, "apply_executed": False,
         })
     summary = {
         "schema": "tonart.telegram.private-draft-plan/1",
         "groups_examined": len(groups), "existing_d1_models": len(known),
         "franchises_in_d1": len(franchise_ids), "candidate_imports": len(candidates),
+        "pending_franchise_candidates": reasons["pending_franchise"],
         "held": len(held), "reasons": dict(sorted(reasons.items())),
         "external_writes": False, "public_visibility_authorized": False,
         "r2_presence_verified": False,
@@ -824,6 +836,8 @@ def main():
                         help="Planejar novos rascunhos privados por galeria, sem consultar fotos/alterar D1")
     parser.add_argument("--franchises-csv", type=Path, help="Franquias do D1, id/name, sem inventar classificacao")
     parser.add_argument("--expected-franchise-count", type=int, help="Contagem total das franquias no D1")
+    parser.add_argument("--pending-franchise-id", type=int,
+                        help="ID real e unico da franquia D1 'Franquia a identificar' para previa de modelos nomeados sem universo reconhecido")
     args = parser.parse_args()
     source, out = args.source_root.resolve(), args.out.resolve()
     ensure_private_output(out, source)
@@ -835,7 +849,8 @@ def main():
             parser.error("--private-drafts-only exige snapshot/contagem D1 de fichas e franquias")
         ops, held, info = plan_private_telegram_drafts(
             args.db, args.existing_drafts_csv, args.expected_draft_count,
-            args.franchises_csv, args.expected_franchise_count)
+            args.franchises_csv, args.expected_franchise_count,
+            pending_franchise_id=args.pending_franchise_id)
         atomic_text(out / "rascunhos_telegram_importacao_privada.jsonl",
                     "".join(json.dumps(x, ensure_ascii=False) + "\n" for x in ops))
         atomic_text(out / "rascunhos_telegram_retidos.jsonl",
