@@ -80,9 +80,15 @@ describe("Telegram-only public studio gallery", () => {
     );
     expect(window.location.search).not.toContain("modelo=");
     const requests = fetcher.mock.calls;
-    expect(requests.some(([uri]) => String(uri).endsWith("/studios"))).toBe(false);
-    expect(requests.find(([uri]) => String(uri).includes("?offset="))?.[1]?.cache).toBe("default");
-    expect(requests.find(([uri]) => String(uri).endsWith("/" + id))?.[1]?.cache).toBe("no-store");
+    expect(requests.some(([uri]) => String(uri).endsWith("/studios"))).toBe(
+      false,
+    );
+    expect(
+      requests.find(([uri]) => String(uri).includes("?offset="))?.[1]?.cache,
+    ).toBe("default");
+    expect(
+      requests.find(([uri]) => String(uri).endsWith("/" + id))?.[1]?.cache,
+    ).toBe("no-store");
   });
 
   it("rejects short search terms locally and passes a valid term to the canonical API", async () => {
@@ -161,7 +167,10 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       fetcher.mock.calls.filter(([uri]) => String(uri).includes("limit=24")),
     ).toHaveLength(0);
-    expect(fetcher.mock.calls.find(([uri]) => String(uri).endsWith("/studios"))?.[1]?.cache).toBe("default");
+    expect(
+      fetcher.mock.calls.find(([uri]) => String(uri).endsWith("/studios"))?.[1]
+        ?.cache,
+    ).toBe("default");
     fireEvent.change(studioSearch, { target: { value: "aguia" } });
     const studioSection = screen.getByRole("region", {
       name: /coleções por estúdio/i,
@@ -186,5 +195,24 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       screen.getByRole("link", { name: /todos os estúdios/i }),
     ).toHaveAttribute("href", "/estudios");
+  });
+  it("filters by a model variant tag without opening the gallery or changing to studio view", async () => {
+    const fetcher = mockCatalog();
+    render(<TelegramStudioCatalog />);
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Filtrar por tag Chibi" }),
+    );
+
+    await waitFor(() => {
+      expect(
+        fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Chibi")),
+      ).toBe(true);
+    });
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toContain("q=Chibi");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Pesquisar")).toHaveValue("Chibi");
   });
 });

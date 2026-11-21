@@ -141,6 +141,11 @@ export default function TelegramStudioCatalog() {
     setDraft(query);
     setSearchError("");
   }, [query]);
+  useEffect(() => {
+    if (view === "studios" && studio) {
+      document.getElementById("colecao")?.scrollIntoView?.({ block: "start" });
+    }
+  }, [view, studio]);
 
   useEffect(() => {
     if (view !== "studios") return;
@@ -730,55 +735,81 @@ export default function TelegramStudioCatalog() {
             {!loading && page && (
               <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
                 {page.items.map((model) => (
-                  <button
+                  <article
                     key={model.id}
-                    type="button"
-                    onClick={() => navigate({ ...route, selected: model.id })}
-                    aria-label={
-                      "Abrir galeria de " + model.name + ", " + model.studio
-                    }
-                    className="group overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] text-left transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
+                    className="group flex flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a]"
                   >
-                    <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-[#2b3028]">
-                      {imageUrl(model.cover) ? (
-                        <img
-                          src={imageUrl(model.cover)}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"
-                        />
-                      ) : (
-                        <span className="p-3 text-center text-sm text-[#b6a496]">
-                          Render em preparação
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-3 sm:p-4">
-                      {view === "studios" && (
-                        <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                          {model.studio}
-                        </p>
-                      )}
-                      {view === "models" && model.character && (
-                        <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                          {model.character}
-                        </p>
-                      )}
-                      <h3 className="mt-2 line-clamp-2 font-semibold leading-5">
-                        {model.name}
-                      </h3>
-                      {model.variant && (
-                        <p className="mt-2 line-clamp-2 text-xs text-[#c2b5a7]">
+                    <button
+                      type="button"
+                      onClick={() => navigate({ ...route, selected: model.id })}
+                      aria-label={
+                        "Abrir galeria de " + model.name + ", " + model.studio
+                      }
+                      className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
+                    >
+                      <div className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]">
+                        {imageUrl(model.cover) ? (
+                          <img
+                            src={imageUrl(model.cover)}
+                            alt=""
+                            loading="lazy"
+                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"
+                          />
+                        ) : (
+                          <span className="p-3 text-center text-sm text-[#b6a496]">
+                            Render em preparação
+                          </span>
+                        )}
+                      </div>
+                      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+                        {view === "studios" && (
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
+                            {model.studio}
+                          </p>
+                        )}
+                        {view === "models" && model.character && (
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
+                            {model.character}
+                          </p>
+                        )}
+                        <h3 className="mt-2 line-clamp-2 font-semibold leading-5">
+                          {model.name}
+                        </h3>
+                      </div>
+                    </button>
+                    <div className="flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
+                      {model.variant &&
+                      model.variant.trim().length >= 3 &&
+                      model.variant.trim().length <= 50 ? (
+                        <button
+                          type="button"
+                          aria-label={"Filtrar por tag " + model.variant}
+                          onClick={() => {
+                            const tag = model.variant.trim();
+                            setDraft(tag);
+                            navigate({
+                              ...route,
+                              query: tag,
+                              offset: 0,
+                              selected: null,
+                            });
+                          }}
+                          className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
+                        >
                           {model.variant}
-                        </p>
-                      )}
-                      <p className="mt-3 text-xs text-[#b6a496]">
+                        </button>
+                      ) : model.variant ? (
+                        <span className="max-w-full truncate text-xs text-[#c2b5a7]">
+                          {model.variant}
+                        </span>
+                      ) : null}
+                      <span className="ml-auto text-right text-xs text-[#b6a496]">
                         {model.imageCount}{" "}
                         {model.imageCount === 1 ? "imagem" : "imagens"}
                         {model.provisional ? " · Em curadoria" : ""}
-                      </p>
+                      </span>
                     </div>
-                  </button>
+                  </article>
                 ))}
               </div>
             )}
