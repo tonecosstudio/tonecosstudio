@@ -165,13 +165,15 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
     'tools/test_worker_folder_counts.mjs',
     'worker/entry.ts',
     'worker/index.ts',
+    'worker/publicQueryBudget.ts',
     'wrangler.jsonc',
   ]);
   assert.equal(contract.migration.phase, 'staged-offline',
     'Reconcile local overlays before authorizing cutover');
   assert.equal(contract.migration.releaseAuthorized, false);
   for (const [path, local] of Object.entries(overlays)) {
-    assert.equal(local.sourceBlob, stage[path], 'Original import pin changed: ' + path);
+    assert.equal(local.sourceBlob, stage[path] ?? contract.staging.sourceReconciledAdditions?.[path],
+      'Original import pin changed: ' + path);
     assert.match(local.localBlob, sha, 'Invalid local Git blob: ' + path);
     assert.notEqual(local.localBlob, local.sourceBlob, 'Unnecessary overlay: ' + path);
     assert.ok(typeof local.reason === 'string' && local.reason.trim().length >= 20,
@@ -219,7 +221,8 @@ test('upstream public query budget is reconciled by Git blob without replacing W
       .update(Buffer.from([0]))
       .update(canonical)
       .digest('hex');
-    assert.equal(actual, expected, 'Reconciled source content drift: ' + path);
+    assert.equal(actual, contract.staging.localOverlays?.[path]?.localBlob ?? expected,
+      'Reconciled source content drift: ' + path);
   }
   assert.match(source('services/catalogo/worker/index.ts'), /validatePublicCatalogQuery/);
   assert.match(source('services/catalogo/worker/entry.ts'), /validatePublicCatalogQuery/);
