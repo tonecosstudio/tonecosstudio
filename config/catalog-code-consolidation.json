@@ -231,8 +231,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "c2390c28a67e60b47f309f8c5c727f0b2a506fdb",
-        "reason": "Reviewed TONART local overlay: routes the dedicated Telegram showcase/private drafts through the existing Worker and validates public catalog query budgets before legacy D1 schema checks. No alternative Worker, storage or production cutover."
+        "localBlob": "0eab431747dfa28f50fd01f7b760ce6c6e1ee80b",
+        "reason": "Reviewed TONART-local overlay routes Telegram public/private endpoints through the existing Worker, forwards the Cloudflare execution context for bounded anonymous metadata caching and preserves public query budgets before D1 checks. No alternative Worker, storage or production cutover."
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
@@ -246,8 +246,8 @@
       },
       "worker/entry.ts": {
         "sourceBlob": "a628fce19ce0b84f76760a716eab0152668e2290",
-        "localBlob": "0422f96f2eef3d6e1139bccc55a02b99fbb11568",
-        "reason": "Reviewed integration of the upstream media query budget into the single existing Worker entrypoint: reject cache-busting query suffixes before immutable R2 reads, preserving GET/HEAD/Range and Telegram gallery routes. No production release."
+        "localBlob": "d930352cdaa2eae59b758b7e07c43400912957da",
+        "reason": "Reviewed entrypoint now forwards the existing Worker execution context to the canonical Telegram metadata edge cache while preserving the upstream media query budget, immutable R2 GET/HEAD/Range controls and Telegram routes. No production release."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
