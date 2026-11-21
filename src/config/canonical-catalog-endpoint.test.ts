@@ -19,36 +19,48 @@ const pagesHeaders = readFileSync(
 
 describe("Cloudflare Pages canonical public catalog", () => {
   it("uses HTTPS same-origin Pages Function for public MVP", () => {
-    expect(resolveCanonicalCatalogApiBase(
-      undefined,
-      "https://tonecosstudio.pages.dev",
-      true,
-    )).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
+    expect(
+      resolveCanonicalCatalogApiBase(
+        undefined,
+        "https://tonecosstudio.pages.dev",
+        true,
+      ),
+    ).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
     expect(CANONICAL_CATALOG_PROXY_PATH).toBe("/catalogo-api/");
   });
 
   it("permits mock endpoints only in development", () => {
-    expect(resolveCanonicalCatalogApiBase(
-      " https://catalog.example.test/api/ ",
-      "https://tonecosstudio.pages.dev",
-      false,
-    )).toBe("https://catalog.example.test/api/");
-    expect(resolveCanonicalCatalogApiBase(
-      undefined, "https://tonecosstudio.pages.dev", false,
-    )).toBe("");
-    expect(resolveCanonicalCatalogApiBase(
-      undefined, "http://127.0.0.1:8080", false,
-    )).toBe("http://127.0.0.1:8080/catalogo-api/");
-    expect(resolveCanonicalCatalogApiBase(
-      "", "http://localhost:5173", false,
-    )).toBe("");
+    expect(
+      resolveCanonicalCatalogApiBase(
+        " https://catalog.example.test/api/ ",
+        "https://tonecosstudio.pages.dev",
+        false,
+      ),
+    ).toBe("https://catalog.example.test/api/");
+    expect(
+      resolveCanonicalCatalogApiBase(
+        undefined,
+        "https://tonecosstudio.pages.dev",
+        false,
+      ),
+    ).toBe("");
+    expect(
+      resolveCanonicalCatalogApiBase(undefined, "http://127.0.0.1:8080", false),
+    ).toBe("http://127.0.0.1:8080/catalogo-api/");
+    expect(
+      resolveCanonicalCatalogApiBase("", "http://localhost:5173", false),
+    ).toBe("");
   });
 
   it("accepts only the exact first-party Pages endpoint in production", () => {
     const origin = "https://tonecosstudio.pages.dev";
-    expect(resolveCanonicalCatalogApiBase(
-      " https://tonecosstudio.pages.dev/catalogo-api/ ", origin, true,
-    )).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
+    expect(
+      resolveCanonicalCatalogApiBase(
+        " https://tonecosstudio.pages.dev/catalogo-api/ ",
+        origin,
+        true,
+      ),
+    ).toBe("https://tonecosstudio.pages.dev/catalogo-api/");
     for (const override of [
       "https://catalog.example.test/api/",
       "https://tonecosstudio.pages.dev/api/catalog",
@@ -73,15 +85,22 @@ describe("Cloudflare Pages canonical public catalog", () => {
     [undefined, "https://example.com?other=1", true],
     [undefined, "not-a-url", true],
     [undefined, undefined, true],
-  ] as const)("fails closed without a trustworthy production origin %#", (configured, origin, prod) => {
-    expect(resolveCanonicalCatalogApiBase(configured, origin, prod)).toBe("");
-  });
+  ] as const)(
+    "fails closed without a trustworthy production origin %#",
+    (configured, origin, prod) => {
+      expect(resolveCanonicalCatalogApiBase(configured, origin, prod)).toBe("");
+    },
+  );
 
   it("requires the existing Cloudflare Pages Service Binding and read-only transport", () => {
-    expect(pagesFunction).toContain("env.CATALOG_WORKER.fetch(String(url), options)");
-    expect(pagesFunction).toContain('const PUBLIC_LIST_ROUTES = new Set([');
+    expect(pagesFunction).toContain(
+      "env.CATALOG_WORKER.fetch(String(url), options)",
+    );
+    expect(pagesFunction).toContain("const PUBLIC_LIST_ROUTES = new Set([");
     expect(pagesFunction).toContain('if (request.method !== "GET")');
-    expect(pagesFunction).toContain('return new Response("Catalog unavailable"');
+    expect(pagesFunction).toContain(
+      'return new Response("Catalog unavailable"',
+    );
     expect(pagesFunction).not.toContain("env.DB");
     expect(pagesFunction).not.toContain("env.MEDIA");
     // Request/response behavior, including unauthorized routes, is covered by
@@ -110,23 +129,41 @@ describe("Cloudflare Pages canonical public catalog", () => {
     });
     // Vercel may route extensionless SPA paths to index.html, but missing
     // robots/sitemap/favicon/assets must not receive HTML with HTTP 200.
-    const spaRoute = new RegExp("^" + vercelConfig.rewrites.at(-1).source + "$");
-    for (const route of ["/", "/login", "/conta", "/admin", "/modelos/example-model"]) {
+    const spaRoute = new RegExp(
+      "^" + vercelConfig.rewrites.at(-1).source + "$",
+    );
+    for (const route of [
+      "/",
+      "/login",
+      "/conta",
+      "/admin",
+      "/modelos/example-model",
+    ]) {
       expect(spaRoute.test(route)).toBe(true);
     }
-    for (const asset of ["/sitemap.xml", "/favicon.ico", "/robots.txt",
-      "/favicon.svg", "/assets/missing.js", "/images/example.webp"]) {
+    for (const asset of [
+      "/sitemap.xml",
+      "/favicon.ico",
+      "/robots.txt",
+      "/favicon.svg",
+      "/assets/missing.js",
+      "/images/example.webp",
+    ]) {
       expect(spaRoute.test(asset)).toBe(false);
     }
-    expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual({
-      key: "X-Robots-Tag",
-      value: "noindex, nofollow, noarchive",
-    });
-    const csp = vercelConfig.headers.flatMap((rule) => rule.headers)
+    expect(vercelConfig.headers.flatMap((rule) => rule.headers)).toContainEqual(
+      {
+        key: "X-Robots-Tag",
+        value: "noindex, nofollow, noarchive",
+      },
+    );
+    const csp = vercelConfig.headers
+      .flatMap((rule) => rule.headers)
       .find((header) => header.key === "Content-Security-Policy")?.value;
-    expect(csp).toContain("connect-src 'self' https://icmtmaakjucmuzxnofkd.supabase.co;");
+    expect(csp).toContain(
+      "connect-src 'self' https://icmtmaakjucmuzxnofkd.supabase.co;",
+    );
     expect(csp).not.toContain("*.supabase.co");
     expect(csp).not.toContain("ordax");
-
   });
 });
