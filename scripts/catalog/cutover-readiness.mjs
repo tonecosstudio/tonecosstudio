@@ -15,6 +15,7 @@ const WORKER_CONFIG = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/wran
 const SCHEMA_CONTRACT = JSON.parse(readFileSync(join(ROOT, 'services/catalogo/config/catalog-schema-contract.json'), 'utf8'))
 const SOURCE_WORKFLOW_ID = CANONICAL.origin.apiDeployWorkflowId
 const SOURCE_WORKFLOW_PATH = CANONICAL.origin.apiDeployPipeline
+const SOURCE_WRITERS = CANONICAL.origin.additionalWriterWorkflows
 const SOURCE_REPO = CANONICAL.origin.repository
 const SOURCE_REPO_ID = CANONICAL.origin.repositoryId
 const SOURCE_MAIN_SHA = CANONICAL.origin.observedMainSha
@@ -102,6 +103,24 @@ export function assessCutoverReadiness(contract, state) {
   add(Number.isInteger(observed.requested) && observed.requested === 0, 'source_workflow_runs_requested_or_unverified')
   add(Number.isInteger(observed.waiting) && observed.waiting === 0, 'source_workflow_runs_waiting_or_unverified')
   add(Number.isInteger(observed.pending) && observed.pending === 0, 'source_workflow_runs_pending_or_unverified')
+  // The retiring repository had additional independent production D1/R2 writers.
+  // Disabling only cloudflare.yml does not prove a unique publishing authority.
+  const registeredWriters = contract?.origin?.additionalWriterWorkflows
+  const observedWriters = observed.additionalWriters
+  add(
+    Array.isArray(SOURCE_WRITERS) && SOURCE_WRITERS.length === 4 &&
+      Array.isArray(registeredWriters) && registeredWriters.length === SOURCE_WRITERS.length &&
+      new Set(registeredWriters.map(x => x.path)).size === 4 &&
+      SOURCE_WRITERS.every(writer => registeredWriters.some(x => x.id === writer.id && x.path === writer.path)) &&
+      Array.isArray(observedWriters) && observedWriters.length === SOURCE_WRITERS.length &&
+      SOURCE_WRITERS.every(writer => {
+        const live = observedWriters.find(x => x?.path === writer.path)
+        return live?.id === writer.id && live?.state === 'disabled_manually' &&
+          ['running', 'queued', 'requested', 'waiting', 'pending'].every(
+            key => Number.isInteger(live[key]) && live[key] === 0)
+      }),
+    'source_additional_writers_active_or_unverified',
+  )
   add(observed.cloudflareAccountId === CLOUDFLARE_ACCOUNT_ID, 'cloudflare_account_unverified')
 
   const deployment = observed.deployment
@@ -223,6 +242,25 @@ export async function inspectLiveReadOnly(env = process.env) {
     workflow, running: active.total_count, queued: queued.total_count,
     requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
   }
+  if (!Array.isArray(SOURCE_WRITERS) || SOURCE_WRITERS.length !== 4 ||
+      new Set(SOURCE_WRITERS.map(x => x.path)).size !== 4) {
+    throw new Error('retiring_source_writer_inventory_unverified')
+  }
+  state.additionalWriters = await Promise.all(SOURCE_WRITERS.map(async writer => {
+    const endpoint = sourceUrl + '/actions/workflows/' +
+      encodeURIComponent(writer.path.split('/').at(-1))
+    const [metadata, ...counts] = await Promise.all([
+      getJSON(endpoint, ghHeaders),
+      ...['in_progress', 'queued', 'requested', 'waiting', 'pending'].map(
+        status => getJSON(endpoint + '/runs?status=' + status + '&per_page=1', ghHeaders)),
+    ])
+    return {
+      id: metadata.id, path: metadata.path, state: metadata.state,
+      running: counts[0]?.total_count, queued: counts[1]?.total_count,
+      requested: counts[2]?.total_count, waiting: counts[3]?.total_count,
+      pending: counts[4]?.total_count,
+    }
+  }))
   // No token: still report actual GitHub state, but never infer Cloudflare readiness.
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return state
   const account = env.CLOUDFLARE_ACCOUNT_ID
@@ -266,6 +304,7 @@ async function main() {
       sourceRequested: state.requested ?? null,
       sourceWaiting: state.waiting ?? null,
       sourcePending: state.pending ?? null,
+      sourceAdditionalWriters: state.additionalWriters?.map(x => ({ path: x.path, state: x.state })) ?? null,
       liveWorkerVersionId: state.deployment?.versions?.[0]?.version_id ?? null,
       verifiedShowcaseMigration: state.showcaseSchema?.migration ?? null,
       blockers: verdict.blockers,
