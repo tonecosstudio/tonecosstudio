@@ -83,7 +83,7 @@ test("all public studio listings, details and media enforce explicit showcase vi
   const response=await routeTelegramStudioShowcase(request(url),env);
   assert.equal(response.status,200);
  }
- const modelQueries=queries.filter(sql=>/FROM models m\\b/.test(sql));
+ const modelQueries=queries.filter(sql=>/FROM models m\b/.test(sql));
  assert.ok(modelQueries.length>=4);
  assert.ok(modelQueries.every(sql=>sql.includes("m.telegram_showcase_visible=1")));
  assert.equal(keys.length,1);
