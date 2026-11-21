@@ -55,8 +55,11 @@ export function resolveSocialOrigin(env = process.env) {
   return null;
 }
 
-export function injectSocialMeta(html, origin) {
+export function injectSocialMeta(html, origin, env = process.env) {
   if (!origin) return html;
+  const socialAlt = env.VITE_PUBLIC_CATALOG_MVP === "true"
+    ? "TONART Studio — catálogo visual dos modelos dos estúdios"
+    : "TONART Studio — esculturas sob encomenda";
   const anchor = '    <meta property="og:site_name" content="TONART Studio" />';
   if (html.split(anchor).length !== 2 || html.includes('property="og:image"') || html.includes('name="twitter:image"')) {
     throw new Error("Unexpected Tonecos social metadata template; refusing to generate duplicates.");
@@ -68,9 +71,9 @@ export function injectSocialMeta(html, origin) {
     '<meta property="og:image:type" content="image/png" />',
     '<meta property="og:image:width" content="1200" />',
     '<meta property="og:image:height" content="630" />',
-    '<meta property="og:image:alt" content="TONART Studio — esculturas sob encomenda" />',
+    `<meta property="og:image:alt" content="${socialAlt}" />`,
     `<meta name="twitter:image" content="${imageUrl}" />`,
-    '<meta name="twitter:image:alt" content="TONART Studio — esculturas sob encomenda" />',
+    `<meta name="twitter:image:alt" content="${socialAlt}" />`,
   ];
   return html.replace(anchor, `${anchor}\n    ${tags.join("\n    ")}`);
 }
