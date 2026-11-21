@@ -16,7 +16,13 @@ assert 'nameOfficialProfiles' in html
 assert 'nameSourceLink' in html
 assert 'galleryCreate' in html and 'saveVisualGallery' in html
 assert 'nameOpenGallery' in html
-assert 'min_images:2' in js
+assert 'min_images:el("multiplePhotosOnly").checked?2:1' in js
+assert 'id="multiplePhotosOnly"' in html
+assert 'id="boardDialog"' in html and 'id="openBoardBtn"' in html
+assert 'id="propagateGalleryName"' in html and '/api/propagate-gallery-name' in js
+assert 'async function openBoard(' in js
+assert 'id="catalogSyncButton"' in html and '/api/catalog-sync' in js
+assert 'catalogSyncStudio' in html and 'renderCatalogSync' in js
 assert 'api/create-gallery' in js
 assert 'gallery_image_count' in js
 assert 'editGalleryPhotoName' in js

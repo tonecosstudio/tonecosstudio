@@ -77,7 +77,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
         "3DXM":{"patreon","cgtrader"},
         "Bulkamancer":{"website","cults3d"},
         "C27 Collectibles":{"website"},
-        "Kuton Sculpts":{"website"},
+        "Kuton Sculpts":{"website","cults3d","cgtrader","patreon"},
         "MPPrints _ My Poke Prints":{"cults3d","patreon"},
         "Momoji":{"cults3d","patreon"},
         "StepanovSculpts":{"cgtrader","etsy"},

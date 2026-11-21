@@ -88,7 +88,7 @@ async function refreshModels(){
  if(viewMode!=="models")return;
  try{
   const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
-  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:2,unnamed:el("onlyUnnamedModels").checked?"1":"0"});
+  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:el("multiplePhotosOnly").checked?2:1,unnamed:el("onlyUnnamedModels").checked?"1":"0"});
   const result=await api("/api/models?"+p);
   await refreshAlbumCandidates();
   modelTotal=result.total;
@@ -105,7 +105,7 @@ async function refreshModels(){
    b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
   }
   if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
-  el("summary").textContent=fmt(modelTotal)+" galerias com pelo menos 2 imagens";
+  el("summary").textContent=fmt(modelTotal)+(el("multiplePhotosOnly").checked?" galerias com m?ltiplas fotos":" galerias de modelos, incluindo foto ?nica");
   el("page").textContent="Página "+currentPage;
   el("prev").disabled=currentPage<=1;el("next").disabled=currentPage*48>=modelTotal;
   const stat=await api("/api/stats");
@@ -192,7 +192,7 @@ el("prev").onclick=()=>{currentPage=Math.max(1,currentPage-1);if(viewMode==="mod
 el("next").onclick=()=>{currentPage++;if(viewMode==="models")refreshModels();else refresh()};
 el("search").addEventListener("input",()=>{if(viewMode==="models"){search=el("search").value;currentPage=1;clearTimeout(window.smartSearch);window.smartSearch=setTimeout(refreshModels,350)}});
 setView("models");
-setInterval(refreshModels,10000);
+/* Um unico ciclo ja chama refresh() para a aba ativa. */
 
 /* Etapa 1: nomear primeiro; etapa 2: agrupar após os nomes sugeridos. */
 async function refreshNames(){
@@ -285,7 +285,7 @@ el("search").addEventListener("input",()=>{
  }
 });
 setView("models");
-setInterval(refreshNames,10000);
+
 
 el("materializeNames").onclick=async()=>{
  try{
@@ -384,3 +384,132 @@ el("saveVisualGallery").onclick=async()=>{
  }catch(e){notify("Galeria não criada: "+e.message);}
 };
 
+
+
+/* Prancha ampliada: vista unica das fotos do mesmo group_key canonico.
+   Deduplica apenas na exibicao por SHA; nao modifica o acervo nem propoe fusoes. */
+async function openBoard(key){
+  if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha invalido.");return;}
+  try{
+    const group=await api("/api/model/"+key);
+    const photos=new Map();
+    for(const item of group.images||[]){
+      const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
+      if(!photos.has(fingerprint))photos.set(fingerprint,item);
+    }
+    el("boardTitle").textContent=group.title||"Modelo sem titulo";
+    el("boardMeta").textContent=[
+      group.studio,group.variant,group.state,
+      photos.size+" fotos unicas",group.images.length+" mensagens",
+      (group.identity_conflicts||[]).length+" conflitos de identidade"
+    ].filter(Boolean).join(" | ");
+    const root=el("boardPhotos");root.replaceChildren();
+    for(const photo of photos.values()){
+      const figure=document.createElement("figure");
+      figure.className="board-photo";
+      const link=document.createElement("a");
+      link.href="/media/"+photo.message_id;
+      link.target="_blank";link.rel="noopener noreferrer";
+      const image=document.createElement("img");
+      image.src=link.href;image.loading="lazy";
+      image.alt="Foto "+photo.message_id+" de "+group.title;
+      link.append(image);figure.append(link);
+      const caption=document.createElement("figcaption");
+      caption.className="sub";
+      caption.textContent=[
+        "#"+photo.message_id,
+        photo.match_reason==="reviewed_angles"?"Angulo revisado":"Agrupamento provis?rio",
+        photo.source_album?"Album: "+photo.source_album:"",
+        (photo.source_caption||"Legenda indisponivel").slice(0,340)
+      ].filter(Boolean).join("\n");
+      figure.append(caption);
+      const edit=document.createElement("button");
+      edit.textContent="Nomear esta foto";
+      edit.onclick=async()=>{
+        el("boardDialog").close();
+        await editGalleryPhotoName(photo.message_id);
+      };
+      figure.append(edit);root.append(figure);
+    }
+    if(!photos.size)text(root,"p","Sem fotos no grupo; revisar origem.","empty");
+    el("boardDialog").showModal();
+  }catch(e){notify("Prancha: "+e.message);}
+}
+el("openBoardBtn").onclick=()=>{if(chosenGroup)openBoard(chosenGroup.group_key)};
+el("propagateGalleryName").onclick=async()=>{
+  if(!chosenGroup)return;
+  try{
+    const result=await post("/api/propagate-gallery-name",{group_key:chosenGroup.group_key});
+    notify("Propostas herdadas: "+fmt(result.inherited_names)+
+      " | Galerias com conflito: "+fmt(result.conflicting_galleries)+
+      ". Nomes permanecem provisorios.");
+    await openModel(chosenGroup.group_key);
+  }catch(e){notify("Nome nas outras vistas: "+e.message);}
+};
+el("closeBoard").onclick=()=>el("boardDialog").close();
+el("multiplePhotosOnly").onchange=()=>{currentPage=1;refreshModels()};
+
+/* Concilia o site e o host sem gravar no D1 nem alterar a curadoria.
+   O backend compartilha um unico snapshot HTTP por 30 minutos. */
+let latestCatalogSync=null;
+function renderCatalogSync(){
+  if(!latestCatalogSync)return;
+  const info=latestCatalogSync;
+  el("catalogSyncDetails").hidden=false;
+  el("catalogSyncNumbers").textContent=
+    "Site: "+fmt(info.site_models)+" | Host: "+fmt(info.host_groups)+
+    " | Correspondentes: "+fmt(info.matched)+
+    " | So host: "+fmt(info.local_only_count)+
+    " | So site: "+fmt(info.site_only_count)+
+    " | Variantes/identidades divergentes: "+fmt(info.differences_count);
+  const filter=el("catalogSyncStudio").value;
+  const host=(info.local_only||[]).filter(x=>!filter||x.studio===filter);
+  const site=(info.site_only||[]).filter(x=>!filter||x.studio===filter);
+  const diffs=(info.differences||[]).filter(x=>!filter||x.studio===filter);
+  const root=el("catalogSyncList");root.replaceChildren();
+  text(root,"strong","Somente no host ("+fmt(host.length)+")");
+  for(const item of host.slice(0,45)){
+    const b=document.createElement("button");
+    b.textContent=(item.studio||"Estudio ?")+" | "+(item.title||"Sem nome")+" | "+item.state;
+    b.onclick=async()=>{setView("models");await openModel(item.group_key);await openBoard(item.group_key)};
+    root.append(b);
+  }
+  if(host.length>45)text(root,"small","Mais "+fmt(host.length-45)+" grupos: filtre por estudio.");
+  text(root,"strong","Somente no site por ID ("+fmt(site.length)+")");
+  for(const item of site.slice(0,20))text(root,"div",item.studio+" | "+item.title,"sub");
+  if(site.length>20)text(root,"small","Mais "+fmt(site.length-20)+" fichas sem grupo local correspondente.");
+  text(root,"strong","Metadados diferentes ("+fmt(diffs.length)+")");
+  for(const item of diffs.slice(0,25)){
+    const b=document.createElement("button");
+    b.textContent=item.studio+" | "+item.title+" | "+item.fields.join(", ");
+    b.onclick=async()=>{setView("models");await openModel(item.group_key);await openBoard(item.group_key)};
+    root.append(b);
+  }
+}
+async function refreshCatalogSync(){
+  const button=el("catalogSyncButton");
+  if(button.disabled)return;
+  button.disabled=true;
+  el("catalogSyncStatus").textContent="Conferindo a API publica e o SQLite local...";
+  try{
+    const report=await api("/api/catalog-sync");
+    latestCatalogSync=report;
+    const select=el("catalogSyncStudio"),previous=select.value;
+    select.replaceChildren();
+    const all=document.createElement("option");all.value="";all.textContent="Todos os estudios";select.append(all);
+    for(const studio of report.studios||[]){
+      const option=document.createElement("option");
+      option.value=studio.studio;
+      option.textContent=studio.studio+" | local "+studio.local_only+" / site "+studio.site_only;
+      select.append(option);
+    }
+    if(Array.from(select.options).some(o=>o.value===previous))select.value=previous;
+    el("catalogSyncStatus").textContent="Conferencia somente leitura em "+report.observed_at+
+      ". Nenhum nome ou direito foi aprovado automaticamente.";
+    renderCatalogSync();
+  }catch(e){el("catalogSyncStatus").textContent="Conferencia indisponivel: "+e.message;}
+  finally{button.disabled=false;}
+}
+el("catalogSyncButton").onclick=refreshCatalogSync;
+el("catalogSyncStudio").onchange=renderCatalogSync;
+setInterval(()=>{if(latestCatalogSync&&document.visibilityState==="visible")refreshCatalogSync()},1800000);

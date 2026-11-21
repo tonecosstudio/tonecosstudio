@@ -187,3 +187,46 @@ A segunda etapa utilizou páginas específicas no catálogo oficial do Abe3D (Cu
 - Nenhuma imagem, dado sensível do Telegram, SQLite, lista privada de IDs ou CSV preenchido foi enviado ao GitHub; nenhuma foto foi publicada ou produto da TONART modificado.
 
 Os totais variam porque o downloader continua acrescentando imagens e galerias de outras fontes ao banco. A validação de identidade exata e dos direitos comerciais segue como etapa distinta da organização visual.
+
+
+## Host MCP-first: pranchas e conciliacao de catalogo
+
+O **host local da Curadoria** e a unica interface de operacao de nomes, fotos,
+pranchas e agrupamento do Telegram. Nao criar outro aplicativo ou SQLite para
+essa funcao. A API e vinculada a `127.0.0.1:8769` e continua privada.
+
+- `GET /api/models?limit=48&min_images=1` lista grupos, inclusive os de uma
+  unica foto. O checkbox da interface permite restringir a multiplos angulos.
+- `GET /api/model/<group_key>` retorna o mesmo grupo com imagens, legendas,
+  vinculos de album e provas, usado pelo botao **Abrir prancha ampliada**.
+  A prancha deduplica apenas a visualizacao por SHA; mensagens permanecem
+  no SQLite original e podem ser abertas individualmente.
+- `GET /api/album-candidates?topic=<estudio>` mostra albuns parcialmente
+  agrupados; a revisao interativa existente decide os IDs de fotos livres.
+- `GET /api/catalog-sync` compara **somente leitura** com a vitrine
+  `catalogo.tonartstudio.com.br`, usando IDs de galeria em vez de nome
+  aproximado. Rejeita paginas incompletas/duplicadas e faz no maximo uma
+  coleta publica por host a cada 30 minutos. Responde `local_only`,
+  `site_only`, `differences` e totais por estudio; nunca escreve D1/R2.
+
+O **OrdaX MCP** usa as capacidades existentes de terminal, observacao de
+tela e navegador para chamar estas rotas locais e revisar as pranchas. Nao
+adicionar um segundo Runtime/Worker, servidor publico, nem expor o SQLite via
+rede. A acao POST /api/propagate-gallery-name reaproveita a funcao canonica
+de heranca de nome apenas para vistas reviewed_angles, recusa identidades
+conflitantes e so escreve propostas provavel em fotos ainda sem nome.
+Edicoes continuam nas rotas ja existentes `/api/review-name`,
+`/api/review-model`, `/api/create-gallery`, com token de origem local,
+revisoes otimistas, evidencia e proibicao de mesclar esculturas diferentes.
+
+**Sincronizar nao e publicar automaticamente:** diferencas ficam na fila
+de revisao. Correcao de fichas existentes utiliza o pre-publicador e os
+fluxos can?nicos de D1/R2 com prova de SHA, grupo, variante, gallery_version,
+revisao e grant de previa quando necessario. Modelos `revisar` ou
+`provavel` nao se tornam confirmados; `published=0`, direitos e gate
+de licenca permanecem preservados. Nenhuma alteracao do site, D1 ou R2
+acontece por uma chamada de leitura do host.
+
+Teste offline:
+`python -m unittest -v teste_catalog_sync_status teste_ui
+teste_smart_curadoria teste_model_gallery teste_name_curadoria`

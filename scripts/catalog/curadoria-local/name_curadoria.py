@@ -355,7 +355,10 @@ OFFICIAL_STUDIO_PROFILES={
  "C27 Collectibles":[
    ("C27 Collectibles","website","https://c27-studios.com/")],
  "Kuton Sculpts":[
-   ("Kuton Sculpts","website","https://kutonsculpts.com/")],
+   ("Kuton Sculpts","website","https://kutonsculpts.com/"),
+   ("Kuton Sculpts","cults3d","https://cults3d.com/en/users/Kuton/3d-models"),
+   ("Kuton Sculpts","cgtrader","https://www.cgtrader.com/designers/kutonsculpts"),
+   ("Kuton Sculpts","patreon","https://www.patreon.com/kuton_sculpts")],
  "MPPrints _ My Poke Prints":[
    ("MPPrints","cults3d","https://cults3d.com/en/users/MPPrints/3d-models"),
    ("MPPrints","patreon","https://www.patreon.com/mypokeprints")],
@@ -589,8 +592,14 @@ def propagate_reviewed_gallery_names(db_path,limit=300,group_key=None):
             query+=" AND g.group_key=?"
             parameters=(str(group_key),)
         groups=db.execute(query+" ORDER BY g.group_key",parameters).fetchall()
-        manual={r[0] for r in db.execute(
-            "SELECT DISTINCT message_id FROM name_proposal_events WHERE event_type LIKE 'manual_%'")}
+        # A chamada pontual pode recusar qualquer proposta previamente editada
+        # pela revisao > 0, sem varrer todo o historico de eventos da biblioteca.
+        # A chamada geral conserva a verificacao completa do historico manual.
+        if group_key is None:
+            manual={r[0] for r in db.execute(
+                "SELECT DISTINCT message_id FROM name_proposal_events WHERE event_type LIKE 'manual_%'")}
+        else:
+            manual=set()
         for g in groups:
             members=db.execute("""SELECT p.message_id,p.studio,p.title,p.universe,
                   p.variant,p.status,p.confidence,p.evidence_type,p.notes,
@@ -612,7 +621,9 @@ def propagate_reviewed_gallery_names(db_path,limit=300,group_key=None):
                  r["message_id"]))[0]
             for dest in members:
                 if changed>=limit:break
-                if dest["status"]!="revisar" or (dest["title"] or "").strip() or dest["notes"] or dest["official_url"] or dest["message_id"] in manual:
+                if (dest["status"]!="revisar" or (dest["title"] or "").strip()
+                    or dest["notes"] or dest["official_url"] or dest["message_id"] in manual
+                    or (group_key is not None and dest["revision"]!=0)):
                     continue
                 stamp=smart.utc()
                 filename=proposed_name({"title":origin["title"],"variant":origin["variant"]},

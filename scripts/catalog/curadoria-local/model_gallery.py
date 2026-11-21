@@ -141,16 +141,22 @@ def list_album_candidates(db_path,topic="",limit=60):
         return {"items":items,"limit":limit}
 
 
-def refresh_titles(db_path):
+def refresh_titles(db_path,group_keys=None):
     """Quando nomes chegam depois da reunião das fotos, atualiza só rótulos
     provisórios sem alterar grupos revisados, membros ou fontes."""
     updated=0
     with smart.db_open(db_path) as db:
         smart.setup(db)
-        groups=db.execute("""SELECT g.group_key,g.title FROM model_groups g
+        query="""SELECT g.group_key,g.title FROM model_groups g
             WHERE g.state='revisar' AND g.title LIKE 'Modelo sem nome #%'
               AND EXISTS(SELECT 1 FROM model_group_members m
-              WHERE m.group_key=g.group_key AND m.match_reason='reviewed_angles')""").fetchall()
+              WHERE m.group_key=g.group_key AND m.match_reason='reviewed_angles')"""
+        keys=tuple(str(key) for key in (group_keys or ()))
+        if group_keys is not None:
+            if not keys:
+                return {"updated_titles":0}
+            query+=" AND g.group_key IN ("+",".join("?" for _ in keys)+")"
+        groups=db.execute(query,keys).fetchall()
         for group in groups:
             proposals=db.execute("""SELECT p.studio,p.title,p.universe,p.variant
                 FROM name_proposals p JOIN model_group_members m USING(message_id)

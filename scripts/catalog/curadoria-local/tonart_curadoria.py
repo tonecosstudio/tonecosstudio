@@ -24,6 +24,7 @@ import smart_curadoria as smart
 import name_curadoria as naming
 import visual_name_suggestions as visual
 import model_gallery as gallery
+import catalog_sync_status as catalog_sync
 import telegram_curadoria_adapter as telegram_identity
 
 HOST, PORT = "127.0.0.1", 8769
@@ -343,6 +344,8 @@ class Handler(BaseHTTPRequestHandler):
                    page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
                    topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
                    status=p.get("status",[""])[0][:20]))
+            if route.path=="/api/catalog-sync":
+                return self.respond(catalog_sync.compare(DB_PATH))
             if route.path=="/api/album-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery.list_album_candidates(DB_PATH,
@@ -386,6 +389,12 @@ class Handler(BaseHTTPRequestHandler):
                     obj.get("universe",""),obj.get("variant",""),
                     obj.get("status","revisar"),obj.get("official_url",""),
                     obj.get("notes","")))
+            if self.path=="/api/propagate-gallery-name":
+                key=str(obj.get("group_key",""))
+                if not re.fullmatch("[0-9a-f]{24}",key):
+                    raise ValueError("ID de galeria invalido")
+                return self.respond(naming.propagate_reviewed_gallery_names(
+                    DB_PATH,limit=40,group_key=key))
             if self.path=="/api/create-gallery":
                 return self.respond(gallery.register_visual_gallery(DB_PATH,
                     obj.get("message_ids",[]),obj.get("topic",""),
