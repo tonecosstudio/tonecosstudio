@@ -979,7 +979,7 @@ el("closeBoard").onclick=()=>el("boardDialog").close();
 el("multiplePhotosOnly").onchange=()=>{currentPage=1;refreshModels()};
 
 /* Concilia o site e o host sem gravar no D1 nem alterar a curadoria.
-   O backend compartilha um unico snapshot HTTP por 30 minutos. */
+   O backend compartilha um unico snapshot HTTP por ate 6 horas para evitar consultas repetidas. */
 let latestCatalogSync=null;
 function renderCatalogSync(){
   if(!latestCatalogSync)return;
