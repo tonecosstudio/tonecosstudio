@@ -158,3 +158,85 @@ selection=subprocess.run(["node","-e",selection_script,str(script)],
 assert selection.returncode==0,selection.stderr
 assert "CHECKBOX_SELECTION_E2E_OK" in selection.stdout
 print("UI APROVADA: script externo, sintaxe JS valida, token local injetado pelo servidor")
+
+
+# Exercise the actual group-queue JavaScript with a synthetic DOM.
+# This checks that the audit card opens the native board and posts only
+# an explicit decision; it never touches images or production.
+group_queue_js=r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const start=source.indexOf('let queuePageIndex=0');
+const end=source.indexOf('let albumCandidates=',start);
+assert(start>=0&&end>start);
+class Element{
+ constructor(tag='div'){this.tagName=tag;this.children=[];this.hidden=false;
+  this.disabled=false;this.value='';this.textContent='';}
+ append(...children){this.children.push(...children);}
+ replaceChildren(...children){this.children=[...children];}
+}
+const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
+ 'legacyAuditFilters','queueVariantLabel','legacyAuditReview','nameReview',
+ 'legacyAuditTitle','legacyAuditMeta','legacyAuditDecision','legacyAuditNotes',
+ 'legacyAuditOpenBoard','legacyAuditSave','legacyAuditStatus','queueResults',
+ 'queueSummary','summary','page','prev','next'];
+const elements=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
+elements.queueKind.value='legacy_groups';
+elements.legacyAuditState.value='pending';
+elements.legacyAuditRisk.value='all';
+const group={group_key:'a'.repeat(24),title:'Garrosh',original_topic:'Luftmensch',
+ sample_message:20231,photos:10,unique_files:10,source_albums:1,
+ risk_label:'Galeria grande',review_state:'pending',revision:0,priority:2};
+const boards=[],posts=[],paths=[];
+const ctx=vm.createContext({
+  el:id=>elements[id],viewMode:'queue',topic:'Luftmensch',search:'',
+  URLSearchParams,fmt:n=>String(n),document:{createElement:tag=>new Element(tag)},
+  text:(parent,tag,value)=>{
+    const node=new Element(tag);node.textContent=String(value);
+    parent.append(node);return node;
+  },
+  setThumb:(node,id)=>{node.src='/thumb/'+id;},
+  openBoard:key=>boards.push(key),
+  openName:()=>{throw Error('Should not open name editor for legacy group')},
+  api:async url=>{
+    paths.push(url);assert(url.startsWith('/api/legacy-album-audit?'));
+    return {items:[group],total:1,next_cursor:'',has_more:false};
+  },
+  post:async (url,payload)=>{
+    assert.strictEqual(url,'/api/audit-legacy-gallery');
+    posts.push(payload);
+    return {ok:true,revision:1,publication_approved:false};
+  },
+  notify:()=>{},console,
+});
+vm.runInContext(source.slice(start,end),ctx);
+(async()=>{
+ await vm.runInContext('refreshReviewQueue()',ctx);
+ assert.strictEqual(elements.legacyAuditFilters.hidden,false);
+ assert.strictEqual(elements.queueVariantLabel.hidden,true);
+ assert.strictEqual(elements.queueResults.children.length,1);
+ assert.strictEqual(elements.queueResults.children[0].children[0].src,'/thumb/20231');
+ elements.queueResults.children[0].onclick();
+ assert.deepStrictEqual(boards,[group.group_key]);
+ assert.strictEqual(elements.legacyAuditReview.hidden,false);
+ assert.strictEqual(elements.legacyAuditTitle.textContent,'Garrosh · Luftmensch');
+ elements.legacyAuditOpenBoard.onclick();
+ assert.strictEqual(boards.length,2);
+ elements.legacyAuditDecision.value='same_sculpture';
+ elements.legacyAuditNotes.value='Dez imagens originais da mesma escultura e base.';
+ await elements.legacyAuditSave.onclick();
+ assert.strictEqual(posts.length,1);
+ assert.strictEqual(posts[0].revision,0);
+ assert.strictEqual(posts[0].group_key,group.group_key);
+ assert.strictEqual(posts[0].decision,'same_sculpture');
+ assert.strictEqual(elements.legacyAuditForm?.hidden||true,true);
+ assert(paths.length>=2);
+ console.log('NATIVE_GROUP_AUDIT_UI_E2E_OK');
+})().catch(e=>{console.error(e);process.exitCode=1});
+"""
+group_test=subprocess.run(
+    ["node","-e",group_queue_js,str(script)],
+    capture_output=True,text=True,timeout=20,
+)
+assert group_test.returncode==0,group_test.stderr
+assert "NATIVE_GROUP_AUDIT_UI_E2E_OK" in group_test.stdout
