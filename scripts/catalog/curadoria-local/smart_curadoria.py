@@ -142,11 +142,18 @@ def process_batch(db_path,limit=300):
             mid=a["message_id"]
             if seen.get(mid)==fp:
                 continue
+            # A manually split gallery must never be recreated by a later
+            # downloader metadata/caption change. The human review event and
+            # revisioned split are authoritative, not the album import.
+            if db.execute("""SELECT 1 FROM curation_seen
+                 WHERE message_id=? AND outcome='visual_split_review'""",
+                 (mid,)).fetchone():
+                continue
             # Galerias revisadas visualmente têm prioridade sobre a sugestão
             # automática baseada apenas em legenda / álbum. Uma mudança no
             # downloader não deve desmontar ou sobrescrever a revisão humana.
             reviewed=db.execute("""SELECT 1 FROM model_group_members
-                 WHERE message_id=? AND match_reason='reviewed_angles'
+                 WHERE message_id=? AND match_reason IN ('reviewed_angles','reviewed_split')
                  LIMIT 1""",(mid,)).fetchone()
             if reviewed:
                 db.execute("""INSERT INTO curation_seen(message_id,fingerprint,
