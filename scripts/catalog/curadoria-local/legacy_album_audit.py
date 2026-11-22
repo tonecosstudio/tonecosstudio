@@ -130,31 +130,13 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
                 params+cursor_params+[limit+1]
             ).fetchall()
             items=[dict(r) for r in rows[:limit]]
-            # One bounded SELECT serves all contact sheets. No N+1 queries and
-            # no reading/decoding originals in the listing path.
+            # Same single-query sampler as the general model wall (SSOT).
             if previews and items:
-                keys=[item["group_key"] for item in items]
-                images=db.execute("""
-                    WITH numbered AS (
-                      SELECT m.group_key,m.message_id,
-                        ROW_NUMBER() OVER (
-                          PARTITION BY m.group_key ORDER BY m.message_id
-                        ) AS first_rank,
-                        ROW_NUMBER() OVER (
-                          PARTITION BY m.group_key ORDER BY m.message_id DESC
-                        ) AS last_rank
-                      FROM model_group_members m
-                      WHERE m.group_key IN (""" + ",".join("?" for _ in keys) + """)
-                    )
-                    SELECT group_key,message_id FROM numbered
-                    WHERE first_rank<=? OR last_rank<=?
-                    ORDER BY group_key,message_id
-                """,keys+[(previews+1)//2,previews//2]).fetchall()
-                grouped_ids={key:[] for key in keys}
-                for image in images:
-                    grouped_ids[image["group_key"]].append(image["message_id"])
+                samples=smart.gallery_preview_ids(
+                    db,[item["group_key"] for item in items],previews
+                )
                 for item in items:
-                    item["preview_ids"]=grouped_ids[item["group_key"]]
+                    item["preview_ids"]=samples[item["group_key"]]
         finally:
             db.rollback()
     has_more=len(rows)>limit
