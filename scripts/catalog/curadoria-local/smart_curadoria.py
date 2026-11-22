@@ -255,9 +255,9 @@ def stats(db_path):
                 "model_states":by_state}
 
 def gallery_preview_ids(db, group_keys, previews):
-    """Sample first/last views in ONE bounded read for many gallery cards.
+    """Sample DISTINCT SHA-256 first/last views in ONE bounded SELECT.
 
-    Uses the existing members index; does not decode, fetch or mutate images.
+    Uses the existing members/assets indexes; never decodes, downloads or writes images.
     Kept in the model engine as SSOT for regular and legacy-audit walls.
     """
     if previews not in (0,1,4,6):
@@ -268,12 +268,18 @@ def gallery_preview_ids(db, group_keys, previews):
     if len(keys)>120:
         raise ValueError("Lote de galerias excede 120")
     rows=db.execute("""
-      WITH ranked AS (
+      WITH unique_photos AS (
+        SELECT m.group_key,MIN(m.message_id) message_id
+        FROM model_group_members m
+        JOIN assets a ON a.message_id=m.message_id
+        WHERE m.group_key IN (""" + ",".join("?" for _ in keys) + """)
+        GROUP BY m.group_key,
+          COALESCE(NULLIF(TRIM(a.sha256),''),CAST(a.message_id AS TEXT))
+      ), ranked AS (
         SELECT group_key,message_id,
           ROW_NUMBER() OVER(PARTITION BY group_key ORDER BY message_id) first_rank,
           ROW_NUMBER() OVER(PARTITION BY group_key ORDER BY message_id DESC) last_rank
-        FROM model_group_members
-        WHERE group_key IN (""" + ",".join("?" for _ in keys) + """)
+        FROM unique_photos
       )
       SELECT group_key,message_id FROM ranked
       WHERE first_rank<=? OR last_rank<=?
