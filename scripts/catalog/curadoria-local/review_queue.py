@@ -7,6 +7,7 @@ Agents and the host use the same name revision for optimistic concurrency.
 from __future__ import annotations
 
 import re
+from contextlib import closing
 import smart_curadoria as smart
 
 KINDS = frozenset(("attention", "all", "unlabeled", "legacy_album",
@@ -105,7 +106,7 @@ def list_queue(db_path, *, topic="", kind="attention", variant="all",
         after.append("(priority>? OR (priority=? AND message_id<?))")
         after_args = [cursor_priority, cursor_priority, cursor_id]
     where = " WHERE " + " AND ".join(after) if after else ""
-    with smart.db_open(db_path, readonly=True) as db:
+    with closing(smart.db_open(db_path, readonly=True)) as db:
         # Both SELECTs observe one read transaction under concurrent reviewers.
         db.execute("BEGIN")
         try:
