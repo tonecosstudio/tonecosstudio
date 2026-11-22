@@ -45,6 +45,7 @@ gallery = _DeferredModule("model_gallery")
 gallery_ops = _DeferredModule("gallery_operations")
 catalog_sync = _DeferredModule("catalog_sync_status")
 telegram_identity = _DeferredModule("telegram_curadoria_adapter")
+thumbs = _DeferredModule("thumbnail_curadoria")
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -195,7 +196,7 @@ def get_items(params):
         where.append("(a.original_topic LIKE ? OR n.model LIKE ? OR n.character_name LIKE ? OR n.universe LIKE ? OR a.source_caption LIKE ? OR CAST(a.message_id AS TEXT) LIKE ?)")
         args.extend(["%"+q+"%"]*6)
     clause=" AND ".join(where)
-    with connect(DB_PATH) as db:
+    with connect(DB_PATH, readonly=True) as db:
         count=db.execute("SELECT COUNT(*) FROM assets a JOIN annotations n USING(message_id) WHERE "+clause,args).fetchone()[0]
         rows=db.execute("""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
          a.source_caption,a.source_date,a.source_album,n.studio,n.model,n.character_name,
@@ -205,7 +206,7 @@ def get_items(params):
     return {"total":count,"page":page,"limit":limit,"items":[as_obj(r) for r in rows]}
 
 def stats():
-    with connect(DB_PATH) as db:
+    with connect(DB_PATH, readonly=True) as db:
         total=db.execute("SELECT COUNT(*) FROM assets").fetchone()[0]
         by_status={r[0]:r[1] for r in db.execute("SELECT status,COUNT(*) FROM annotations GROUP BY status")}
         topics=[{"name":r[0],"count":r[1]} for r in db.execute("SELECT original_topic,COUNT(*) FROM assets GROUP BY original_topic ORDER BY COUNT(*) DESC,original_topic")]
@@ -335,7 +336,7 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version="HTTP/1.0"
     def log_message(self,*args):pass
 
-    def respond(self,body,status=200,ctype="application/json"):
+    def respond(self,body,status=200,ctype="application/json",cache_control="no-store",etag=None):
         if isinstance(body,(dict,list)):
             payload=json.dumps(body,ensure_ascii=False).encode("utf-8")
         elif isinstance(body,str):payload=body.encode("utf-8")
@@ -343,7 +344,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type",ctype)
         self.send_header("Content-Length",str(len(payload)))
-        self.send_header("Cache-Control","no-store")
+        self.send_header("Cache-Control",cache_control)
+        if etag is not None:
+            self.send_header("ETag",etag)
         self.send_header("X-Content-Type-Options","nosniff")
         self.send_header("Content-Security-Policy","default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'")
         self.end_headers()
@@ -378,6 +381,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"images.review_name","method":"POST","path":"/api/review-name","effect":"write"},
                     {"id":"images.list","method":"GET","path":"/api/items","effect":"read","pagination":True},
                     {"id":"images.preview","method":"GET","path":"/media/{message_id}","effect":"read"},
+                    {"id":"images.thumbnail","method":"GET","path":"/thumb/{message_id}?w=480","effect":"read"},
+                    {"id":"system.performance","method":"GET","path":"/api/performance","effect":"read"},
                     {"id":"stats.read","method":"GET","path":"/api/stats","effect":"read"},
                     {"id":"names.list","method":"GET","path":"/api/names","effect":"read","pagination":True},
                     {"id":"albums.candidates","method":"GET","path":"/api/album-candidates","effect":"read","pagination":True},
@@ -399,9 +404,50 @@ class Handler(BaseHTTPRequestHandler):
                 })
             if route.path=="/health":
                 return self.respond({"ok":True,"service":"tonart-curadoria-local","source":str(SOURCE)})
+            if route.path=="/api/performance":
+                return self.respond({
+                    "thumbnail_cache":thumbs.status(),
+                    "read_endpoints_use_background_ingestion":True,
+                    "source_writes_performed_by_http_get":False,
+                })
+            if route.path.startswith("/thumb/"):
+                raw_id=route.path.rsplit("/",1)[-1]
+                raw_width=parse_qs(route.query).get("w",["480"])[0]
+                if (not raw_id.isascii() or not raw_id.isdecimal()
+                        or len(raw_id)>12 or raw_width not in {"256","480","960"}):
+                    return self.respond({"error":"ID ou largura de miniatura inválidos"},400)
+                mid=int(raw_id)
+                width=int(raw_width)
+                with connect(DB_PATH,readonly=True) as db:
+                    row=db.execute(
+                        "SELECT source_relative,sha256 FROM assets WHERE message_id=?",
+                        (mid,),
+                    ).fetchone()
+                if not row:
+                    return self.respond({"error":"imagem não encontrada"},404)
+                path=safe_source_path(row["source_relative"])
+                if not path or not path.is_file():
+                    return self.respond({"error":"arquivo original ausente"},404)
+                try:
+                    fingerprint=thumbs.etag(path,row["sha256"],width)
+                    cache_control="private, max-age=600"
+                    if fingerprint in (
+                        tag.strip() for tag in self.headers.get("If-None-Match","").split(",")
+                    ):
+                        return self.respond(
+                            b"",304,ctype="image/webp",
+                            cache_control=cache_control,etag=fingerprint,
+                        )
+                    payload=thumbs.thumbnail(path,row["sha256"],width)
+                except thumbs.ThumbnailUnavailable as exc:
+                    return self.respond({"error":str(exc)},503)
+                return self.respond(
+                    payload,ctype="image/webp",cache_control=cache_control,
+                    etag=fingerprint,
+                )
             if route.path.startswith("/media/"):
                 mid=int(route.path.rsplit("/",1)[-1])
-                with connect(DB_PATH) as db:
+                with connect(DB_PATH,readonly=True) as db:
                     row=db.execute("SELECT source_relative FROM assets WHERE message_id=?",(mid,)).fetchone()
                 if not row:return self.respond({"error":"nao encontrado"},404)
                 path=safe_source_path(row[0])
@@ -411,12 +457,10 @@ class Handler(BaseHTTPRequestHandler):
                 if len(data)>25*1024*1024:return self.respond({"error":"imagem excede limite de preview"},413)
                 return self.respond(data,ctype=mime)
             if route.path=="/api/stats":
-                sync()
                 return self.respond({**stats(),"smart":smart.stats(DB_PATH),
                        "naming":naming.stats(DB_PATH),"galleries":gallery.stats(DB_PATH),
                        "telegram_identity":telegram_identity.status(DB_PATH)})
             if route.path=="/api/items":
-                sync()
                 return self.respond(get_items(parse_qs(route.query)))
             if route.path=="/api/official-sources":
                 p=parse_qs(route.query)
