@@ -248,6 +248,8 @@ jobs:
 
       - name: Test M5 controlled Worker release evidence offline
         run: node --test services/catalogo/tools/test_controlled_worker_release.mjs
+      - name: Test staged commercial editorial contract offline
+        run: node --test scripts/catalog/catalog-editorial-contract.test.mjs
 
       - name: Audit commercial authority
         if: always()
