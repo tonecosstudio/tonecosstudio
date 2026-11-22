@@ -166,8 +166,11 @@ def match(db_path,limit=10000):
                 "unlabeled_scanned":len(missing),"named_references":len(viable)}
 
 def get_candidates(db_path,mid):
-    with smart.db_open(db_path) as db:
-        setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
+        if not db.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='name_visual_candidates'"
+        ).fetchone():
+            return []
         return [dict(r) for r in db.execute("""SELECT c.message_id,
             c.candidate_message_id,c.similarity,c.dhash_distance,c.ahash_distance,
             p.title,p.studio,p.universe,p.variant,p.status
