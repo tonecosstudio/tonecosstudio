@@ -1853,6 +1853,77 @@ def last_cycle_status(db_path: str | Path) -> dict[str, Any]:
         }
 
 
+def list_telegram_album(db_path: str | Path, message_id: int) -> dict[str, Any]:
+    """An album contact board from exact Telegram media provenance, read-only.
+
+    A Telegram grouped_id is a collection of media, not proof that the photos
+    show the same physical sculpture. Never create or merge model groups here.
+    """
+    with _readonly_db(db_path) as db:
+        original = db.execute("""
+            SELECT a.message_id,a.original_topic,h.source_chat_id,h.topic_id,
+                   h.topic_name,h.grouped_id
+            FROM assets a
+            JOIN telegram_identity_coverage scope
+              ON scope.message_id=a.message_id
+            JOIN telegram_history_messages h
+              ON h.source_chat_id=scope.source_chat_id
+             AND h.message_id=a.message_id
+             AND h.topic_id=scope.topic_id
+             AND h.topic_name=scope.topic_name
+            WHERE a.message_id=? AND a.original_topic=h.topic_name
+              AND h.has_media=1
+        """, (int(message_id),)).fetchone()
+        if original is None:
+            raise ValueError("Imagem sem origem Telegram verificada")
+        album_id = str(original["grouped_id"] or "")
+        if not album_id:
+            return {
+                "message_id": int(message_id), "studio": original["original_topic"],
+                "album_id": "", "has_album": False, "items": [],
+                "truncated": False, "read_only": True,
+            }
+        have_names = _table_exists(db, "name_proposals")
+        have_groups = _table_exists(db, "model_group_members")
+        name_cols = "p.title,p.variant,p.status" if have_names else (
+            "'' AS title,'' AS variant,'revisar' AS status"
+        )
+        group_cols = "m.group_key,m.match_reason" if have_groups else (
+            "NULL AS group_key,NULL AS match_reason"
+        )
+        name_join = "LEFT JOIN name_proposals p USING(message_id)" if have_names else ""
+        group_join = "LEFT JOIN model_group_members m USING(message_id)" if have_groups else ""
+        rows = db.execute("""
+            SELECT a.message_id,a.sha256,a.original_topic,a.source_caption,
+                   """ + name_cols + "," + group_cols + """
+            FROM telegram_history_messages h
+            JOIN assets a ON a.message_id=h.message_id
+             AND a.original_topic=h.topic_name
+            JOIN telegram_identity_coverage scope
+              ON scope.message_id=a.message_id
+             AND scope.source_chat_id=h.source_chat_id
+             AND scope.topic_id=h.topic_id
+             AND scope.topic_name=h.topic_name
+            """ + name_join + " " + group_join + """
+            WHERE h.source_chat_id=? AND h.topic_id=? AND h.topic_name=?
+              AND h.grouped_id=? AND h.has_media=1
+            ORDER BY h.message_id LIMIT 101
+        """, (
+            original["source_chat_id"], original["topic_id"],
+            original["topic_name"], album_id,
+        )).fetchall()
+        return {
+            "message_id": int(message_id),
+            "studio": original["original_topic"],
+            "album_id": album_id,
+            "has_album": True,
+            "items": [dict(r) for r in rows[:100]],
+            "truncated": len(rows) > 100,
+            "read_only": True,
+            "warning": "O mesmo álbum Telegram não confirma uma única escultura",
+        }
+
+
 def list_telegram_findings(db_path: str | Path, message_id: int) -> dict[str, Any]:
     """Return candidate evidence for the existing local review UI/API to consume."""
     with _readonly_db(db_path) as db:
