@@ -47,6 +47,10 @@ AMBIGUOUS_WORLD_MARKERS = (
 )
 GENERIC_AMBIGUOUS_WORLDS = {"here","unknown","none","universe unknown","franchise unknown",
                             "curadoria pendente", "franquia a identificar"}
+# Creator/collection is not necessarily an IP universe. "Kaijumon" is a
+# Becca_3D sculptor collection containing own creatures and Pokemon fan models;
+# never create "Kaijumon" character identities from this label alone.
+CREATOR_COLLECTION_LABELS = {"kaijumon"}
 
 
 def word_alias(cand: str, actual: str) -> bool:
@@ -96,6 +100,10 @@ def classify_row(row, identities):
     suspect=any(x in lower for x in NON_CHARACTER_MARKERS)
     ambiguous_world=(world in GENERIC_AMBIGUOUS_WORLDS or
                      any(mark in world_orig.lower() for mark in AMBIGUOUS_WORLD_MARKERS))
+    if world in CREATOR_COLLECTION_LABELS:
+        return "creator_collection_requires_franchise_review",None,(
+            "creator collection is not a verified character universe"
+        )
     if flags:
         return "editorial_flags_require_review",None,flags
     if suspect:

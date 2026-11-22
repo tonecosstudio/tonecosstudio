@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Saint Seiya +8, Kaijumon classificado corretamente; 852 identidades
+
+- **Efeito real:** +8 novas identidades Saint Seiya no Supabase privado, auditado **852 identidades/852 identity_keys únicas, 35 franquias, 0 vínculos de esculturas e 0 tags comerciais**; 8 títulos exatos registrados com evidência comunitária de página de personagem; 18 aliases e 28 nomes de Saint Seiya retidos. OrdaX MCP `f7751a05-e004-4ad1-86f9-26496dfe5eff` exit 0; referência Seiyapedia Fandom, não oficial.
+- **Correção da raiz:** `Kaijumon` da Becca 3D é coleção/criador, não franquia única validada; seus 46 títulos agora recebem `creator_collection_requires_franchise_review`, sem criar personagens com origem artificial. Ver `docs/CATALOGO-PERSONAGENS-UNIVERSOS.md` para evidências.
+- **Auditoria atual 2.813/2.813 títulos candidatos de 527 universos:** 881 títulos com igualdade exata a identidade privada; **1932** sem correspondência exata: 652 sem referência individual, 827 universo sem vocabulário, 46 coleção Kaijumon, 183 flags, 103 variantes/conjuntos, 57 universos misturados, 40 aliases, 7 conflitos cruzados, 17 duplicações normalizadas. **Títulos não são personagens únicos, não contam como escultura vinculada.**
+- **Privado:** arquivos `saintseiya-*.jsonl`, `saintseiya-category-manifest.json`, `identity-names-snapshot-852-private.json` e `auditoria-852/` na pasta original do inventário, não versionados. Manter scripts/testes em main somente após checks e merge.
+- **Próximo:** 827 títulos sem franquia SSOT + 652 sem prova, revisar 46 Kaijumon e 40 aliases; nunca declarar "concluído" sem cobertura de identidades e exceções. D1, Worker, M5, migration 0029, mídia e direitos seguem sem alterações.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Lote inteiro de 2.813 títulos auditado; 844 identidades privadas
 
 - **Efeito real no Supabase:** +130 identidades nesta fase (de 714 para **844**, todas com chaves distintas), 34 franquias, zero vínculos de modelos ou tags comerciais. Warcraft 26 novos (Wiki independente); wikis Fandom 104 novos (124 matches, 20 preservados, 166 retidos), fontes por ID/URL/SHA.
