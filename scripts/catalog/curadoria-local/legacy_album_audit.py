@@ -60,7 +60,7 @@ AGG = """WITH older AS (
 )"""
 
 def list_groups(db_path, *, topic="", state="pending", risk="all",
-                q="", cursor="", limit=24):
+                q="", cursor="", limit=48, previews=0):
     topic = str(topic or "").strip()
     state = str(state or "pending").strip()
     risk = str(risk or "all").strip()
@@ -74,8 +74,14 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
         limit = int(limit)
     except (ValueError, TypeError) as exc:
         raise ValueError("Limite inválido") from exc
-    if not 1<=limit<=48:
-        raise ValueError("Limite fora de 1 a 48")
+    if not 1<=limit<=96:
+        raise ValueError("Limite fora de 1 a 96")
+    try:
+        previews = int(previews)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Número de vistas inválido") from exc
+    if previews not in (0, 1, 4, 6):
+        raise ValueError("Vistas permitidas: 0, 1, 4 ou 6")
     offset_key = None
     if cursor:
         m = CURSOR.fullmatch(cursor)
@@ -123,10 +129,35 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
                 " ORDER BY priority ASC,photos DESC,group_key ASC LIMIT ?",
                 params+cursor_params+[limit+1]
             ).fetchall()
+            items=[dict(r) for r in rows[:limit]]
+            # One bounded SELECT serves all contact sheets. No N+1 queries and
+            # no reading/decoding originals in the listing path.
+            if previews and items:
+                keys=[item["group_key"] for item in items]
+                images=db.execute("""
+                    WITH numbered AS (
+                      SELECT m.group_key,m.message_id,
+                        ROW_NUMBER() OVER (
+                          PARTITION BY m.group_key ORDER BY m.message_id
+                        ) AS first_rank,
+                        ROW_NUMBER() OVER (
+                          PARTITION BY m.group_key ORDER BY m.message_id DESC
+                        ) AS last_rank
+                      FROM model_group_members m
+                      WHERE m.group_key IN (""" + ",".join("?" for _ in keys) + """)
+                    )
+                    SELECT group_key,message_id FROM numbered
+                    WHERE first_rank<=? OR last_rank<=?
+                    ORDER BY group_key,message_id
+                """,keys+[(previews+1)//2,previews//2]).fetchall()
+                grouped_ids={key:[] for key in keys}
+                for image in images:
+                    grouped_ids[image["group_key"]].append(image["message_id"])
+                for item in items:
+                    item["preview_ids"]=grouped_ids[item["group_key"]]
         finally:
             db.rollback()
     has_more=len(rows)>limit
-    items=[dict(r) for r in rows[:limit]]
     for item in items:
         raw_attention=item.pop("attention_detail",None)
         try:
@@ -152,7 +183,8 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
         next_cursor=f'{last["priority"]}:{last["photos"]}:{last["group_key"]}'
     return {
         "total":total,"items":items,"next_cursor":next_cursor,
-        "has_more":has_more,"limit":limit,"state":state,"risk":risk,
+        "has_more":has_more,"limit":limit,"previews":previews,
+        "state":state,"risk":risk,
         "topic":topic,"q":q,"source_excluded":EXCLUDED,"read_only":True,
         "notice":"Auditoria de galeria; não implica licença nem aprovação comercial",
     }
