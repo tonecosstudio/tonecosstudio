@@ -1,3 +1,12 @@
+## CHECKPOINT — 22/11/2026 — Primeira fila transversal de tags extraída (somente leitura)
+
+- **Execução física no DESKTOP-4UFL03B:** scripts/catalog/prepare-canonical-taxonomy.py, SQLite local mode=ro + CSV histórico do catálogo antigo + pistas de franquia do plano privado Telegram. **Sem escrita em SQLite, D1, R2 ou Supabase; sem publicação ou associação automática.**
+- **Resultados reais:** 527 universos candidatos, 2.813 títulos candidatos a personagem, 11 conjuntos de grafia equivalente; 138 títulos requerem revisão adicional. 76 candidatos têm evidência de nome confirmado, **não** identidade de personagem confirmada. Snapshot antigo (não contagem atual do D1): 3.837 IDs, 2.278 coincidências por nome, 538 ambíguas por múltiplos universos.
+- **Saída de revisão no desktop autorizado:** C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/, com inventários JSONL e resumo.json; código e procedimento no documento já existente docs/CATALOGO-PERSONAGENS-UNIVERSOS.md.
+- **Sequência de prioridade:** reconciliar categorias/franquias aos IDs canônicos D1 → revisar personagens e aliases → publicar o vocabulário pelo owner autorizado → vincular modelos de ambas as origens sem alterar galerias, direitos, status ou IDs. **D1 com limite diário 7500 na última verificação; não executar varreduras enquanto bloqueado, nem contornar o M5.**
+
+---
+
 ## CHECKPOINT — 22/11/2026 — SSOT transversal de personagens e tags (código preparado)
 
 - **Contrato no documento existente:** `docs/CATALOGO-PERSONAGENS-UNIVERSOS.md` define a mesma identidade canônica para `tg_*` (Telegram) e `mdl_*` (antigo), reutilizando as categorias/franquias D1 e a curadoria privada já existente.
