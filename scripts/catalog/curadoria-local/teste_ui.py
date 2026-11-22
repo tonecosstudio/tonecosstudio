@@ -13,6 +13,12 @@ assert 'id="materializeNames"' in html
 assert 'async function refreshNames' in js
 assert 'api/review-name' in js
 assert 'nameOfficialProfiles' in html
+assert 'nameTelegramEvidence' in html
+assert 'showTelegramEvidence' in js
+assert '/api/telegram-findings/' in js
+assert 'images.telegram_evidence' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'status="revisar"' not in js  # review state is assigned through the existing select
+assert 'el("nameStatus").value="revisar";' in js
 assert 'nameSourceLink' in html
 assert 'galleryCreate' in html and 'saveVisualGallery' in html
 assert 'nameOpenGallery' in html
