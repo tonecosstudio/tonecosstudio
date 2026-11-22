@@ -25,6 +25,15 @@ assert 'nameOpenGallery' in html
 assert 'min_images:el("multiplePhotosOnly").checked?2:1' in js
 assert 'id="multiplePhotosOnly"' in html
 assert 'id="boardDialog"' in html and 'id="openBoardBtn"' in html
+assert 'id="boardPrev"' in html and 'id="boardNext"' in html and 'id="boardPage"' in html
+assert 'const BOARD_PAGE_SIZE=24;' in js
+assert 'function renderBoardPage()' in js
+assert 'function setThumb(img,messageId,width=480)' in js
+assert 'img.src="/thumb/"+mid+"?w="+width;' in js
+assert '/api/performance' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'images.thumbnail' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'setThumb(img,item.message_id);' in (root/'gallery_ui.js').read_text(encoding='utf-8')
+
 assert 'id="propagateGalleryName"' in html and '/api/propagate-gallery-name' in js
 assert 'galleryCandidateTiles' in html and 'galleryAppendSave' in html
 assert '<script src="/gallery_ui.js" defer></script>' in html
