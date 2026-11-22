@@ -239,6 +239,53 @@ test('mismatched authority or rollback without proof blocks promotion', () => {
   assert.ok(result.blockers.includes('cloudflare_account_unverified'))
 })
 
+test('active source workflows skip queue polling but remain blocked', async () => {
+  const previous = globalThis.fetch
+  const urls = []
+  globalThis.fetch = async (url, init) => {
+    const address = String(url)
+    assert.equal(init.method, 'GET')
+    assert.ok(!address.includes('/runs?status='), 'do not poll active writers')
+    urls.push(address)
+    if (address.endsWith('/repos/' + original.origin.repository)) {
+      return Response.json({ id: original.origin.repositoryId, full_name: original.origin.repository })
+    }
+    if (address.endsWith('/repos/' + original.target.repository)) {
+      return Response.json({ id: original.target.repositoryId, full_name: original.target.repository,
+        default_branch: 'main' })
+    }
+    if (address.endsWith('/git/ref/heads/main')) {
+      return Response.json({ ref: 'refs/heads/main', object: { sha: original.origin.observedMainSha } })
+    }
+    if (address.endsWith('/pulls/' + original.staging.sourceFixPullRequest)) {
+      return Response.json({ number: original.staging.sourceFixPullRequest, state: 'closed',
+        draft: false, merged: true, merge_commit_sha: original.staging.sourceFixMergeCommit,
+        head: { sha: original.staging.sourceFixMergedHead,
+          repo: { full_name: original.origin.repository } },
+        base: { sha: original.staging.sourceFixBaseShaAtMerge } })
+    }
+    if (address.includes('/contents/worker/media.ts?ref=main')) {
+      return Response.json({ sha: original.staging.fileBlobs['worker/media.ts'] })
+    }
+    const writer = writerFromApiUrl(address)
+    return Response.json(writer
+      ? { id: writer.id, path: writer.path, state: 'active' }
+      : { ...workflow, state: 'active' })
+  }
+  try {
+    const observed = await inspectLiveReadOnly({})
+    assert.equal(urls.length, 6 + retiringWriters.length)
+    assert.equal(observed.running, null)
+    assert.ok(observed.additionalWriters.every(w => w.state === 'active' && w.pending === null))
+    const verdict = assessCutoverReadiness(approvedContract(), observed)
+    assert.equal(verdict.ready, false)
+    assert.ok(verdict.blockers.includes('source_github_workflow_still_enabled'))
+    assert.ok(verdict.blockers.includes('source_additional_writers_active_or_unverified'))
+    assert.ok(verdict.blockers.includes('source_workflow_runs_pending_or_unverified'))
+  } finally {
+    globalThis.fetch = previous
+  }
+})
 test('read-only inspection queries every non-terminal GitHub status without Cloudflare credentials', async () => {
   const originalFetch = globalThis.fetch
   const requests = []
@@ -428,7 +475,7 @@ test('ownership-only checks live GitHub and Cloudflare metadata without a D1 req
     assert.equal(state.showcaseSchema, undefined)
     assert.equal(state.cloudflareAccountId, original.runtime.cloudflareAccountId)
     assert.equal(calls.filter(x => x.address.includes('api.cloudflare.com')).length, 2)
-    assert.equal(calls.length, 13 + 6 * retiringWriters.length)
+    assert.equal(calls.length, 8 + retiringWriters.length)
     assert.equal(assessCutoverReadiness(approvedContract(), state).ready, false)
     assert.ok(assessCutoverReadiness(approvedContract(), state).blockers.includes(
       'telegram_showcase_migration_0025_unverified'))

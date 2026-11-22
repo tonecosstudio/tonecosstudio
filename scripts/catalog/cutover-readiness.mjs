@@ -229,19 +229,30 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
   // for the live release preflight. Never use a Cloudflare token for GitHub.
   const githubToken = env.GITHUB_TOKEN || env.GH_TOKEN
   if (githubToken) ghHeaders.Authorization = 'Bearer ' + githubToken
-  const [sourceRepo, targetRepo, sourceMain, mediaPatch, mediaFile, workflow, active, queued, requested, waiting, pending] = await Promise.all([
+  // Active workflows already block M5. Query each queue state only after
+  // administrative disablement; unknown counts must fail closed.
+  const NON_TERMINAL = ['in_progress', 'queued', 'requested', 'waiting', 'pending']
+  const unknownActivity = () => ({ running: null, queued: null, requested: null, waiting: null, pending: null })
+  const readActivity = async endpoint => {
+    const results = await Promise.all(NON_TERMINAL.map(status =>
+      getJSON(endpoint + '/runs?status=' + status + '&per_page=1', ghHeaders),
+    ))
+    return Object.fromEntries(NON_TERMINAL.map((status, i) =>
+      [status === 'in_progress' ? 'running' : status, results[i]?.total_count ?? null],
+    ))
+  }
+
+  const [sourceRepo, targetRepo, sourceMain, mediaPatch, mediaFile, workflow] = await Promise.all([
     getJSON(sourceUrl, ghHeaders),
     getJSON('https://api.github.com/repos/' + TARGET_REPO, ghHeaders),
     getJSON(sourceUrl + '/git/ref/heads/main', ghHeaders),
     getJSON(sourceUrl + '/pulls/' + SOURCE_FIX_PR, ghHeaders),
     getJSON(sourceUrl + '/contents/worker/media.ts?ref=main', ghHeaders),
     getJSON(prefix, ghHeaders),
-    getJSON(prefix + '/runs?status=in_progress&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=queued&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=requested&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=waiting&per_page=1', ghHeaders),
-    getJSON(prefix + '/runs?status=pending&per_page=1', ghHeaders),
   ])
+  const sourceActivity = workflow?.state === 'disabled_manually'
+    ? await readActivity(prefix)
+    : unknownActivity()
   const state = {
     sourceRepositoryId: sourceRepo.id, sourceRepositoryName: sourceRepo.full_name,
     targetRepositoryId: targetRepo.id, targetRepositoryName: targetRepo.full_name,
@@ -254,8 +265,7 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
       baseSha: mediaPatch.base?.sha, headRepo: mediaPatch.head?.repo?.full_name,
     },
     sourceMediaBlobSha: mediaFile.sha,
-    workflow, running: active.total_count, queued: queued.total_count,
-    requested: requested.total_count, waiting: waiting.total_count, pending: pending.total_count,
+    workflow, ...sourceActivity,
   }
   if (!Array.isArray(SOURCE_WRITERS) || SOURCE_WRITERS.length !== 4 ||
       new Set(SOURCE_WRITERS.map(x => x.path)).size !== 4) {
@@ -264,17 +274,11 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
   state.additionalWriters = await Promise.all(SOURCE_WRITERS.map(async writer => {
     const endpoint = sourceUrl + '/actions/workflows/' +
       encodeURIComponent(writer.path.split('/').at(-1))
-    const [metadata, ...counts] = await Promise.all([
-      getJSON(endpoint, ghHeaders),
-      ...['in_progress', 'queued', 'requested', 'waiting', 'pending'].map(
-        status => getJSON(endpoint + '/runs?status=' + status + '&per_page=1', ghHeaders)),
-    ])
-    return {
-      id: metadata.id, path: metadata.path, state: metadata.state,
-      running: counts[0]?.total_count, queued: counts[1]?.total_count,
-      requested: counts[2]?.total_count, waiting: counts[3]?.total_count,
-      pending: counts[4]?.total_count,
-    }
+    const metadata = await getJSON(endpoint, ghHeaders)
+    const activity = metadata?.state === 'disabled_manually'
+      ? await readActivity(endpoint)
+      : unknownActivity()
+    return { id: metadata.id, path: metadata.path, state: metadata.state, ...activity }
   }))
   // No token: still report actual GitHub state, but never infer Cloudflare readiness.
   if (!env.CLOUDFLARE_API_TOKEN || !env.CLOUDFLARE_ACCOUNT_ID) return state
