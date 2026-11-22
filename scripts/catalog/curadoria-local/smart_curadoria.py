@@ -32,11 +32,20 @@ class ManagedConnection(sqlite3.Connection):
         finally:
             self.close()
 
-def db_open(path):
-    db = sqlite3.connect(str(path), timeout=15, factory=ManagedConnection)
+def db_open(path, readonly=False):
+    if readonly:
+        # Read endpoints must never acquire a writer lock just to open SQLite.
+        db = sqlite3.connect("file:"+Path(path).resolve().as_posix()+"?mode=ro",
+                             uri=True, timeout=3, factory=ManagedConnection)
+    else:
+        db = sqlite3.connect(str(path), timeout=15, factory=ManagedConnection)
     db.row_factory = sqlite3.Row
-    db.execute("PRAGMA busy_timeout=15000")
-    db.execute("PRAGMA journal_mode=WAL")
+    if readonly:
+        db.execute("PRAGMA query_only=ON")
+        db.execute("PRAGMA busy_timeout=3000")
+    else:
+        db.execute("PRAGMA busy_timeout=15000")
+        db.execute("PRAGMA journal_mode=WAL")
     return db
 
 def setup(db):
@@ -226,37 +235,67 @@ def stats(db_path):
 
 def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unnamed_only=False):
     page=max(1,int(page)); limit=max(1,min(int(limit),120))
-    clauses=["1=1"];args=[]
-    if topic:
-        clauses.append("a.original_topic=?");args.append(topic)
-    if q:
-        clauses.append("(g.studio LIKE ? OR g.title LIKE ? OR g.universe LIKE ? OR g.variant LIKE ?)")
-        args += ["%"+q+"%"]*4
-    if state in VALID_STATE:
-        clauses.append("g.state=?");args.append(state)
-    if unnamed_only:
-        clauses.append("g.title LIKE 'Modelo sem nome #%'")
-    where=" AND ".join(clauses)
     min_images=max(1,min(40,int(min_images)))
-    with db_open(db_path) as db:
-        setup(db)
-        count=db.execute("""SELECT COUNT(*) FROM (
-             SELECT g.group_key FROM model_groups g
-             JOIN model_group_members m USING(group_key) JOIN assets a USING(message_id)
-             WHERE """+where+"""
-             GROUP BY g.group_key HAVING COUNT(DISTINCT m.message_id)>=?)""",
-             args+[min_images]).fetchone()[0]
-        rows=db.execute("""SELECT g.group_key,g.studio,g.title,g.universe,g.variant,
-            g.state,g.confidence,g.revision,COUNT(DISTINCT m.message_id) image_count,
-            COUNT(DISTINCT COALESCE(NULLIF(TRIM(a.sha256),''),CAST(a.message_id AS TEXT))) unique_photo_count,
-            MIN(m.message_id) sample_message
-            FROM model_groups g JOIN model_group_members m USING(group_key)
-            JOIN assets a USING(message_id) WHERE """+where+"""
-            GROUP BY g.group_key HAVING COUNT(DISTINCT m.message_id)>=?
-            ORDER BY MAX(CASE WHEN m.match_reason='reviewed_angles' THEN 1 ELSE 0 END) DESC,
-                     image_count DESC,g.studio,g.title
-            LIMIT ? OFFSET ?""",args+[min_images,limit,(page-1)*limit]).fetchall()
-        return {"total":count,"page":page,"limit":limit,"items":[dict(r) for r in rows]}
+    group_clauses=[]
+    group_args=[]
+    if q:
+        group_clauses.append("(g.studio LIKE ? OR g.title LIKE ? OR g.universe LIKE ? OR g.variant LIKE ?)")
+        group_args.extend(["%"+q+"%"]*4)
+    if state in VALID_STATE:
+        group_clauses.append("g.state=?")
+        group_args.append(state)
+    if unnamed_only:
+        group_clauses.append("g.title LIKE 'Modelo sem nome #%'")
+    group_where=" AND ".join(group_clauses) if group_clauses else "1=1"
+    member_topic=" AND a.original_topic=?" if topic else ""
+    photo_topic=" AND a2.original_topic=?" if topic else ""
+    member_args=[topic] if topic else []
+
+    # Scan the small member index first, checking every link against assets.
+    # Materialize only page IDs before resolving their distinct photo hashes.
+    eligible_sql="""WITH eligible AS MATERIALIZED (
+        SELECT m.group_key,COUNT(*) image_count,MIN(m.message_id) sample_message,
+               MAX(CASE WHEN m.match_reason='reviewed_angles' THEN 1 ELSE 0 END) reviewed
+        FROM model_group_members m INDEXED BY idx_group_members_key
+        CROSS JOIN assets a
+        WHERE a.message_id=m.message_id""" + member_topic + """
+        GROUP BY m.group_key HAVING COUNT(*)>=?
+    )"""
+    listing_sql=eligible_sql+""", page AS MATERIALIZED (
+        SELECT g.group_key,g.studio,g.title,g.universe,g.variant,g.state,
+               g.confidence,g.revision,e.image_count,e.sample_message,e.reviewed,
+               COUNT(*) OVER() total_count
+        FROM eligible e JOIN model_groups g ON g.group_key=e.group_key
+        WHERE """+group_where+"""
+        ORDER BY e.reviewed DESC,e.image_count DESC,g.studio,g.title
+        LIMIT ? OFFSET ?
+    )
+    SELECT p.group_key,p.studio,p.title,p.universe,p.variant,p.state,
+           p.confidence,p.revision,p.image_count,
+           (SELECT COUNT(DISTINCT COALESCE(NULLIF(TRIM(a2.sha256),''),
+                                          CAST(a2.message_id AS TEXT)))
+            FROM model_group_members m2 JOIN assets a2 ON a2.message_id=m2.message_id
+            WHERE m2.group_key=p.group_key""" + photo_topic + """) unique_photo_count,
+           p.sample_message,p.total_count
+    FROM page p
+    ORDER BY p.reviewed DESC,p.image_count DESC,p.studio,p.title"""
+    with db_open(db_path,readonly=True) as db:
+        # The writer path owns schema setup; listing only performs SELECTs.
+        rows=db.execute(listing_sql,
+            member_args+[min_images]+group_args+[limit,(page-1)*limit]+
+            ([topic] if topic else [])).fetchall()
+        if rows:
+            count=rows[0]["total_count"]
+        else:
+            # Keep exact total when a requested page is beyond the last page.
+            count=db.execute(eligible_sql+"""
+                SELECT COUNT(*) FROM eligible e JOIN model_groups g
+                ON g.group_key=e.group_key WHERE """+group_where,
+                member_args+[min_images]+group_args).fetchone()[0]
+        items=[dict(row) for row in rows]
+        for item in items:
+            item.pop("total_count",None)
+        return {"total":count,"page":page,"limit":limit,"items":items}
 
 def model_detail(db_path,key):
     if not re.fullmatch("[0-9a-f]{24}",key): raise ValueError("ID de grupo inválido")

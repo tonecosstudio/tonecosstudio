@@ -31,8 +31,32 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     assert first["images_needing_review"]==1,first
     assert first["model_states"]=={"provavel":2},first
     assert m.process_batch(dbpath,100)["processed"]==0
+    with m.db_open(dbpath,readonly=True) as ro:
+        assert ro.execute("PRAGMA query_only").fetchone()[0]==1
+        try:
+            ro.execute("UPDATE model_groups SET state='revisar'")
+            assert False,"read-only listing connection must refuse writes"
+        except sqlite3.OperationalError:
+            pass
     groups=m.list_models(dbpath)
     assert groups["total"]==2,groups
+    assert len(groups["items"])==2
+    first_page=m.list_models(dbpath,page=1,limit=1)
+    second_page=m.list_models(dbpath,page=2,limit=1)
+    assert first_page["total"]==second_page["total"]==2
+    assert len(first_page["items"])==len(second_page["items"])==1
+    assert first_page["items"][0]["group_key"]!=second_page["items"][0]["group_key"]
+    assert m.list_models(dbpath,page=99,limit=1)=={
+        "total":2,"page":99,"limit":1,"items":[]}
+    assert m.list_models(dbpath,topic="Poke Studio")["total"]==2
+    assert m.list_models(dbpath,topic="Other studio")["total"]==0
+    assert m.list_models(dbpath,q="Diorama")["total"]==1
+    assert m.list_models(dbpath,q="Nothing")["total"]==0
+    assert m.list_models(dbpath,state="provavel")["total"]==2
+    assert m.list_models(dbpath,state="confirmado")["total"]==0
+    assert m.list_models(dbpath,min_images=2)["total"]==1
+    assert m.list_models(dbpath,unnamed_only=True)["total"]==0
+    assert all("total_count" not in row for row in groups["items"])
     couple=next(g for g in groups["items"] if g["image_count"]==2)
     detail=m.model_detail(dbpath,couple["group_key"])
     assert detail["identity_conflicts"]==[],detail  # banco isolado sem modulo de nomes
