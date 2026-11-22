@@ -102,6 +102,7 @@ const ADMIN_RPC_ALLOWLIST = new Set([
   "admin_upsert_catalog_curation_tags",
   "admin_upsert_collection_curation_models",
   "admin_verify_catalog_model_identity",
+  "admin_register_catalog_character_identity",
   "admin_schedule_group_message",
   "admin_schedule_subscription_deliveries",
   "admin_send_chat_group_message",
