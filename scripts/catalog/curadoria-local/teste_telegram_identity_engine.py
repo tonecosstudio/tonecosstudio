@@ -353,6 +353,25 @@ class TelegramIdentityEngineTests(unittest.TestCase):
         self.assertEqual(finding["candidates"], [])
         self.assertEqual(finding["coverage"]["identity_status"], "unidentified")
 
+    def test_public_review_reads_do_not_reinitialize_schema(self):
+        self.add_asset(900, topic="Abe3D")
+        with engine._open_curadoria(self.db_path):
+            pass
+
+        original = engine.ensure_schema
+        def reject_schema_write(_db):
+            raise AssertionError("Leitura tentou reabrir schema para escrita")
+        engine.ensure_schema = reject_schema_write
+        try:
+            findings = engine.list_telegram_findings(self.db_path, 900)
+            counts = engine.status_counts(self.db_path)
+            cycle = engine.last_cycle_status(self.db_path)
+        finally:
+            engine.ensure_schema = original
+        self.assertEqual(findings["message_id"], 900)
+        self.assertEqual(counts["manual_confirmations"], 0)
+        self.assertEqual(cycle["status"], "not_started")
+
     def test_album_history_exact_ids_reveal_review_only_evidence(self):
         self.add_asset(700, topic="Pokerus Studio")
         self.add_asset(701, topic="Pokerus Studio")
