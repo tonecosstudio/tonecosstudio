@@ -174,3 +174,24 @@ def compare(db_path, fetch_json=None):
         "warning": ("Nao publicar automaticamente. Identidades sem match exigem revisao "
                     "de midia, variante, direitos e concorrencia no D1 canônico."),
     }
+
+
+def compare_summary(db_path, fetch_json=None):
+    """Compact public-site alignment; never publishes private/uncleared media.
+
+    Uses the existing bounded D1 inventory cache and the same canonical
+    local comparison. Returns counts/health only, not 4,000 model rows.
+    """
+    report = compare(db_path, fetch_json=fetch_json)
+    keys = (
+        "ok", "mode", "source", "observed_at", "site_models",
+        "host_groups", "matched", "local_only_count", "site_only_count",
+        "differences_count", "local_only_by_state", "warning",
+    )
+    return {
+        **{key: report[key] for key in keys},
+        "read_only": True,
+        "publication_performed": False,
+        "commercial_clearance_required": True,
+        "catalog_not_equal_to_private_curadoria": True,
+    }
