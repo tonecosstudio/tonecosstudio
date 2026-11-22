@@ -9,7 +9,7 @@ const {routeTelegramStudioShowcase} = await import("data:text/javascript;base64,
 const id="tg_abcdef0123456789abcdef01",sha="a".repeat(64),base="https://worker.test/api/telegram-studios";
 function fixture(){
  const queries=[],keys=[],bindings=[];
- const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,telegram_gallery_order:'[1212]',image_count:1,cover_sha:sha,category:"Anime",category_slug:"anime"};
+ const row={id,name:"Escultura Teste",telegram_studio:"Studio A",telegram_character:"Escultura Teste",variant_name:"Busto",telegram_origin_id:"2370335738",telegram_name_provisional:1,telegram_gallery_order:'[1212]',image_count:1,cover_sha:sha,category:"Anime",category_slug:"anime",franchise:"One Piece",franchise_slug:"one-piece"};
  const sources=[{image_id:"tg:1212",source_sha256:sha,position:0}];
  return {row,sources,queries,keys,bindings,env:{
   DB:{prepare(sql){queries.push(sql);let params=[];return {
@@ -28,6 +28,7 @@ test("lists only Telegram D1 and studio counts",async()=>{
  assert.equal(res.headers.get("cache-control"),"public, max-age=0, s-maxage=60");
  const b=await res.json();
  assert.equal(b.total,1);assert.equal(b.items[0].id,id);assert.equal(b.items[0].provisional,true);
+ assert.equal(b.items[0].franchise,'One Piece');assert.equal(b.items[0].franchiseSlug,'one-piece');
  assert.equal(b.items[0].cover,"/api/telegram-studios/"+id+"/media/"+sha+"/thumb");
  assert.ok(queries.every(s=>!s.includes("m.published=1")));
  assert.ok(queries.some(s=>s.includes("m.telegram_group_key IS NOT NULL")));
@@ -184,7 +185,7 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
       telegram_rights_status TEXT,franchise_id INTEGER,cover_storage_key TEXT
     );
     CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT,slug TEXT);
-    CREATE TABLE franchises(id INTEGER PRIMARY KEY,category_id INTEGER);
+    CREATE TABLE franchises(id INTEGER PRIMARY KEY,category_id INTEGER,name TEXT,slug TEXT);
     CREATE TABLE model_image_sources(
       model_id TEXT,gallery_version INTEGER,source_sha256 TEXT,position INTEGER
     );
@@ -196,7 +197,7 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
         AND telegram_review_status <> 'rejected'
         AND telegram_rights_status <> 'rejected';
     INSERT INTO categories VALUES (1,'Anime','anime');
-    INSERT INTO franchises VALUES (1,1);
+    INSERT INTO franchises VALUES (1,1,'One Piece','one-piece');
    `);
    const insertModel=db.prepare("INSERT INTO models VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
    const insertImage=db.prepare("INSERT INTO model_image_sources VALUES (?,?,?,?)");
@@ -260,6 +261,13 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
    assert.equal(page.total,2100);
    assert.equal(page.items[0].name,"Modelo 00201");
    assert.equal(page.items.length,24);
+   const exact=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Escultura&limit=24"),env);
+   assert.equal(exact.status,200);
+   assert.equal((await exact.json()).total,4200);
+   const wrongCharacter=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Ace&limit=24"),env);
+   assert.equal((await wrongCharacter.json()).total,0);
+   const wrongFranchise=await routeTelegramStudioShowcase(request("?franchise=pokemon&character=Escultura&limit=24"),env);
+   assert.equal((await wrongFranchise.json()).total,0);
  }finally{db.close()}
 });
 
@@ -273,7 +281,7 @@ test("global index search checks name, character and variant with bound values",
  assert.match(sql,/m.telegram_character LIKE \?/);
  assert.match(sql,/COALESCE\(m.variant_name/);
  const bound=bindings.find(x=>x.sql===sql);
- assert.deepEqual(bound.values,["Studio A","%Chibi%","%Chibi%","%Chibi%",24,0]);
+ assert.deepEqual(bound.values,["Studio A","%Chibi%","%Chibi%","%Chibi%","%Chibi%",24,0]);
 });
 
 test("category filter binds canonical taxonomy and rejects invalid slugs",async()=>{
@@ -421,4 +429,19 @@ test("Telegram showcase alphabetical pagination uses the visibility-scoped D1 in
   assert.deepEqual(db.prepare(query).all(24,0).map(x=>x.id),["aA","aB","z"]);
   assert.deepEqual(db.prepare(query).all(2,1).map(x=>x.id),["aB","z"]);
  } finally { db.close(); }
+});
+
+test("franchise and exact character filters preserve canonical identity",async()=>{
+ const {env,queries,bindings}=fixture();
+ const response=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Ace&limit=24"),env);
+ assert.equal(response.status,200);
+ const count=queries.find(sql=>sql.startsWith("SELECT COUNT(*) AS total"));
+ assert.ok(count.includes('f.slug=?'));
+ assert.ok(count.includes('m.telegram_character=? COLLATE NOCASE'));
+ assert.doesNotMatch(count,/m.telegram_character LIKE/);
+ const page=queries.find(sql=>sql.includes("WITH page AS MATERIALIZED"));
+ assert.deepEqual(bindings.find(x=>x.sql===page).values,["one-piece","Ace",24,0]);
+ for(const invalid of ["?character=Ace","?character=Ace&franchise=-one-piece","?character=%20Ace&franchise=one-piece","?character=Ace&character=Ace&franchise=one-piece"]){
+   assert.equal((await routeTelegramStudioShowcase(request(invalid),env)).status,400,invalid);
+ }
 });

@@ -11,6 +11,8 @@ type Model = {
   provisional: boolean;
   category?: string;
   categorySlug?: string;
+  franchise?: string;
+  franchiseSlug?: string;
   cover: string | null;
 };
 type GalleryImage = { position: number; thumb: string; display: string };
@@ -21,6 +23,8 @@ type Route = {
   view: "models" | "studios";
   studio: string;
   category: string;
+  franchise: string;
+  character: string;
   provisional: "" | "0" | "1";
   query: string;
   offset: number;
@@ -30,6 +34,42 @@ type Route = {
 const API = "/catalogo-api/api/telegram-studios";
 const PAGE_SIZE = 24;
 const MODEL_ID = /^tg_[a-f0-9]{24}$/;
+type FacetKind = "category" | "franchise" | "character";
+function tagKey(text: string) {
+  return text
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLocaleLowerCase("pt-BR");
+}
+function modelFacets(model: Model): Array<{ kind: FacetKind; label: string }> {
+  const tags: Array<{ kind: FacetKind; label: string }> = [];
+  if (
+    model.category &&
+    model.categorySlug &&
+    model.categorySlug !== "curadoria-pendente"
+  )
+    tags.push({ kind: "category", label: model.category });
+  if (
+    model.franchise &&
+    model.franchiseSlug &&
+    model.franchiseSlug !== "franquia-a-identificar"
+  )
+    tags.push({ kind: "franchise", label: model.franchise });
+  if (
+    model.character &&
+    model.franchiseSlug &&
+    model.franchiseSlug !== "franquia-a-identificar"
+  )
+    tags.push({ kind: "character", label: model.character });
+  const seen = new Set<string>();
+  return tags.filter(({ label }) => {
+    const k = tagKey(label);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
 const classes =
   "min-h-11 rounded-lg border border-[#75644b] bg-[#22251f] px-4 py-2 text-[#f2dbb6] transition hover:border-[#d0ae7d] hover:bg-[#32342a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792] disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -48,6 +88,8 @@ function readRoute(): Route {
       view: "models",
       studio: "",
       category: "",
+      franchise: "",
+      character: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -66,6 +108,13 @@ function readRoute(): Route {
     /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(requestedCategory)
       ? requestedCategory
       : "";
+  const rawFranchise = params.get("franquia") || "";
+  const franchise =
+    rawFranchise.length <= 80 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(rawFranchise)
+      ? rawFranchise
+      : "";
+  const rawCharacter = (params.get("personagem") || "").trim();
+  const character = franchise && rawCharacter.length <= 80 ? rawCharacter : "";
   const provisionalParam = params.get("situacao");
   const provisional =
     provisionalParam === "0" || provisionalParam === "1"
@@ -81,6 +130,8 @@ function readRoute(): Route {
     view,
     studio,
     category,
+    franchise,
+    character,
     provisional,
     query,
     offset,
@@ -95,6 +146,9 @@ function urlForRoute(route: Route): string {
   if (route.view === "studios" && route.studio)
     params.set("studio", route.studio);
   if (route.category) params.set("categoria", route.category);
+  if (route.franchise) params.set("franquia", route.franchise);
+  if (route.franchise && route.character)
+    params.set("personagem", route.character);
   if (route.provisional) params.set("situacao", route.provisional);
   if (route.query) params.set("q", route.query);
   if (route.offset > 0)
@@ -132,8 +186,40 @@ export default function TelegramStudioCatalog() {
   const [photoIndex, setPhotoIndex] = useState(0);
   const [copyMessage, setCopyMessage] = useState("");
   const dialogRef = useRef<HTMLDivElement>(null);
-  const { view, studio, category, provisional, query, offset, selected } =
-    route;
+  const {
+    view,
+    studio,
+    category,
+    franchise,
+    character,
+    provisional,
+    query,
+    offset,
+    selected,
+  } = route;
+
+  function applyFacet(kind: FacetKind, model: Model) {
+    const next: Route = {
+      ...route,
+      view: "models",
+      studio: "",
+      category: "",
+      franchise: "",
+      character: "",
+      provisional: "",
+      query: "",
+      offset: 0,
+      selected: null,
+    };
+    if (kind === "category") next.category = model.categorySlug || "";
+    if (kind === "franchise") next.franchise = model.franchiseSlug || "";
+    if (kind === "character") {
+      next.franchise = model.franchiseSlug || "";
+      next.character = model.character || "";
+    }
+    setDraft("");
+    navigate(next);
+  }
 
   function navigate(next: Route, replace = false) {
     const path = urlForRoute(next);
@@ -188,6 +274,8 @@ export default function TelegramStudioCatalog() {
     });
     if (studio) params.set("studio", studio);
     if (category) params.set("category", category);
+    if (franchise) params.set("franchise", franchise);
+    if (franchise && character) params.set("character", character);
     if (query) params.set("q", query);
     if (provisional) params.set("provisional", provisional);
     setLoading(true);
@@ -207,7 +295,17 @@ export default function TelegramStudioCatalog() {
         if (!c.signal.aborted) setLoading(false);
       });
     return () => c.abort();
-  }, [view, studio, category, provisional, query, offset, reloadVersion]);
+  }, [
+    view,
+    studio,
+    category,
+    franchise,
+    character,
+    provisional,
+    query,
+    offset,
+    reloadVersion,
+  ]);
 
   useEffect(() => {
     const c = new AbortController();
@@ -294,7 +392,14 @@ export default function TelegramStudioCatalog() {
       return;
     }
     setSearchError("");
-    navigate({ ...route, query: term, offset: 0, selected: null });
+    navigate({
+      ...route,
+      franchise: "",
+      character: "",
+      query: term,
+      offset: 0,
+      selected: null,
+    });
   }
 
   function changeStudio(nextStudio: string) {
@@ -302,6 +407,8 @@ export default function TelegramStudioCatalog() {
       view: "studios",
       studio: nextStudio,
       category: "",
+      franchise: "",
+      character: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -354,16 +461,23 @@ export default function TelegramStudioCatalog() {
     name,
   })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const modelTags = Array.from(
-    new Set(
-      (page?.items ?? [])
-        .flatMap((item) => [item.character, item.variant])
-        .filter((value): value is string =>
-          Boolean(
-            value && value.trim().length >= 3 && value.trim().length <= 50,
+    new Map(
+      (page?.items ?? []).flatMap((item) =>
+        modelFacets(item)
+          .filter((facet) => facet.kind !== "category")
+          .map(
+            (facet) =>
+              [
+                facet.kind +
+                  ":" +
+                  (item.franchiseSlug || "") +
+                  ":" +
+                  tagKey(facet.label),
+                { ...facet, model: item },
+              ] as const,
           ),
-        )
-        .map((value) => value.trim()),
-    ),
+      ),
+    ).values(),
   ).slice(0, 12);
   const lastPage = page ? Math.ceil(page.total / PAGE_SIZE) : 0;
 
@@ -679,29 +793,27 @@ export default function TelegramStudioCatalog() {
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
-                  Tags de personagem e variante
+                  Universos e personagens
                 </p>
                 <p className="mt-1 text-xs text-[#929c90]">
-                  Extraídas dos modelos desta página, não de um índice global.
+                  Tags dos modelos desta página, com filtros exatos.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {modelTags.length > 0 ? (
                     modelTags.map((tag) => (
                       <button
-                        key={tag}
+                        key={
+                          tag.kind +
+                          ":" +
+                          tag.model.franchiseSlug +
+                          ":" +
+                          tag.label
+                        }
                         type="button"
-                        onClick={() => {
-                          setDraft(tag);
-                          navigate({
-                            ...route,
-                            query: tag,
-                            offset: 0,
-                            selected: null,
-                          });
-                        }}
+                        onClick={() => applyFacet(tag.kind, tag.model)}
                         className="rounded-full border border-[#5c6253] bg-[#252d23] px-3 py-2 text-xs text-[#d9dfd0] hover:border-[#ccae7c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
                       >
-                        {tag}
+                        {tag.label}
                       </button>
                     ))
                   ) : (
@@ -737,6 +849,16 @@ export default function TelegramStudioCatalog() {
                     Resultados para “{query}”
                   </p>
                 )}
+                {franchise && (
+                  <p className="mt-1 text-sm text-[#d6ba93]">
+                    {character
+                      ? "Personagem: " + character
+                      : "Franquia: " + (page?.items[0]?.franchise || franchise)}
+                    {character
+                      ? " · " + (page?.items[0]?.franchise || franchise)
+                      : ""}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <span
@@ -750,7 +872,11 @@ export default function TelegramStudioCatalog() {
                       ? page.total.toLocaleString("pt-BR") + " modelos"
                       : "Indisponível"}
                 </span>
-                {(query || provisional || category) && (
+                {(query ||
+                  provisional ||
+                  category ||
+                  franchise ||
+                  character) && (
                   <button
                     type="button"
                     className="text-sm text-[#e5bd8c] underline underline-offset-4"
@@ -760,6 +886,8 @@ export default function TelegramStudioCatalog() {
                         ...route,
                         query: "",
                         category: "",
+                        franchise: "",
+                        character: "",
                         provisional: "",
                         offset: 0,
                         selected: null,
@@ -838,54 +966,60 @@ export default function TelegramStudioCatalog() {
                         )}
                       </div>
                       <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-                        {view === "studios" && (
-                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                            {model.studio}
-                          </p>
-                        )}
-                        {view === "models" && model.character && (
-                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                            {model.character}
-                          </p>
-                        )}
-                        {view === "models" &&
-                          model.category &&
-                          model.categorySlug !== "curadoria-pendente" && (
-                            <p className="mt-2 text-[11px] uppercase tracking-wider text-[#b1c5a5]">
-                              {model.category}
-                            </p>
-                          )}
+                        <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
+                          {model.studio}
+                        </p>
                         <h3 className="mt-2 line-clamp-2 font-semibold leading-5">
                           {model.name}
                         </h3>
                       </div>
                     </button>
                     <div className="flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
-                      {model.variant &&
-                      model.variant.trim().length >= 3 &&
-                      model.variant.trim().length <= 50 ? (
+                      {modelFacets(model).map((facet) => (
                         <button
                           type="button"
-                          aria-label={"Filtrar por tag " + model.variant}
-                          onClick={() => {
-                            const tag = model.variant.trim();
-                            setDraft(tag);
-                            navigate({
-                              ...route,
-                              query: tag,
-                              offset: 0,
-                              selected: null,
-                            });
-                          }}
-                          className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
+                          key={facet.kind + ":" + tagKey(facet.label)}
+                          aria-label={
+                            "Filtrar por " +
+                            (facet.kind === "category"
+                              ? "categoria "
+                              : facet.kind === "franchise"
+                                ? "franquia "
+                                : "personagem ") +
+                            facet.label
+                          }
+                          onClick={() => applyFacet(facet.kind, model)}
+                          className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
                         >
-                          {model.variant}
+                          {facet.label}
                         </button>
-                      ) : model.variant ? (
-                        <span className="max-w-full truncate text-xs text-[#c2b5a7]">
-                          {model.variant}
-                        </span>
-                      ) : null}
+                      ))}
+                      {model.variant &&
+                        tagKey(model.variant) !== tagKey(model.name) &&
+                        !modelFacets(model).some(
+                          (facet) =>
+                            tagKey(facet.label) === tagKey(model.variant),
+                        ) && (
+                          <button
+                            type="button"
+                            aria-label={"Filtrar por tag " + model.variant}
+                            onClick={() => {
+                              const tag = model.variant.trim();
+                              setDraft(tag);
+                              navigate({
+                                ...route,
+                                franchise: "",
+                                character: "",
+                                query: tag,
+                                offset: 0,
+                                selected: null,
+                              });
+                            }}
+                            className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
+                          >
+                            {model.variant}
+                          </button>
+                        )}
                       <span className="ml-auto text-right text-xs text-[#b6a496]">
                         {model.imageCount}{" "}
                         {model.imageCount === 1 ? "imagem" : "imagens"}
@@ -1096,6 +1230,21 @@ export default function TelegramStudioCatalog() {
                 >
                   {detail.name}
                 </h2>
+                <div
+                  className="mt-3 flex flex-wrap gap-2"
+                  aria-label="Classificação do modelo"
+                >
+                  {modelFacets(detail).map((facet) => (
+                    <button
+                      key={facet.kind + ":" + tagKey(facet.label)}
+                      type="button"
+                      className="rounded-full border border-[#807052] px-3 py-1 text-xs text-[#e2c79c]"
+                      onClick={() => applyFacet(facet.kind, detail)}
+                    >
+                      {facet.label}
+                    </button>
+                  ))}
+                </div>
                 {detail.variant && (
                   <p className="mt-2 text-sm text-[#cbb7a4]">
                     {detail.variant}
