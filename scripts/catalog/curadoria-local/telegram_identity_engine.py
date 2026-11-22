@@ -71,7 +71,10 @@ NARRATIVE_RE = re.compile(
     r"apresentando|conhe[cç]a|apresentamos|personagem)\s*[:,-]?\s+"
     r"(?P<title>[A-ZÀ-Þ0-9][^,;.!?\n]{1,90})"
 )
-VARIANT_SUFFIXES = {"battle scarred", "battle-scarred", "battle damaged", "battle-damaged"}
+VARIANT_SUFFIXES = {
+    "battle scarred", "battle-scarred", "battle damaged", "battle-damaged",
+    "alt version", "alternative version",
+}
 ARTICLES = {"a", "an", "and", "as", "at", "by", "da", "das", "de", "del", "do", "dos", "for", "in", "of", "the", "to"}
 
 
@@ -350,11 +353,32 @@ def parse_telegram_caption(
             raw = _clean_value(bullet.group(1))
             pieces = re.split(r"\s+[–—-]\s+", raw, maxsplit=1)
             title = pieces[0].strip()
-            structured_universe = pieces[1].strip() if len(pieces) > 1 else universe
-            if _looks_like_title(title):
+            suffix = pieces[1].strip() if len(pieces) > 1 else ""
+            is_variant = normalize_identity(suffix) in VARIANT_SUFFIXES
+            structured_universe = universe if is_variant else (suffix or universe)
+            structured_variant = "; ".join([
+                *variants, *([suffix] if is_variant else []),
+            ])
+            # A short proper name (e.g. "Mew" or "Red") requires an
+            # explicitly credited studio, a series, and a matching name tag.
+            # Otherwise keep the conservative single-word review policy.
+            short_named_subject = (
+                2 <= len(title) <= 3 and title.isalpha() and title[:1].isupper()
+                and bool(structured_universe)
+                and normalize_identity(title) not in GENERIC_TAGS
+                and normalize_identity(title) not in {
+                    normalize_identity(word) for word in PROMOTIONAL_HEADLINES
+                }
+                and any(
+                    normalize_identity(tag.replace("_", " ")).replace(" ", "")
+                    == normalize_identity(title).replace(" ", "")
+                    for tag in HASHTAG_RE.findall(caption)
+                )
+            )
+            if _looks_like_title(title) or short_named_subject:
                 candidates.append(_candidate(
                     title, studio=studio, universe=structured_universe,
-                    variant="; ".join(variants), aliases=aliases, raw_title=raw,
+                    variant=structured_variant, aliases=aliases, raw_title=raw,
                     evidence_text=bullet.group(0), evidence_type="telegram_structured_caption",
                     confidence=0.82, source_message_id=message_id,
                 ))
