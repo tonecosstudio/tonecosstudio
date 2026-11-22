@@ -42,7 +42,14 @@ def atomic_json(path: pathlib.Path, document: dict) -> None:
     data = json.dumps(document, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     temp = path.with_suffix(path.suffix + ".tmp")
     temp.write_text(data, encoding="utf-8", newline="\n")
-    temp.replace(path)
+    for attempt in range(6):
+        try:
+            temp.replace(path)
+            return
+        except PermissionError:
+            if attempt == 5:
+                raise
+            time.sleep(0.04 * (2 ** attempt))
 
 
 def jsonl(path: pathlib.Path, rows: list[dict]) -> None:

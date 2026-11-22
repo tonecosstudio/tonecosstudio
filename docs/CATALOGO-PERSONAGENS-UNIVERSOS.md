@@ -197,3 +197,16 @@ Consulta de auditoria após as duas cargas: **21 linhas**, **21 chaves distintas
 **Próximos lotes:** reutilizar a execução supervisionada e o mesmo inventário para outras franquias com bases independentes verificáveis; não criar outro catálogo ou sincronizador, não repetir o lote concluído se os hashes de entrada e da fonte permanecerem iguais. Conciliar aliases e IDs do D1 somente após disponibilidade da quota e GO M5, sem migrar dados ou publicar prematuramente.
 
 **Prova de testes e código:** executar `python -B scripts/catalog/test_validate_existing_pokemon_taxonomy.py -v`. Testes offline verificam fonte estruturada, igualdade exata, retenção de variantes/crossovers, deduplicação e ausência de vínculos. O script não contém credenciais do Supabase e **não realiza escrita em sistemas canônicos**; o único write privado comprovado foi pelo conector autorizado e em lotes idempotentes.
+
+### Lote supervisionado Naruto + Dragon Ball — 22/11/2026
+
+**Execução física real via OrdaX MCP, sem outro publicador ou banco:**
+- Naruto, process_id 859946cd-82e5-4506-99f0-ad8cc1745b7e, 15 páginas, 1.431 personagens da API externa. De 47 títulos candidatos no inventário, 28 correspondências exatas e 19 retidos; exit 0.
+- Dragon Ball, process_id 2af837a3-84ae-42a6-83e-880c5c3d0cb6, 58 personagens externos. De 108 títulos candidatos, 21 correspondências exatas e 87 retidos; exit 0. Freezer e Vegetto foram retidos por aliases regionais para não criar identidades duplicadas.
+- As fontes Dragon Ball API e Dattebayo são **comunitárias, não oficiais**. Evidência de personagem na fonte não confirma visualmente uma escultura e não concede direitos comerciais.
+
+**Efeito privado real no Supabase:** 49 novas identidades inseridas idempotentemente na tabela editorial catalog_character_identities com evidence_origin=independent_anime_api_exact:2026-11-22, URLs de registros, IDs e SHA-256 dos snapshots originais. Auditoria final: **513 identidades/513 identity_keys únicas**, 445 Pokémon, 28 Naruto, 21 Dragon Ball e outras 19 em 15 franquias. No começo desta rodada eram 34, portanto +479 registros reais. Continua ZERO perfis de modelos e ZERO tags de modelos; D1 e site inalterados.
+
+O código scripts/catalog/validate-anime-character-references.py reutiliza as funções de normalização e escrita atômica do validador de Pokémon, verifica paginação completa/IDs, faz matching exato por franquia, guarda logs e checkpoints em processos supervisionados pelo OrdaX MCP e recusa aliases regionais conhecidos. Nenhuma credencial é embarcada no script. Os relatórios privados ficam em C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/ e não podem ser publicados no GitHub.
+
+**Próximas etapas:** processar outras franquias em lotes supervisionados, priorizando Marvel, DC Comics e One Piece; revisar variantes e aliases; não repetir os 513 cadastros. A tarefa horária TONART já existente deve retomar os checkpoints. D1 migration 0029, M5, publicador do Worker e vínculos com esculturas continuam sem aplicação.

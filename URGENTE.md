@@ -1,3 +1,13 @@
+
+## CHECKPOINT — 22/11/2026 — OrdaX MCP Naruto/Dragon Ball +49: total 513
+
+- Processos auditados: Naruto 859946cd-82e5-4506-99f0-ad8cc1745b7e (1431 referências, 28 exatos, 19 retidos, exit 0); Dragon Ball 2af837a3-84ae-42a6-83e-880c5c3d0cb6 (58 referências, 21 exatos, 87 retidos, exit 0). Fontes comunitárias, NÃO oficiais. Freezer/Vegetto retidos por alias regional.
+- Supabase privado: 49 novos registros idempotentes, 513 total / 513 keys únicas / 15 franquias; Pokémon 445, Naruto 28, Dragon Ball 21. Crescimento cumulativo da rodada +479 desde 34. Zero vínculos com esculturas ou tags comerciais.
+- Scripts canônicos: scripts/catalog/validate-anime-character-references.py + tests, reuso do validador existente de Pokémon; relatórios privados na pasta de reconciliação-taxonomia-20261122 do desktop autorizado.
+- Próxima prioridade: referências comprováveis em Marvel/DC/One Piece e revisão de nomes/aliases, sem repetições e sem inferir direitos. M5 e D1 não implantados.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — OrdaX MCP lote Pokémon +430 identidades privadas
 
 - **Missão física supervisionada:** `computer.process_start` no DESKTOP-4UFL03B, process_id `f257d6fe-2cf0-45ef-8a40-db5fe47aa0fe`, 5/5 etapas, exit 0, logs com `source-commit:cd5f6c6232f23430aa6089896d96230f5f7ecef4`. Inventário lido sem alterar SQLite, imagens, Telegram, R2 ou D1.
