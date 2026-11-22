@@ -16,6 +16,13 @@ assert 'id="legacyWallPageSize"' in html and 'id="legacyWallViews"' in html
 assert 'id="legacyWallFocus"' in html
 assert 'id="queueSiteStatus"' in html and 'id="queueSiteCheck"' in html
 assert 'id="boardSize"' in html
+assert 'id="modelWallControls"' in html
+assert 'id="modelWallPageSize"' in html and 'id="modelWallViews"' in html
+assert 'id="modelWallFocus"' in html
+assert 'let modelWallRequestId=0' in js
+assert 'g.preview_ids?.length' in js
+assert 'gallery_preview_ids' in (root/'smart_curadoria.py').read_text(encoding='utf-8')
+
 assert 'className="audit-previews"' in js
 assert '"/api/catalog-sync-summary"' in js
 assert 'gallery.legacy_audit' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
@@ -294,3 +301,70 @@ group_test=subprocess.run(
 )
 assert group_test.returncode==0,group_test.stderr
 assert "NATIVE_GROUP_AUDIT_UI_E2E_OK" in group_test.stdout
+
+
+# Exercise the real generic 4k-model wall renderer without browser packages,
+# public site calls or touching the physical catalog.
+models_wall_js=r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const start=source.indexOf('let modelWallRequestId=0');
+const end=source.indexOf('async function openModel(key)',start);
+assert(start>=0&&end>start);
+class Element {
+ constructor(){this.children=[];this.hidden=false;this.disabled=false;
+  this.textContent='';this.checked=false;this.value='';
+  this.classList={add:()=>{},toggle:()=>true};}
+ append(...items){this.children.push(...items);}
+ replaceChildren(...items){this.children=[...items];}
+}
+const controls=['modelWallPageSize','modelWallViews','multiplePhotosOnly',
+ 'onlyUnnamedModels','modelResults','summary','page','prev','next','smartSummary'];
+const elements=Object.fromEntries(controls.map(x=>[x,new Element()]));
+elements.modelWallPageSize.value='96';
+elements.modelWallViews.value='4';
+let requests=[];
+const fixture={
+ total:4433,items:[{
+  group_key:'a'.repeat(24),title:'Modelo A',studio:'Studio A',universe:'',
+  image_count:6,unique_photo_count:6,revision:1,state:'revisar',
+  sample_message:101,preview_ids:[101,102,105,106]
+ }]
+};
+const context=vm.createContext({
+  viewMode:'models',el:id=>elements[id],status:'',topic:'',search:'',
+  currentPage:1,modelTotal:0,Date,URLSearchParams,fmt:n=>String(n),
+  document:{createElement:()=>new Element()},
+  text:(parent,tag,value)=>{const item=new Element();item.textContent=String(value);parent.append(item);},
+  setThumb:(img,mid,size)=>{img.src='/thumb/'+mid+'?w='+size;},
+  openModel:()=>{},notify:()=>{},refreshAlbumCandidates:async()=>{},
+  api:async url=>{
+   requests.push(url);
+   if(url.startsWith('/api/models?'))return fixture;
+   if(url==='/api/stats')return {smart:{images_needing_review:4},
+      galleries:{photos_in_galleries:5,galleries:3,visually_reviewed_galleries:2}};
+   throw Error('Unexpected request '+url);
+  },console,
+});
+vm.runInContext(source.slice(start,end),context);
+(async()=>{
+ await vm.runInContext('refreshModels()',context);
+ assert(requests[0].includes('limit=96')&&requests[0].includes('previews=4'));
+ assert.strictEqual(elements.modelResults.children.length,1);
+ const images=elements.modelResults.children[0].children[0].children;
+ assert.strictEqual(images.length,4);
+ assert.deepStrictEqual(Array.from(images,x=>x.src),
+  ['/thumb/101?w=256','/thumb/102?w=256','/thumb/105?w=256','/thumb/106?w=256']);
+ assert.strictEqual(elements.next.disabled,false);
+ await vm.runInContext('refreshModels()',context);
+ assert.strictEqual(requests.filter(x=>x==='/api/stats').length,1,
+  'Stats must be cached during wall pagination');
+ console.log('MODEL_WALL_96_IMAGES_UI_E2E_OK');
+})().catch(e=>{console.error(e);process.exitCode=1;});
+"""
+model_test=subprocess.run(
+    ["node","-e",models_wall_js,str(script)],
+    capture_output=True,text=True,timeout=20,
+)
+assert model_test.returncode==0,model_test.stderr
+assert "MODEL_WALL_96_IMAGES_UI_E2E_OK" in model_test.stdout
