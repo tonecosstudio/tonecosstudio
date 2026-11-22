@@ -42,6 +42,7 @@ refresh();setInterval(()=>{
 let viewMode="models",chosenGroup=null,modelTotal=0;
 let queuePageIndex=0,queueCursors=[""],queueNextCursor="",queueHasMore=false;
 let queueRequestId=0,chosenLegacyAudit=null;
+let boardBatchGroups=[],boardBatchIndex=-1,boardNavigateBusy=false;
 function resetReviewQueue(){
  queuePageIndex=0;queueCursors=[""];queueNextCursor="";queueHasMore=false;queueRequestId++;
 }
@@ -172,6 +173,7 @@ async function refreshReviewQueue(){
   if(requestId!==queueRequestId||viewMode!=="queue")return;
   queueNextCursor=data.next_cursor||"";
   queueHasMore=data.has_more===true;
+  boardBatchGroups=grouped?(data.items||[]):[];
   const node=el("queueResults");
   node.replaceChildren();
   node.classList.toggle("audit-wall",grouped);
@@ -312,6 +314,7 @@ async function refreshModels(){
   await refreshAlbumCandidates();
   if(requestId!==modelWallRequestId||viewMode!=="models")return;
   modelTotal=result.total;
+  boardBatchGroups=result.items||[];
   const root=el("modelResults");
   root.replaceChildren();
   root.classList.add("audit-wall");
@@ -339,7 +342,10 @@ async function refreshModels(){
       text(details,"div","Mensagens repetem o mesmo arquivo","sub");
     }
     card.append(details);
-    card.onclick=()=>openModel(g.group_key);
+    card.onclick=async()=>{
+      const detail=await openModel(g.group_key);
+      if(detail)await openBoard(g.group_key,detail);
+    };
     root.append(card);
   }
   if(!result.items.length){
@@ -404,7 +410,8 @@ async function openModel(key){
    a.href=url.href;a.target="_blank";a.rel="noopener noreferrer";a.textContent=e.source_type+" · "+url.hostname+" · "+url.pathname; evidence.append(a);
   }
   if(!g.evidence.length)text(evidence,"p","Sem fonte vinculada.","sub");
- }catch(e){notify(e.message)}
+  return g;
+ }catch(e){notify(e.message);return null;}
 }
 el("saveModelReview").onclick=async()=>{
  if(!chosenGroup)return;
@@ -854,10 +861,21 @@ function renderBoardPage(){
   el("boardNext").disabled=boardPage>=pages;
   updateBoardSplitCount();
 }
-async function openBoard(key){
+function syncBoardBatchControls(key){
+  boardBatchIndex=boardBatchGroups.findIndex(x=>x.group_key===key);
+  const active=boardBatchIndex>=0;
+  el("boardPrevGroup").hidden=!active;
+  el("boardNextGroup").hidden=!active;
+  el("boardGroupPosition").hidden=!active;
+  el("boardPrevGroup").disabled=!active||boardBatchIndex===0;
+  el("boardNextGroup").disabled=!active||boardBatchIndex===boardBatchGroups.length-1;
+  el("boardGroupPosition").textContent=active?
+    (boardBatchIndex+1)+" / "+boardBatchGroups.length+" modelos do lote":"";
+}
+async function openBoard(key,initialGroup=null){
   if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha inválido.");return;}
   try{
-    const group=await api("/api/model/"+key);
+    const group=initialGroup||await api("/api/model/"+key);
     const photos=new Map();
     for(const item of group.images||[]){
       const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
@@ -879,9 +897,32 @@ async function openBoard(key){
       (group.identity_conflicts||[]).length+" conflitos de identidade"
     ].filter(Boolean).join(" | ");
     renderBoardPage();
-    el("boardDialog").showModal();
+    syncBoardBatchControls(key);
+    if(!el("boardDialog").open)el("boardDialog").showModal();
+    el("boardDialog").scrollTop=0;
   }catch(e){notify("Prancha: "+e.message);}
 }
+async function navigateBoardGroup(step){
+  if(boardNavigateBusy||boardBatchIndex<0)return;
+  const next=boardBatchGroups[boardBatchIndex+step];
+  if(!next)return;
+  if(boardMode==="legacy_split"&&boardSplitSelection.size){
+    notify("Conclua ou desmarque a seleção antes de trocar de escultura.");
+    return;
+  }
+  boardNavigateBusy=true;
+  try{
+    if(viewMode==="queue"&&el("queueKind").value==="legacy_groups"){
+      selectLegacyAuditGroup(next);
+      await openBoard(next.group_key);
+    }else if(viewMode==="models"){
+      const details=await openModel(next.group_key);
+      if(details)await openBoard(next.group_key,details);
+    }
+  }finally{boardNavigateBusy=false;}
+}
+el("boardPrevGroup").onclick=()=>navigateBoardGroup(-1);
+el("boardNextGroup").onclick=()=>navigateBoardGroup(1);
 async function openTelegramAlbumBoard(mid){
   const numeric=Number(mid);
   if(!Number.isSafeInteger(numeric)||numeric<=0){
