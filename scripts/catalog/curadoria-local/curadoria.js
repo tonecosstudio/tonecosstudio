@@ -492,6 +492,7 @@ const BOARD_PAGE_SIZE=24;
 let boardAllPhotos=[];
 let boardCurrentTitle="";
 let boardPage=1;
+let boardMode="gallery";
 function renderBoardPage(){
   const root=el("boardPhotos");root.replaceChildren();
   const total=boardAllPhotos.length;
@@ -512,6 +513,7 @@ function renderBoardPage(){
     caption.className="sub";
     caption.textContent=[
       "#"+photo.message_id,
+      boardMode==="telegram"?"Mídia do mesmo álbum: conferir esculturas independentes":
       photo.match_reason==="reviewed_angles"?"Ângulos revisados":"Agrupamento provisório: conferir escultura",
       photo.source_album?"Álbum: "+photo.source_album:"",
       (photo.source_caption||"Legenda não disponível").slice(0,340)
@@ -544,6 +546,7 @@ async function openBoard(key){
     boardAllPhotos=Array.from(photos.values());
     boardCurrentTitle=group.title||"Modelo sem título";
     boardPage=1;
+    boardMode="gallery";
     el("boardTitle").textContent=boardCurrentTitle;
     el("boardMeta").textContent=[
       group.studio,group.variant,group.state,
@@ -554,6 +557,40 @@ async function openBoard(key){
     el("boardDialog").showModal();
   }catch(e){notify("Prancha: "+e.message);}
 }
+async function openTelegramAlbumBoard(mid){
+  const numeric=Number(mid);
+  if(!Number.isSafeInteger(numeric)||numeric<=0){
+    notify("Mensagem Telegram inválida.");return;
+  }
+  try{
+    const album=await api("/api/telegram-album/"+numeric);
+    if(!album.has_album||!album.items?.length){
+      notify("Esta imagem não possui álbum Telegram verificado.");return;
+    }
+    const unique=new Map();
+    for(const item of album.items){
+      const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
+      if(!unique.has(fingerprint))unique.set(fingerprint,item);
+    }
+    boardAllPhotos=Array.from(unique.values());
+    boardMode="telegram";
+    boardPage=1;
+    boardCurrentTitle="Álbum de origem · "+album.studio;
+    el("boardTitle").textContent=boardCurrentTitle;
+    el("boardMeta").textContent=[
+      "Telegram "+album.album_id,
+      unique.size+" fotos únicas",
+      album.items.length+" mensagens",
+      album.truncated?"Exibição limitada a 100 mídias":"",
+      "Mesmo álbum NÃO comprova mesma escultura; compare antes de agrupar"
+    ].filter(Boolean).join(" | ");
+    renderBoardPage();
+    el("boardDialog").showModal();
+  }catch(e){notify("Prancha do Telegram: "+e.message);}
+}
+el("nameTelegramAlbumBoard").onclick=()=>{
+  if(chosenName)openTelegramAlbumBoard(chosenName.message_id);
+};
 el("boardPrev").onclick=()=>{boardPage--;renderBoardPage();el("boardDialog").scrollTop=0;};
 el("boardNext").onclick=()=>{boardPage++;renderBoardPage();el("boardDialog").scrollTop=0;};
 el("openBoardBtn").onclick=()=>{if(chosenGroup)openBoard(chosenGroup.group_key)};
