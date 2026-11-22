@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Lote total classificado, 714 identidades privadas
+
+- **Supabase verificado:** total **714 identidades únicas e 714 identity_keys**, 21 franquias, **+56 novos cadastros neste ciclo** (12 Star Wars, 8 Digimon, 12 LoL, 7 Yu-Gi-Oh! monstros e 17 Genshin). Sem vínculos de modelos e sem tags comerciais; não confundir com cadastros públicos.
+- **OrdaX MCP supervisionado:** `dc81e140-2027-40ec-be0b-534d3e4fdc3d` e `9700fd45-1552-49ff-b351-75f860f9ceb9` concluídos exit 0, fontes externas independentes com URL/hash/ID por registro. Auditoria integral `2d20ce06-cd85-4b07-a1e4-f48953bbb24c` concluída exit 0.
+- **Fila de 2.813 títulos / 527 universos inteira classificada, SEM fingir curadoria concluída:** 742 nomes com identidade exata, 563 sem evidência suficiente, 1123 universos sem vocabulário privado, 183 flags editoriais, 103 variantes/conjuntos, 57 universos ambíguos, 18 possíveis aliases, 7 conflitos entre franquias editoriais, 17 duplicações normalizadas. **2.071 títulos continuam sem identidade exata aprovada nesta fase.** Cada título tem causa e etapa em arquivo privado.
+- **Scripts da main após merge:** `validate-next-verified-universes.py`, `audit-full-character-candidate-coverage.py`, e testes; usam a mesma SSOT privada e inventário anterior, sem criar outro banco/serviço/publicador. Arquivos derivados em `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/`; não publicar dados privados no GitHub.
+- **Próxima prioridade por volume e evidência:** 563 pendentes em franquias cadastradas; 1123 em franquias ainda não representadas (Saint Seiya, Kaijumon, World of Warcraft, My Hero Academia, Bleach, Attack on Titan). Buscar fontes comprováveis, não forçar sucesso. Jikan/MAL não respondeu, não repetir polling caro. D1/M5/rights e vínculos comerciais continuam protegidos.
+
+---
+
 
 ## CHECKPOINT — 22/11/2026 — OrdaX MCP Marvel/DC/One Piece +145: total 658
 
