@@ -38,45 +38,117 @@ refresh();setInterval(()=>{if(!typing)refresh()},10000);
 /* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
 let viewMode="models",chosenGroup=null,modelTotal=0;
 let queuePageIndex=0,queueCursors=[""],queueNextCursor="",queueHasMore=false;
-let queueRequestId=0;
+let queueRequestId=0,chosenLegacyAudit=null;
 function resetReviewQueue(){
  queuePageIndex=0;queueCursors=[""];queueNextCursor="";queueHasMore=false;queueRequestId++;
 }
+function selectLegacyAuditGroup(item){
+ chosenLegacyAudit=item;
+ el("nameReview").hidden=true;
+ el("legacyAuditReview").hidden=false;
+ el("legacyAuditTitle").textContent=(item.title||"Modelo sem título")+" · "+item.original_topic;
+ el("legacyAuditMeta").textContent=item.photos+" fotos · "+
+   item.unique_files+" arquivos únicos · "+item.source_albums+" álbuns · "+
+   item.risk_label+" · "+item.review_state;
+ el("legacyAuditDecision").value="";
+ el("legacyAuditNotes").value="";
+ const audited=item.review_state==="audited";
+ el("legacyAuditForm").hidden=audited;
+ el("legacyAuditStatus").textContent=audited
+   ?"Já existe revisão visual registrada. Esta galeria não será auditada novamente automaticamente."
+   :item.review_state==="attention"
+    ?"Há pendência editorial registrada; confira as imagens e a justificativa anterior."
+    :"Abra a prancha e compare todas as fotos antes de registrar uma conclusão.";
+}
+el("legacyAuditOpenBoard").onclick=()=>{
+ if(chosenLegacyAudit)openBoard(chosenLegacyAudit.group_key);
+};
+el("legacyAuditSave").onclick=async()=>{
+ if(!chosenLegacyAudit)return;
+ const decision=el("legacyAuditDecision").value;
+ const note=el("legacyAuditNotes").value.trim();
+ if(!["same_sculpture","different_sculptures","needs_more_evidence"].includes(decision) ||
+    note.length<15){
+  notify("Selecione a conclusão e descreva a evidência visual (15+ caracteres).");return;
+ }
+ const item=chosenLegacyAudit;
+ const control=el("legacyAuditSave");
+ control.disabled=true;
+ try{
+  const result=await post("/api/audit-legacy-gallery",{
+   group_key:item.group_key,revision:item.revision,decision,note
+  });
+  chosenLegacyAudit={...item,revision:result.revision,
+    review_state:decision==="same_sculpture"?"audited":"attention"};
+  el("legacyAuditStatus").textContent=decision==="same_sculpture"
+    ?"Auditoria visual registrada; sem liberar identidade comercial ou publicação."
+    :"Pendência editorial registrada. Galeria intacta; corrigir somente após revisão.";
+  if(decision==="same_sculpture")el("legacyAuditForm").hidden=true;
+  notify("Revisão registrada no histórico canônico. Nenhuma foto foi movida.");
+  resetReviewQueue();await refreshReviewQueue();
+ }catch(e){notify("Auditoria da galeria: "+e.message);}
+ finally{control.disabled=false;}
+};
 async function refreshReviewQueue(){
  if(viewMode!=="queue")return;
+ const grouped=el("queueKind").value==="legacy_groups";
+ el("legacyAuditFilters").hidden=!grouped;
+ el("queueVariantLabel").hidden=grouped;
+ if(!grouped)el("legacyAuditReview").hidden=true;
  const requestId=++queueRequestId;
- const params=new URLSearchParams({
-  topic,kind:el("queueKind").value,variant:el("queueVariant").value,
-  q:search,cursor:queueCursors[queuePageIndex]||"",limit:48
- });
+ const params=grouped
+   ?new URLSearchParams({
+     topic,state:el("legacyAuditState").value,risk:el("legacyAuditRisk").value,
+     q:search,cursor:queueCursors[queuePageIndex]||"",limit:24
+   })
+   :new URLSearchParams({
+     topic,kind:el("queueKind").value,variant:el("queueVariant").value,
+     q:search,cursor:queueCursors[queuePageIndex]||"",limit:48
+   });
  try{
-  const data=await api("/api/review-queue?"+params);
+  const path=grouped?"/api/legacy-album-audit?":"/api/review-queue?";
+  const data=await api(path+params);
   if(requestId!==queueRequestId||viewMode!=="queue")return;
   queueNextCursor=data.next_cursor||"";
   queueHasMore=data.has_more===true;
-  const node=el("queueResults");node.replaceChildren();
+  const node=el("queueResults");
+  node.replaceChildren();
   for(const item of data.items||[]){
-   const tile=document.createElement("button");tile.className="tile";
-   const img=document.createElement("img");setThumb(img,item.message_id);
-   img.alt="Mensagem "+item.message_id+" · "+(item.title||"Sem nome");
+   const tile=document.createElement("button");
+   tile.className="tile";
+   const img=document.createElement("img");
+   setThumb(img,grouped?item.sample_message:item.message_id);
+   img.alt=(item.title||"Sem nome")+" · "+(item.original_topic||"");
    tile.append(img);
-   const detail=document.createElement("div");detail.className="details";
+   const detail=document.createElement("div");
+   detail.className="details";
    text(detail,"div",item.title||"Sem nome identificado");
    text(detail,"div",(item.original_topic||"")+
-    (item.universe?" · "+item.universe:"")+
-    (item.variant?" · "+item.variant:""),"sub");
-   text(detail,"div",item.reason+" · #"+item.message_id,"pill");
+     (item.universe?" · "+item.universe:"")+
+     (item.variant?" · "+item.variant:""),"sub");
+   text(detail,"div",grouped
+      ?item.photos+" fotos · "+item.risk_label+" · "+
+        (item.review_state==="audited"?"Já auditada":
+         item.review_state==="attention"?"Pendente de correção":"Sem revisão visual")
+      :item.reason+" · #"+item.message_id,"pill");
    tile.append(detail);
-   tile.onclick=()=>{openName(item);el("nameReview").hidden=false;};
+   tile.onclick=()=>{
+    if(grouped){selectLegacyAuditGroup(item);openBoard(item.group_key);}
+    else{el("legacyAuditReview").hidden=true;openName(item);el("nameReview").hidden=false;}
+   };
    node.append(tile);
   }
-  if(!data.items?.length)text(node,"p","Nenhuma pendência com esses filtros.","empty");
-  el("queueSummary").textContent=fmt(data.total)+" imagens no filtro. Prioridade para revisão, não aprovação automática.";
-  el("summary").textContent=fmt(data.total)+" imagens na fila";
+  if(!data.items?.length)text(node,"p",grouped
+    ?"Nenhuma galeria nesta classificação.":"Nenhuma pendência com esses filtros.","empty");
+  const countLabel=grouped?" galerias":" imagens";
+  el("queueSummary").textContent=fmt(data.total)+countLabel+
+    (grouped?" · revisão de agrupamentos, sem mesclar ou desmembrar automaticamente."
+            :" no filtro · sem confirmação ou publicação automática.");
+  el("summary").textContent=fmt(data.total)+countLabel+" na fila filtrada";
   el("page").textContent="Página "+(queuePageIndex+1);
   el("prev").disabled=queuePageIndex<=0;
   el("next").disabled=!queueHasMore;
- }catch(e){if(requestId===queueRequestId)notify("Fila: "+e.message);}
+ }catch(e){if(requestId===queueRequestId)notify("Fila de revisão: "+e.message);}
 }
 
 let albumCandidates=[],albumCandidatePage=0,albumCandidateTopic="",albumCandidateBusy=false;
@@ -243,6 +315,7 @@ function setView(mode){
  el("queueFilters").hidden=mode!=="queue";
  el("statusFilter").hidden=mode==="queue";
  el("smartSummary").hidden=mode==="queue";
+ el("legacyAuditReview").hidden=true;
  el("galleryCreate").hidden=mode!=="models";
  el("unnamedFilter").hidden=mode!=="models";
  el("namesMode").className=mode==="names"?"primary":"";
@@ -353,8 +426,8 @@ el("exportNames").onclick=async()=>{
 };
 el("namesMode").onclick=()=>setView("names");
 el("queueMode").onclick=()=>setView("queue");
-for(const filter of ["queueKind","queueVariant"]){
- el(filter).onchange=()=>{resetReviewQueue();refreshReviewQueue();};
+for(const filter of ["queueKind","queueVariant","legacyAuditState","legacyAuditRisk"]){
+ el(filter).onchange=()=>{el("legacyAuditReview").hidden=true;resetReviewQueue();refreshReviewQueue();};
 }
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="queue")resetReviewQueue();refresh()};
 el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;refresh()};
