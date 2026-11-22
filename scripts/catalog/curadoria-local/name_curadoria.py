@@ -180,8 +180,7 @@ def process_batch(db_path,limit=500):
             "review_this_batch":review,**stats(db_path)}
 
 def stats(db_path):
-    with smart.db_open(db_path) as db:
-        setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
         total=db.execute("SELECT COUNT(*) FROM assets").fetchone()[0]
         count=db.execute("SELECT COUNT(*) FROM name_proposals").fetchone()[0]
         statuses={r["status"]:r["n"] for r in db.execute(
@@ -201,9 +200,7 @@ def list_names(db_path,page=1,limit=48,topic="",q="",status=""):
         clause.append("(p.title LIKE ? OR p.studio LIKE ? OR p.universe LIKE ? OR p.variant LIKE ? OR a.original_topic LIKE ? OR CAST(a.message_id AS TEXT) LIKE ?)")
         args.extend(["%"+q+"%"]*6)
     where=" AND ".join(clause)
-    with smart.db_open(db_path) as db:
-        setup(db)
-        smart.setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
         total=db.execute("""SELECT COUNT(*) FROM name_proposals p JOIN assets a
           USING(message_id) WHERE """+where,args).fetchone()[0]
         rows=db.execute("""SELECT p.message_id,p.studio,p.title,p.universe,p.variant,
