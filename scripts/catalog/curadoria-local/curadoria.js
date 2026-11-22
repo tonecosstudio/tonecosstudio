@@ -37,6 +37,48 @@ refresh();setInterval(()=>{if(!typing)refresh()},10000);
 
 /* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
 let viewMode="models",chosenGroup=null,modelTotal=0;
+let queuePageIndex=0,queueCursors=[""],queueNextCursor="",queueHasMore=false;
+let queueRequestId=0;
+function resetReviewQueue(){
+ queuePageIndex=0;queueCursors=[""];queueNextCursor="";queueHasMore=false;queueRequestId++;
+}
+async function refreshReviewQueue(){
+ if(viewMode!=="queue")return;
+ const requestId=++queueRequestId;
+ const params=new URLSearchParams({
+  topic,kind:el("queueKind").value,variant:el("queueVariant").value,
+  q:search,cursor:queueCursors[queuePageIndex]||"",limit:48
+ });
+ try{
+  const data=await api("/api/review-queue?"+params);
+  if(requestId!==queueRequestId||viewMode!=="queue")return;
+  queueNextCursor=data.next_cursor||"";
+  queueHasMore=data.has_more===true;
+  const node=el("queueResults");node.replaceChildren();
+  for(const item of data.items||[]){
+   const tile=document.createElement("button");tile.className="tile";
+   const img=document.createElement("img");setThumb(img,item.message_id);
+   img.alt="Mensagem "+item.message_id+" · "+(item.title||"Sem nome");
+   tile.append(img);
+   const detail=document.createElement("div");detail.className="details";
+   text(detail,"div",item.title||"Sem nome identificado");
+   text(detail,"div",(item.original_topic||"")+
+    (item.universe?" · "+item.universe:"")+
+    (item.variant?" · "+item.variant:""),"sub");
+   text(detail,"div",item.reason+" · #"+item.message_id,"pill");
+   tile.append(detail);
+   tile.onclick=()=>{openName(item);el("nameReview").hidden=false;};
+   node.append(tile);
+  }
+  if(!data.items?.length)text(node,"p","Nenhuma pendência com esses filtros.","empty");
+  el("queueSummary").textContent=fmt(data.total)+" imagens no filtro. Prioridade para revisão, não aprovação automática.";
+  el("summary").textContent=fmt(data.total)+" imagens na fila";
+  el("page").textContent="Página "+(queuePageIndex+1);
+  el("prev").disabled=queuePageIndex<=0;
+  el("next").disabled=!queueHasMore;
+ }catch(e){if(requestId===queueRequestId)notify("Fila: "+e.message);}
+}
+
 let albumCandidates=[],albumCandidatePage=0,albumCandidateTopic="",albumCandidateBusy=false;
 async function refreshAlbumCandidates(next=false){
  const requestedTopic=topic;
@@ -197,17 +239,25 @@ function setView(mode){
  el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
  el("nameResults").hidden=mode!=="names";
+ el("queueResults").hidden=mode!=="queue";
+ el("queueFilters").hidden=mode!=="queue";
+ el("statusFilter").hidden=mode==="queue";
+ el("smartSummary").hidden=mode==="queue";
  el("galleryCreate").hidden=mode!=="models";
  el("unnamedFilter").hidden=mode!=="models";
  el("namesMode").className=mode==="names"?"primary":"";
  el("modelsMode").className=mode==="models"?"primary":"";
  el("imagesMode").className=mode==="images"?"primary":"";
+ el("queueMode").className=mode==="queue"?"primary":"";
  el("modelReview").hidden=mode!=="models"||!chosenGroup;
- el("nameReview").hidden=mode!=="names"||!chosenName;
- if(mode==="names")refreshNames();else if(mode==="models")refreshModels();else originalRefresh();
+ el("nameReview").hidden=!(mode==="names"||mode==="queue")||!chosenName;
+ if(mode==="queue"){resetReviewQueue();refreshReviewQueue();}
+ else if(mode==="names")refreshNames();
+ else if(mode==="models")refreshModels();
+ else originalRefresh();
 }
 const originalRefresh=refresh;
-refresh=function(){return viewMode==="names"?refreshNames():viewMode==="models"?refreshModels():originalRefresh()};
+refresh=function(){return viewMode==="names"?refreshNames():viewMode==="queue"?refreshReviewQueue():viewMode==="models"?refreshModels():originalRefresh()};
 el("modelsMode").onclick=()=>setView("models");
 el("onlyUnnamedModels").onchange=()=>{currentPage=1;refreshModels()};
 el("imagesMode").onclick=()=>setView("images");
@@ -287,7 +337,8 @@ el("saveNameReview").onclick=async()=>{
   chosenName={...chosenName,...data,revision:result.revision,filename:result.filename};
   el("nameFilename").textContent="Arquivo proposto: "+result.filename;
   notify("Nome salvo na curadoria; o arquivo original não foi alterado.");
-  await refreshNames();
+  if(viewMode==="queue"){resetReviewQueue();await refreshReviewQueue();}
+  else await refreshNames();
  }catch(e){notify(e.message)}
 };
 el("nameMessage").onclick=()=>{
@@ -301,13 +352,28 @@ el("exportNames").onclick=async()=>{
  }catch(e){notify(e.message)}
 };
 el("namesMode").onclick=()=>setView("names");
-selectTopic=function(name){topic=name;currentPage=1;refresh()};
+el("queueMode").onclick=()=>setView("queue");
+for(const filter of ["queueKind","queueVariant"]){
+ el(filter).onchange=()=>{resetReviewQueue();refreshReviewQueue();};
+}
+selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="queue")resetReviewQueue();refresh()};
 el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;refresh()};
-el("prev").onclick=()=>{currentPage=Math.max(1,currentPage-1);refresh()};
-el("next").onclick=()=>{currentPage++;refresh()};
+el("prev").onclick=()=>{
+ if(viewMode==="queue"){queuePageIndex=Math.max(0,queuePageIndex-1);refreshReviewQueue();return;}
+ currentPage=Math.max(1,currentPage-1);refresh();
+};
+el("next").onclick=()=>{
+ if(viewMode==="queue"){
+  if(queueHasMore&&queueNextCursor){
+   queuePageIndex++;queueCursors[queuePageIndex]=queueNextCursor;refreshReviewQueue();
+  }return;
+ }
+ currentPage++;refresh();
+};
 el("search").addEventListener("input",()=>{
  if(viewMode!=="images"){
   search=el("search").value;currentPage=1;
+  if(viewMode==="queue")resetReviewQueue();
   clearTimeout(window.smartSearch);
   window.smartSearch=setTimeout(refresh,350);
  }
