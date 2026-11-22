@@ -42,8 +42,12 @@ def db_open(path, readonly=False):
     db.row_factory = sqlite3.Row
     if readonly:
         db.execute("PRAGMA query_only=ON")
+        db.execute("PRAGMA temp_store=MEMORY")
         db.execute("PRAGMA busy_timeout=3000")
     else:
+        # Member rows reference assets and groups; enforce the schema contract
+        # for every canonical writer instead of rejoining every asset on GET.
+        db.execute("PRAGMA foreign_keys=ON")
         db.execute("PRAGMA busy_timeout=15000")
         db.execute("PRAGMA journal_mode=WAL")
     return db
@@ -251,14 +255,19 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unna
     photo_topic=" AND a2.original_topic=?" if topic else ""
     member_args=[topic] if topic else []
 
-    # Scan the small member index first, checking every link against assets.
-    # Materialize only page IDs before resolving their distinct photo hashes.
+    # message_id is the PRIMARY KEY and REFERENCES assets(message_id).
+    # For an unfiltered list, aggregate only the 7k-member index instead
+    # of doing thousands of random asset lookups. Topic filtering must still
+    # join assets because original_topic belongs to that table.
+    members_source=(
+        "FROM assets a JOIN model_group_members m ON m.message_id=a.message_id "
+        "WHERE a.original_topic=?" if topic else
+        "FROM model_group_members m INDEXED BY idx_group_members_key"
+    )
     eligible_sql="""WITH eligible AS MATERIALIZED (
         SELECT m.group_key,COUNT(*) image_count,MIN(m.message_id) sample_message,
                MAX(CASE WHEN m.match_reason='reviewed_angles' THEN 1 ELSE 0 END) reviewed
-        FROM model_group_members m INDEXED BY idx_group_members_key
-        CROSS JOIN assets a
-        WHERE a.message_id=m.message_id""" + member_topic + """
+        """+members_source+"""
         GROUP BY m.group_key HAVING COUNT(*)>=?
     )"""
     listing_sql=eligible_sql+""", page AS MATERIALIZED (

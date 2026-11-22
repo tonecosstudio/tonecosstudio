@@ -33,10 +33,22 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     assert m.process_batch(dbpath,100)["processed"]==0
     with m.db_open(dbpath,readonly=True) as ro:
         assert ro.execute("PRAGMA query_only").fetchone()[0]==1
+        assert ro.execute("PRAGMA temp_store").fetchone()[0]==2
         try:
             ro.execute("UPDATE model_groups SET state='revisar'")
             assert False,"read-only listing connection must refuse writes"
         except sqlite3.OperationalError:
+            pass
+    with m.db_open(dbpath) as writer:
+        assert writer.execute("PRAGMA foreign_keys").fetchone()[0]==1
+        existing_key=writer.execute(
+            "SELECT group_key FROM model_groups LIMIT 1").fetchone()[0]
+        try:
+            writer.execute(
+                "INSERT INTO model_group_members(message_id,group_key,match_reason,updated_at) "
+                "VALUES (999999,?,'test',?)",(existing_key,m.utc()))
+            assert False,"missing asset must be refused by canonical writer"
+        except sqlite3.IntegrityError:
             pass
     groups=m.list_models(dbpath)
     assert groups["total"]==2,groups
