@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Seis listas em lote: 952 identidades privadas
+
+- **Supabase verdadeiro:** 952 identidades/keys únicas, **61 franquias**, **+18** desde 934 (20 matches, 2 já existentes/duplicados dentro do lote), zero vínculos de modelos e zero tags comerciais. OrdaX MCP supervisionado `868ba75a-1482-48ed-b558-6c44161ba9d0` exit 0.
+- **Código canônico refatorado, NÃO duplicado:** `scripts/catalog/validate-categorymembers-character-references.py` admite `--world` com seis novos perfis de fonte por categoria Wiki, preservando default Saint Seiya. King of Fighters usa categoria específica `Category:King of Fighters Characters`, não todo SNK. Fontes Fandom independentes/não oficiais, com IDs/URLs/hashes dos índices de categoria.
+- **Fila 2.813/2.813 títulos de 527 universos:** 981 nomes exatos; **1.832 títulos sem correspondência exata** — 698 não verificados individualmente, 670 sem vocabulário de universo, 46 coleção Kaijumon, 183 flags, 103 variantes/conjuntos, 57 universo incerto, 51 aliases, 7 cross-franchise, 17 duplicações normalizadas. Isso não significa 1.832 personagens nem autoriza vincular os modelos.
+- **Artefatos privados:** `.../reconciliacao-taxonomia-20261122/roster-bulk-20261122/` (seis grupos com manifests e JSONLs); snapshot read-only `identity-names-snapshot-952-private.json`, auditoria `auditoria-952/`. Checar o Supabase e SHA da main antes de retomar, não repetir os grupos sem nova evidência.
+- **Próximo:** trabalhar 670 títulos em universos ainda sem vocabulário, 698 sem prova individual, aliases e exceções sem inventar dados; não alterar D1/Worker/Site, M5/0029, rights, imagens, R2 ou Telegram.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — 25 novas wikis concluídas: 934 identidades privadas
 
 - **Supabase canônico real:** **934 identidades / 934 keys únicas / 55 franquias**, +82 nesta rodada (45+37 inserções; 3 dos 85 matches já existiam), **zero vínculos de esculturas e zero tags públicas**. OrdaX MCP supervisionado `22406dda-5614-41b3-b765-aa8c38f96856` exit 0.
