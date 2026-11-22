@@ -28,6 +28,11 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
     cache = thumbs.status()
     assert cache["hits"] >= 1 and cache["misses"] >= 1
     assert cache["items"] >= 1 and cache["bytes"] <= cache["max_bytes"]
+    assert cache["process_samples"] >= 1
+    assert cache["process_ms_total"] >= 0
+    assert cache["queue_wait_samples"] >= 1
+    assert cache["queue_wait_ms_max"] >= 0
+    assert cache["active_decoders"] == 0
     assert thumbs.thumbnail(path, original_sha, 480) != first
     assert thumbs.etag(path, original_sha, 480) != etag0
     try:
@@ -81,11 +86,14 @@ with tempfile.TemporaryDirectory(prefix="tonart-gif-first-frame-") as root:
     with animated.open("r+b") as media:
         media.seek(0);media.write(before_header)
         media.truncate(thumbs.MAX_GIF_SOURCE_BYTES+1)
+    rejected_before=thumbs.status()["failures"]
     try:
         thumbs.thumbnail(animated,"oversized-gif",256)
         raise AssertionError("64 MiB GIF bound ignored")
     except thumbs.ThumbnailUnavailable:
         pass
+    assert thumbs.status()["failures"] == rejected_before+1
+    assert thumbs.status()["active_decoders"] == 0
     print("GIF 25-64 MiB E2E: first frame only, spoof rejected, hard cap preserved")
 
 # The real HTTP handler uses the same local contract as the OrdaX MCP.
