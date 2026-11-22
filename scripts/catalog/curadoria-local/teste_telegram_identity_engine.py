@@ -353,6 +353,61 @@ class TelegramIdentityEngineTests(unittest.TestCase):
         self.assertEqual(finding["candidates"], [])
         self.assertEqual(finding["coverage"]["identity_status"], "unidentified")
 
+    def test_album_history_exact_ids_reveal_review_only_evidence(self):
+        self.add_asset(700, topic="Pokerus Studio")
+        self.add_asset(701, topic="Pokerus Studio")
+        self.add_asset(702, topic="Other Studio")
+        with engine._open_curadoria(self.db_path) as db:
+            for message_id, topic_id, topic_name in (
+                (700, 5, "Pokerus Studio"),
+                (701, 5, "Pokerus Studio"),
+                (702, 6, "Other Studio"),
+            ):
+                db.execute("""
+                    UPDATE telegram_identity_coverage SET
+                    source_chat_id=?,topic_id=?,topic_name=? WHERE message_id=?
+                """, (SOURCE_CHAT, topic_id, topic_name, message_id))
+            db.commit()
+        engine.ingest_history_messages(self.db_path, SOURCE_CHAT, [
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 700, 5, "Pokerus Studio",
+                "▪️ Gengar - Pokémon\n▫️ Estúdio: Pokerus Studio",
+                grouped_id="album-700", has_media=True,
+            ),
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 701, 5, "Pokerus Studio", "",
+                grouped_id="album-700", has_media=True,
+            ),
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 702, 6, "Other Studio", "Title: Wrong Name",
+                grouped_id="album-700", has_media=True,
+            ),
+        ])
+        result = engine.list_telegram_findings(self.db_path, 701)
+        contextual = [
+            c for c in result["candidates"]
+            if c["evidence_type"] == "telegram_album_context"
+        ]
+        self.assertEqual(len(contextual), 1)
+        self.assertEqual(contextual[0]["title"], "Gengar")
+        self.assertEqual(contextual[0]["status"], "revisar")
+        self.assertLessEqual(contextual[0]["confidence"], 0.52)
+        self.assertEqual(contextual[0]["source_message_id"], 700)
+        self.assertEqual(
+            [(m["evidence_message_id"], m["relation_type"]) for m in result["related_messages"]],
+            [(700, "same_album")],
+        )
+        other = engine.list_telegram_findings(self.db_path, 702)
+        self.assertNotIn(
+            "Gengar", [c["title"] for c in other["candidates"]],
+        )
+        engine.apply_telegram_evidence(self.db_path, original_topic="Pokerus Studio")
+        with _test_db(self.db_path) as db:
+            title = db.execute(
+                "SELECT title FROM name_proposals WHERE message_id=701"
+            ).fetchone()[0]
+        self.assertEqual(title, "")
+
     def test_album_text_is_review_context_and_is_not_auto_inherited(self):
         self.add_asset(400, album="album-400")
         message = engine.TelegramHistoryMessage(
