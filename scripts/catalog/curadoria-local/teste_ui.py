@@ -219,6 +219,8 @@ const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
  'legacySplitVariant','legacySplitNote','legacySplitSelected','boardDialog','queueResults',
  'queueSummary','summary','page','prev','next'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
+elements.legacyBatchSubmit.disabled=true;
+elements.legacyBatchClear.disabled=true;
 elements.queueKind.value='legacy_groups';
 elements.legacyAuditState.value='pending';
 elements.legacyAuditRisk.value='all';
