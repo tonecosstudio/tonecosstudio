@@ -34,9 +34,20 @@ const REQUIRED_ADMIN_SECRETS = ['ADMIN_SUPABASE_ANON_KEY', 'ADMIN_SUPABASE_URL']
 const REQUIRED_WORKER_SECRETS = [...REQUIRED_ADMIN_SECRETS, 'TURNSTILE_SECRET_KEY']
 // The additive D1 migration is the authority for its index name; the Worker
 // schema v9 remains unchanged until a separately authorized D1 migration.
-const REQUIRED_SHOWCASE_LISTING_INDEX = readFileSync(
+const SHOWCASE_INDEX_MIGRATION_SQL = readFileSync(
   join(ROOT, 'services/catalogo/migrations/0028_telegram_showcase_listing_index.sql'), 'utf8',
-).match(/\bCREATE INDEX IF NOT EXISTS\s+([a-z][a-z0-9_]*)\b/i)?.[1] ?? null
+)
+const SHOWCASE_INDEX_STATEMENT = SHOWCASE_INDEX_MIGRATION_SQL.match(
+  /\bCREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s+([a-z][a-z0-9_]*)\s+[\s\S]*?;/i,
+)
+const REQUIRED_SHOWCASE_LISTING_INDEX = SHOWCASE_INDEX_STATEMENT?.[1] ?? null
+// sqlite_master removes IF NOT EXISTS from its stored CREATE INDEX statement.
+const REQUIRED_SHOWCASE_INDEX_DEFINITION = SHOWCASE_INDEX_STATEMENT?.[0]
+  .replace(/\bIF\s+NOT\s+EXISTS\s+/i, '')
+  .replace(/;\s*$/, '')
+  .replace(/\s+/g, ' ').trim() ?? null
+const normalizeIndexDefinition = value =>
+  typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : null
 const REQUIRED_SHOWCASE_COLUMN = 'telegram_showcase_visible'
 const REQUIRED_SHOWCASE_MIGRATION = SCHEMA_CONTRACT.requiredMigrations?.find(x => x.startsWith('0025_telegram_showcase_'))
 const REQUIRED_SHOWCASE_TRIGGERS = SCHEMA_CONTRACT.requiredObjects?.triggers?.filter(x => x.startsWith('trg_telegram_showcase_')) ?? []
@@ -223,7 +234,9 @@ export function assessCutoverReadiness(contract, state) {
   // a temporary sorting tree. The index is installed separately by the D1 owner.
   add(
     typeof REQUIRED_SHOWCASE_LISTING_INDEX === 'string' &&
-      visibility?.indexes?.includes(REQUIRED_SHOWCASE_LISTING_INDEX) === true,
+      typeof REQUIRED_SHOWCASE_INDEX_DEFINITION === 'string' &&
+      visibility?.indexes?.includes(REQUIRED_SHOWCASE_LISTING_INDEX) === true &&
+      normalizeIndexDefinition(visibility?.indexDefinition) === REQUIRED_SHOWCASE_INDEX_DEFINITION,
     'telegram_showcase_listing_index_0028_unverified',
   )
 
@@ -249,11 +262,11 @@ async function getVerifiedShowcaseSchema(account, token) {
   }
   const quote = value => "'" + String(value).replaceAll("'", "''") + "'"
   const sql = [
-    "SELECT 'column' AS category,name FROM pragma_table_info('models') WHERE name=" + quote(REQUIRED_SHOWCASE_COLUMN),
-    "SELECT 'migration' AS category,name FROM d1_migrations WHERE name=" + quote(REQUIRED_SHOWCASE_MIGRATION),
-    "SELECT 'trigger' AS category,name FROM sqlite_master WHERE type='trigger' AND name IN (" +
+    "SELECT 'column' AS category,name,NULL AS definition FROM pragma_table_info('models') WHERE name=" + quote(REQUIRED_SHOWCASE_COLUMN),
+    "SELECT 'migration' AS category,name,NULL AS definition FROM d1_migrations WHERE name=" + quote(REQUIRED_SHOWCASE_MIGRATION),
+    "SELECT 'trigger' AS category,name,NULL AS definition FROM sqlite_master WHERE type='trigger' AND name IN (" +
       REQUIRED_SHOWCASE_TRIGGERS.map(quote).join(',') + ')',
-    "SELECT 'index' AS category,name FROM sqlite_master WHERE type='index' AND name=" +
+    "SELECT 'index' AS category,name,sql AS definition FROM sqlite_master WHERE type='index' AND name=" +
       quote(REQUIRED_SHOWCASE_LISTING_INDEX),
   ].join(' UNION ALL ')
   const url = 'https://api.cloudflare.com/client/v4/accounts/' +
@@ -276,6 +289,8 @@ async function getVerifiedShowcaseSchema(account, token) {
     migration: has('migration', REQUIRED_SHOWCASE_MIGRATION) ? REQUIRED_SHOWCASE_MIGRATION : null,
     triggers: REQUIRED_SHOWCASE_TRIGGERS.filter(name => has('trigger', name)),
     indexes: has('index', REQUIRED_SHOWCASE_LISTING_INDEX) ? [REQUIRED_SHOWCASE_LISTING_INDEX] : [],
+    indexDefinition: records.find(x =>
+      x.category === 'index' && x.name === REQUIRED_SHOWCASE_LISTING_INDEX)?.definition ?? null,
   }
 }
 

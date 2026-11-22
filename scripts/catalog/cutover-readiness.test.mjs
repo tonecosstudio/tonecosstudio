@@ -14,6 +14,9 @@ const workerSettings = {
 
 const showcaseTriggers = schema.requiredObjects.triggers.filter(name => name.startsWith('trg_telegram_showcase_'))
 const showcaseIndex = 'idx_models_telegram_showcase_name'
+const indexSql = readFileSync(new URL('../../services/catalogo/migrations/0028_telegram_showcase_listing_index.sql', import.meta.url), 'utf8')
+const indexDefinition = indexSql.match(/\bCREATE INDEX IF NOT EXISTS[\s\S]*?;/i)?.[0]
+  .replace(/\bIF NOT EXISTS\s+/i, '').replace(/;\s*$/, '').replace(/\s+/g, ' ').trim()
 const retiringWriters = original.origin.additionalWriterWorkflows
 const writerFromApiUrl = url => retiringWriters.find(
   w => String(url).endsWith('/actions/workflows/' + w.path.split('/').at(-1)))
@@ -74,6 +77,7 @@ const fullState = () => ({
     migration: schema.latestMigration,
     triggers: [...showcaseTriggers],
     indexes: [showcaseIndex],
+    indexDefinition,
   },
 })
 
@@ -144,6 +148,17 @@ test('M5 fails closed until D1 index 0028 exists, without changing v9 Worker sch
   const blocked = assessCutoverReadiness(approvedContract(), noMatches)
   assert.equal(blocked.ready, false)
   assert.ok(blocked.blockers.includes('telegram_showcase_listing_index_0028_unverified'))
+  const wrongDefinition = structuredClone(fixture)
+  wrongDefinition.showcaseSchema.indexDefinition =
+    wrongDefinition.showcaseSchema.indexDefinition.replace('name COLLATE NOCASE', 'name COLLATE BINARY')
+  assert.ok(assessCutoverReadiness(approvedContract(), wrongDefinition).blockers.includes(
+    'telegram_showcase_listing_index_0028_unverified'))
+  const wrongPredicate = structuredClone(fixture)
+  wrongPredicate.showcaseSchema.indexDefinition =
+    wrongPredicate.showcaseSchema.indexDefinition.replace("telegram_rights_status <> 'rejected'",
+      "telegram_rights_status = 'rejected'")
+  assert.ok(assessCutoverReadiness(approvedContract(), wrongPredicate).blockers.includes(
+    'telegram_showcase_listing_index_0028_unverified'))
   assert.deepEqual(assessCutoverReadiness(approvedContract(), fixture), { ready: true, blockers: [] })
 })
 
@@ -190,7 +205,8 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
       assert.equal(init.method, 'POST')
       assert.equal(init.headers.Authorization, 'Bearer test-cloudflare-key')
       const { sql } = JSON.parse(init.body)
-      assert.match(sql, /^SELECT 'column' AS category,name FROM pragma_table_info\('models'\)/)
+      assert.match(sql, /^SELECT 'column' AS category,name,NULL AS definition FROM pragma_table_info\('models'\)/)
+      assert.match(sql, /sql AS definition FROM sqlite_master WHERE type='index'/)
       assert.match(sql, /FROM d1_migrations WHERE name=/)
       assert.match(sql, /FROM sqlite_master WHERE type='trigger'/)
       assert.match(sql, /FROM sqlite_master WHERE type='index'/)
@@ -201,7 +217,7 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
         { category: 'column', name: 'telegram_showcase_visible' },
         { category: 'migration', name: schema.latestMigration },
         ...showcaseTriggers.map(name => ({ category: 'trigger', name })),
-        { category: 'index', name: showcaseIndex },
+        { category: 'index', name: showcaseIndex, definition: indexDefinition },
       ] }] })
     }
     throw Error('Unexpected preflight URL ' + u)
@@ -215,6 +231,7 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
     assert.equal(state.showcaseSchema.column, 'telegram_showcase_visible')
     assert.deepEqual(state.showcaseSchema.triggers, showcaseTriggers)
     assert.deepEqual(state.showcaseSchema.indexes, [showcaseIndex])
+    assert.equal(state.showcaseSchema.indexDefinition, indexDefinition)
     assert.equal(calls.filter(x => x.method === 'POST').length, 1)
     assert.equal(calls.filter(x => x.url.endsWith('/query')).length, 1)
   } finally {
