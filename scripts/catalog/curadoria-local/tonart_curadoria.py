@@ -20,13 +20,31 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
-import smart_curadoria as smart
-import name_curadoria as naming
-import visual_name_suggestions as visual
-import model_gallery as gallery
-import gallery_operations as gallery_ops
-import catalog_sync_status as catalog_sync
-import telegram_curadoria_adapter as telegram_identity
+import importlib
+
+class _DeferredModule:
+    """Load heavy curadoria dependencies only when an operation needs them."""
+    def __init__(self, name):
+        self._name = name
+        self._module = None
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        module = self._module
+        if module is None:
+            with self._lock:
+                if self._module is None:
+                    self._module = importlib.import_module(self._name)
+                module = self._module
+        return getattr(module, name)
+
+smart = _DeferredModule("smart_curadoria")
+naming = _DeferredModule("name_curadoria")
+visual = _DeferredModule("visual_name_suggestions")
+gallery = _DeferredModule("model_gallery")
+gallery_ops = _DeferredModule("gallery_operations")
+catalog_sync = _DeferredModule("catalog_sync_status")
+telegram_identity = _DeferredModule("telegram_curadoria_adapter")
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent

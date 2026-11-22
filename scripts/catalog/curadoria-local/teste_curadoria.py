@@ -9,12 +9,22 @@ import tempfile
 import threading
 import time
 import urllib.request
+import sys
 from pathlib import Path
 
 f=Path(__file__).with_name("tonart_curadoria.py")
 sp=importlib.util.spec_from_file_location("tonart_curadoria",f)
 m=importlib.util.module_from_spec(sp)
 sp.loader.exec_module(m)
+# The HTTP listener must not import expensive Telegram/gallery modules.
+_deferred_names=("smart_curadoria","name_curadoria","visual_name_suggestions",
+                 "model_gallery","gallery_operations","catalog_sync_status",
+                 "telegram_curadoria_adapter")
+assert all(name not in sys.modules for name in _deferred_names), (
+    "Curadoria importou dependencias pesadas antes de abrir HTTP")
+assert all(getattr(m,alias)._module is None for alias in
+           ("smart","naming","visual","gallery","gallery_ops",
+            "catalog_sync","telegram_identity"))
 with tempfile.TemporaryDirectory(prefix="tonart-curadoria-test-") as p:
     root=Path(p)
     m.APP_DIR=root/"curadoria"
