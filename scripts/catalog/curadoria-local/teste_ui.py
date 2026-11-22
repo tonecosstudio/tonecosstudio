@@ -18,6 +18,11 @@ assert 'id="queueSiteStatus"' in html and 'id="queueSiteCheck"' in html
 assert 'id="boardSize"' in html
 assert 'id="boardPrevGroup"' in html and 'id="boardNextGroup"' in html
 assert 'id="boardGroupPosition"' in html
+assert 'id="legacyBatchPanel"' in html
+assert 'id="legacyBatchStage"' in html
+assert 'id="legacyBatchSubmit"' in html
+assert 'id="legacyBatchAttested"' in html
+assert 'gallery.legacy_batch_review' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'async function navigateBoardGroup(step)' in js
 assert 'if(!el("boardDialog").open)el("boardDialog").showModal()' in js
 
@@ -208,6 +213,8 @@ const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
  'queueVariantLabel','legacyAuditReview','nameReview',
  'legacyAuditTitle','legacyAuditMeta','legacyAuditDecision','legacyAuditNotes',
  'legacyAuditOpenBoard','legacyAuditSave','legacyAuditForm','legacyAuditStatus',
+ 'legacyBatchPanel','legacyBatchAttested','legacyBatchStage','legacyBatchList',
+ 'legacyBatchSubmit','legacyBatchClear','legacyBatchStatus',
  'legacySplitForm','legacySplitSave','legacySplitOpenNew','legacySplitTitle',
  'legacySplitVariant','legacySplitNote','legacySplitSelected','boardDialog','queueResults',
  'queueSummary','summary','page','prev','next'];
@@ -244,6 +251,8 @@ const ctx=vm.createContext({
     if(url==='/api/split-legacy-gallery')
       return {ok:true,source_revision:2,new_group:'b'.repeat(24),
         moved_ids:[20235,20236],remaining_ids:[20231],publication_approved:false};
+    if(url==='/api/audit-legacy-galleries-batch')
+      return {ok:true,atomic:true,reviewed:payload.reviews.length,publication_approved:false};
     throw Error('Unexpected POST '+url);
   },
   notify:()=>{},console,
@@ -297,6 +306,30 @@ vm.runInContext(source.slice(start,end),ctx);
  elements.legacySplitOpenNew.onclick();
  assert.strictEqual(boards[boards.length-1],'b'.repeat(24));
  assert(paths.length>=3);
+ // Batch preparation is refused until the board's full page range is
+ // inspected, individually classified, and attested.
+ const next={...group,group_key:'c'.repeat(24),title:'New sculpture',
+   revision:0,photos:3,review_state:'pending'};
+ vm.runInContext('selectLegacyAuditGroup',ctx)(next);
+ elements.legacyAuditDecision.value='same_sculpture';
+ elements.legacyAuditNotes.value='Três imagens conferidas na prancha com base comum.';
+ elements.legacyBatchAttested.checked=true;
+ elements.legacyBatchStage.onclick();
+ assert.strictEqual(elements.legacyBatchSubmit.disabled,true);
+ vm.runInContext('auditBoardEvidence={key:"c".repeat(24),revision:0,member_ids:[1,2,3],sha256s:["hash1","hash2","hash3"],pages:2,visited:new Set([1])}',ctx);
+ elements.legacyBatchStage.onclick();
+ assert.strictEqual(elements.legacyBatchSubmit.disabled,true);
+ vm.runInContext('auditBoardEvidence.visited.add(2)',ctx);
+ elements.legacyBatchStage.onclick();
+ assert.strictEqual(elements.legacyBatchSubmit.disabled,false);
+ assert.strictEqual(elements.legacyBatchList.children.length,1);
+ await elements.legacyBatchSubmit.onclick();
+ assert.strictEqual(posts.length,3);
+ assert.strictEqual(posts[2].url,'/api/audit-legacy-galleries-batch');
+ assert.strictEqual(posts[2].payload.reviews.length,1);
+ assert.deepStrictEqual(Array.from(posts[2].payload.reviews[0].member_ids),[1,2,3]);
+ assert.strictEqual(elements.legacyBatchSubmit.disabled,true);
+ assert.strictEqual(elements.legacyBatchList.children.length,0);
  console.log('NATIVE_GROUP_AUDIT_UI_E2E_OK');
 })().catch(e=>{console.error(e);process.exitCode=1});
 """
