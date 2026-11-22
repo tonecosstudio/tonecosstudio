@@ -59,6 +59,7 @@ TOKEN_PATH = APP_DIR / "token-local.txt"
 UI_PATH = ROOT / "curadoria.html"
 SOURCE_ID = -1002370335738
 SYNC_LOCK = threading.Lock()
+SYNC_WRITE_BATCH = 128  # commit each short writer slice; never lock for an entire import
 ALLOWED_STATUS = {"pendente", "revisar", "aprovado", "descartado"}
 NAME_RE = re.compile(r'[^\w .()\-+&]', re.UNICODE)
 
@@ -160,24 +161,28 @@ def sync():
             pending.append((mid,digest,path,date,topic,caption,album))
         if not pending:return 0
         count=0
-        with connect(DB_PATH) as dest:
-            for mid,digest,path,date,topic,caption,album in pending:
-                changed=dest.execute("""INSERT INTO assets
-                     (message_id,sha256,source_relative,original_topic,source_date,source_caption,source_album,indexed_at)
-                     VALUES(?,?,?,?,?,?,?,?)
-                     ON CONFLICT(message_id) DO UPDATE SET
-                     source_relative=excluded.source_relative,original_topic=excluded.original_topic,
-                     source_caption=CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END,
-                     source_album=CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END
-                     WHERE assets.source_relative IS NOT excluded.source_relative
-                        OR assets.original_topic IS NOT excluded.original_topic
-                        OR assets.source_caption IS NOT
-                           (CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END)
-                        OR assets.source_album IS NOT
-                           (CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END)""",
-                     (mid,digest,path,topic,date,caption,album,now()))
-                dest.execute("""INSERT OR IGNORE INTO annotations(message_id,status) VALUES (?,'pendente')""",(mid,))
-                count+=int(changed.rowcount>0)
+        # Commit bounded writer slices. If a cycle is interrupted, the next
+        # scan resumes from MAX(message_id)-20 and replays only missing rows.
+        # Never keep SQLite locked for an entire large downloader delivery.
+        for start in range(0,len(pending),SYNC_WRITE_BATCH):
+            with connect(DB_PATH) as dest:
+                for mid,digest,path,date,topic,caption,album in pending[start:start+SYNC_WRITE_BATCH]:
+                    changed=dest.execute("""INSERT INTO assets
+                         (message_id,sha256,source_relative,original_topic,source_date,source_caption,source_album,indexed_at)
+                         VALUES(?,?,?,?,?,?,?,?)
+                         ON CONFLICT(message_id) DO UPDATE SET
+                         source_relative=excluded.source_relative,original_topic=excluded.original_topic,
+                         source_caption=CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END,
+                         source_album=CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END
+                         WHERE assets.source_relative IS NOT excluded.source_relative
+                            OR assets.original_topic IS NOT excluded.original_topic
+                            OR assets.source_caption IS NOT
+                               (CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END)
+                            OR assets.source_album IS NOT
+                               (CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END)""",
+                         (mid,digest,path,topic,date,caption,album,now()))
+                    dest.execute("""INSERT OR IGNORE INTO annotations(message_id,status) VALUES (?,'pendente')""",(mid,))
+                    count+=int(changed.rowcount>0)
         return count
 
 def as_obj(row):
