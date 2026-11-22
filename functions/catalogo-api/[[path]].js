@@ -101,7 +101,7 @@ function isBoundedPublicQuery(route, searchParams) {
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
   const routeKeys = route === "api/telegram-studios"
-    ? ["studio", "q", "provisional", "offset", "limit"]
+    ? ["studio", "q", "category", "provisional", "offset", "limit"]
     : route === "api/telegram-studios/studios" || /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(route)
       ? []
     : route === "api/catalog"
@@ -143,7 +143,9 @@ function isBoundedPublicQuery(route, searchParams) {
       // cursors use unpadded base64url. Preserve both canonical encodings.
       if (!/^[A-Za-z0-9+/_-]{1,2048}={0,2}$/.test(value)) return false;
     } else if (key === "category" || key === "franchise") {
-      if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
+      if (route === "api/telegram-studios") {
+        if (value.length > 80 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) return false;
+      } else if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
     } else if (key === "folder" || key === "parent") {
       if (value.length > 240 || value.includes("\\") ||
           value.split("/").some((part) => !part || part === "." || part === "..")) return false;

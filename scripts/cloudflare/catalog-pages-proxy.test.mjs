@@ -58,6 +58,67 @@ test("Telegram provisional filter passes only bounded values through the same ca
   }
 });
 
+test("Telegram category is forwarded only as a bounded public-list filter", async () => {
+  for (const suffix of [
+    "?category=anime&limit=1&offset=0",
+    "?studio=Studio%20A&category=3d-printing&limit=24",
+  ]) {
+    const io = mockFetch();
+    const route = "api/telegram-studios" + suffix;
+    const result = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/" + route),
+      io.fetcher,
+    );
+    assert.equal(result.status, 200, suffix);
+    assert.equal(io.calls.length, 1, suffix);
+    assert.equal(io.calls[0].url, WORKER + "/" + route);
+  }
+  for (const suffix of [
+    "?category=Anime", "?category=anime--manga", "?category=",
+    "?category=" + "a".repeat(81), "?category=anime&category=manga",
+    "?category=anime&debug=1",
+  ]) {
+    const io = mockFetch();
+    const result = await proxyCatalogRequest(
+      new Request(SITE + "/catalogo-api/api/telegram-studios" + suffix),
+      io.fetcher,
+    );
+    assert.equal(result.status, 400, suffix);
+    assert.equal(io.calls.length, 0, suffix);
+  }
+});
+
+test("standalone Vercel adapter forwards the canonical Telegram category to Worker", async () => {
+  const oldFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    calls.push(String(url));
+    return Response.json({ total: 0, offset: 0, limit: 1, items: [] }, {
+      headers: { "Cache-Control": "public, max-age=60" },
+    });
+  };
+  try {
+    const res = {
+      statusCode: 200,
+      headers: new Map(),
+      body: null,
+      setHeader(key, value) { this.headers.set(key, value); },
+      end(bytes) { this.body = bytes; },
+    };
+    await vercelCatalogHandler({
+      method: "GET",
+      headers: { host: "catalogo.tonartstudio.com.br" },
+      query: { path: "api/telegram-studios", category: "anime", limit: "1", offset: "0" },
+      url: "/api/catalogo-proxy?path=api/telegram-studios&category=anime&limit=1&offset=0",
+    }, res);
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(JSON.parse(res.body.toString()), { total: 0, offset: 0, limit: 1, items: [] });
+    assert.deepEqual(calls, [WORKER + "/api/telegram-studios?category=anime&limit=1&offset=0"]);
+    assert.equal(res.headers.get("Vercel-CDN-Cache-Control"), "public, s-maxage=60");
+  } finally {
+    globalThis.fetch = oldFetch;
+  }
+});
 test("public media preserves encoded filenames and range", async () => {
   const io = mockFetch("file", 206, {
     "content-type": "image/webp",
