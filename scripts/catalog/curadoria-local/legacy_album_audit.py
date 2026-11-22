@@ -23,7 +23,9 @@ AGG = """WITH older AS (
     SELECT DISTINCT group_key FROM model_group_members
     WHERE match_reason='telegram_album'
 ), grouped AS (
-    SELECT m.group_key,g.studio,g.title,g.universe,g.variant,
+    SELECT m.group_key,g.studio,MIN(a.original_topic) AS original_topic,
+           COUNT(DISTINCT a.original_topic) AS source_topics,
+           g.title,g.universe,g.variant,
            g.state,g.revision,
            COUNT(*) photos,COUNT(DISTINCT a.sha256) unique_files,
            COUNT(DISTINCT a.source_album) source_albums,
@@ -46,7 +48,7 @@ AGG = """WITH older AS (
         WHERE e.group_key=grouped.group_key
           AND e.event_type='visual_gallery_audit_attention') AS attention,
       CASE
-        WHEN variant_count>1 OR title_count>1 THEN 0
+        WHEN source_topics>1 OR variant_count>1 OR title_count>1 THEN 0
         WHEN source_albums>1 THEN 1
         WHEN photos>=8 THEN 2
         ELSE 3 END priority
@@ -78,7 +80,7 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
     filters=[]
     params=[EXCLUDED]
     if topic:
-        filters.append("studio=?")
+        filters.append("original_topic=?")
         params.append(topic)
     if state=="pending":
         filters.append("audited=0")
@@ -168,7 +170,7 @@ def record_review(db_path, *, group_key, revision, decision, note):
                 FROM model_group_members m JOIN assets a USING(message_id)
                 LEFT JOIN name_proposals p USING(message_id)
                 WHERE m.group_key=? ORDER BY m.message_id""",(key,)).fetchall()
-            if len(rows)<2 or any(r["original_topic"]!=group["studio"] for r in rows):
+            if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:\n                raise ValueError("Galeria sem origem única")\n            if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
                 raise ValueError("Galeria sem origem e membros consistentes")
             if not db.execute("""SELECT 1 FROM model_group_members
                 WHERE group_key=? AND match_reason='telegram_album'""",
