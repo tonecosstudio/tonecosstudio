@@ -50,6 +50,22 @@ class CatalogSyncTests(unittest.TestCase):
         return {"total": n, "offset": offset,
                 "limit": 48, "items": [item(i) for i in range(offset, min(offset + 48, n))]}
 
+    def test_compact_alignment_is_read_only(self):
+        full = sync.compare(self.db, self.fake_fetch)
+        report = sync.compare_summary(self.db, self.fake_fetch)
+        self.assertEqual(report["site_models"], full["site_models"])
+        self.assertEqual(report["host_groups"], full["host_groups"])
+        self.assertEqual(report["matched"], full["matched"])
+        self.assertEqual(report["local_only_count"], full["local_only_count"])
+        self.assertEqual(report["differences_count"], full["differences_count"])
+        self.assertTrue(report["read_only"])
+        self.assertFalse(report["publication_performed"])
+        self.assertTrue(report["commercial_clearance_required"])
+        self.assertNotIn("local_only", report)
+        self.assertNotIn("site_only", report)
+        self.assertNotIn("differences", report)
+        self.assertLess(len(__import__("json").dumps(report)), 1200)
+
     def test_exact_identity_comparison_is_read_only(self):
         result = sync.compare(self.db, self.fake_fetch)
         self.assertEqual(result["site_models"], 50)
