@@ -373,6 +373,7 @@ class Handler(BaseHTTPRequestHandler):
                   "transport":"loopback-http",
                   "operations":[
                     {"id":"catalog.compare","method":"GET","path":"/api/catalog-sync","effect":"read"},
+                    {"id":"catalog.summary","method":"GET","path":"/api/catalog-sync-summary","effect":"read"},
                     {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True},
                     {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
@@ -393,7 +394,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"images.telegram_evidence","method":"GET","path":"/api/telegram-findings/{message_id}","effect":"read"},
                     {"id":"images.telegram_album_board","method":"GET","path":"/api/telegram-album/{message_id}","effect":"read"},
                     {"id":"review.queue","method":"GET","path":"/api/review-queue","effect":"read"},
-                    {"id":"gallery.legacy_audit","method":"GET","path":"/api/legacy-album-audit","effect":"read"},
+                    {"id":"gallery.legacy_audit","method":"GET","path":"/api/legacy-album-audit","effect":"read","pagination":True,"max_limit":96,"previews":[0,1,4,6]},
                     {"id":"gallery.legacy_audit_review","method":"POST","path":"/api/audit-legacy-gallery","effect":"write"},
                     {"id":"gallery.legacy_split","method":"POST","path":"/api/split-legacy-gallery","effect":"write"},
                     {"id":"external_candidates.list","method":"GET","path":"/api/candidates","effect":"read"},
@@ -509,7 +510,8 @@ class Handler(BaseHTTPRequestHandler):
                         risk=p.get("risk",["all"])[0],
                         q=p.get("q",[""])[0],
                         cursor=p.get("cursor",[""])[0],
-                        limit=p.get("limit",["24"])[0]))
+                        limit=p.get("limit",["48"])[0],
+                        previews=p.get("previews",["0"])[0]))
                 except ValueError as exc:
                     return self.respond({"error":str(exc)},400)
             if route.path=="/api/review-queue":
@@ -526,6 +528,8 @@ class Handler(BaseHTTPRequestHandler):
                     return self.respond({"error":str(exc)},400)
             if route.path=="/api/catalog-sync":
                 return self.respond(catalog_sync.compare(DB_PATH))
+            if route.path=="/api/catalog-sync-summary":
+                return self.respond(catalog_sync.compare_summary(DB_PATH))
             if route.path=="/api/gallery-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery_ops.candidates(DB_PATH,
