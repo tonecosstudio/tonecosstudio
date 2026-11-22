@@ -374,7 +374,7 @@ class Handler(BaseHTTPRequestHandler):
                   "operations":[
                     {"id":"catalog.compare","method":"GET","path":"/api/catalog-sync","effect":"read"},
                     {"id":"catalog.summary","method":"GET","path":"/api/catalog-sync-summary","effect":"read"},
-                    {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True},
+                    {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True,"max_limit":96,"previews":[0,1,4,6]},
                     {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
@@ -547,7 +547,8 @@ class Handler(BaseHTTPRequestHandler):
                     topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
                     state=p.get("state",[""])[0][:20],
                     min_images=p.get("min_images",["1"])[0],
-                    unnamed_only=p.get("unnamed",["0"])[0]=="1"))
+                    unnamed_only=p.get("unnamed",["0"])[0]=="1",
+                    previews=p.get("previews",["0"])[0]))
             if route.path.startswith("/api/model/"):
                 return self.respond(smart.model_detail(DB_PATH,route.path.split("/")[-1]))
             if route.path=="/api/candidates":
