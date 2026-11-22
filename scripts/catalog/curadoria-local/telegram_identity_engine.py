@@ -1211,14 +1211,16 @@ def apply_telegram_evidence(
         if not _table_exists(db, "name_proposals"):
             return {"processed": 0, "proposed": 0, "ambiguous": 0, "preserved_manual": 0}
         write_chunk = 0
+        scanned_in_transaction = 0
 
         def finish_processed() -> None:
-            nonlocal processed, write_chunk
+            nonlocal processed, write_chunk, scanned_in_transaction
             processed += 1
             write_chunk += 1
             if write_chunk >= 32:
                 db.commit()
                 write_chunk = 0
+                scanned_in_transaction = 0
 
         asset_sql = """
             SELECT message_id,sha256,original_topic,source_caption,source_album,source_relative
@@ -1231,6 +1233,14 @@ def apply_telegram_evidence(
             asset_params = (original_topic,)
         assets = db.execute(asset_sql + " ORDER BY message_id", asset_params).fetchall()
         for asset in assets:
+            # Bound lock duration by scans as well as writes: an unchanged
+            # stretch of history must not prolong another reviewer's wait.
+            if write_chunk:
+                scanned_in_transaction += 1
+                if scanned_in_transaction >= 32:
+                    db.commit()
+                    write_chunk = 0
+                    scanned_in_transaction = 0
             mid = int(asset["message_id"])
             candidates = _related_candidates(db, asset)
             unique: dict[tuple[str, str, str, str], TelegramCandidate] = {}
@@ -1255,6 +1265,7 @@ def apply_telegram_evidence(
             # are not blocked by a full-history transaction.
             if write_chunk == 0:
                 db.execute("BEGIN IMMEDIATE")
+                scanned_in_transaction = 0
             proposal = db.execute("SELECT * FROM name_proposals WHERE message_id=?", (mid,)).fetchone()
             if _existing_manual_revision(db, mid, proposal):
                 db.execute("""
