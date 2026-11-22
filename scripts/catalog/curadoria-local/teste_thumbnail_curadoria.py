@@ -46,3 +46,78 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
     except FileNotFoundError:
         pass
     print("MINIATURAS E2E APROVADAS: WebP, dimensões, cache, ETag, limites e original intacto")
+
+# The real HTTP handler uses the same local contract as the OrdaX MCP.
+# Test against an isolated SQLite and private synthetic JPEG, never the host.
+import http.client
+import json
+import sqlite3
+import threading
+from http.server import ThreadingHTTPServer
+import tonart_curadoria as host
+
+with tempfile.TemporaryDirectory(prefix="tonart-thumb-http-") as root:
+    root = Path(root)
+    host.SOURCE = root / "telegram"
+    image_file = host.SOURCE / "TestStudio" / "msg_101.jpg"
+    image_file.parent.mkdir(parents=True)
+    Image.new("RGB", (1200, 800), "teal").save(image_file, format="JPEG")
+    source_hash = hashlib.sha256(image_file.read_bytes()).hexdigest()
+    host.APP_DIR = root / "curadoria"
+    host.DB_PATH = host.APP_DIR / "curadoria.sqlite3"
+    host.TOKEN_PATH = host.APP_DIR / "token.txt"
+    host.initialize()
+    with host.connect(host.DB_PATH) as db:
+        db.execute(
+            "INSERT INTO assets VALUES (?,?,?,?,?,?,?,?)",
+            (101, source_hash, "TestStudio/msg_101.jpg",
+             "TestStudio", "2026-11-22", "", "", host.now()),
+        )
+        db.execute("INSERT INTO annotations(message_id) VALUES (101)")
+    service = ThreadingHTTPServer(("127.0.0.1", 0), host.Handler)
+    service.daemon_threads = True
+    thread = threading.Thread(target=service.serve_forever, daemon=True)
+    thread.start()
+    def http_get(endpoint, headers=None):
+        connection = http.client.HTTPConnection(
+            "127.0.0.1", service.server_port, timeout=6,
+        )
+        try:
+            connection.request("GET", endpoint, headers=headers or {})
+            response = connection.getresponse()
+            return response.status, dict(response.getheaders()), response.read()
+        finally:
+            connection.close()
+
+    old_sync = host.sync
+    def reject_read_sync():
+        raise AssertionError("GET must never trigger downloader sync")
+    host.sync = reject_read_sync
+    try:
+        code, headers, content = http_get("/thumb/101?w=256")
+        assert code == 200 and headers["Content-Type"] == "image/webp"
+        assert content[8:12] == b"WEBP"
+        assert "private" in headers["Cache-Control"]
+        etag_header = headers["ETag"]
+        code, _, body = http_get(
+            "/thumb/101?w=256", {"If-None-Match": etag_header}
+        )
+        assert code == 304 and body == b""
+        assert http_get("/thumb/101?w=111111")[0] == 400
+        assert http_get("/thumb/9999?w=256")[0] == 404
+        code, _, raw = http_get("/media/101")
+        assert code == 200 and hashlib.sha256(raw).hexdigest() == source_hash
+        code, _, body = http_get("/api/performance")
+        performance = json.loads(body)
+        assert code == 200 and performance["thumbnail_cache"]["items"] >= 1
+        assert performance["source_writes_performed_by_http_get"] is False
+        code, _, body = http_get("/api/items?page=1&limit=10")
+        listing = json.loads(body)
+        assert code == 200 and listing["total"] == 1
+    finally:
+        host.sync = old_sync
+        service.shutdown()
+        service.server_close()
+        thread.join(timeout=5)
+    assert hashlib.sha256(image_file.read_bytes()).hexdigest() == source_hash
+    print("HTTP E2E APROVADO: thumbnail, ETag/304, media original, performance e GET sem sync")
