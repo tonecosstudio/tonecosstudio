@@ -47,6 +47,10 @@ AGG = """WITH older AS (
       EXISTS(SELECT 1 FROM curation_events e
         WHERE e.group_key=grouped.group_key
           AND e.event_type='visual_gallery_audit_attention') AS attention,
+      (SELECT e.detail FROM curation_events e
+        WHERE e.group_key=grouped.group_key
+          AND e.event_type='visual_gallery_audit_attention'
+        ORDER BY e.event_id DESC LIMIT 1) AS attention_detail,
       CASE
         WHEN source_topics>1 OR variant_count>1 OR title_count>1 THEN 0
         WHEN source_albums>1 THEN 1
@@ -124,6 +128,15 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
     has_more=len(rows)>limit
     items=[dict(r) for r in rows[:limit]]
     for item in items:
+        raw_attention=item.pop("attention_detail",None)
+        try:
+            classification=json.loads(raw_attention).get("classification") if raw_attention else None
+        except (TypeError,ValueError,AttributeError):
+            classification=None
+        item["split_eligible"]=bool(
+            item["attention"] and not item["audited"] and
+            classification=="different_sculptures"
+        )
         item["risk_label"] = (
             "Variantes ou nomes divergentes" if item["priority"]==0 else
             "Álbuns diferentes no mesmo grupo" if item["priority"]==1 else
