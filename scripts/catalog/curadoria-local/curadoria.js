@@ -48,6 +48,29 @@ refresh();setInterval(()=>{
 let viewMode="models",chosenGroup=null,modelTotal=0;
 let queuePageIndex=0,queueCursors=[""],queueNextCursor="",queueHasMore=false;
 let queueRequestId=0,chosenLegacyAudit=null;
+const legacyBatchReviews=[];
+let auditBoardEvidence=null;
+function renderLegacyBatch(){
+ const root=el("legacyBatchList");root.replaceChildren();
+ for(const review of legacyBatchReviews){
+   const row=document.createElement("div");
+   row.className="sub";
+   text(row,"span",(review.title||review.group_key)+" · "+
+     review.decision+" · "+review.member_ids.length+" mensagens · ");
+   const remove=document.createElement("button");
+   remove.type="button";remove.textContent="Retirar";
+   remove.onclick=()=>{
+     const index=legacyBatchReviews.findIndex(x=>x.group_key===review.group_key);
+     if(index>=0)legacyBatchReviews.splice(index,1);
+     renderLegacyBatch();
+   };
+   row.append(remove);root.append(row);
+ }
+ el("legacyBatchSubmit").disabled=!legacyBatchReviews.length;
+ el("legacyBatchClear").disabled=!legacyBatchReviews.length;
+ el("legacyBatchStatus").textContent=legacyBatchReviews.length+
+   "/12 galerias preparadas. Nenhuma decisão foi gravada no banco.";
+}
 let boardBatchGroups=[],boardBatchIndex=-1,boardNavigateBusy=false;
 function resetReviewQueue(){
  queuePageIndex=0;queueCursors=[""];queueNextCursor="";queueHasMore=false;queueRequestId++;
@@ -55,6 +78,8 @@ function resetReviewQueue(){
 let lastSplitGalleryKey="";
 function selectLegacyAuditGroup(item){
  chosenLegacyAudit=item;
+ auditBoardEvidence=null;
+ el("legacyBatchAttested").checked=false;
  boardSplitSelection.clear();
  el("legacySplitForm").hidden=!item.split_eligible;
  el("legacySplitOpenNew").hidden=true;
@@ -79,6 +104,71 @@ function selectLegacyAuditGroup(item){
     ?"Há pendência editorial registrada; confira as imagens e a justificativa anterior."
     :"Abra a prancha e compare todas as fotos antes de registrar uma conclusão.";
 }
+el("legacyBatchStage").onclick=()=>{
+ const item=chosenLegacyAudit;
+ const decision=el("legacyAuditDecision").value;
+ const note=el("legacyAuditNotes").value.trim();
+ const proof=auditBoardEvidence;
+ if(!item||item.review_state==="audited"||
+    !["same_sculpture","different_sculptures","needs_more_evidence"].includes(decision)||
+    note.length<15||note.length>500){
+   notify("Escolha uma conclusão e justifique individualmente a revisão visual.");return;
+ }
+ if(!el("legacyBatchAttested").checked || !proof ||
+    proof.key!==item.group_key || proof.revision!==item.revision ||
+    proof.visited.size!==proof.pages ||
+    proof.member_ids.length!==item.photos ||
+    proof.member_ids.length>500){
+   notify("Abra a prancha completa, visite todas as páginas e marque a conferência desta galeria.");return;
+ }
+ if(legacyBatchReviews.some(x=>x.group_key===item.group_key)){
+   notify("Esta galeria já está preparada na remessa. Retire-a para mudar a decisão.");return;
+ }
+ if(legacyBatchReviews.length>=12){
+   notify("Limite de 12 galerias por remessa. Registre ou limpe a remessa atual.");return;
+ }
+ legacyBatchReviews.push({
+   group_key:item.group_key,title:item.title,revision:item.revision,
+   decision,note,member_ids:proof.member_ids.slice(),
+   sha256s:proof.sha256s.slice(),
+ });
+ renderLegacyBatch();
+ el("legacyBatchAttested").checked=false;
+ notify("Galeria preparada, ainda sem escrita. Selecione a próxima.");
+};
+el("legacyBatchClear").onclick=()=>{
+ legacyBatchReviews.splice(0);renderLegacyBatch();
+};
+el("legacyBatchSubmit").onclick=async()=>{
+ if(!legacyBatchReviews.length)return;
+ const control=el("legacyBatchSubmit");
+ control.disabled=true;
+ try{
+   // Sending exact photo IDs and hashes protects reviews against concurrent
+   // regrouping by another chat. One SQLite transaction commits all or none.
+   const reviews=legacyBatchReviews.map(({group_key,revision,decision,note,
+       member_ids,sha256s})=>({
+       group_key,revision,decision,note,
+       member_ids:member_ids.slice(),sha256s:sha256s.slice(),
+   }));
+   const receipt=await post("/api/audit-legacy-galleries-batch",{reviews});
+   if(!receipt.ok||!receipt.atomic||receipt.reviewed!==reviews.length){
+     throw Error("Recibo de auditoria incompleto");
+   }
+   legacyBatchReviews.splice(0);renderLegacyBatch();
+   el("legacyBatchStatus").textContent=
+     receipt.reviewed+" galerias registradas atomicamente; sem publicação.";
+   auditBoardEvidence=null;
+   el("legacyBatchAttested").checked=false;
+   el("legacyAuditReview").hidden=true;
+   resetReviewQueue();await refreshReviewQueue();
+   notify("Remessa editorial registrada. Nenhuma mídia foi movida ou publicada.");
+ }catch(e){
+   renderLegacyBatch();
+   notify("Remessa bloqueada: "+e.message+
+     ". Nenhuma decisão foi aplicada; recarregue galerias alteradas.");
+ }finally{control.disabled=!legacyBatchReviews.length;}
+};
 el("legacyAuditOpenBoard").onclick=()=>{
  if(chosenLegacyAudit)openBoard(chosenLegacyAudit.group_key);
 };
@@ -810,6 +900,11 @@ function renderBoardPage(){
   const total=boardAllPhotos.length;
   const pages=Math.max(1,Math.ceil(total/BOARD_PAGE_SIZE));
   boardPage=Math.max(1,Math.min(boardPage,pages));
+  if(boardMode==="legacy_split" && auditBoardEvidence &&
+     auditBoardEvidence.key===chosenLegacyAudit?.group_key){
+    auditBoardEvidence.pages=pages;
+    auditBoardEvidence.visited.add(boardPage);
+  }
   const start=(boardPage-1)*BOARD_PAGE_SIZE;
   for(const photo of boardAllPhotos.slice(start,start+BOARD_PAGE_SIZE)){
     const figure=document.createElement("figure");
@@ -882,6 +977,18 @@ async function openBoard(key,initialGroup=null){
   if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha inválido.");return;}
   try{
     const group=initialGroup||await api("/api/model/"+key);
+    if(viewMode==="queue"&&el("queueKind").value==="legacy_groups"&&
+       chosenLegacyAudit?.group_key===key){
+      const rows=(group.images||[]).slice().sort((a,b)=>a.message_id-b.message_id);
+      auditBoardEvidence={
+        key,revision:group.revision,
+        member_ids:rows.map(r=>r.message_id),
+        sha256s:rows.map(r=>r.sha256),
+        pages:Math.max(1,Math.ceil(rows.length/BOARD_PAGE_SIZE)),
+        visited:new Set(),
+      };
+      el("legacyBatchAttested").checked=false;
+    }
     const photos=new Map();
     for(const item of group.images||[]){
       const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
