@@ -45,6 +45,9 @@ assert '/api/review-queue' in js
 assert 'review.queue' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'id="legacyAuditFilters"' in html and 'id="legacyAuditReview"' in html
 assert 'id="legacyAuditState"' in html and 'id="legacyAuditRisk"' in html
+assert '<option value="new" selected>' in html
+assert '<option value="attention">' in html
+assert '<option value="pending">' in html
 assert 'id="legacyAuditOpenBoard"' in html
 assert 'id="legacyAuditDecision"' in html and 'id="legacyAuditNotes"' in html
 assert 'async function refreshReviewQueue()' in js
