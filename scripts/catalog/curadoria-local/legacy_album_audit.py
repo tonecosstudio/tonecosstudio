@@ -170,7 +170,9 @@ def record_review(db_path, *, group_key, revision, decision, note):
                 FROM model_group_members m JOIN assets a USING(message_id)
                 LEFT JOIN name_proposals p USING(message_id)
                 WHERE m.group_key=? ORDER BY m.message_id""",(key,)).fetchall()
-            if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:\n                raise ValueError("Galeria sem origem única")\n            if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
+            if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:
+                raise ValueError("Galeria sem origem única")
+            if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
                 raise ValueError("Galeria sem origem e membros consistentes")
             if not db.execute("""SELECT 1 FROM model_group_members
                 WHERE group_key=? AND match_reason='telegram_album'""",
