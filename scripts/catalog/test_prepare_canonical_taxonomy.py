@@ -43,6 +43,8 @@ class TaxonomyInventoryTests(unittest.TestCase):
                 "('2','Studio 3','Ace','One Piece','provavel'),"
                 "('3','Geral +50k','','','revisar');"
             )
+            db.execute("ALTER TABLE name_proposals ADD COLUMN evidence_type TEXT DEFAULT ''")
+            db.execute("ALTER TABLE name_proposals ADD COLUMN official_url TEXT DEFAULT ''")
             db.commit()
         finally:
             db.close()
@@ -101,6 +103,79 @@ class TaxonomyInventoryTests(unittest.TestCase):
         )
         self.assertTrue(all(x["review_state"].startswith("not_linked") for x in legacy))
 
+    def test_conflicting_source_ids_and_slug_collisions_require_review(self):
+        db = sqlite3.connect(self.db_file)
+        try:
+            db.executemany(
+                "INSERT INTO model_groups VALUES (?,?,?,?,?)",
+                [
+                    ("g8", "Studio 1", "Kafka", "Honkai: Star Rail", "provavel"),
+                    ("g9", "Studio 2", "Kafka", "Honkai Star Rail", "provavel"),
+                    ("g10", "Studio 1", "Crossover", "Pokémon/Dragon Ball", "revisar"),
+                ],
+            )
+            db.commit()
+        finally:
+            db.close()
+        with self.plan.open("a", encoding="utf8") as f:
+            for name in ("Honkai: Star Rail", "Honkai Star Rail"):
+                f.write(json.dumps({"import_manifest": {"universe": name, "franchiseId": 176}}) + "\n")
+        summary, worlds, aliases, chars, _ = inventory_module.inventory(
+            self.db_file, self.legacy, self.plan
+        )
+        star_rail = [x for x in worlds if x["historic_d1_franchise_id_hint"] == 176]
+        self.assertEqual(len(star_rail), 2)
+        self.assertTrue(all(x["reconciliation_status"] == "conflict_requires_review" for x in star_rail))
+        self.assertTrue(all("id_shared_by_multiple_spellings" in x["review_flags"] for x in star_rail))
+        self.assertTrue(all("slug_collision" in x["review_flags"] for x in star_rail))
+        crossover = next(x for x in worlds if x["label_candidate"] == "Pokémon/Dragon Ball")
+        self.assertIn("possible_multiple_franchises", crossover["review_flags"])
+        self.assertIsNone(crossover["historic_d1_franchise_id_hint"])
+        self.assertGreaterEqual(summary["universe_slug_collision_groups"], 1)
+        self.assertGreaterEqual(summary["universe_historic_id_shared_groups"], 1)
+        self.assertEqual(summary["distinct_historic_d1_id_hints"], 3)
+        self.assertTrue(all(x["identity_id"] is None for x in chars))
+
+    def test_marketing_title_is_not_mistaken_for_confirmed_character(self):
+        db = sqlite3.connect(self.db_file)
+        try:
+            db.execute(
+                "INSERT INTO model_groups VALUES (?,?,?,?,?)",
+                ("g8", "Studio C", "Frosty", "Star Wars", "provavel"),
+            )
+            db.execute(
+                "INSERT INTO name_proposals "
+                "(message_id,studio,title,universe,status,evidence_type,official_url) "
+                "VALUES (?,?,?,?,?,?,?)",
+                ("4", "Studio C", "Frosty", "Star Wars", "confirmado",
+                 "telegram_caption",
+                 "https://c27-studios.com/product/frosty-wampa-3d-printing-miniature-stl/"),
+            )
+            db.commit()
+        finally:
+            db.close()
+        _, _, _, chars, _ = inventory_module.inventory(
+            self.db_file, self.legacy, self.plan
+        )
+        candidate = next(c for c in chars if c["candidate_key"] == "star wars::frosty")
+        self.assertIn("source_product_title_has_additional_terms", candidate["review_flags"])
+        self.assertIn("name_inherited_or_caption_only", candidate["review_flags"])
+        self.assertEqual(candidate["review_priority"], "P3_review_flags_or_low_evidence")
+        self.assertIsNone(candidate["identity_id"])
+        self.assertEqual(candidate["confirmed_naming_messages"], 1)
+        self.assertIn(
+            "possibly_model_variant_not_character",
+            inventory_module.title_needs_review("Chun-Li Bikini"),
+        )
+        self.assertNotIn(
+            "source_link_does_not_contain_character_title",
+            inventory_module.evidence_review_flags(
+                "Cammy",
+                {"https://www.zbrushcentral.com/t/cammy-3d-print-figure/406980"},
+                {},
+            ),
+        )
+
     def test_cli_creates_review_artifacts_without_editing_curation(self):
         out = self.root / "output"
         original = hashlib.sha256(self.db_file.read_bytes()).hexdigest()
@@ -119,8 +194,17 @@ class TaxonomyInventoryTests(unittest.TestCase):
             "universos-candidatos.jsonl", "aliases-para-revisao.jsonl",
             "personagens-candidatos.jsonl", "catalogo-antigo-sem-vinculos.jsonl",
             "resumo.json", "fila-revisao-personagens.csv",
+            "fila-reconciliacao-franquias.csv", "conflitos-universos.jsonl",
         ]:
             self.assertTrue((out / name).exists(), name)
+        with (out / "fila-revisao-personagens.csv").open(
+            encoding="utf-8-sig", newline=""
+        ) as f:
+            reader = csv.DictReader(f)
+            self.assertIn("confirmed_evidence_types", reader.fieldnames)
+            self.assertIn("confirmed_source_url_examples", reader.fieldnames)
+            first = next(reader)
+            self.assertIn("review_priority", first)
         with (out / "catalogo-antigo-sem-vinculos.jsonl").open(encoding="utf8") as f:
             self.assertEqual(sum(1 for _ in f), 3)
 
