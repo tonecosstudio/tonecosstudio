@@ -29,19 +29,60 @@ FRANCHISE="Saint Seiya"
 SOURCE_TYPE="independent_fandom_category_not_official"
 CATEGORIES=["Category:Characters","Category:Saint Seiya Characters"]
 MAX_PAGES=5
+# Source roster entries verified from their real MediaWiki category endpoints
+# on 2026-11-22. Each request is source-pinned to a specific fictional world.
+SOURCE_PROFILES = {
+    "saint-seiya": {
+        "franchise":"Saint Seiya",
+        "source":"https://saintseiya.fandom.com/api.php",
+        "categories":["Category:Characters","Category:Saint Seiya Characters"],
+    },
+    "mushoku-tensei": {
+        "franchise":"Mushoku Tensei",
+        "source":"https://mushokutensei.fandom.com/api.php",
+        "categories":["Category:Characters"],
+    },
+    "the-king-of-fighters": {
+        "franchise":"The King of Fighters",
+        "source":"https://snk.fandom.com/api.php",
+        # SNK publishes multiple game series. Use the explicit King of
+        # Fighters membership category, never the broad SNK Characters list.
+        "categories":["Category:King of Fighters Characters"],
+    },
+    "elden-ring": {
+        "franchise":"Elden Ring",
+        "source":"https://eldenring.fandom.com/api.php",
+        "categories":["Category:Characters"],
+    },
+    "medabots": {
+        "franchise":"Medabots",
+        "source":"https://medabots.fandom.com/api.php",
+        "categories":["Category:Medabots"],
+    },
+    "mummies-alive": {
+        "franchise":"Mummies Alive!",
+        "source":"https://mummiesalive.fandom.com/api.php",
+        "categories":["Category:Characters"],
+    },
+    "overlord": {
+        "franchise":"Overlord",
+        "source":"https://overlordmaruyama.fandom.com/api.php",
+        "categories":["Category:Characters"],
+    },
+}
 
 
-def get_complete_category(category):
-    if category not in CATEGORIES:
+def get_complete_category(category, *, source=SOURCE, categories=None):
+    if category not in (CATEGORIES if categories is None else categories):
         raise ValueError("unknown category")
     params={
         "action":"query","format":"json","list":"categorymembers",
-        "cmtitle":category,"cmlimit":"500","cmtype":"page"}
+        "cmtitle":category,"cmlimit":"500","cmnamespace":"0","cmtype":"page"}
     rows={}
     digest=hashlib.sha256()
     pages=0
     while True:
-        url=SOURCE+"?"+urllib.parse.urlencode(params)
+        url=source+"?"+urllib.parse.urlencode(params)
         req=urllib.request.Request(url,headers={"User-Agent":"TONART-catalog-source-review/1.0",
                                                  "Accept":"application/json"})
         for i in range(3):
@@ -75,11 +116,12 @@ def get_complete_category(category):
     return rows,digest.hexdigest(),pages
 
 
-def source_index():
+def source_index(*, source=SOURCE, categories=None):
     allrows={}
     sources={}
-    for cat in CATEGORIES:
-        rows,digest,pages=get_complete_category(cat)
+    allowed=CATEGORIES if categories is None else categories
+    for cat in allowed:
+        rows,digest,pages=get_complete_category(cat,source=source,categories=allowed)
         sources[cat]={"rows":len(rows),"sha256":digest,"pages":pages}
         for identifier,entry in rows.items():
             if identifier in allrows and allrows[identifier]["title"]!=entry["title"]:
@@ -92,7 +134,7 @@ def source_index():
     return index,sources,len(allrows)
 
 
-def decide(candidates,index,sources):
+def decide(candidates,index,sources, *, franchise=FRANCHISE, source_api=SOURCE):
     verified,held,aliases=[],[],[]
     for row in candidates:
         original=row["display_name_candidate"].strip()
@@ -106,11 +148,11 @@ def decide(candidates,index,sources):
         if len(exact)==1:
             ref=exact[0]
             verified.append({
-                "character_name":ref["title"],"franchise":FRANCHISE,
+                "character_name":ref["title"],"franchise":franchise,
                 "source_page_id":ref["id"],
-                "source_character_url":"https://saintseiya.fandom.com/wiki/"+
+                "source_character_url":source_api.removesuffix("/api.php")+"/wiki/"+
                                        urllib.parse.quote(ref["title"].replace(" ","_"),safe="()'"),
-                "source_api":SOURCE,
+                "source_api":source_api,
                 "source_categories":sources,
                 "source_type":SOURCE_TYPE,
                 "evidence":"exact_name_in_complete_character_category",
@@ -130,7 +172,7 @@ def decide(candidates,index,sources):
                     for v in values:
                         probable.append({"canonical":v["title"],"page_id":v["id"]})
         if probable:
-            aliases.append({"candidate":original,"franchise":FRANCHISE,
+            aliases.append({"candidate":original,"franchise":franchise,
                             "candidates":sorted(probable,key=lambda x:x["canonical"]),
                             "status":"manual_alias_review_required"})
         else:
@@ -142,33 +184,40 @@ def decide(candidates,index,sources):
 
 
 def run(args):
+    selected=getattr(args,"world","saint-seiya")
+    if selected not in SOURCE_PROFILES:
+        raise ValueError("unapproved source profile")
+    conf=SOURCE_PROFILES[selected]
+    franchise=conf["franchise"]
+    prefix="saintseiya" if selected=="saint-seiya" else "roster-"+selected
     args.out.mkdir(parents=True,exist_ok=True)
     with args.queue.open(encoding="utf-8-sig",newline="") as f:
         rows=list(csv.DictReader(f))
-    candidates=[r for r in rows if norm(r["franchise_candidate_key"])=="saint-seiya"]
-    if not 20<=len(candidates)<=120:
-        raise ValueError("unexpected Saint Seiya title count")
-    state={"mission_id":"tonart-saintseiya-roster-20261122",
+    candidates=[r for r in rows if norm(r["franchise_candidate_key"])==norm(franchise)]
+    minimum=20 if selected=="saint-seiya" else 3
+    if not minimum<=len(candidates)<=120:
+        raise ValueError("unexpected candidate count for "+franchise)
+    state={"mission_id":"tonart-"+selected+"-roster-20261122",
            "status":"running","started_at_utc":datetime.now(timezone.utc).isoformat(),
            "no_canonical_writes":True}
     def stage(name,**extra):
         state.update({"stage":name,"updated_at_utc":datetime.now(timezone.utc).isoformat(),**extra})
-        atomic_json(args.out/"saintseiya-source-supervised.json",state)
+        atomic_json(args.out/(prefix+"-source-supervised.json"),state)
         print(json.dumps({"stage":name,**extra},ensure_ascii=False),flush=True)
     try:
         stage("inventory_loaded",titles=len(candidates))
-        index,sources,n=source_index()
+        index,sources,n=source_index(source=conf["source"],categories=conf["categories"])
         stage("character_categories_loaded",characters=n,pages=sum(s["pages"] for s in sources.values()))
-        verified,held,aliases=decide(candidates,index,sources)
-        jsonl(args.out/"saintseiya-exact-private.jsonl",verified)
-        jsonl(args.out/"saintseiya-held-private.jsonl",held)
-        jsonl(args.out/"saintseiya-alias-hints-private.jsonl",aliases)
-        atomic_json(args.out/"saintseiya-category-manifest.json",{
-            "schema":"tonart.category-characters/1","franchise":FRANCHISE,
+        verified,held,aliases=decide(candidates,index,sources,franchise=franchise,source_api=conf["source"])
+        jsonl(args.out/(prefix+"-exact-private.jsonl"),verified)
+        jsonl(args.out/(prefix+"-held-private.jsonl"),held)
+        jsonl(args.out/(prefix+"-alias-hints-private.jsonl"),aliases)
+        atomic_json(args.out/(prefix+"-category-manifest.json"),{
+            "schema":"tonart.category-characters/1","franchise":franchise,
             "candidate_sha256":sha256(args.queue.read_bytes()),
             "sources":sources,"reference_characters":n,
             "matched_exact":len(verified),"held":len(held),"alias_hints":len(aliases),
-            "source_kind":SOURCE_TYPE,
+            "source_kind":SOURCE_TYPE,"source":conf["source"],
             "no_canonical_writes":True,"no_model_links":True,
             "timestamp_utc":datetime.now(timezone.utc).isoformat()})
         state["status"]="completed"
@@ -177,11 +226,12 @@ def run(args):
         return 0
     except Exception as e:
         state.update({"status":"failed","error":f"{type(e).__name__}: {str(e)[:190]}"})
-        atomic_json(args.out/"saintseiya-source-supervised.json",state)
+        atomic_json(args.out/(prefix+"-source-supervised.json"),state)
         raise
 
 if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--queue",type=pathlib.Path,required=True)
     p.add_argument("--out",type=pathlib.Path,required=True)
+    p.add_argument("--world",choices=sorted(SOURCE_PROFILES),default="saint-seiya")
     raise SystemExit(run(p.parse_args()))
