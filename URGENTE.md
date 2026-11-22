@@ -1,3 +1,12 @@
+## CHECKPOINT — 22/11/2026 — Preflight D1 de taxonomia (sem escrita)
+
+- **PR seguinte à #80:** adiciona à mesma rotina `scripts/catalog/prepare-canonical-taxonomy.py` conciliação opcional por exportação atual do D1, mantendo os 527 universos e 2.813 títulos candidatos como base; rejeita entradas incompletas, antigas e ambíguas. Não cria novo banco, Worker ou publicador.
+- **Bloqueio factual:** consulta D1 de `sqlite_master` devolveu **7500 (quota de leituras esgotada)**. `SELECT 1` não consumia linhas e não provou restauração da quota. Não alegar IDs atuais verificados.
+- **QA:** 8/8 testes locais; preservação de artefatos quando o input está inválido; remoção apenas de prévias D1 antigas quando nenhum snapshot é fornecido. Nenhuma migration aplicada, modelos vinculados ou tags publicadas.
+- **Operação próxima:** assim que houver quota, exportar apenas `categories`/`franchises` com proveniência/autenticidade, reconciliar e revisar IDs; preservar M5 sem GO. Ver instruções no documento existente `docs/CATALOGO-PERSONAGENS-UNIVERSOS.md`.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Conciliação dos IDs de franquia e triagem de nomes
 
 - **Escopo:** a rotina existente scripts/catalog/prepare-canonical-taxonomy.py foi ampliada; sem novo curador, banco, publicador, SELECT amplo no D1, R2, gravação no Supabase ou mudança de direitos.

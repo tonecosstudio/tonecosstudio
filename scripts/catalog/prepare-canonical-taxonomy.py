@@ -407,11 +407,130 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
     return summary, world_records, alias_records, character_records, legacy_review
 
 
+
+SNAPSHOT_SCHEMA = "tonart.catalog.d1-taxonomy-snapshot/1"
+FRANCHISE_SLUG_RE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
+
+
+def load_current_d1_taxonomy(path: Path):
+    """Fail-closed validation for a complete, recent Cloudflare D1 taxonomy export."""
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
+    if data.get("schema") != SNAPSHOT_SCHEMA or data.get("database") != "tonecos-catalogo":
+        raise ValueError("invalid D1 snapshot schema/database")
+    raw_time = data.get("exported_at_utc")
+    if not isinstance(raw_time, str):
+        raise ValueError("D1 snapshot missing timestamp")
+    try:
+        dt = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError("malformed timestamp") from exc
+    if dt.tzinfo is None or dt.utcoffset().total_seconds() != 0:
+        raise ValueError("D1 snapshot requires UTC timestamp")
+    seconds = (datetime.now(timezone.utc) - dt).total_seconds()
+    if seconds < -300 or seconds > 86400:
+        raise ValueError("snapshot too old or in future")
+    categories, franchises = data.get("categories"), data.get("franchises")
+    if not isinstance(categories, list) or not isinstance(franchises, list):
+        raise ValueError("missing complete D1 taxonomy arrays")
+    if not categories or not franchises or data.get("export_completed") is not True:
+        raise ValueError("incomplete D1 taxonomy export")
+    if data.get("categories_total") != len(categories) or data.get("franchises_total") != len(franchises):
+        raise ValueError("truncated D1 taxonomy export")
+    cats, frs = {}, {}
+    for row in categories:
+        if not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] <= 0:
+            raise ValueError("invalid D1 category ID")
+        if row["id"] in cats or not clean(row.get("name")):
+            raise ValueError("duplicate or unnamed D1 category")
+        if not isinstance(row.get("slug"), str) or not FRANCHISE_SLUG_RE.fullmatch(row["slug"]):
+            raise ValueError("invalid D1 category slug")
+        cats[row["id"]] = row
+    for row in franchises:
+        if not isinstance(row, dict) or type(row.get("id")) is not int or row["id"] <= 0:
+            raise ValueError("invalid D1 franchise ID")
+        if row["id"] in frs or type(row.get("category_id")) is not int or row["category_id"] not in cats:
+            raise ValueError("duplicate franchise or missing category")
+        if not clean(row.get("name")) or not isinstance(row.get("slug"), str):
+            raise ValueError("invalid franchise name/slug")
+        if not FRANCHISE_SLUG_RE.fullmatch(row["slug"]):
+            raise ValueError("invalid franchise slug")
+        frs[row["id"]] = row
+    names, slugs = collections.defaultdict(set), collections.defaultdict(set)
+    for row in frs.values():
+        names[key(row["name"])].add(row["id"])
+        slugs[row["slug"]].add(row["id"])
+    return data, cats, frs, names, slugs
+
+
+def reconcile_current_d1(worlds: list[dict], characters: list[dict], snapshot_path: Path):
+    """Read-only mapping; never creates an ID, alias, tag or model association."""
+    snapshot, categories, franchises, names, slugs = load_current_d1_taxonomy(snapshot_path)
+    reconciled, matched_by_world = [], {}
+    for world in worlds:
+        old_id = world.get("historic_d1_franchise_id_hint")
+        possible = names.get(key(world["label_candidate"]), set()) | slugs.get(world["slug_candidate"], set())
+        existing = sorted(possible)
+        flags = world.get("review_flags") or []
+        proposed_id, reason = None, ""
+        if "possible_multiple_franchises" in flags:
+            status = "hold_crossover"
+        elif world.get("hint_ambiguous"):
+            status = "hold_multiple_historical_ids"
+        elif old_id is not None:
+            if old_id not in franchises:
+                status = "hold_historical_id_missing"
+            elif old_id not in possible:
+                status = "hold_historical_id_name_mismatch"
+            elif len(existing) != 1:
+                status = "hold_multiple_live_candidates"
+            else:
+                proposed_id = old_id
+                status = "hold_alias_collision" if "slug_collision" in flags or "id_shared_by_multiple_spellings" in flags else "candidate_existing_d1_id"
+        elif len(existing) == 1:
+            proposed_id = existing[0]
+            status = "hold_alias_collision" if "slug_collision" in flags else "candidate_existing_d1_id"
+        elif len(existing) > 1:
+            status = "hold_multiple_live_candidates"
+        else:
+            status = "new_franchise_requires_editorial_review"
+        live = franchises.get(proposed_id) if proposed_id is not None else None
+        row = {
+            "candidate_key": world["candidate_key"],
+            "label_candidate": world["label_candidate"],
+            "historic_id_hint": old_id,
+            "matched_d1_franchise_id": proposed_id,
+            "matched_d1_category_id": live["category_id"] if live else None,
+            "matched_d1_category": categories[live["category_id"]]["name"] if live else None,
+            "matched_d1_franchise": live["name"] if live else None,
+            "match_status": status, "review_flags": flags,
+            "approved": False, "model_links_created": 0
+        }
+        reconciled.append(row)
+        matched_by_world[world["candidate_key"]] = row
+    proposed_characters = []
+    for ch in characters:
+        world = matched_by_world.get(ch["franchise_candidate_key"])
+        trusted = world is not None and world["match_status"] == "candidate_existing_d1_id"
+        editorial = ch.get("review_priority") == "P1_confirmed_name_evidence" and not ch.get("review_flags")
+        proposed_characters.append({
+            "candidate_key": ch["candidate_key"],
+            "label_candidate": ch["display_name_candidate"],
+            "d1_franchise_id_candidate": world["matched_d1_franchise_id"] if trusted else None,
+            "eligible_for_manual_editorial_review": bool(trusted and editorial),
+            "canonical_character_id": None, "approved": False,
+            "model_links_created": 0
+        })
+    return snapshot, reconciled, proposed_characters
+
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--curation-db", type=Path, required=True)
     parser.add_argument("--legacy-inventory", type=Path)
     parser.add_argument("--telegram-plan", type=Path)
+    parser.add_argument("--d1-taxonomy-snapshot", type=Path,
+                        help="complete fresh Cloudflare D1 JSON export; never mutates D1")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if not args.curation_db.is_file():
@@ -422,6 +541,12 @@ def main() -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     summary, worlds, aliases, characters, legacy = inventory(
         args.curation_db, args.legacy_inventory, args.telegram_plan
+    )
+    # Check the full current snapshot BEFORE replacing any derived reports.
+    # An expired or incomplete snapshot must leave earlier reports untouched.
+    d1_result = (
+        reconcile_current_d1(worlds, characters, args.d1_taxonomy_snapshot)
+        if args.d1_taxonomy_snapshot else None
     )
     rows_as_jsonl(args.out / "universos-candidatos.jsonl", worlds)
     # Review collision rows contain only candidate keys, not automatic aliases.
@@ -464,6 +589,43 @@ def main() -> None:
     rows_as_jsonl(args.out / "aliases-para-revisao.jsonl", aliases)
     rows_as_jsonl(args.out / "personagens-candidatos.jsonl", characters)
     rows_as_jsonl(args.out / "catalogo-antigo-sem-vinculos.jsonl", legacy)
+    if d1_result:
+        snapshot, d1_worlds, d1_characters = d1_result
+        rows_as_jsonl(args.out / "franquias-preflight-d1.jsonl", d1_worlds)
+        rows_as_jsonl(args.out / "personagens-preflight-d1.jsonl", d1_characters)
+        with (args.out / "fila-validacao-d1-franquias.csv").open(
+            "w", encoding="utf-8-sig", newline=""
+        ) as file:
+            fields = [
+                "candidate_key", "label_candidate", "historic_id_hint",
+                "matched_d1_franchise_id", "matched_d1_category",
+                "matched_d1_franchise", "match_status", "review_flags", "approved"
+            ]
+            writer = csv.DictWriter(file, fieldnames=fields)
+            writer.writeheader()
+            for row in d1_worlds:
+                writer.writerow({
+                    f: ";".join(row[f]) if f == "review_flags" else row[f]
+                    for f in fields
+                })
+        summary["d1_snapshot_checked"] = True
+        summary["d1_snapshot_exported_at_utc"] = snapshot["exported_at_utc"]
+        summary["d1_franchise_rows"] = snapshot["franchises_total"]
+        summary["d1_existing_id_candidates"] = sum(
+            x["match_status"] == "candidate_existing_d1_id" for x in d1_worlds
+        )
+        summary["d1_character_manual_review_candidates"] = sum(
+            x["eligible_for_manual_editorial_review"] for x in d1_characters
+        )
+    else:
+        summary["d1_snapshot_checked"] = False
+        # Avoid accidentally presenting old preflight files as a fresh D1 match.
+        for filename in ("franquias-preflight-d1.jsonl",
+                         "personagens-preflight-d1.jsonl",
+                         "fila-validacao-d1-franquias.csv"):
+            stale = args.out / filename
+            if stale.exists():
+                stale.unlink()
     # Spreadsheet-friendly review queue; no IDs are approved or written back.
     with (args.out / "fila-revisao-personagens.csv").open(
         "w", encoding="utf-8-sig", newline=""

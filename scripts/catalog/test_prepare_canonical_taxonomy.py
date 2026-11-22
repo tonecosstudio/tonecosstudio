@@ -11,6 +11,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from datetime import datetime, timedelta, timezone
 
 MODULE_PATH = Path(__file__).with_name("prepare-canonical-taxonomy.py")
 spec = importlib.util.spec_from_file_location("tonart_taxonomy_inventory", MODULE_PATH)
@@ -207,6 +208,134 @@ class TaxonomyInventoryTests(unittest.TestCase):
             self.assertIn("review_priority", first)
         with (out / "catalogo-antigo-sem-vinculos.jsonl").open(encoding="utf8") as f:
             self.assertEqual(sum(1 for _ in f), 3)
+
+
+    def test_current_d1_snapshot_reconciliation_keeps_homonyms_scoped(self):
+        categories = [
+            {"id": 1, "name": "Animes & Desenhos", "slug": "animes-desenhos"},
+            {"id": 2, "name": "Games", "slug": "games"},
+        ]
+        franchises = [
+            {"id": 51, "name": "One Piece", "slug": "one-piece", "category_id": 1},
+            {"id": 57, "name": "Pokémon", "slug": "pokemon", "category_id": 1},
+            {"id": 66, "name": "Scooby-Doo", "slug": "scooby-doo", "category_id": 1},
+            {"id": 88, "name": "Ace", "slug": "ace", "category_id": 1},
+            {"id": 99, "name": "Ace", "slug": "ace", "category_id": 2},
+        ]
+        payload = {
+            "schema": inventory_module.SNAPSHOT_SCHEMA,
+            "database": "tonecos-catalogo", "export_completed": True,
+            "exported_at_utc": datetime.now(timezone.utc).isoformat(),
+            "categories": categories, "categories_total": len(categories),
+            "franchises": franchises, "franchises_total": len(franchises)
+        }
+        source = self.root / "current-d1.json"
+        source.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf8")
+        worlds = [
+            {"candidate_key": "one piece", "label_candidate": "One Piece", "slug_candidate": "one-piece",
+             "historic_d1_franchise_id_hint": 51, "review_flags": []},
+            {"candidate_key": "scooby doo", "label_candidate": "Scooby Doo", "slug_candidate": "scooby-doo",
+             "historic_d1_franchise_id_hint": 66, "review_flags": ["slug_collision"]},
+            {"candidate_key": "ace", "label_candidate": "Ace", "slug_candidate": "ace",
+             "historic_d1_franchise_id_hint": None, "review_flags": []},
+            {"candidate_key": "wrong", "label_candidate": "One Piece", "slug_candidate": "one-piece",
+             "historic_d1_franchise_id_hint": 57, "review_flags": []},
+            {"candidate_key": "missing", "label_candidate": "Honkai", "slug_candidate": "honkai",
+             "historic_d1_franchise_id_hint": 176, "review_flags": []},
+            {"candidate_key": "crossover", "label_candidate": "Pokémon / Dragon Ball", "slug_candidate": "pokemon-dragon-ball",
+             "historic_d1_franchise_id_hint": None, "review_flags": ["possible_multiple_franchises"]},
+            {"candidate_key": "new", "label_candidate": "New World", "slug_candidate": "new-world",
+             "historic_d1_franchise_id_hint": None, "review_flags": []},
+        ]
+        chars = [
+            {"candidate_key": "one piece::ace", "franchise_candidate_key": "one piece", "display_name_candidate": "Ace",
+             "review_priority": "P1_confirmed_name_evidence", "review_flags": []},
+            {"candidate_key": "ace::ace", "franchise_candidate_key": "ace", "display_name_candidate": "Ace",
+             "review_priority": "P1_confirmed_name_evidence", "review_flags": []},
+        ]
+        _, result, cands = inventory_module.reconcile_current_d1(worlds, chars, source)
+        found = {x["candidate_key"]: x for x in result}
+        self.assertEqual(found["one piece"]["matched_d1_franchise_id"], 51)
+        self.assertEqual(found["one piece"]["matched_d1_category_id"], 1)
+        self.assertEqual(found["scooby doo"]["match_status"], "hold_alias_collision")
+        self.assertEqual(found["ace"]["match_status"], "hold_multiple_live_candidates")
+        self.assertEqual(found["wrong"]["match_status"], "hold_historical_id_name_mismatch")
+        self.assertEqual(found["missing"]["match_status"], "hold_historical_id_missing")
+        self.assertEqual(found["crossover"]["match_status"], "hold_crossover")
+        self.assertEqual(found["new"]["match_status"], "new_franchise_requires_editorial_review")
+        self.assertTrue(all(x["approved"] is False for x in result))
+        self.assertTrue(cands[0]["eligible_for_manual_editorial_review"])
+        self.assertFalse(cands[1]["eligible_for_manual_editorial_review"])
+        self.assertTrue(all(x["canonical_character_id"] is None for x in cands))
+
+    def test_d1_snapshot_fail_closed_for_stale_partial_and_broken_fk(self):
+        source = self.root / "bad.json"
+        base = {
+            "schema": inventory_module.SNAPSHOT_SCHEMA,
+            "database": "tonecos-catalogo", "export_completed": True,
+            "exported_at_utc": datetime.now(timezone.utc).isoformat(),
+            "categories_total": 1, "franchises_total": 1,
+            "categories": [{"id": 1, "name": "Anime", "slug": "anime"}],
+            "franchises": [{"id": 51, "category_id": 1, "name": "One Piece", "slug": "one-piece"}],
+        }
+        for bad in [
+            {**base, "export_completed": False},
+            {**base, "franchises_total": 2},
+            {**base, "exported_at_utc": (datetime.now(timezone.utc)-timedelta(days=3)).isoformat()},
+            {**base, "database": "another-db"},
+            {**base, "franchises": [{**base["franchises"][0], "category_id": 999}]},
+            {**base, "franchises": [{**base["franchises"][0], "slug": "One Piece"}]},
+        ]:
+            source.write_text(json.dumps(bad), encoding="utf8")
+            with self.assertRaises(ValueError):
+                inventory_module.load_current_d1_taxonomy(source)
+
+
+    def test_cli_d1_preflight_is_atomic_on_invalid_snapshot_and_clears_stale_results(self):
+        snapshot = self.root / "live-export.json"
+        payload = {
+            "schema": inventory_module.SNAPSHOT_SCHEMA,
+            "database": "tonecos-catalogo",
+            "export_completed": True,
+            "exported_at_utc": datetime.now(timezone.utc).isoformat(),
+            "categories": [{"id": 1, "name": "Animes", "slug": "animes"}],
+            "franchises": [
+                {"id": 51, "category_id": 1, "name": "One Piece", "slug": "one-piece"},
+                {"id": 57, "category_id": 1, "name": "Pokémon", "slug": "pokemon"},
+            ],
+            "categories_total": 1, "franchises_total": 2,
+        }
+        snapshot.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf8")
+        out = self.root / "reports"
+        base = [
+            sys.executable, str(MODULE_PATH), "--curation-db", str(self.db_file),
+            "--legacy-inventory", str(self.legacy), "--telegram-plan", str(self.plan),
+            "--out", str(out),
+        ]
+        good = subprocess.run(base + ["--d1-taxonomy-snapshot", str(snapshot)],
+                              capture_output=True, text=True, check=True)
+        summary = json.loads(good.stdout)
+        self.assertTrue(summary["d1_snapshot_checked"])
+        self.assertEqual(summary["d1_franchise_rows"], 2)
+        self.assertGreater(summary["d1_existing_id_candidates"], 0)
+        preflight = out / "franquias-preflight-d1.jsonl"
+        self.assertTrue(preflight.is_file())
+        self.assertTrue((out / "personagens-preflight-d1.jsonl").is_file())
+        self.assertTrue((out / "fila-validacao-d1-franquias.csv").is_file())
+        prior_digest = hashlib.sha256(preflight.read_bytes()).hexdigest()
+        prior_summary = hashlib.sha256((out / "resumo.json").read_bytes()).hexdigest()
+        payload["exported_at_utc"] = (datetime.now(timezone.utc)-timedelta(days=3)).isoformat()
+        snapshot.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf8")
+        stale = subprocess.run(base + ["--d1-taxonomy-snapshot", str(snapshot)],
+                               capture_output=True, text=True)
+        self.assertNotEqual(stale.returncode, 0)
+        self.assertEqual(hashlib.sha256(preflight.read_bytes()).hexdigest(), prior_digest)
+        self.assertEqual(hashlib.sha256((out / "resumo.json").read_bytes()).hexdigest(), prior_summary)
+        again = subprocess.run(base, capture_output=True, text=True, check=True)
+        self.assertFalse(json.loads(again.stdout)["d1_snapshot_checked"])
+        self.assertFalse(preflight.exists())
+        self.assertFalse((out / "personagens-preflight-d1.jsonl").exists())
+        self.assertFalse((out / "fila-validacao-d1-franquias.csv").exists())
 
 
 if __name__ == "__main__":
