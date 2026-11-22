@@ -76,6 +76,19 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <div id="queueSummary" class="sub" aria-live="polite">Selecione um estúdio ou uma pendência.</div></div><div id="smartSummary" class="sub" style="margin-bottom:12px">Processando propostas de identificação...</div>
 <div id="notice" aria-live="polite"></div><div class="sub" id="summary"></div>
 <div class="gallery" id="nameResults"></div><div class="gallery" id="queueResults" hidden></div>
+<div id="modelWallControls" class="sync-panel" hidden>
+  <strong>Catálogo geral — prancha coletiva</strong>
+  <p class="sub">Várias vistas por modelo, com fotos privadas sob demanda. Não confirma identidade nem direitos.</p>
+  <div class="buttons">
+    <label for="modelWallPageSize">Modelos por lote
+      <select id="modelWallPageSize"><option value="24">24 modelos</option><option value="48" selected>48 modelos</option><option value="96">96 modelos</option></select>
+    </label>
+    <label for="modelWallViews">Fotos por modelo
+      <select id="modelWallViews"><option value="1">1 foto</option><option value="4" selected>4 fotos</option><option value="6">6 fotos</option></select>
+    </label>
+    <button id="modelWallFocus" type="button" aria-pressed="false">Expandir catálogo visual</button>
+  </div>
+</div>
 <div class="gallery" id="modelResults" hidden></div>
 <div class="gallery" id="gallery" hidden></div>
 <div class="pages"><button id="prev">Anterior</button><span id="page">Página 1</span><button id="next">Próxima</button></div>
