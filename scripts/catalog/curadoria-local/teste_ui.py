@@ -17,6 +17,17 @@ assert 'queueCursors[queuePageIndex]' in js
 assert 'el("queueMode").onclick=()=>setView("queue")' in js
 assert '/api/review-queue' in js
 assert 'review.queue' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'id="legacyAuditFilters"' in html and 'id="legacyAuditReview"' in html
+assert 'id="legacyAuditState"' in html and 'id="legacyAuditRisk"' in html
+assert 'id="legacyAuditOpenBoard"' in html
+assert 'id="legacyAuditDecision"' in html and 'id="legacyAuditNotes"' in html
+assert 'async function refreshReviewQueue()' in js
+assert '/api/legacy-album-audit?' in js
+assert 'post("/api/audit-legacy-gallery"' in js
+assert 'openBoard(item.group_key)' in js
+assert 'gallery.legacy_audit' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'gallery.legacy_audit_review' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+
 
 assert 'id="nameReview"' in html
 assert 'id="materializeNames"' in html
