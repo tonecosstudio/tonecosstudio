@@ -172,82 +172,158 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
     }
 
 
-def record_review(db_path, *, group_key, revision, decision, note):
-    """Manual review only. Record provenance, never silently split/merge."""
+def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
+                      expected_member_ids=None, expected_sha256s=None):
+    """Shared audit decision under a caller-owned write transaction.
+
+    The single-review endpoint preserves its existing API. Batch reviews
+    require complete signed-off identity snapshots and commit all or none.
+    """
     key=str(group_key or "")
     decision=str(decision or "")
     note=str(note or "").strip()
     if not GROUP_KEY.fullmatch(key):
         raise ValueError("Galeria inválida")
-    if decision not in DECISIONS or len(note)<15 or len(note)>500:
+    if decision not in DECISIONS or not 15<=len(note)<=500:
         raise ValueError("Classificação ou justificativa inválida")
     if type(revision) is not int or revision<0:
         raise ValueError("Revisão otimista obrigatória")
-    stamp=smart.utc()
-    with closing(smart.db_open(db_path)) as db:
-        db.execute("BEGIN IMMEDIATE")
-        try:
-            group=db.execute(
-                "SELECT studio,title,state,revision FROM model_groups WHERE group_key=?",
-                (key,)
-            ).fetchone()
-            if not group or group["studio"].casefold()==EXCLUDED.casefold():
-                raise ValueError("Galeria indisponível")
-            if group["revision"]!=revision:
-                raise RuntimeError("Conflito de revisão; recarregue a prancha")
-            if group["state"]=="confirmado":
-                raise ValueError("Galeria confirmada exige auditoria editorial própria")
-            rows=db.execute("""SELECT m.message_id,a.sha256,a.original_topic,
-                     p.title,p.variant
-                FROM model_group_members m JOIN assets a USING(message_id)
-                LEFT JOIN name_proposals p USING(message_id)
-                WHERE m.group_key=? ORDER BY m.message_id""",(key,)).fetchall()
-            if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:
-                raise ValueError("Galeria sem origem única")
-            if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
-                raise ValueError("Galeria sem origem e membros consistentes")
-            if not db.execute("""SELECT 1 FROM model_group_members
-                WHERE group_key=? AND match_reason='telegram_album'""",
-                (key,)).fetchone():
-                raise ValueError("Não é um agrupamento legado por álbum")
-            if db.execute("""SELECT 1 FROM curation_events
-                WHERE group_key=? AND event_type='visual_gallery_audited'""",
-                (key,)).fetchone():
-                raise RuntimeError("Galeria já auditada por outra execução")
-            updated=db.execute("""UPDATE model_groups
-                SET revision=revision+1,updated_at=?
-                WHERE group_key=? AND revision=?""",(stamp,key,revision))
-            if updated.rowcount!=1:
-                raise RuntimeError("Conflito de revisão")
-            event_type=(
-                "visual_gallery_audited" if decision=="same_sculpture"
-                else "visual_gallery_audit_attention"
-            )
-            audit={
-                "schema":"tonart.visual-gallery-audit/1",
-                "classification":decision,"group_key":key,
-                "studio":group["studio"],"title":group["title"],
-                "member_ids":[r["message_id"] for r in rows],
-                "sha256s":[r["sha256"] for r in rows],
-                "notes":note,
-                "identity_approved":False,
-                "publication_approved":False,
-            }
-            db.execute("""INSERT INTO curation_events(
-                group_key,event_type,detail,occurred_at)
-                VALUES(?,?,?,?)""",(
-                    key,event_type,json.dumps(audit,ensure_ascii=False),stamp
-                ))
-            db.commit()
-        except BaseException:
-            db.rollback()
-            raise
+    group=db.execute(
+        "SELECT studio,title,state,revision FROM model_groups WHERE group_key=?",
+        (key,)
+    ).fetchone()
+    if not group or group["studio"].casefold()==EXCLUDED.casefold():
+        raise ValueError("Galeria indisponível")
+    if group["revision"]!=revision:
+        raise RuntimeError("Conflito de revisão; recarregue a prancha")
+    if group["state"]=="confirmado":
+        raise ValueError("Galeria confirmada exige auditoria editorial própria")
+    rows=db.execute("""SELECT m.message_id,a.sha256,a.original_topic,
+             p.title,p.variant
+        FROM model_group_members m JOIN assets a USING(message_id)
+        LEFT JOIN name_proposals p USING(message_id)
+        WHERE m.group_key=? ORDER BY m.message_id""",(key,)).fetchall()
+    if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:
+        raise ValueError("Galeria sem origem única")
+    if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
+        raise ValueError("Galeria sem origem e membros consistentes")
+    member_ids=[r["message_id"] for r in rows]
+    hashes=[r["sha256"] for r in rows]
+    if expected_member_ids is not None or expected_sha256s is not None:
+        if (expected_member_ids != member_ids or expected_sha256s != hashes):
+            raise RuntimeError("Fotos alteradas desde a conferência: reabra a prancha")
+    if not db.execute("""SELECT 1 FROM model_group_members
+        WHERE group_key=? AND match_reason='telegram_album'""",
+        (key,)).fetchone():
+        raise ValueError("Não é um agrupamento legado por álbum")
+    if db.execute("""SELECT 1 FROM curation_events
+        WHERE group_key=? AND event_type='visual_gallery_audited'""",
+        (key,)).fetchone():
+        raise RuntimeError("Galeria já auditada por outra execução")
+    updated=db.execute("""UPDATE model_groups
+        SET revision=revision+1,updated_at=?
+        WHERE group_key=? AND revision=?""",(stamp,key,revision))
+    if updated.rowcount!=1:
+        raise RuntimeError("Conflito de revisão")
+    event_type=(
+        "visual_gallery_audited" if decision=="same_sculpture"
+        else "visual_gallery_audit_attention"
+    )
+    audit={
+        "schema":"tonart.visual-gallery-audit/1",
+        "classification":decision,"group_key":key,
+        "studio":group["studio"],"title":group["title"],
+        "member_ids":member_ids,
+        "sha256s":hashes,
+        "notes":note,
+        "identity_approved":False,
+        "publication_approved":False,
+    }
+    db.execute("""INSERT INTO curation_events(
+        group_key,event_type,detail,occurred_at)
+        VALUES(?,?,?,?)""",(
+            key,event_type,json.dumps(audit,ensure_ascii=False),stamp
+    ))
     return {
         "ok":True,"group_key":key,"decision":decision,
         "event_type":event_type,"revision":revision+1,
         "members":len(rows),"publication_approved":False,
         "group_relations_changed":False,
     }
+
+
+def record_review(db_path, *, group_key, revision, decision, note):
+    """One manually reviewed gallery; same authority as the batch workflow."""
+    with closing(smart.db_open(db_path)) as db:
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            result=_record_review_tx(
+                db,group_key=group_key,revision=revision,
+                decision=decision,note=note,stamp=smart.utc()
+            )
+            db.commit()
+            return result
+        except BaseException:
+            db.rollback()
+            raise
+
+
+def record_reviews_batch(db_path, *, reviews):
+    """Commit up to 12 distinct, individually evidenced gallery reviews.
+
+    Every member ID/SHA-256 pair must equal the current SQLite snapshot.
+    Fail-closed across the entire batch, including concurrent revisions.
+    Do not assume previews alone establish identity; the client must require
+    an explicit full-board review before staging each decision.
+    """
+    if not isinstance(reviews,list) or not 1<=len(reviews)<=12:
+        raise ValueError("Remessa deve conter de 1 a 12 galerias revisadas")
+    keys=[]
+    for item in reviews:
+        if not isinstance(item,dict):
+            raise ValueError("Cada revisão precisa ser um objeto completo")
+        key=item.get("group_key")
+        ids=item.get("member_ids")
+        hashes=item.get("sha256s")
+        if (not isinstance(key,str) or not GROUP_KEY.fullmatch(key)
+                or not isinstance(ids,list) or not isinstance(hashes,list)
+                or not 2<=len(ids)==len(hashes)<=500
+                or any(type(mid) is not int or mid<=0 for mid in ids)
+                or ids!=sorted(set(ids))
+                or any(not isinstance(h,str) or not h.strip() for h in hashes)):
+            raise ValueError("Fotografias da revisão precisam ser identificadas por ID e hash")
+        keys.append(key)
+    if len(set(keys))!=len(keys):
+        raise ValueError("Galeria repetida na remessa")
+    # Validate every gallery and journal every result while holding the same
+    # lock. The complete batch is committed once, or fully rolled back.
+    with closing(smart.db_open(db_path)) as db:
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            stamp=smart.utc()
+            results=[]
+            for item in reviews:
+                results.append(_record_review_tx(
+                    db,group_key=item["group_key"],
+                    revision=item.get("revision"),
+                    decision=item.get("decision"),
+                    note=item.get("note"),
+                    stamp=stamp,
+                    expected_member_ids=item["member_ids"],
+                    expected_sha256s=item["sha256s"],
+                ))
+            db.commit()
+            return {
+                "ok":True,"reviewed":len(results),
+                "results":results,
+                "publication_approved":False,
+                "group_relations_changed":False,
+                "atomic":True,
+            }
+        except BaseException:
+            db.rollback()
+            raise
+
 
 
 def split_reviewed_gallery(db_path, *, group_key, revision, message_ids,
