@@ -36,6 +36,7 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 .board-head h2{margin:0}.board-body{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 .board-photo{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;padding:12px;min-width:0}
 .board-photo img{width:100%;height:320px;object-fit:contain;background:#0c0d10}
+.board-pagination{position:sticky;bottom:0;display:flex;align-items:center;justify-content:center;gap:12px;padding:12px;background:var(--panel);border-top:1px solid var(--line)}
 .board-photo figcaption{padding:10px 0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:140px;overflow:auto}
 .sync-panel{border:1px solid var(--line);padding:12px;border-radius:10px;background:var(--panel);margin:12px 0}
 .sync-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0}
@@ -86,5 +87,5 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <p class="sub" id="exports"></p>
 </aside>
 </main>
-<dialog id="boardDialog" class="board-dialog" aria-labelledby="boardTitle"><div class="board-head"><div><h2 id="boardTitle">Prancha de revisao</h2><div id="boardMeta" class="sub"></div></div><button id="closeBoard">Fechar prancha</button></div><div id="boardPhotos" class="board-body"></div></dialog>
+<dialog id="boardDialog" class="board-dialog" aria-labelledby="boardTitle"><div class="board-head"><div><h2 id="boardTitle">Prancha de revisao</h2><div id="boardMeta" class="sub"></div></div><button id="closeBoard">Fechar prancha</button></div><div id="boardPhotos" class="board-body"></div><nav class="board-pagination" aria-label="Páginas da prancha"><button id="boardPrev" type="button">Anterior</button><span id="boardPage" aria-live="polite"></span><button id="boardNext" type="button">Próxima</button></nav></dialog>
 <script src="/curadoria.js" defer></script><script src="/gallery_ui.js" defer></script></body></html>
