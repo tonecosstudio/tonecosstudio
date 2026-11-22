@@ -69,6 +69,7 @@ with socket.socket() as sock:
     sock.bind(("127.0.0.1",0))
     test_port=sock.getsockname()[1]
 m.HOST,m.PORT="127.0.0.1",test_port
+m.initialize=lambda: 'test-token'
 m.sync=blocked_sync
 m.telegram_identity.run_cycle=lambda *args,**kwargs: None
 threading.Thread(target=m.main,daemon=True,name="test-nonblocking-startup").start()
@@ -91,3 +92,37 @@ try:
     print("BOOT APROVADO: /health responde durante sincronizacao SQLite bloqueada")
 finally:
     release.set()
+
+# A slow schema initialization must not delay loopback HTTP startup.
+initializing=threading.Event()
+release_init=threading.Event()
+def blocked_initialize():
+    initializing.set()
+    release_init.wait(6)
+    return "test-token"
+
+m.initialize=blocked_initialize
+m.sync=lambda: 0
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1",0))
+    schema_port=sock.getsockname()[1]
+m.PORT=schema_port
+threading.Thread(target=m.main,daemon=True,name="test-delayed-schema").start()
+try:
+    assert initializing.wait(3),"schema init did not start in background"
+    schema_ready=False
+    for attempt in range(35):
+        try:
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{schema_port}/health",timeout=0.5
+            ) as response:
+                schema_ready=response.status==200 and json.loads(response.read()).get("ok") is True
+                if schema_ready: break
+        except (OSError,ValueError):
+            pass
+        time.sleep(0.1)
+    assert schema_ready,"HTTP must bind before SQLite initialization"
+    assert not release_init.is_set(),"schema must remain blocked during health proof"
+    print("BOOT APROVADO: /health responde durante inicializacao SQLite bloqueada")
+finally:
+    release_init.set()

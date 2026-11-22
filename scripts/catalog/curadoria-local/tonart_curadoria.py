@@ -63,10 +63,14 @@ def connect(path, readonly=False):
     db.execute("PRAGMA busy_timeout=5000")
     return db
 
-def initialize():
+def local_token():
     APP_DIR.mkdir(parents=True, exist_ok=True)
     if not TOKEN_PATH.exists():
         TOKEN_PATH.write_text(secrets.token_urlsafe(32), encoding="ascii")
+    return TOKEN_PATH.read_text(encoding="ascii").strip()
+
+def initialize():
+    token=local_token()
     with connect(DB_PATH) as db:
         db.execute("""CREATE TABLE IF NOT EXISTS assets(
           message_id INTEGER PRIMARY KEY,
@@ -87,7 +91,7 @@ def initialize():
           source TEXT NOT NULL, matched_message_id INTEGER, status TEXT NOT NULL DEFAULT 'revisar')""")
         db.execute("""CREATE INDEX IF NOT EXISTS idx_assets_topic ON assets(original_topic)""")
         db.execute("""CREATE INDEX IF NOT EXISTS idx_assets_hash ON assets(sha256)""")
-    return TOKEN_PATH.read_text(encoding="ascii").strip()
+    return token
 
 def safe_source_path(relative):
     if not isinstance(relative,str):return None
@@ -279,7 +283,8 @@ def import_tonart_csv(csv_path):
     return {"candidates":len(records),"exact_hash_matches":matched,"preferred":"telegram",
             "note":"Somente comparacao; nenhuma imagem TONART foi alterada"}
 
-TOKEN = initialize()
+# Read token on import without waiting for SQLite DDL or downloader locks.
+TOKEN = local_token()
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version="HTTP/1.0"
@@ -477,8 +482,12 @@ def main():
     # Sync is exclusively owned by the background worker. Never delay the
     # HTTP listener with a potentially slow downloader SQLite snapshot.
     def background_curadoria():
+        prepared=False
         while True:
             try:
+                if not prepared:
+                    initialize()
+                    prepared=True
                 sync()
                 telegram_identity.run_cycle(
                     ROOT,SOURCE_DB,DB_PATH,SOURCE_ID,
