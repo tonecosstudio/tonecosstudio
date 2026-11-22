@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Read-only queue regression using synthetic data and no Telegram originals."""
 import sqlite3
+import http.client
+import json
+import threading
+from http.server import ThreadingHTTPServer
 from contextlib import closing
 import tempfile
 from pathlib import Path
 import review_queue as queue
+import tonart_curadoria as host
 
 with tempfile.TemporaryDirectory(prefix="tonart-review-queue-") as tmp:
     dbpath=Path(tmp)/"curadoria.sqlite3"
@@ -83,6 +88,38 @@ with tempfile.TemporaryDirectory(prefix="tonart-review-queue-") as tmp:
             raise AssertionError("Unsafe filter accepted: "+str(args))
         except ValueError:
             pass
+    # The HTTP route is the same MCP/client contract; all GETs remain read-only.
+    host.DB_PATH = dbpath
+    server = ThreadingHTTPServer(("127.0.0.1", 0), host.Handler)
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    def http_get(path):
+        with closing(http.client.HTTPConnection(
+            "127.0.0.1", server.server_port, timeout=5,
+        )) as connection:
+            connection.request("GET", path)
+            response = connection.getresponse()
+            return response.status, json.loads(response.read().decode("utf-8"))
+    try:
+        code, data = http_get("/api/review-queue?limit=2")
+        assert code == 200 and data["items"][0]["message_id"] == 106
+        assert data["next_cursor"] == "0:101"
+        code, data = http_get("/api/review-queue?cursor=0%3A101&limit=2")
+        assert code == 200 and data["items"][0]["message_id"] == 102
+        code, data = http_get("/api/review-queue?kind=invalid")
+        assert code == 400 and "error" in data
+        code, data = http_get("/api/review-queue?topic=Geral+%2B+50k")
+        assert code == 400 and "error" in data
+        code, data = http_get("/api/capabilities")
+        assert code == 200 and any(
+            x["id"] == "review.queue" for x in data["operations"]
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
     with closing(sqlite3.connect(dbpath)) as db:
         assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
         assert db.execute("SELECT COUNT(*) FROM name_proposals").fetchone()[0]==8
