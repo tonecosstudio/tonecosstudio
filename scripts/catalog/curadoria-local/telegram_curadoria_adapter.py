@@ -445,6 +445,11 @@ def run_cycle(
         _CYCLE_LOCK.release()
 
 
+def findings(curadoria_db_path: str | Path, message_id: int) -> dict[str, Any]:
+    """Expose the original Telegram caption/album provenance for private review."""
+    return identity.list_telegram_findings(curadoria_db_path, message_id)
+
+
 def status(curadoria_db_path: str | Path) -> dict[str, Any]:
     """Aggregate-only status for the existing local app's /api/stats response."""
     return {
