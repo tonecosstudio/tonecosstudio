@@ -1,3 +1,12 @@
+## CHECKPOINT — 22/11/2026 — 34 personagens privados / 13 novos Pokémon / curadoria horária
+
+- **Supabase TONART real:** 13 personagens Pokémon adicionados com fonte oficial individual e chave editorial idempotente. Auditoria: **34 identidades, 34 chaves únicas, 13 franquias editoriais, 15 Pokémon; 0 vínculos de modelos e 0 tags de modelos**. Nenhuma publicação D1, imagem, galeria ou alteração comercial.
+- **Continuidade horária:** atualizada a tarefa existente **TONART — concluir MVP**, priorizando a consolidação integral da SSOT de personagens; limite de cinco tarefas impediu agendamento adicional, sem desativar nenhuma das missões já ativas. Próxima execução informada pelo agendador; retomar da HEAD real, não de SHAs históricos.
+- **Integridade:** PR #82 já integrada à main; novo RPC de cadastro independente de modelo preparado em código, **não implantado**. M5 sem GO, D1 com último bloqueio de quota de leitura 7500. Fila derivada: `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/` (527 universos e 2.813 títulos candidatos, não identidades confirmadas).
+- **Próximo lote:** fontes oficiais, conciliação por franquia e personagem sem inferência de variantes; registrar novas identidades privadas e atualizar este checkpoint com totais auditados; não contar nomes provisórios como personagens comprovados.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Primeiras 21 identidades privadas e cadastro antes de vincular modelos
 
 - **Supabase TONART (efeito real):** 21 registros em `catalog_character_identities` com fontes oficiais e chaves únicas. Verificado diretamente: 21 linhas/21 chaves, 0 perfis de modelos e 0 `catalog_curation_model_tags`. É curadoria **privada**, sem escrita no D1 e sem tags públicas. Não duplicar o seed em JSON ou migrations.
