@@ -1,5 +1,23 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Separação visual segura de esculturas misturadas — 22/11/2026
+
+O host agora oferece uma **operação editorial de separação real**, mas somente quando a auditoria visual imediatamente anterior do grupo concluiu `different_sculptures`. O objetivo é produzir galerias coerentes sem reconstrução global do catálogo, sem nomes inventados nem aprovação comercial automática.
+
+1. Na aba **Fila de revisão → Auditar galerias antigas**, escolha uma galeria, abra a **prancha nativa** e verifique todos os ângulos. Registre `Esculturas diferentes` com justificativa baseada na geometria real.
+2. Abra a prancha novamente e marque as imagens que mostram **uma única escultura diferente**. A interface mantém a seleção entre páginas e marca, em conjunto, mensagens cujo **SHA-256 é idêntico**. Não é necessário digitar IDs em outro aplicativo.
+3. Insira nome e variante **provisórios** (opcionais) e uma justificativa visual de 15 a 500 caracteres. Clique **Separar seleção revisada**. A nova galeria permanece em `revisar`, e o grupo original também permanece em revisão; nenhum dos dois é publicado.
+
+**Contrato canônico UI/MCP:** `POST /api/split-legacy-gallery`, declarado como `gallery.legacy_split` em `GET /api/capabilities`. Corpo: `{group_key, revision, message_ids, title?, variant?, note}`. A operação é recusada quando faltam auditoria `different_sculptures`, revisão otimista atual, seleção própria (não vazia e não total), integridade dos IDs/SHA-256 do evento, origem única ou justificativa. Grupos já confirmados, previamente revisados em `reviewed_angles` ou do tópico reservado ficam bloqueados. O controle CSRF/Origin do host continua obrigatório.
+
+**Transação e integridade:** `legacy_album_audit.split_reviewed_gallery` grava uma nova `model_groups` provisória, move apenas as relações selecionadas dentro de `model_group_members`, transfere evidências automáticas correspondentes à fotografia e registra `visual_gallery_split_source` na origem e `visual_gallery_split` no destino. Ambos os eventos contêm os membros originais, hashes, seleção, membros restantes, auditoria de origem e `publication_approved=false`. Nenhuma mídia física, nome da proposta, site, arquivo Telegram ou registro D1/R2 é modificado. Erros provocam rollback da mesma transação SQLite.
+
+**Antirreagrupamento:** `smart_curadoria.process_batch` respeita `curation_seen.outcome='visual_split_review'` para **todos** os membros envolvidos, mesmo que legenda/metadata Telegram mude, e respeita membros `match_reason='reviewed_split'`. `model_gallery.register_visual_gallery` não rouba automaticamente membros separados por revisão. Uma segunda divisão requer nova auditoria explícita sobre o conjunto de membros atual. Os 17 eventos `visual_gallery_split` históricos identificados no SQLite são preservados.
+
+**Prova no Desktop autorizado:** `teste_legacy_gallery_split.py`, `teste_legacy_album_audit.py` e `teste_ui.py` passaram com SQLite isolado, incluindo HTTP 200, 403 e 409, CSRF, concorrência, validação de auditoria, seleção conjunta de arquivos repetidos, reimportação com legenda alterada, eventos e integridade. A versão foi instalada na **mesma** tarefa `TONART Curadoria Host` (8 arquivos CAS-verificados, porta 8769 liberada antes do start). A API e os controles da prancha estão disponíveis; **nenhum grupo do catálogo real foi dividido nesta implantação**, pois ainda não há uma auditoria de divergência atual que autorize tal operação.
+
+
+
 ## Auditoria visual de grupos legados — 22/11/2026
 
 A **Fila de revisão → Auditar galerias antigas** opera **por galeria**, e não por cada imagem. Ela usa exclusivamente `model_group_members`, `model_groups`, `name_proposals` e `curation_events` do mesmo SQLite da Curadoria. Nenhum banco de auditoria, serviço, worker, duplicação de arquivo ou tarefa paralela é criado.
