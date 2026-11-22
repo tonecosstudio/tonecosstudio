@@ -396,6 +396,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"review.queue","method":"GET","path":"/api/review-queue","effect":"read"},
                     {"id":"gallery.legacy_audit","method":"GET","path":"/api/legacy-album-audit","effect":"read","pagination":True,"max_limit":96,"previews":[0,1,4,6]},
                     {"id":"gallery.legacy_audit_review","method":"POST","path":"/api/audit-legacy-gallery","effect":"write"},
+                    {"id":"gallery.legacy_batch_review","method":"POST","path":"/api/audit-legacy-galleries-batch","effect":"write","batch_max":12,"atomic":True},
                     {"id":"gallery.legacy_split","method":"POST","path":"/api/split-legacy-gallery","effect":"write"},
                     {"id":"external_candidates.list","method":"GET","path":"/api/candidates","effect":"read"},
                     {"id":"images.annotate","method":"POST","path":"/api/annotate","effect":"write"},
@@ -589,6 +590,9 @@ class Handler(BaseHTTPRequestHandler):
                     title=obj.get("title",""),
                     variant=obj.get("variant",""),
                     note=obj.get("note","")))
+            if self.path=="/api/audit-legacy-galleries-batch":
+                return self.respond(legacy_album_audit.record_reviews_batch(
+                    DB_PATH,reviews=obj.get("reviews")))
             if self.path=="/api/audit-legacy-gallery":
                 return self.respond(legacy_album_audit.record_review(
                     DB_PATH,group_key=obj.get("group_key",""),
