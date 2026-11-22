@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — SSOT transversal de personagens e tags (código preparado)
+
+- **Contrato no documento existente:** `docs/CATALOGO-PERSONAGENS-UNIVERSOS.md` define a mesma identidade canônica para `tg_*` (Telegram) e `mdl_*` (antigo), reutilizando as categorias/franquias D1 e a curadoria privada já existente.
+- **Migration aditiva apenas em código:** `services/catalogo/migrations/0029_canonical_characters_across_sources.sql` prevê identidades de personagens, aliases e links N:N por `models.id` no D1 já existente. Nenhuma migração, importação de mídia, atualização de nome em massa ou alteração de direitos foi aplicada em produção.
+- **Testes offline:** `node --test services/catalogo/tools/test_catalog_character_identity_sqlite.mjs`. Validam vínculo comum entre antigo/Telegram, prevenção de colisão, revisão de crossovers, revogação e plano de índice. Os vínculos efetivos continuam dependentes de conciliação editorial por evidência.
+- **Não confundir com PR #77:** os chips do Telegram já estão na `main`, mas o filtro de texto ainda é provisório; os IDs editoriais unificados serão expostos somente pela API canônica após reconciliação e publicação autorizada.
+- **Gates preservados:** D1 sobrecarregado por limite diário 7500 no diagnóstico mais recente; M5 sem GO e writers antigos. Não executar D1 SELECT em massa, não publicar Worker/Frontend ou abrir SEO/checkout como efeito deste patch.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — 24 galerias revisadas, fila inédita separada e miniaturas diagnosticáveis
 
 - **Progresso real de curadoria no host:** via OrdaX MCP e pranchas privadas nativas do `DESKTOP-4UFL03B`, inspecionadas **175 fotografias completas** distribuídas em **24 galerias** e duas remessas de 12. Remessa `105bec973c359099f031ce18a2de5bf4f76a3e7b94a7d4bcf08a369142931a30`: 104 fotos, 11 `same_sculpture`, 1 `needs_more_evidence` (**The Mummy**, diorama versus personagens isolados). Remessa `4dd83599cf5c97b65d9b9398520ad13725a8322974bbf9db46b7da097b7a4da8`: 71 fotos, 9 `same_sculpture`, 3 `needs_more_evidence` (**Venomized Iron-Man**, **Grommash Hellscream** e **Mr. Game & Watch**, variantes ou peças incertas). Todas as decisões têm justificativa específica. **20 galerias auditadas** e **4 explicitamente pendentes**; nenhum original movido ou produto publicado.
