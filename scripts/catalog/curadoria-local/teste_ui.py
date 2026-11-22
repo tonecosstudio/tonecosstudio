@@ -111,9 +111,10 @@ const item={album_id:'album-1',topic:'Kuton Sculpts',
  message_ids:[101,102],all_message_ids:[101,102,103],
  already_grouped:[{message_id:103,variant:'BUST'}],image_count:2,grouped_images:1,caption:'teste'};
 const text=(parent,tag,value)=>{const e=new E(tag);e.textContent=String(value);parent.append(e);return e;};
+const setThumb=(img,mid)=>{img.src='/thumb/'+mid+'?w=480';};
 vm.runInNewContext(source.slice(a,b),{el:id=>els[id],albumCandidates:[item],
  topic:'Kuton Sculpts',document:{createElement:tag=>new E(tag)},
- text,notify:()=>{},Map,Set});
+ text,setThumb,notify:()=>{},Map,Set});
 els.loadAlbumCandidate.onclick();
 assert.strictEqual(els.galleryIds.value,'101, 102');
 const cards=els.albumCandidatePreview.children;
