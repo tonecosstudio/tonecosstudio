@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import sqlite3
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import sys
 import tempfile
 import unittest
@@ -291,7 +291,7 @@ class TelegramIdentityEngineTests(unittest.TestCase):
             if seen[0] == 33:
                 # Transaction from first 32 assets must be committed before
                 # the 33rd candidate is inspected.
-                with sqlite3.connect(self.db_path, timeout=0.2) as observer:
+                with closing(sqlite3.connect(self.db_path, timeout=0.2)) as observer:
                     observer.execute("BEGIN IMMEDIATE")
                     observer.rollback()
                 checked[0] = True
