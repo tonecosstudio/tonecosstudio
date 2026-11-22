@@ -295,37 +295,74 @@ el("loadAlbumCandidate").onclick=()=>{
  notify("IDs preenchidos. Confira se todas as imagens são da mesma escultura antes de criar a galeria.");
 };
 
+let modelWallRequestId=0,modelWallStats=null,modelWallStatsAt=0;
 async function refreshModels(){
  if(viewMode!=="models")return;
+ const requestId=++modelWallRequestId;
  try{
-  const filter=(status==="revisar"||status==="confirmado"||status==="provavel")?status:"";
-  const p=new URLSearchParams({page:currentPage,limit:48,topic,q:search,state:filter,min_images:el("multiplePhotosOnly").checked?2:1,unnamed:el("onlyUnnamedModels").checked?"1":"0"});
+  const filter=["revisar","confirmado","provavel"].includes(status)?status:"";
+  const limit=Number(el("modelWallPageSize").value);
+  const previews=Number(el("modelWallViews").value);
+  if(![24,48,96].includes(limit)||![1,4,6].includes(previews))return;
+  const p=new URLSearchParams({page:currentPage,limit,previews,
+    topic,q:search,state:filter,min_images:el("multiplePhotosOnly").checked?2:1,
+    unnamed:el("onlyUnnamedModels").checked?"1":"0"});
   const result=await api("/api/models?"+p);
+  if(requestId!==modelWallRequestId||viewMode!=="models")return;
   await refreshAlbumCandidates();
+  if(requestId!==modelWallRequestId||viewMode!=="models")return;
   modelTotal=result.total;
-  const root=el("modelResults");root.replaceChildren();
+  const root=el("modelResults");
+  root.replaceChildren();
+  root.classList.add("audit-wall");
   for(const g of result.items){
-   const b=document.createElement("button");b.className="tile";
-   const img=document.createElement("img");img.loading="lazy";setThumb(img,g.sample_message);img.alt=g.title;b.append(img);
-   const details=document.createElement("div");details.className="details";
-   text(details,"div",g.title);
-   text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
-   const distinct=g.unique_photo_count===undefined?g.image_count:g.unique_photo_count;
-   text(details,"span",distinct+" fotos únicas · "+g.image_count+" mensagens · "+g.state,"pill");
-   if(distinct===1&&g.image_count>1)text(details,"div","Mensagens com foto repetida — revisar","sub");
-   b.append(details);b.onclick=()=>openModel(g.group_key);root.append(b);
+    const card=document.createElement("button");
+    card.className="tile audit-tile";
+    const previewsElement=document.createElement("div");
+    previewsElement.className="audit-previews";
+    const ids=g.preview_ids?.length?g.preview_ids:[g.sample_message];
+    for(const id of ids){
+      const image=document.createElement("img");
+      setThumb(image,id,256);
+      image.alt="Vista de "+g.title+" · mensagem "+id;
+      previewsElement.append(image);
+    }
+    card.append(previewsElement);
+    const details=document.createElement("div");
+    details.className="details";
+    text(details,"div",g.title||"Modelo sem nome");
+    text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
+    const distinct=g.unique_photo_count??g.image_count;
+    text(details,"span",distinct+" fotos únicas · "+g.image_count+
+      " mensagens · "+g.state,"pill");
+    if(distinct===1&&g.image_count>1){
+      text(details,"div","Mensagens repetem o mesmo arquivo","sub");
+    }
+    card.append(details);
+    card.onclick=()=>openModel(g.group_key);
+    root.append(card);
   }
-  if(!result.items.length)text(root,"p","Nenhum grupo com estes filtros. Imagens sem legenda permanecem em revisão.","empty");
-  el("summary").textContent=fmt(modelTotal)+(el("multiplePhotosOnly").checked?" galerias com m?ltiplas fotos":" galerias de modelos, incluindo foto ?nica");
-  el("page").textContent="Página "+currentPage;
-  el("prev").disabled=currentPage<=1;el("next").disabled=currentPage*48>=modelTotal;
-  const stat=await api("/api/stats");
-  const s=stat.smart||{};
-  const gs=stat.galleries||{};
-  el("smartSummary").textContent=fmt(gs.photos_in_galleries||0)+" mensagens de fotos vinculadas a "+fmt(gs.galleries||0)+" galerias · "+
-    fmt(gs.visually_reviewed_galleries||0)+" galerias revisadas visualmente · "+
-    fmt(s.images_needing_review||0)+" imagens ainda sem associação.";
- }catch(e){notify("Modelos: "+e.message)}
+  if(!result.items.length){
+    text(root,"p","Nenhum modelo neste filtro. Revise a origem antes de alterar fichas.","empty");
+  }
+  el("summary").textContent=fmt(modelTotal)+(el("multiplePhotosOnly").checked?
+    " galerias com várias fotos":" galerias de modelos");
+  el("page").textContent="Página "+currentPage+" · até "+limit+" modelos";
+  el("prev").disabled=currentPage<=1;
+  el("next").disabled=currentPage*limit>=modelTotal;
+  if(!modelWallStats||Date.now()-modelWallStatsAt>60000){
+    modelWallStats=await api("/api/stats");modelWallStatsAt=Date.now();
+  }
+  if(requestId!==modelWallRequestId||viewMode!=="models")return;
+  const stats=modelWallStats.smart||{};
+  const galleries=modelWallStats.galleries||{};
+  el("smartSummary").textContent=fmt(galleries.photos_in_galleries||0)+
+    " mensagens em "+fmt(galleries.galleries||0)+" galerias · "+
+    fmt(galleries.visually_reviewed_galleries||0)+" revisadas visualmente · "+
+    fmt(stats.images_needing_review||0)+" imagens sem associação.";
+ }catch(e){
+  if(requestId===modelWallRequestId)notify("Modelos: "+e.message);
+ }
 }
 async function openModel(key){
  try{
@@ -380,14 +417,17 @@ el("saveModelReview").onclick=async()=>{
  }catch(e){notify(e.message)}
 };
 function setView(mode){
- if(mode!=="queue"&&document.body.classList.contains("wall-focus")){
+ if(mode!==viewMode&&document.body.classList.contains("wall-focus")){
   document.body.classList.remove("wall-focus");
   el("legacyWallFocus").textContent="Expandir prancha coletiva";
   el("legacyWallFocus").setAttribute("aria-pressed","false");
+  el("modelWallFocus").textContent="Expandir catálogo visual";
+  el("modelWallFocus").setAttribute("aria-pressed","false");
  }
  viewMode=mode;currentPage=1;status="";el("statusFilter").value="";
  el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
+ el("modelWallControls").hidden=mode!=="models";
  el("nameResults").hidden=mode!=="names";
  el("queueResults").hidden=mode!=="queue";
  el("queueFilters").hidden=mode!=="queue";
@@ -410,6 +450,14 @@ function setView(mode){
 const originalRefresh=refresh;
 refresh=function(){return viewMode==="names"?refreshNames():viewMode==="queue"?refreshReviewQueue():viewMode==="models"?refreshModels():originalRefresh()};
 el("modelsMode").onclick=()=>setView("models");
+for(const id of ["modelWallPageSize","modelWallViews"]){
+ el(id).onchange=()=>{currentPage=1;refreshModels();};
+}
+el("modelWallFocus").onclick=()=>{
+ const focused=document.body.classList.toggle("wall-focus");
+ el("modelWallFocus").textContent=focused?"Mostrar painel editorial":"Expandir catálogo visual";
+ el("modelWallFocus").setAttribute("aria-pressed",String(focused));
+};
 el("onlyUnnamedModels").onchange=()=>{currentPage=1;refreshModels()};
 el("imagesMode").onclick=()=>setView("images");
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="models")refreshModels();else refresh()};
