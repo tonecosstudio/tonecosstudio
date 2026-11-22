@@ -48,7 +48,7 @@ export function uploadedVersion(text) {
 }
 export async function readLiveDeployment(env=process.env, fetchImpl=fetch) {
   if(env.CLOUDFLARE_ACCOUNT_ID!==manifest.runtime.cloudflareAccountId||
-     !uuid.test(env.CLOUDFLARE_ACCOUNT_ID)||!env.CLOUDFLARE_API_TOKEN) {
+     !/^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID)||!env.CLOUDFLARE_API_TOKEN) {
     throw Error('Canonical Cloudflare authorization unavailable')
   }
   const url='https://api.cloudflare.com/client/v4/accounts/'+env.CLOUDFLARE_ACCOUNT_ID+
