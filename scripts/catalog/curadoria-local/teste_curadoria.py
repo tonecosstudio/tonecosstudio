@@ -3,7 +3,11 @@ import hashlib
 import importlib.util
 import json
 import sqlite3
+import socket
 import tempfile
+import threading
+import time
+import urllib.request
 from pathlib import Path
 
 f=Path(__file__).with_name("tonart_curadoria.py")
@@ -52,3 +56,38 @@ with tempfile.TemporaryDirectory(prefix="tonart-curadoria-test-") as p:
     assert reconcile["exact_hash_matches"]==1,reconcile
     assert reconcile["preferred"]=="telegram"
     print("E2E APROVADO: anotacao, conflito de revisao, exportacao de nome por hardlink, integridade, reconciliacao Telegram-prioritario")
+
+# The UI must serve health while the downloader's SQLite sync is still busy.
+# This is a real loopback HTTP smoke with an intentionally blocked sync.
+started=threading.Event()
+release=threading.Event()
+def blocked_sync():
+    started.set()
+    release.wait(6)
+
+with socket.socket() as sock:
+    sock.bind(("127.0.0.1",0))
+    test_port=sock.getsockname()[1]
+m.HOST,m.PORT="127.0.0.1",test_port
+m.sync=blocked_sync
+m.telegram_identity.run_cycle=lambda *args,**kwargs: None
+threading.Thread(target=m.main,daemon=True,name="test-nonblocking-startup").start()
+try:
+    assert started.wait(3),"background sync did not begin"
+    ready=False
+    for attempt in range(40):
+        try:
+            with urllib.request.urlopen(
+                f"http://127.0.0.1:{test_port}/health",timeout=0.5
+            ) as response:
+                body=json.loads(response.read())
+                ready=response.status==200 and body.get("ok") is True
+                if ready: break
+        except (OSError,ValueError):
+            pass
+        time.sleep(0.1)
+    assert ready,"host health must remain responsive during blocked SQLite sync"
+    assert not release.is_set(),"test must not release sync before HTTP health check"
+    print("BOOT APROVADO: /health responde durante sincronizacao SQLite bloqueada")
+finally:
+    release.set()

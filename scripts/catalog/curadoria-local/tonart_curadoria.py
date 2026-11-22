@@ -474,8 +474,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def main():
     manual_only = os.environ.get("TONART_CURADORIA_MANUAL_ONLY", "").strip() == "1"
-    if not manual_only:
-        sync()
+    # Sync is exclusively owned by the background worker. Never delay the
+    # HTTP listener with a potentially slow downloader SQLite snapshot.
     def background_curadoria():
         while True:
             try:
@@ -489,9 +489,11 @@ def main():
             except Exception as exc:
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
-    if not manual_only:
-        threading.Thread(target=background_curadoria,daemon=True,name="tonart-smart-curadoria").start()
     with ThreadingHTTPServer((HOST,PORT),Handler) as srv:
+        # Bind before starting any SQLite synchronization: /health and the UI
+        # remain reachable even if the downloader is busy or a scan stalls.
+        if not manual_only:
+            threading.Thread(target=background_curadoria,daemon=True,name="tonart-smart-curadoria").start()
         print(f"TONART CURADORIA | http://{HOST}:{PORT}",flush=True)
         print(f"Banco isolado: {DB_PATH}",flush=True)
         print("Revisao manual sem sincronizacao global." if manual_only else "Origem intocada; sincronizacao incremental ativa.",flush=True)
