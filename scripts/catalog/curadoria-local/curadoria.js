@@ -6,10 +6,16 @@ const fmt=n=>Number(n||0).toLocaleString("pt-BR");
 function setThumb(img,messageId,width=480){
   const mid=Number(messageId);
   if(!Number.isSafeInteger(mid)||mid<=0)return;
-  const original="/media/"+mid;
   img.loading="lazy";
   img.decoding="async";
-  img.onerror=()=>{img.onerror=null;img.src=original;};
+  img.onerror=()=>{
+    // An unsupported photo must never trigger a full-res (possibly 60 MB)
+    // fallback request on a gallery wall with hundreds of thumbnails.
+    img.onerror=null;
+    img.alt="Prévia indisponível — verifique a origem pela ficha";
+    const placeholder='<svg xmlns="http://www.w3.org/2000/svg" width="256" height="190" viewBox="0 0 256 190"><rect width="256" height="190" rx="8" fill="#16191f"/><rect x="87" y="44" width="82" height="65" rx="6" fill="none" stroke="#858993" stroke-width="3"/><path d="M99 95l22-24 20 18 14-12 13 19" fill="none" stroke="#858993" stroke-width="3"/><text x="128" y="139" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#bcbfc5">Prévia indisponível</text></svg>';
+    img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(placeholder);
+  };
   img.src="/thumb/"+mid+"?w="+width;
 }
 const fields={studio:"studio",model:"model",character_name:"character",universe:"universe",file_label:"fileLabel",status:"status",notes:"notes"};
