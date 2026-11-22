@@ -260,6 +260,9 @@ function openName(item){
  el("nameFilename").textContent="Arquivo proposto: "+(item.filename||"A definir");
  el("nameOpenGallery").hidden=!(item.gallery_key&&item.gallery_image_count>=2);
  showNameReferences(item).catch(err=>notify("Fontes: "+err.message));
+ showTelegramEvidence(item).catch(err=>{
+   if(chosenName?.message_id===item.message_id)el("nameTelegramEvidence").textContent="Evidências indisponíveis: "+err.message;
+ });
 }
 el("saveNameReview").onclick=async()=>{
  if(!chosenName)return;
@@ -312,6 +315,68 @@ el("materializeNames").onclick=async()=>{
   notify("Somente nomes confirmados gerados. Originais mantidos.");
  }catch(e){notify(e.message)}
 };
+
+async function showTelegramEvidence(item){
+ const output=el("nameTelegramEvidence");
+ output.replaceChildren();
+ text(output,"div","Consultando a mensagem original e o álbum...","sub");
+ const evidence=await api("/api/telegram-findings/"+encodeURIComponent(item.message_id));
+ if(chosenName?.message_id!==item.message_id)return;
+ output.replaceChildren();
+ const candidates=(evidence.candidates||[]).filter(c=>
+   c.evidence_type==="telegram_original_message" ||
+   c.evidence_type==="telegram_reply_text" ||
+   c.evidence_type==="telegram_album_context"
+ );
+ if(!candidates.length){
+   text(output,"div","Sem legenda vinculada diretamente; manter revisão visual.","sub");
+   return;
+ }
+ const seen=new Set();
+ for(const candidate of candidates.slice(0,12)){
+   const key=[candidate.source_message_id,candidate.title,candidate.evidence_type].join("|");
+   if(seen.has(key))continue;
+   seen.add(key);
+   const card=document.createElement("div");
+   card.className="buttons";
+   card.style.alignItems="center";
+   card.style.marginBottom="8px";
+   const sourceId=Number(candidate.source_message_id);
+   if(Number.isSafeInteger(sourceId)&&sourceId>0){
+     const preview=document.createElement("img");
+     preview.width=74;
+     preview.height=90;
+     preview.loading="lazy";
+     preview.style.objectFit="contain";
+     preview.alt="Imagem da mensagem "+sourceId;
+     preview.src="/media/"+sourceId;
+     card.append(preview);
+   }
+   const detail=document.createElement("div");
+   detail.style.flex="1";
+   text(detail,"div",candidate.title||"Sem título");
+   text(detail,"div",
+     (candidate.evidence_type==="telegram_album_context"?"Mesmo álbum, revisar vistas":
+      candidate.evidence_type==="telegram_reply_text"?"Resposta vinculada ao Telegram":
+      "Legenda da própria mensagem")+" · #"+sourceId+" · "+candidate.status,
+     "sub");
+   const use=document.createElement("button");
+   use.type="button";
+   use.textContent="Usar como rascunho";
+   use.onclick=()=>{
+     if(chosenName?.message_id!==item.message_id)return;
+     el("nameTitle").value=candidate.title||"";
+     el("nameStudio").value=candidate.studio||item.original_topic||"";
+     el("nameUniverse").value=candidate.universe||"";
+     el("nameVariant").value=candidate.variant||"";
+     el("nameStatus").value="revisar";
+     notify("Título copiado para revisão, sem confirmação ou gravação automática.");
+   };
+   detail.append(use);
+   card.append(detail);
+   output.append(card);
+ }
+}
 
 async function showNameReferences(item){
  const refs=el("nameOfficialProfiles"),matches=el("nameVisualSuggestions");
