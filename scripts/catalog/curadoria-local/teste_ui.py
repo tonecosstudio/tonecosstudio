@@ -27,6 +27,11 @@ assert 'post("/api/audit-legacy-gallery"' in js
 assert 'openBoard(item.group_key)' in js
 assert 'gallery.legacy_audit' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'gallery.legacy_audit_review' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'gallery.legacy_split' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'id="legacySplitForm"' in html and 'id="legacySplitSave"' in html
+assert 'id="legacySplitSelected"' in html and 'id="boardSplitSelection"' in html
+assert '/api/split-legacy-gallery' in js
+assert 'boardSplitSelection' in js and 'reviewed_split' in (root/'legacy_album_audit.py').read_text(encoding='utf-8')
 
 
 assert 'id="nameReview"' in html
@@ -178,7 +183,9 @@ class Element{
 const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
  'legacyAuditFilters','queueVariantLabel','legacyAuditReview','nameReview',
  'legacyAuditTitle','legacyAuditMeta','legacyAuditDecision','legacyAuditNotes',
- 'legacyAuditOpenBoard','legacyAuditSave','legacyAuditForm','legacyAuditStatus','queueResults',
+ 'legacyAuditOpenBoard','legacyAuditSave','legacyAuditForm','legacyAuditStatus',
+ 'legacySplitForm','legacySplitSave','legacySplitOpenNew','legacySplitTitle',
+ 'legacySplitVariant','legacySplitNote','legacySplitSelected','boardDialog','queueResults',
  'queueSummary','summary','page','prev','next'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
 elements.queueKind.value='legacy_groups';
@@ -187,7 +194,7 @@ elements.legacyAuditRisk.value='all';
 const group={group_key:'a'.repeat(24),title:'Garrosh',original_topic:'Luftmensch',
  sample_message:20231,photos:10,unique_files:10,source_albums:1,
  risk_label:'Galeria grande',review_state:'pending',revision:0,priority:2};
-const boards=[],posts=[],paths=[];
+const boards=[],posts=[],paths=[],selection=new Set();
 const ctx=vm.createContext({
   el:id=>elements[id],viewMode:'queue',topic:'Luftmensch',search:'',
   URLSearchParams,fmt:n=>String(n),document:{createElement:tag=>new Element(tag)},
@@ -196,6 +203,7 @@ const ctx=vm.createContext({
     parent.append(node);return node;
   },
   setThumb:(node,id)=>{node.src='/thumb/'+id;},
+  boardSplitSelection:selection,updateBoardSplitCount:()=>{},
   openBoard:key=>boards.push(key),
   openName:()=>{throw Error('Should not open name editor for legacy group')},
   api:async url=>{
@@ -203,9 +211,13 @@ const ctx=vm.createContext({
     return {items:[group],total:1,next_cursor:'',has_more:false};
   },
   post:async (url,payload)=>{
-    assert.strictEqual(url,'/api/audit-legacy-gallery');
-    posts.push(payload);
-    return {ok:true,revision:1,publication_approved:false};
+    posts.push({url,payload});
+    if(url==='/api/audit-legacy-gallery')
+      return {ok:true,revision:1,publication_approved:false};
+    if(url==='/api/split-legacy-gallery')
+      return {ok:true,source_revision:2,new_group:'b'.repeat(24),
+        moved_ids:[20235,20236],remaining_ids:[20231],publication_approved:false};
+    throw Error('Unexpected POST '+url);
   },
   notify:()=>{},console,
 });
@@ -226,11 +238,29 @@ vm.runInContext(source.slice(start,end),ctx);
  elements.legacyAuditNotes.value='Dez imagens originais da mesma escultura e base.';
  await elements.legacyAuditSave.onclick();
  assert.strictEqual(posts.length,1);
- assert.strictEqual(posts[0].revision,0);
- assert.strictEqual(posts[0].group_key,group.group_key);
- assert.strictEqual(posts[0].decision,'same_sculpture');
+ assert.strictEqual(posts[0].url,'/api/audit-legacy-gallery');
+ assert.strictEqual(posts[0].payload.revision,0);
+ assert.strictEqual(posts[0].payload.group_key,group.group_key);
+ assert.strictEqual(posts[0].payload.decision,'same_sculpture');
  assert.strictEqual(elements.legacyAuditForm.hidden,true);
- assert(paths.length>=2);
+ // A previously divergent gallery can now explicitly split selected photos.
+ const divergent={...group,review_state:'attention',revision:1};
+ vm.runInContext('selectLegacyAuditGroup',ctx)(divergent);
+ assert.strictEqual(elements.legacySplitForm.hidden,false);
+ selection.add(20235);selection.add(20236);
+ elements.legacySplitTitle.value='Outro modelo provisório';
+ elements.legacySplitVariant.value='Pose alternativa';
+ elements.legacySplitNote.value='Base e silhueta demonstram outra escultura.';
+ await elements.legacySplitSave.onclick();
+ assert.strictEqual(posts.length,2);
+ assert.strictEqual(posts[1].url,'/api/split-legacy-gallery');
+ assert.strictEqual(posts[1].payload.group_key,group.group_key);
+ assert.strictEqual(posts[1].payload.revision,1);
+ assert.deepStrictEqual(Array.from(posts[1].payload.message_ids),[20235,20236]);
+ assert.strictEqual(elements.legacySplitOpenNew.hidden,false);
+ elements.legacySplitOpenNew.onclick();
+ assert.strictEqual(boards[boards.length-1],'b'.repeat(24));
+ assert(paths.length>=3);
  console.log('NATIVE_GROUP_AUDIT_UI_E2E_OK');
 })().catch(e=>{console.error(e);process.exitCode=1});
 """
