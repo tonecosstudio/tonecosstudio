@@ -56,10 +56,11 @@ AGG = """WITH older AS (
 )"""
 
 def list_groups(db_path, *, topic="", state="pending", risk="all",
-                cursor="", limit=24):
+                q="", cursor="", limit=24):
     topic = str(topic or "").strip()
     state = str(state or "pending").strip()
     risk = str(risk or "all").strip()
+    q = str(q or "").strip()[:120]
     cursor = str(cursor or "").strip()
     if len(topic)>120 or topic.casefold()==EXCLUDED.casefold():
         raise ValueError("Estúdio reservado ou inválido")
@@ -82,6 +83,10 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
     if topic:
         filters.append("original_topic=?")
         params.append(topic)
+    if q:
+        filters.append("""(title LIKE ? OR studio LIKE ? OR variant LIKE ?
+          OR variants LIKE ? OR CAST(sample_message AS TEXT) LIKE ?)""")
+        params.extend(["%"+q+"%"]*5)
     if state=="pending":
         filters.append("audited=0")
     elif state=="audited":
@@ -135,7 +140,7 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
     return {
         "total":total,"items":items,"next_cursor":next_cursor,
         "has_more":has_more,"limit":limit,"state":state,"risk":risk,
-        "topic":topic,"source_excluded":EXCLUDED,"read_only":True,
+        "topic":topic,"q":q,"source_excluded":EXCLUDED,"read_only":True,
         "notice":"Auditoria de galeria; não implica licença nem aprovação comercial",
     }
 
