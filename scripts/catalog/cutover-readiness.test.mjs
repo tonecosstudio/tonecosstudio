@@ -13,6 +13,7 @@ const workerSettings = {
 }
 
 const showcaseTriggers = schema.requiredObjects.triggers.filter(name => name.startsWith('trg_telegram_showcase_'))
+const showcaseIndex = 'idx_models_telegram_showcase_name'
 const retiringWriters = original.origin.additionalWriterWorkflows
 const writerFromApiUrl = url => retiringWriters.find(
   w => String(url).endsWith('/actions/workflows/' + w.path.split('/').at(-1)))
@@ -72,6 +73,7 @@ const fullState = () => ({
     column: 'telegram_showcase_visible',
     migration: schema.latestMigration,
     triggers: [...showcaseTriggers],
+    indexes: [showcaseIndex],
   },
 })
 
@@ -130,6 +132,21 @@ test('the live Telegram showcase schema must precede any Worker promotion', () =
   }
 })
 
+test('M5 fails closed until D1 index 0028 exists, without changing v9 Worker schema', () => {
+  const fixture = fullState()
+  const withoutIndex = structuredClone(fixture)
+  delete withoutIndex.showcaseSchema.indexes
+  const missing = assessCutoverReadiness(approvedContract(), withoutIndex)
+  assert.equal(missing.ready, false)
+  assert.ok(missing.blockers.includes('telegram_showcase_listing_index_0028_unverified'))
+  const noMatches = structuredClone(fixture)
+  noMatches.showcaseSchema.indexes = []
+  const blocked = assessCutoverReadiness(approvedContract(), noMatches)
+  assert.equal(blocked.ready, false)
+  assert.ok(blocked.blockers.includes('telegram_showcase_listing_index_0028_unverified'))
+  assert.deepEqual(assessCutoverReadiness(approvedContract(), fixture), { ready: true, blockers: [] })
+})
+
 test('Cloudflare schema inspection is metadata-only and never runs DDL or model scans', async () => {
   const previous = globalThis.fetch
   const calls = []
@@ -176,12 +193,15 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
       assert.match(sql, /^SELECT 'column' AS category,name FROM pragma_table_info\('models'\)/)
       assert.match(sql, /FROM d1_migrations WHERE name=/)
       assert.match(sql, /FROM sqlite_master WHERE type='trigger'/)
+      assert.match(sql, /FROM sqlite_master WHERE type='index'/)
+      assert.match(sql, /idx_models_telegram_showcase_name/)
       assert.ok(!/\b(UPDATE|DELETE|INSERT|ALTER|DROP|REPLACE)\s+(?:TABLE|INTO|models|FROM)\b/i.test(sql))
       assert.ok(!/FROM\s+models\b/i.test(sql))
       return Response.json({ success: true, result: [{ results: [
         { category: 'column', name: 'telegram_showcase_visible' },
         { category: 'migration', name: schema.latestMigration },
         ...showcaseTriggers.map(name => ({ category: 'trigger', name })),
+        { category: 'index', name: showcaseIndex },
       ] }] })
     }
     throw Error('Unexpected preflight URL ' + u)
@@ -194,6 +214,7 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
     assert.equal(state.showcaseSchema.migration, schema.latestMigration)
     assert.equal(state.showcaseSchema.column, 'telegram_showcase_visible')
     assert.deepEqual(state.showcaseSchema.triggers, showcaseTriggers)
+    assert.deepEqual(state.showcaseSchema.indexes, [showcaseIndex])
     assert.equal(calls.filter(x => x.method === 'POST').length, 1)
     assert.equal(calls.filter(x => x.url.endsWith('/query')).length, 1)
   } finally {

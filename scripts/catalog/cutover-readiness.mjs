@@ -32,6 +32,11 @@ const WORKER_MEDIA = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding =
 const WORKER_PRIVATE_TELEGRAM = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding === 'PRIVATE_TELEGRAM')
 const REQUIRED_ADMIN_SECRETS = ['ADMIN_SUPABASE_ANON_KEY', 'ADMIN_SUPABASE_URL']
 const REQUIRED_WORKER_SECRETS = [...REQUIRED_ADMIN_SECRETS, 'TURNSTILE_SECRET_KEY']
+// The additive D1 migration is the authority for its index name; the Worker
+// schema v9 remains unchanged until a separately authorized D1 migration.
+const REQUIRED_SHOWCASE_LISTING_INDEX = readFileSync(
+  join(ROOT, 'services/catalogo/migrations/0028_telegram_showcase_listing_index.sql'), 'utf8',
+).match(/\bCREATE INDEX IF NOT EXISTS\s+([a-z][a-z0-9_]*)\b/i)?.[1] ?? null
 const REQUIRED_SHOWCASE_COLUMN = 'telegram_showcase_visible'
 const REQUIRED_SHOWCASE_MIGRATION = SCHEMA_CONTRACT.requiredMigrations?.find(x => x.startsWith('0025_telegram_showcase_'))
 const REQUIRED_SHOWCASE_TRIGGERS = SCHEMA_CONTRACT.requiredObjects?.triggers?.filter(x => x.startsWith('trg_telegram_showcase_')) ?? []
@@ -214,6 +219,13 @@ export function assessCutoverReadiness(contract, state) {
       REQUIRED_SHOWCASE_TRIGGERS.every(name => visibility?.triggers?.includes(name)),
     'telegram_showcase_migration_0025_unverified',
   )
+  // M5 must not promote a new Worker while its public listing requires
+  // a temporary sorting tree. The index is installed separately by the D1 owner.
+  add(
+    typeof REQUIRED_SHOWCASE_LISTING_INDEX === 'string' &&
+      visibility?.indexes?.includes(REQUIRED_SHOWCASE_LISTING_INDEX) === true,
+    'telegram_showcase_listing_index_0028_unverified',
+  )
 
   return { ready: blockers.length === 0, blockers }
 }
@@ -232,7 +244,7 @@ async function getVerifiedShowcaseSchema(account, token) {
   // D1 HTTP transport uses POST for SELECT. This statement reads metadata only:
   // no scan of models, UPDATE, DDL, migration application or R2 operation.
   if (!WORKER_D1?.database_id || !REQUIRED_SHOWCASE_MIGRATION ||
-      REQUIRED_SHOWCASE_TRIGGERS.length !== 3) {
+      !REQUIRED_SHOWCASE_LISTING_INDEX || REQUIRED_SHOWCASE_TRIGGERS.length !== 3) {
     throw new Error('required_showcase_schema_contract_missing')
   }
   const quote = value => "'" + String(value).replaceAll("'", "''") + "'"
@@ -241,6 +253,8 @@ async function getVerifiedShowcaseSchema(account, token) {
     "SELECT 'migration' AS category,name FROM d1_migrations WHERE name=" + quote(REQUIRED_SHOWCASE_MIGRATION),
     "SELECT 'trigger' AS category,name FROM sqlite_master WHERE type='trigger' AND name IN (" +
       REQUIRED_SHOWCASE_TRIGGERS.map(quote).join(',') + ')',
+    "SELECT 'index' AS category,name FROM sqlite_master WHERE type='index' AND name=" +
+      quote(REQUIRED_SHOWCASE_LISTING_INDEX),
   ].join(' UNION ALL ')
   const url = 'https://api.cloudflare.com/client/v4/accounts/' +
     encodeURIComponent(account) + '/d1/database/' + encodeURIComponent(WORKER_D1.database_id) + '/query'
@@ -261,6 +275,7 @@ async function getVerifiedShowcaseSchema(account, token) {
     column: has('column', REQUIRED_SHOWCASE_COLUMN) ? REQUIRED_SHOWCASE_COLUMN : null,
     migration: has('migration', REQUIRED_SHOWCASE_MIGRATION) ? REQUIRED_SHOWCASE_MIGRATION : null,
     triggers: REQUIRED_SHOWCASE_TRIGGERS.filter(name => has('trigger', name)),
+    indexes: has('index', REQUIRED_SHOWCASE_LISTING_INDEX) ? [REQUIRED_SHOWCASE_LISTING_INDEX] : [],
   }
 }
 
