@@ -103,6 +103,16 @@ with tempfile.TemporaryDirectory(prefix="tonart-sync-idempotent-") as temp:
     with closing(sqlite3.connect(m.SOURCE_DB)) as db, db:
         db.execute("UPDATE topicos_mensagens SET legenda='' WHERE mensagem=101")
     assert m.sync()==0,"blank downloader caption must preserve curated source"
+    original_connect=m.connect
+    def deny_writer_on_idle(path,readonly=False):
+        if Path(path)==m.DB_PATH and not readonly:
+            raise AssertionError("idle sync must not open writable SQLite")
+        return original_connect(path,readonly=readonly)
+    m.connect=deny_writer_on_idle
+    try:
+        assert m.sync()==0,"idle sync must remain read-only"
+    finally:
+        m.connect=original_connect
     with closing(sqlite3.connect(m.DB_PATH)) as db, db:
         row=db.execute("SELECT source_caption FROM assets WHERE message_id=101").fetchone()
         assert row[0]=="Revised caption",row
@@ -116,6 +126,25 @@ assert m.identity_cycle_delay({"naming":{"processed":3}})==30
 assert m.identity_cycle_delay({"classification":{"processed":1}})==30
 assert m.identity_cycle_delay({"gallery_refresh":{"updated":2}})==30
 print("CADENCIA APROVADA: sem trabalho 300s, com progresso 30s")
+
+with tempfile.TemporaryDirectory(prefix="tonart-source-events-") as temp:
+    db=Path(temp)/"progresso.sqlite3"
+    missing=m.source_change_token(db)
+    assert missing==(None,None)
+    assert m.source_scan_due(None,missing,0)
+    db.write_bytes(b"db")
+    first=m.source_change_token(db)
+    assert m.source_scan_due(missing,first,1)
+    assert not m.source_scan_due(first,first,119)
+    assert m.source_scan_due(first,first,120)
+    wal=db.with_name(db.name+"-wal")
+    wal.write_bytes(b"frame")
+    second=m.source_change_token(db)
+    assert m.source_scan_due(first,second,1)
+    assert m.source_scan_interval(1)==8
+    assert m.source_scan_interval(0)==30
+    assert m.source_scan_interval(None)==30
+print("EVENTOS APROVADOS: DB/WAL, reconciliacao periodica, sem polling SQL ocioso")
 
 # The UI must serve health while the downloader's SQLite sync is still busy.
 # This is a real loopback HTTP smoke with an intentionally blocked sync.

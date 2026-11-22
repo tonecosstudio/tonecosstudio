@@ -124,6 +124,12 @@ def sync():
     with SYNC_LOCK:
         with connect(DB_PATH,readonly=True) as index:
             seen=index.execute("SELECT COALESCE(MAX(message_id),0) FROM assets").fetchone()[0]
+            floor=max(0,seen-20)
+            previous={r["message_id"]:r for r in index.execute(
+                "SELECT message_id,source_relative,original_topic,source_caption,source_album "
+                "FROM assets WHERE message_id>?",(floor,))}
+            annotated={r[0] for r in index.execute(
+                "SELECT message_id FROM annotations WHERE message_id>?",(floor,))}
         with connect(SOURCE_DB, readonly=True) as origin:
             rows=origin.execute("""SELECT m.mensagem,m.hash,m.caminho,m.data_mensagem,
                          COALESCE(t.topico_nome,''),COALESCE(t.legenda,''),
@@ -132,12 +138,27 @@ def sync():
                          ON t.origem=m.origem AND t.mensagem=m.mensagem
                          WHERE m.origem=? AND m.status='salvo' AND m.caminho IS NOT NULL
                          AND m.mensagem>? ORDER BY m.mensagem""",(SOURCE_ID,max(0,seen-20))).fetchall()
+        # Reject unchanged source rows before opening a writable SQLite
+        # connection or attempting a no-op INSERT under disk contention.
+        pending=[]
+        for m in rows:
+            mid,digest,path,date,topic,caption,album=m
+            if not safe_source_path(path):continue
+            topic=topic or path.replace("\\","/").split("/")[0]
+            old=previous.get(mid)
+            if old is not None and mid in annotated:
+                effective_caption=caption if caption else old["source_caption"]
+                effective_album=album if album else old["source_album"]
+                if (old["source_relative"]==path and
+                    old["original_topic"]==topic and
+                    old["source_caption"]==effective_caption and
+                    old["source_album"]==effective_album):
+                    continue
+            pending.append((mid,digest,path,date,topic,caption,album))
+        if not pending:return 0
         count=0
         with connect(DB_PATH) as dest:
-            for m in rows:
-                mid,digest,path,date,topic,caption,album=m
-                if not safe_source_path(path):continue
-                topic=topic or path.replace("\\","/").split("/")[0]
+            for mid,digest,path,date,topic,caption,album in pending:
                 changed=dest.execute("""INSERT INTO assets
                      (message_id,sha256,source_relative,original_topic,source_date,source_caption,source_album,indexed_at)
                      VALUES(?,?,?,?,?,?,?,?)
@@ -501,6 +522,29 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             return self.respond({"error":str(exc)},500)
 
+def source_change_token(db_path):
+    """Observe the downloader's canonical DB and WAL without querying SQL."""
+    path=Path(db_path)
+    result=[]
+    for candidate in (path,path.with_name(path.name+"-wal")):
+        try:
+            info=candidate.stat()
+            result.append((info.st_mtime_ns,info.st_size))
+        except FileNotFoundError:
+            result.append(None)
+    return tuple(result)
+
+
+def source_scan_due(previous,current,elapsed_seconds):
+    # Periodic reconciliation covers events missed by filesystem timestamps.
+    return previous is None or previous!=current or elapsed_seconds>=120
+
+
+def source_scan_interval(changed):
+    # New material is responsive; unchanged source never causes an 8s SQL loop.
+    return 8 if isinstance(changed,int) and changed>0 else 30
+
+
 def identity_cycle_delay(outcome):
     """Back off idle identity scans while preserving faster backlog progress."""
     if not isinstance(outcome,dict):
@@ -524,12 +568,25 @@ def main():
     def background_curadoria():
         prepared=False
         next_identity_at=0.0
+        next_source_attempt_at=0.0
+        last_source_scan_at=0.0
+        last_source_token=None
         while True:
             try:
                 if not prepared:
                     initialize()
                     prepared=True
-                changed=sync()
+                changed=0
+                clock=time.monotonic()
+                if clock>=next_source_attempt_at:
+                    token=source_change_token(SOURCE_DB)
+                    if source_scan_due(last_source_token,token,clock-last_source_scan_at):
+                        # Capture token before scan so writes during the scan
+                        # will trigger another reconciliation afterwards.
+                        changed=sync()
+                        last_source_token=token
+                        last_source_scan_at=time.monotonic()
+                        next_source_attempt_at=last_source_scan_at+source_scan_interval(changed)
                 if changed or time.monotonic() >= next_identity_at:
                     # Heavy Telegram/naming passes are event-driven on new
                     # assets, with a bounded reconciliation even when idle.
@@ -543,6 +600,7 @@ def main():
                     next_identity_at=time.monotonic()+identity_cycle_delay(outcome)
             except Exception as exc:
                 # Avoid rapid retry loops if a writer/database is unavailable.
+                next_source_attempt_at=max(next_source_attempt_at,time.monotonic()+30)
                 next_identity_at=max(next_identity_at,time.monotonic()+60)
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
