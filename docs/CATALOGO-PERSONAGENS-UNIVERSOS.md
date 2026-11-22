@@ -126,3 +126,20 @@ Execução real, somente leitura, em DESKTOP-4UFL03B com scripts/catalog/prepare
 **Validação:** executar python scripts/catalog/test_prepare_canonical_taxonomy.py (somente biblioteca padrão). O teste inclui homônimos em universos distintos, acentos, aliases, títulos compostos, IDs históricos repetidos e garantia de que o SQLite de origem não é alterado.
 
 **Próximo gate:** obter um inventário **atual** de categories, franchises e catalog_characters no D1 quando a quota permitir, reconciliar cada candidato ao ID preexistente, revisar conflitos e somente então registrar novas identidades pelo publicador autorizado. A migration 0029 segue preparada e **não implantada**. Nem este script nem o resultado local criam uma segunda SSOT ou autorizam publicar tags provisórias.
+
+### Reconciliação de IDs históricos e triagem de evidências — 22/11/2026
+
+**Prioridade: vocabulário primeiro, vínculos depois.** A mesma rotina de inventário foi ampliada, sem novo sistema, para confrontar a classificação local com o manifesto histórico de importação e gerar filas ordenadas de revisão. Não há importação, deploy ou criação de entidades no D1/Supabase nesta etapa.
+
+Resultado verificado no desktop autorizado:
+
+- **527** nomes candidatos a universo/franquia; **91 nomes** possuem pistas de **88 IDs históricos distintos**. Os restantes **436** ainda não têm ID histórico identificado. Os IDs do plano de importação são pistas, não validação do D1 atual.
+- **3 grupos** reutilizam o mesmo ID em duas grafias: Honkai: Star Rail / Honkai Star Rail (176), Scooby-Doo / Scooby Doo (66) e Cyberpunk: Edgerunners / Cyberpunk Edgerunners (19). Há **7 grupos de slugs conflitantes** (incluindo esses três); não somar números como se fossem dez universos distintos.
+- **25 nomes** parecem combinar múltiplas franquias, como Pokémon/Dragon Ball; podem ser crossovers e não devem virar uma franquia artificial.
+- **2.813 títulos candidatos a personagem**, **183 com sinalizadores de revisão** por variante, diorama, múltiplos personagens ou evidência fraca. **26 P1** são candidatos com evidência de nome sem sinalizadores e **468 P2** aparecem em vários estúdios. Nenhum está aprovado como identidade canônica. Confirmar o nome da escultura não equivale a confirmar o personagem.
+- Encontrados títulos comerciais confirmados como nomes de esculturas que não devem criar automaticamente personagens: Cancelled, Double Force, Frosty (URLs com nomes adicionais) e variantes como Chun-Li Bikini. Links genéricos e legendas herdadas recebem avisos; o nome do personagem não é inferido automaticamente a partir do URL. URLs com números finais usam o segmento significativo anterior para evitar falsos negativos, como Cammy.
+- O snapshot do catálogo antigo contém **3.837 IDs históricos**, **2.278 coincidências nominais**, das quais **538** são ambíguas por múltiplos universos; nenhuma foi associada aos modelos.
+
+Os arquivos privados estão na mesma pasta C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/: fila-reconciliacao-franquias.csv, conflitos-universos.jsonl e fila-revisao-personagens.csv (agora ordenada P1/P2/P3 com tipos e URLs de evidência), além dos inventários já existentes. São filas derivadas, não outra SSOT. O catalogador público continua sendo o Worker/D1 canônico.
+
+**Próximo gate:** quando a cota D1 permitir, reconciliar os 88 IDs históricos e os 436 candidatos restantes com as tabelas atuais categories/franchises, resolver colisões, revisar identidades editoriais e só então promover tags e vínculos por lote idempotente, com owner autorizado. A migration 0029 permanece preparada somente em código, sem autorização M5/cutover.

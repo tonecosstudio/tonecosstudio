@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Conciliação dos IDs de franquia e triagem de nomes
+
+- **Escopo:** a rotina existente scripts/catalog/prepare-canonical-taxonomy.py foi ampliada; sem novo curador, banco, publicador, SELECT amplo no D1, R2, gravação no Supabase ou mudança de direitos.
+- **Resultado físico:** 527 universos candidatos; 91 grafias com 88 IDs históricos de franquia, 436 sem ID identificado; 3 compartilhamentos de ID e 7 grupos com colisão de slug; 25 potenciais crossovers retidos. IDs são pistas históricas, não autoridade corrente.
+- **Personagens:** 2.813 títulos candidatos; **183 com flags de revisão**, **26 P1** com evidência de nome (ainda não personagens aprovados) e 468 P2 por recorrência. Cancelled, Double Force, Frosty e Chun-Li Bikini sinalizados como títulos comerciais/variantes, não publicados como identidades. URLs originais preservadas como evidência sem inferência automática.
+- **Artefatos locais:** C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/, com fila-reconciliacao-franquias.csv, conflitos-universos.jsonl, fila-revisao-personagens.csv enriquecida e inventários JSONL. Fonte: SQLite vivo em modo de leitura e snapshots históricos.
+- **Próximo gate:** validar IDs no D1 real após recuperação da quota, curar identidades e aplicar vínculos apenas com owner e gate M5; migration 0029 não implantada. Procedimento no documento existente docs/CATALOGO-PERSONAGENS-UNIVERSOS.md.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Primeira fila transversal de tags extraída (somente leitura)
 
 - **Execução física no DESKTOP-4UFL03B:** scripts/catalog/prepare-canonical-taxonomy.py, SQLite local mode=ro + CSV histórico do catálogo antigo + pistas de franquia do plano privado Telegram. **Sem escrita em SQLite, D1, R2 ou Supabase; sem publicação ou associação automática.**

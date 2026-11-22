@@ -15,6 +15,7 @@ import sqlite3
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 
 def clean(value: object) -> str:
@@ -57,10 +58,65 @@ def title_needs_review(name: str) -> list[str]:
         reasons.append("potential_multiple_characters")
     if re.search(
         r"\b(?:extra\s+hands?|busto|bust|mini|chibi|diorama|base|head|"
-        r"variant|vers[aã]o|armadura|statue|figure)\b", text, re.IGNORECASE
+        r"variant|vers[aã]o|armadura|bikini|swimsuit|summer|statue|figure)\b", text, re.IGNORECASE
     ):
         reasons.append("possibly_model_variant_not_character")
     return reasons
+
+
+def universe_review_flags(name: str) -> list[str]:
+    """A crossover universe label is a review problem, not a new franchise."""
+    label = clean(name)
+    flags = []
+    if re.search(r"\S\s*/\s*\S", label):
+        flags.append("possible_multiple_franchises")
+    return flags
+
+
+def evidence_review_flags(title: str, urls: set[str], evidence_types: collections.Counter) -> list[str]:
+    """An approved *sculpture name* does not prove a character identity.
+
+    Weak source signals are warnings for the existing editorial review. No
+    guesses from commercial URLs are written as character names or aliases.
+    """
+    flags = []
+    if evidence_types and set(evidence_types) <= {"telegram_caption", "gallery_name_inherited", ""}:
+        flags.append("name_inherited_or_caption_only")
+    label_slug = slug(title)
+    if urls and label_slug:
+        paths = []
+        for url in sorted(urls):
+            try:
+                parsed = urlparse(url)
+                if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                    continue
+                parts = [unquote(p) for p in parsed.path.strip("/").split("/") if p]
+                # Some editorial references end in a numeric post ID, e.g.
+                # /t/cammy-3d-print-figure/406980; inspect the meaningful title.
+                while parts and parts[-1].isdigit():
+                    parts.pop()
+                if parts:
+                    paths.append(slug(parts[-1]))
+            except ValueError:
+                continue
+        if paths and all(label_slug not in path for path in paths):
+            flags.append("source_link_does_not_contain_character_title")
+        # "Frosty" -> "frosty-wampa-3d-printing..." and
+        # "Cancelled" -> "cancelled-cara-dune-...": do NOT create a character
+        # called Frosty/Cancelled or infer Wampa/Cara Dune automatically.
+        for path in paths:
+            prefix = label_slug + "-"
+            if path.startswith(prefix):
+                rest = path[len(prefix):].split("-")
+                boilerplate = {
+                    "3d", "print", "printing", "miniature", "stl", "figure",
+                    "figures", "statue", "model", "art", "abe3d", "sculpture",
+                    "sculpt", "mini", "resin", "collectible", "bust", "3",
+                }
+                if any(token and token not in boilerplate for token in rest):
+                    flags.append("source_product_title_has_additional_terms")
+                    break
+    return flags
 
 
 def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None):
@@ -103,7 +159,9 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
                 "spellings": collections.Counter(),
                 "groups": set(), "studios": set(),
                 "proposal_messages": set(), "confirmed_name_messages": set(),
-                "group_states": collections.Counter()
+                "group_states": collections.Counter(),
+                "confirmed_evidence_types": collections.Counter(),
+                "confirmed_source_urls": set(),
             }
         characters[cid]["spellings"][text] += 1
         return characters[cid]
@@ -127,8 +185,8 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
             else:
                 sources["groups_without_usable_title"] += 1
 
-        for message_id, studio, title, universe, status in db.execute(
-            "SELECT message_id,studio,title,universe,status FROM name_proposals"
+        for message_id, studio, title, universe, status, evidence_type, official_url in db.execute(
+            "SELECT message_id,studio,title,universe,status,evidence_type,official_url FROM name_proposals"
         ):
             naming_status[str(status or "unknown")] += 1
             w = world_entry(universe)
@@ -147,6 +205,10 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
                     c["studios"].add(clean(studio))
                 if status == "confirmado":
                     c["confirmed_name_messages"].add(mid)
+                    if clean(evidence_type):
+                        c["confirmed_evidence_types"][clean(evidence_type)] += 1
+                    if clean(official_url):
+                        c["confirmed_source_urls"].add(clean(official_url))
 
         db.execute("COMMIT")
     finally:
@@ -197,10 +259,52 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
     world_records.sort(key=lambda x: (-x["group_count"], x["candidate_key"]))
     alias_records.sort(key=lambda x: (x["canonical_candidate"].casefold(), x["canonical_candidate"]))
 
+    # Cross-check the historical import IDs and future slug keys *across* candidates.
+    # Matching a previous plan is evidence for review, not verification of live D1.
+    historic_ids = collections.defaultdict(list)
+    proposed_slugs = collections.defaultdict(list)
+    for world in world_records:
+        fid = world["historic_d1_franchise_id_hint"]
+        if fid is not None:
+            historic_ids[fid].append(world)
+        if world["slug_candidate"]:
+            proposed_slugs[world["slug_candidate"]].append(world)
+    collisions = []
+    for collision_kind, index in (("historic_franchise_id", historic_ids), ("candidate_slug", proposed_slugs)):
+        for value, entries in sorted(index.items(), key=lambda pair: str(pair[0])):
+            if len(entries) > 1:
+                collisions.append({
+                    "collision_kind": collision_kind, "value": value,
+                    "candidate_keys": sorted(x["candidate_key"] for x in entries),
+                    "names": sorted(x["label_candidate"] for x in entries),
+                    "decision": "hold_for_editorial_and_live_d1_reconciliation",
+                })
+    for world in world_records:
+        fid = world["historic_d1_franchise_id_hint"]
+        flags = universe_review_flags(world["label_candidate"])
+        if world["hint_ambiguous"]:
+            flags.append("multiple_ids_for_one_universe")
+        if fid is not None and len(historic_ids[fid]) > 1:
+            flags.append("id_shared_by_multiple_spellings")
+        if len(proposed_slugs[world["slug_candidate"]]) > 1:
+            flags.append("slug_collision")
+        world["historic_hint_observations"] = sum(
+            worlds[world["candidate_key"]]["franchise_id_hints"].values()
+        )
+        world["review_flags"] = flags
+        world["reconciliation_status"] = (
+            "conflict_requires_review" if flags else
+            "historic_id_candidate_validate_in_live_d1" if fid is not None else
+            "missing_historic_id_lookup_in_live_d1"
+        )
+
     character_records = []
     for (wk, ck), c in characters.items():
         label = preferred(c["spellings"])
         flags = title_needs_review(label)
+        flags.extend(evidence_review_flags(
+            label, c["confirmed_source_urls"], c["confirmed_evidence_types"]
+        ))
         # A title may denote a sculpture, a pair, or a variant; never auto-confirm.
         character_records.append({
             "kind": "character_candidate", "franchise_candidate_key": wk,
@@ -210,9 +314,21 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
             "proposal_message_count": len(c["proposal_messages"]),
             "confirmed_naming_messages": len(c["confirmed_name_messages"]),
             "group_states": dict(sorted(c["group_states"].items())),
-            "review_flags": flags,
+            "review_flags": sorted(set(flags)),
+            "confirmed_evidence_types": dict(sorted(c["confirmed_evidence_types"].items())),
+            "confirmed_source_url_examples": sorted(c["confirmed_source_urls"])[:3],
             "review_state": "candidate_character_unverified",
             "identity_id": None,
+            "historical_franchise_id_hint": next(
+                (w["historic_d1_franchise_id_hint"] for w in world_records
+                 if w["candidate_key"] == wk and w["reconciliation_status"] ==
+                 "historic_id_candidate_validate_in_live_d1"), None
+            ),
+            "review_priority": (
+                "P1_confirmed_name_evidence" if c["confirmed_name_messages"] and not flags
+                else "P2_repeated_across_studios" if len(c["studios"]) >= 2 and not flags
+                else "P3_review_flags_or_low_evidence"
+            ),
         })
     character_records.sort(
         key=lambda x: (-x["group_count"], -x["confirmed_naming_messages"], x["candidate_key"])
@@ -261,6 +377,29 @@ def inventory(db_path: Path, legacy_csv: Path | None, telegram_plan: Path | None
         "historic_legacy_ambiguous_names": sum(len(x["matched_world_candidates"]) > 1 for x in legacy_review),
         "historic_plan_rows_with_universe": historic_plan_records,
         "historic_world_hints_ambiguous": sum(x["hint_ambiguous"] for x in world_records),
+        "universe_candidates_with_historic_id_hint": sum(
+            x["historic_d1_franchise_id_hint"] is not None for x in world_records
+        ),
+        "distinct_historic_d1_id_hints": len(historic_ids),
+        "universe_candidates_without_historic_id_hint": sum(
+            x["historic_d1_franchise_id_hint"] is None for x in world_records
+        ),
+        "universe_collision_groups": len(collisions),
+        "universe_historic_id_shared_groups": sum(
+            x["collision_kind"] == "historic_franchise_id" for x in collisions
+        ),
+        "universe_slug_collision_groups": sum(
+            x["collision_kind"] == "candidate_slug" for x in collisions
+        ),
+        "universe_potential_crossovers": sum(
+            "possible_multiple_franchises" in x["review_flags"] for x in world_records
+        ),
+        "candidate_characters_p1_confirmed_name_evidence": sum(
+            x["review_priority"] == "P1_confirmed_name_evidence" for x in character_records
+        ),
+        "candidate_characters_p2_repeated_across_studios": sum(
+            x["review_priority"] == "P2_repeated_across_studios" for x in character_records
+        ),
         "source_counts": dict(sorted(sources.items())),
         "name_proposal_status_counts": dict(sorted(naming_status.items())),
         "warning": "Curation group titles and naming proposals are NOT approved character identities; existing D1 IDs and current model visibility must be rechecked before linking.",
@@ -285,6 +424,43 @@ def main() -> None:
         args.curation_db, args.legacy_inventory, args.telegram_plan
     )
     rows_as_jsonl(args.out / "universos-candidatos.jsonl", worlds)
+    # Review collision rows contain only candidate keys, not automatic aliases.
+    collision_by_id = collections.defaultdict(list)
+    collision_by_slug = collections.defaultdict(list)
+    for world in worlds:
+        if world["historic_d1_franchise_id_hint"] is not None:
+            collision_by_id[world["historic_d1_franchise_id_hint"]].append(world)
+        collision_by_slug[world["slug_candidate"]].append(world)
+    collisions = []
+    for kind, index in (("historic_franchise_id", collision_by_id),
+                        ("candidate_slug", collision_by_slug)):
+        for value, entries in sorted(index.items(), key=lambda pair: str(pair[0])):
+            if len(entries) > 1:
+                collisions.append({
+                    "collision_kind": kind, "value": value,
+                    "candidate_keys": sorted(x["candidate_key"] for x in entries),
+                    "names": sorted(x["label_candidate"] for x in entries),
+                    "decision": "hold_for_editorial_and_live_d1_reconciliation",
+                })
+    rows_as_jsonl(args.out / "conflitos-universos.jsonl", collisions)
+    with (args.out / "fila-reconciliacao-franquias.csv").open(
+        "w", encoding="utf-8-sig", newline=""
+    ) as file:
+        fields = [
+            "candidate_key", "label_candidate", "slug_candidate",
+            "historic_d1_franchise_id_hint", "historic_hint_observations",
+            "group_count", "confirmed_naming_messages",
+            "reconciliation_status", "review_flags"
+        ]
+        writer = csv.DictWriter(file, fieldnames=fields)
+        writer.writeheader()
+        for world in sorted(worlds, key=lambda x: (
+            x["reconciliation_status"] != "historic_id_candidate_validate_in_live_d1",
+            -x["group_count"], x["candidate_key"])):
+            writer.writerow({
+                f: (";".join(world[f]) if f == "review_flags" else world[f])
+                for f in fields
+            })
     rows_as_jsonl(args.out / "aliases-para-revisao.jsonl", aliases)
     rows_as_jsonl(args.out / "personagens-candidatos.jsonl", characters)
     rows_as_jsonl(args.out / "catalogo-antigo-sem-vinculos.jsonl", legacy)
@@ -295,13 +471,23 @@ def main() -> None:
         fields = [
             "franchise_candidate_key", "display_name_candidate",
             "group_count", "studio_count", "confirmed_naming_messages",
-            "review_flags", "review_state"
+            "review_flags", "review_state", "historical_franchise_id_hint",
+            "review_priority", "confirmed_evidence_types", "confirmed_source_url_examples"
         ]
         writer = csv.DictWriter(file, fieldnames=fields)
         writer.writeheader()
-        for item in characters:
+        for item in sorted(characters, key=lambda row: (
+            {"P1_confirmed_name_evidence": 0, "P2_repeated_across_studios": 1,
+             "P3_review_flags_or_low_evidence": 2}[row["review_priority"]],
+            -row["group_count"], -row["studio_count"], row["candidate_key"]
+        )):
             writer.writerow({
-                field: (";".join(item[field]) if field == "review_flags" else item[field])
+                field: (
+                    ";".join(item[field]) if field == "review_flags"
+                    else ";".join(sorted(item[field])) if field == "confirmed_evidence_types"
+                    else " | ".join(item[field]) if field == "confirmed_source_url_examples"
+                    else item[field]
+                )
                 for field in fields
             })
     (args.out / "resumo.json").write_text(
