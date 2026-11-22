@@ -340,6 +340,7 @@ def parse_telegram_caption(
     )
 
     candidates: list[TelegramCandidate] = []
+    unresolved_structured_bullet = ""
     if title_value:
         candidates.append(_candidate(
             title_value, studio=studio, universe=universe,
@@ -382,6 +383,8 @@ def parse_telegram_caption(
                     evidence_text=bullet.group(0), evidence_type="telegram_structured_caption",
                     confidence=0.82, source_message_id=message_id,
                 ))
+            else:
+                unresolved_structured_bullet = bullet.group(0)
 
     if not candidates:
         narrative = NARRATIVE_RE.search(caption)
@@ -397,6 +400,10 @@ def parse_telegram_caption(
 
     if not candidates:
         for line in caption.splitlines():
+            # A rejected structured title must not re-enter as a confident
+            # headline; labels are context, not independent model names.
+            if line.strip() == unresolved_structured_bullet.strip() or LABEL_RE.match(line):
+                continue
             line = URL_RE.sub("", line).strip()
             line = re.sub(r"^[^\w#]+", "", line, flags=re.UNICODE).strip()
             if not line or line.startswith("#") or not _looks_like_title(line):
