@@ -26,7 +26,10 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
         db.execute("BEGIN IMMEDIATE")
         rows=db.execute("""SELECT a.message_id,a.original_topic,
             p.studio,p.title,p.universe,p.variant,
-            m.group_key AS previous_key,m.match_reason,g.state AS group_state
+            m.group_key AS previous_key,m.match_reason,g.state AS group_state,
+            EXISTS(SELECT 1 FROM curation_events ev
+              WHERE ev.group_key=m.group_key
+                AND ev.event_type='visual_gallery_audited') AS gallery_visual_audited
             FROM assets a LEFT JOIN name_proposals p USING(message_id)
             LEFT JOIN model_group_members m USING(message_id)
             LEFT JOIN model_groups g ON g.group_key=m.group_key
