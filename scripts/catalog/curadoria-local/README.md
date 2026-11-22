@@ -1,5 +1,14 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Proteção das galerias auditadas e revisão visual de lote — 22/11/2026
+
+- **Proteção do trabalho humano:** `smart_curadoria.process_batch` mantém intactos os membros de qualquer grupo com evento `visual_gallery_audited`, mesmo quando `model_group_members.match_reason='telegram_album'` (grupos legados). Se o downloader mudar legendas ou metadados, o índice `curation_seen` é atualizado com `outcome='visual_gallery_audited'` sem refazer associação de fotos ou nomes. O custo extra de consultar o evento só ocorre para imagens cuja origem realmente mudou, após o fingerprint incremental. `model_gallery.register_visual_gallery` também impede que um novo agrupamento roube fotografias de um grupo auditado, preservando revisão explícita e evitando merges silenciosos.
+- **Regressão real no Windows:** todos os cinco testes `teste_legacy_gallery_split.py`, `teste_legacy_album_audit.py`, `teste_smart_curadoria.py`, `teste_model_gallery.py`, `teste_ui.py` passaram com SQLite sintético, incluindo o caso de foto de galeria antiga auditada com legenda alterada e tentativa de reagrupar manualmente essa foto. Dois módulos foram trocados na instância existente após comparação de SHA e liberação da porta. Nenhuma segunda instância ou rebuild da biblioteca foi criado.
+- **Curadoria visual efetiva desta rodada, utilizando imagens servidas pelo host**: B3DSERK/Catwoman, mensagens `21175–21184`, busto único com capuz felino e base; B3DSERK/Cogliostro, `21161–21170`, chapéu/barba/animal/base idênticos em diversos ângulos; 3DXM/Magneto, `18847–18856`, diorama com vigas em X, parede rochosa e destroços idênticos. Cada grupo teve **10 imagens revisadas** e decisão explícita `same_sculpture` registrada pelo endpoint `/api/audit-legacy-gallery`, revisão `0→1`, sem mover membros, sem conferir direito comercial.
+- **Estado verificado depois das três decisões:** **164 galerias auditadas e 398 pendentes**, somando 562 grupos legados; 17 eventos históricos de separação preservados; `PRAGMA quick_check(1)=ok`, nove GETs simultâneos HTTP 200, `TONART Curadoria Host` Running e apenas um listener 8769. Valores medidos diretamente no computador autorizado, sem inferir resultados para outros lotes.
+
+
+
 ## Separação visual segura de esculturas misturadas — 22/11/2026
 
 O host agora oferece uma **operação editorial de separação real**, mas somente quando a auditoria visual imediatamente anterior do grupo concluiu `different_sculptures`. O objetivo é produzir galerias coerentes sem reconstrução global do catálogo, sem nomes inventados nem aprovação comercial automática.
