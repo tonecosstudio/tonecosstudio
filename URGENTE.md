@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Redução de locks do SQLite por sincronização incremental em fatias
+
+- **Causa estrutural mitigada, sem serviço paralelo:** a função canônica `tonart_curadoria.sync()` mantinha o writer SQLite ao importar todos os registros pendentes em uma única transação. O código foi alterado para `SYNC_WRITE_BATCH=128`, um commit por fatia, preservando o pré-filtro incremental e a ordem dos IDs. O trabalho de Telegram/Curadoria continua no mesmo host e na mesma tarefa; não se criou segunda fila, tabela, banco ou importador.
+- **Retomada testada:** `teste_sync_write_batches.py` usa 305 imagens **exclusivamente sintéticas**, injeta interrupção antes da segunda transação e confirma 128 registros persistidos corretamente; a execução seguinte recupera 177 registros em duas transações; uma execução sem modificações não abre writer; atualização posterior de uma legenda modifica só um registro. Teste e `py_compile` aprovados.
+- **Instalação física verificada:** arquivos sincronizados com validação CAS de hashes, sem tocar na biblioteca original. A tarefa `TONART Curadoria Host` voltou a `Running`; `/health` e `/api/capabilities` funcionaram. Writer availability preflight verificado antes do restart. Sem reboot Windows/Chrome e sem publicar dados.
+- **Honestidade de diagnóstico:** foram observados `database is locked` e um timeout no comando de verificação de uma remessa real já comitada. O host passou a devolver conflito SQLite como HTTP 409 e a reconhecer recibos idempotentes de remessas futuras. Reduzir a duração das transações de importação é uma correção de causa plausível e verificável, **mas não prova que toda a contenção decorresse desse único caminho**. Investigar outros escritores apenas com evidências e sem matar processos de outros trabalhos.
+- **Estado editorial preservado:** 3 galerias reais de Luftmensch / 30 imagens revisadas numa remessa anterior; 167 auditadas / 395 pendentes (562 grupos históricos), sem aprovação comercial. Site/D1/R2 e biblioteca Telegram inalterados.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Remessas editoriais TONART atômicas, primeira prova real e recibo idempotente
 
 - **Host e autoridade:** TONART Curadoria permanece no processo/tarefa existentes `TONART Curadoria Host` em `127.0.0.1:8769`, computador autorizado `DESKTOP-4UFL03B`, operado pelo OrdaX MCP. Código canônico `tonecosstudio/tonecosstudio/main`; SQLite físico privado `curadoria-local/curadoria.sqlite3`. Não se criaram serviço, worker, cache persistido, segundo banco ou fonte duplicada. Site/D1/R2 e direitos comerciais permanecem autoridades separadas.
