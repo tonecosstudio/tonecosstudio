@@ -1,0 +1,129 @@
+"""Targeted tests for read-only TONART canonical taxonomy inventory."""
+from __future__ import annotations
+
+import csv
+import hashlib
+import importlib.util
+import json
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+MODULE_PATH = Path(__file__).with_name("prepare-canonical-taxonomy.py")
+spec = importlib.util.spec_from_file_location("tonart_taxonomy_inventory", MODULE_PATH)
+assert spec and spec.loader
+inventory_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(inventory_module)
+
+
+class TaxonomyInventoryTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.db_file = self.root / "curadoria.sqlite3"
+        db = sqlite3.connect(self.db_file)
+        try:
+            db.executescript(
+                "CREATE TABLE model_groups (group_key TEXT,studio TEXT,title TEXT,universe TEXT,state TEXT);"
+                "CREATE TABLE name_proposals (message_id TEXT,studio TEXT,title TEXT,universe TEXT,status TEXT);"
+                "INSERT INTO model_groups VALUES"
+                "('g1','Studio 1','Pikachu','Pokémon','provavel'),"
+                "('g2','Studio 2','Pikachu','Pokemon','provavel'),"
+                "('g3','Studio 3','Ace','One Piece','provavel'),"
+                "('g4','Studio 4','Ace','Another World','revisar'),"
+                "('g5','Studio 4','Ace e Luffy','One Piece','revisar'),"
+                "('g6','Studio 5','Modelo sem nome #123','One Piece','revisar'),"
+                "('g7','Studio 5','Unidentified','','revisar');"
+                "INSERT INTO name_proposals VALUES"
+                "('1','Studio 1','Pikachu','Pokémon','confirmado'),"
+                "('2','Studio 3','Ace','One Piece','provavel'),"
+                "('3','Geral +50k','','','revisar');"
+            )
+            db.commit()
+        finally:
+            db.close()
+        self.legacy = self.root / "legacy.csv"
+        with self.legacy.open("w", encoding="utf8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["model_id", "model"])
+            writer.writeheader()
+            writer.writerows([
+                {"model_id": "mdl_ace", "model": "Ace"},
+                {"model_id": "mdl_pikachu", "model": "Pikachu"},
+                {"model_id": "mdl_none", "model": "Unknown model"},
+                {"model_id": "mdl_ace", "model": "Ace"},  # repeated image row
+            ])
+        self.plan = self.root / "historic-plan.jsonl"
+        self.plan.write_text(
+            json.dumps({"import_manifest": {"universe": "Pokémon", "franchiseId": 57}}) + "\n" +
+            json.dumps({"import_manifest": {"universe": "One Piece", "franchiseId": 51}}) + "\n",
+            encoding="utf8"
+        )
+
+    def test_normalizes_accent_without_merging_franchises(self):
+        self.assertEqual(inventory_module.key("POKÉMON"), inventory_module.key("pokemon"))
+        self.assertNotEqual(inventory_module.key("One Piece"), inventory_module.key("Another World"))
+        self.assertEqual(inventory_module.slug("Pokémon"), "pokemon")
+        self.assertTrue(inventory_module.is_placeholder("Modelo sem nome #123"))
+        self.assertIn(
+            "potential_multiple_characters",
+            inventory_module.title_needs_review("Ace e Luffy")
+        )
+
+    def test_reports_candidates_without_assigning_identity_or_mutating_source(self):
+        before = hashlib.sha256(self.db_file.read_bytes()).hexdigest()
+        summary, worlds, aliases, characters, legacy = inventory_module.inventory(
+            self.db_file, self.legacy, self.plan
+        )
+        after = hashlib.sha256(self.db_file.read_bytes()).hexdigest()
+        self.assertEqual(before, after)
+        self.assertEqual(summary["universe_candidates"], 3)
+        self.assertEqual(summary["historic_legacy_unique_models"], 3)
+        self.assertEqual(summary["historic_legacy_ambiguous_names"], 1)
+        self.assertEqual(summary["historic_plan_rows_with_universe"], 2)
+        self.assertEqual(summary["name_proposal_status_counts"]["confirmado"], 1)
+        self.assertEqual(len(aliases), 1)
+        self.assertEqual(aliases[0]["canonical_candidate"], "Pokémon")
+        self.assertEqual([x for x in worlds if x["candidate_key"] == "pokemon"][0]["historic_d1_franchise_id_hint"], 57)
+        chars = {x["candidate_key"]: x for x in characters}
+        self.assertIn("one piece::ace", chars)
+        self.assertIn("another world::ace", chars)
+        self.assertIn("pokemon::pikachu", chars)
+        self.assertNotIn("one piece::modelo sem nome #123", chars)
+        self.assertIn("potential_multiple_characters", chars["one piece::ace e luffy"]["review_flags"])
+        self.assertIsNone(chars["pokemon::pikachu"]["identity_id"])
+        self.assertEqual(
+            next(x for x in legacy if x["model_id"] == "mdl_ace")["matched_world_candidates"],
+            ["another world", "one piece"]
+        )
+        self.assertTrue(all(x["review_state"].startswith("not_linked") for x in legacy))
+
+    def test_cli_creates_review_artifacts_without_editing_curation(self):
+        out = self.root / "output"
+        original = hashlib.sha256(self.db_file.read_bytes()).hexdigest()
+        result = subprocess.run([
+            sys.executable, str(MODULE_PATH), "--curation-db", str(self.db_file),
+            "--legacy-inventory", str(self.legacy), "--telegram-plan", str(self.plan),
+            "--out", str(out),
+        ], capture_output=True, text=True, check=True)
+        summary = json.loads(result.stdout)
+        self.assertEqual(summary["mode"], "read_only_candidate_inventory")
+        self.assertTrue(summary["no_canonical_entities_inserted"])
+        self.assertFalse(summary["d1_consulted"])
+        self.assertFalse(summary["model_links_modified"])
+        self.assertEqual(hashlib.sha256(self.db_file.read_bytes()).hexdigest(), original)
+        for name in [
+            "universos-candidatos.jsonl", "aliases-para-revisao.jsonl",
+            "personagens-candidatos.jsonl", "catalogo-antigo-sem-vinculos.jsonl",
+            "resumo.json", "fila-revisao-personagens.csv",
+        ]:
+            self.assertTrue((out / name).exists(), name)
+        with (out / "catalogo-antigo-sem-vinculos.jsonl").open(encoding="utf8") as f:
+            self.assertEqual(sum(1 for _ in f), 3)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -108,3 +108,21 @@ Este quadro define *responsabilidades*, **não nomes finais de tabelas ou migrat
 **Exemplos de aceite após a reconciliação:** Ace (One Piece) em estúdios diferentes e `Portgas D. Ace` no acervo antigo podem compartilhar um `character_id` **se a evidência confirmar que representam o mesmo personagem**; Abra de quatro estúdios pode compartilhar a identidade Pokémon; Ace McCloud deve continuar outro personagem. Os 1.093 modelos Telegram com categoria/franquia pendente mantêm essa condição até revisão — não fabricar tags para completar a interface.
 
 **Estado verificável deste contrato:** migration aditiva e testes SQLite locais preparados, sem escrita no D1/R2 e sem alteração do Worker produtivo. A PR #77 já melhorou os chips do Telegram, mas o filtro textual `telegram_character` é uma solução transitória de apresentação: não é ainda a identidade canônica compartilhada com os modelos antigos. A implementação do publicador, a conciliação real e a API unificada são etapas pendentes. A habilitação em produção depende da autoridade de deploy/cutover M5 existente, além da disponibilidade do D1.
+
+
+### Primeiro inventário transversal executado em 22/11/2026
+
+**Prioridade do proprietário:** consolidar o vocabulário canônico primeiro; vincular modelos por ID somente após identificar e revisar cada entidade. Esta etapa **não** é criação automática de personagens no D1: títulos de esculturas e candidatos de nome não comprovam identidades. A fonte pública continua tonecos-catalogo D1, a fonte de mídia continua R2, e a curadoria privada mantém propostas/evidências.
+
+Execução real, somente leitura, em DESKTOP-4UFL03B com scripts/catalog/prepare-canonical-taxonomy.py:
+
+- SQLite vivo C:/Users/ordax/Documents/TONART-Telegram-Import/espelho-telegram/curadoria-local/curadoria.sqlite3, acessado via mode=ro com transação de leitura;
+- CSV **histórico**, não atual, C:/Users/ordax/Documents/TONART-Telegram-Import/publicacao-staging/inventario-catalogo-publico.csv para avaliar nomes já observados do catálogo antigo;
+- rascunhos_telegram_importacao_privada.jsonl de staging como **pistas históricas** de IDs de franquia, nunca autoridade de escrita;
+- saída privada: C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/ (resumo.json, universos-candidatos.jsonl, personagens-candidatos.jsonl, aliases-para-revisao.jsonl, catalogo-antigo-sem-vinculos.jsonl, fila-revisao-personagens.csv).
+
+**Resultados da rodada:** 527 universos/franquias candidatos (de todos os grupos e propostas nomeados, incluindo 11 grupos de variações de grafia), 2.813 candidatos a títulos de personagens (**não identidades aprovadas**), 138 títulos que exigem atenção adicional como variantes/dioramas/múltiplos personagens e 76 títulos com pelo menos uma proposta de **nome** confirmada (o que não confirma o personagem). O snapshot antigo contém 3.837 IDs distintos, dos quais 2.278 têm coincidência nominal com títulos candidatos; 538 têm nomes que apontam a mais de um universo. Essas coincidências **não são vínculos**. O número do snapshot não representa o total atual publicado no D1.
+
+**Validação:** executar python scripts/catalog/test_prepare_canonical_taxonomy.py (somente biblioteca padrão). O teste inclui homônimos em universos distintos, acentos, aliases, títulos compostos, IDs históricos repetidos e garantia de que o SQLite de origem não é alterado.
+
+**Próximo gate:** obter um inventário **atual** de categories, franchises e catalog_characters no D1 quando a quota permitir, reconciliar cada candidato ao ID preexistente, revisar conflitos e somente então registrar novas identidades pelo publicador autorizado. A migration 0029 segue preparada e **não implantada**. Nem este script nem o resultado local criam uma segunda SSOT ou autorizam publicar tags provisórias.
