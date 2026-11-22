@@ -244,7 +244,10 @@ vm.runInContext(source.slice(start,end),ctx);
  assert.strictEqual(posts[0].payload.decision,'same_sculpture');
  assert.strictEqual(elements.legacyAuditForm.hidden,true);
  // A previously divergent gallery can now explicitly split selected photos.
- const divergent={...group,review_state:'attention',revision:1};
+ const insufficient={...group,review_state:'attention',split_eligible:false,revision:1};
+ vm.runInContext('selectLegacyAuditGroup',ctx)(insufficient);
+ assert.strictEqual(elements.legacySplitForm.hidden,true);
+ const divergent={...group,review_state:'attention',split_eligible:true,revision:1};
  vm.runInContext('selectLegacyAuditGroup',ctx)(divergent);
  assert.strictEqual(elements.legacySplitForm.hidden,false);
  selection.add(20235);selection.add(20236);
