@@ -104,7 +104,7 @@ def sync():
     """SQLite snapshot, preserving edits, no writes to downloader DB."""
     if not SOURCE_DB.exists():return 0
     with SYNC_LOCK:
-        with connect(DB_PATH) as index:
+        with connect(DB_PATH,readonly=True) as index:
             seen=index.execute("SELECT COALESCE(MAX(message_id),0) FROM assets").fetchone()[0]
         with connect(SOURCE_DB, readonly=True) as origin:
             rows=origin.execute("""SELECT m.mensagem,m.hash,m.caminho,m.data_mensagem,
@@ -120,16 +120,22 @@ def sync():
                 mid,digest,path,date,topic,caption,album=m
                 if not safe_source_path(path):continue
                 topic=topic or path.replace("\\","/").split("/")[0]
-                dest.execute("""INSERT INTO assets
+                changed=dest.execute("""INSERT INTO assets
                      (message_id,sha256,source_relative,original_topic,source_date,source_caption,source_album,indexed_at)
                      VALUES(?,?,?,?,?,?,?,?)
                      ON CONFLICT(message_id) DO UPDATE SET
                      source_relative=excluded.source_relative,original_topic=excluded.original_topic,
                      source_caption=CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END,
-                     source_album=CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END""",
+                     source_album=CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END
+                     WHERE assets.source_relative IS NOT excluded.source_relative
+                        OR assets.original_topic IS NOT excluded.original_topic
+                        OR assets.source_caption IS NOT
+                           (CASE WHEN excluded.source_caption!='' THEN excluded.source_caption ELSE assets.source_caption END)
+                        OR assets.source_album IS NOT
+                           (CASE WHEN excluded.source_album!='' THEN excluded.source_album ELSE assets.source_album END)""",
                      (mid,digest,path,topic,date,caption,album,now()))
                 dest.execute("""INSERT OR IGNORE INTO annotations(message_id,status) VALUES (?,'pendente')""",(mid,))
-                count+=1
+                count+=int(changed.rowcount>0)
         return count
 
 def as_obj(row):
@@ -477,25 +483,49 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             return self.respond({"error":str(exc)},500)
 
+def identity_cycle_delay(outcome):
+    """Back off idle identity scans while preserving faster backlog progress."""
+    if not isinstance(outcome,dict):
+        raise TypeError("Resultado de curadoria de identidade invalido")
+    active=any(
+        isinstance(outcome.get(section),dict) and
+        any(isinstance(outcome[section].get(key),int)
+            and outcome[section][key]>0
+            for key in ("processed","changed","applied","updated",
+                        "propagated","refreshed"))
+        for section in ("naming","evidence","classification",
+                        "gallery_propagation","gallery_refresh")
+    )
+    return 30 if active else 300
+
+
 def main():
     manual_only = os.environ.get("TONART_CURADORIA_MANUAL_ONLY", "").strip() == "1"
     # Sync is exclusively owned by the background worker. Never delay the
     # HTTP listener with a potentially slow downloader SQLite snapshot.
     def background_curadoria():
         prepared=False
+        next_identity_at=0.0
         while True:
             try:
                 if not prepared:
                     initialize()
                     prepared=True
-                sync()
-                telegram_identity.run_cycle(
-                    ROOT,SOURCE_DB,DB_PATH,SOURCE_ID,
-                    naming=naming,smart=smart,gallery=gallery,
-                    ignored_batch=100,history_page_size=300,
-                    official_entities_per_cycle=1,
-                )
+                changed=sync()
+                if changed or time.monotonic() >= next_identity_at:
+                    # Heavy Telegram/naming passes are event-driven on new
+                    # assets, with a bounded reconciliation even when idle.
+                    next_identity_at=time.monotonic()+60
+                    outcome=telegram_identity.run_cycle(
+                        ROOT,SOURCE_DB,DB_PATH,SOURCE_ID,
+                        naming=naming,smart=smart,gallery=gallery,
+                        ignored_batch=100,history_page_size=300,
+                        official_entities_per_cycle=1,
+                    )
+                    next_identity_at=time.monotonic()+identity_cycle_delay(outcome)
             except Exception as exc:
+                # Avoid rapid retry loops if a writer/database is unavailable.
+                next_identity_at=max(next_identity_at,time.monotonic()+60)
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
     with ThreadingHTTPServer((HOST,PORT),Handler) as srv:
