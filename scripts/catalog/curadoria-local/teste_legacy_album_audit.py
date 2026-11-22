@@ -96,6 +96,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     no_preview=audit.list_groups(dbpath,state="all",limit=96,previews=0)
     assert all("preview_ids" not in x for x in no_preview["items"])
     assert audit.list_groups(dbpath,state="audited")["total"]==1
+    assert audit.list_groups(dbpath,state="new")["total"]==2
+    assert audit.list_groups(dbpath,state="attention")["total"]==0
     assert audit.list_groups(dbpath,state="all")["total"]==3
     assert audit.list_groups(dbpath,state="pending",risk="variants")["total"]==1
     assert audit.list_groups(dbpath,state="pending",risk="albums")["total"]==1
@@ -121,6 +123,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     assert result["event_type"]=="visual_gallery_audit_attention" and result["revision"]==1
     assert result["group_relations_changed"] is False
     assert audit.list_groups(dbpath,state="pending")["total"]==2
+    assert audit.list_groups(dbpath,state="new")["total"]==1
+    assert audit.list_groups(dbpath,state="attention")["total"]==1
     listing=audit.list_groups(dbpath,topic="Studio B")
     assert listing["items"][0]["review_state"]=="attention"
     assert listing["items"][0]["split_eligible"] is True
@@ -141,6 +145,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     assert validated["publication_approved"] is False
     assert audit.list_groups(dbpath,state="pending")["total"]==1
     assert audit.list_groups(dbpath,state="audited")["total"]==2
+    assert audit.list_groups(dbpath,state="new")["total"]==0
+    assert audit.list_groups(dbpath,state="attention")["total"]==1
     try:
         audit.record_review(dbpath,group_key="a"*24,revision=1,
             decision="same_sculpture",
@@ -187,6 +193,11 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
         code,data=exchange("GET","/api/legacy-album-audit?state=pending&limit=2")
         assert code==200 and data["total"]==1
         assert data["items"][0]["group_key"]=="c"*24
+        code,first_review=exchange("GET","/api/legacy-album-audit?state=new&limit=2")
+        assert code==200 and first_review["total"]==0
+        code,needs_more=exchange("GET","/api/legacy-album-audit?state=attention&limit=2")
+        assert code==200 and needs_more["total"]==1
+        assert needs_more["items"][0]["review_state"]=="attention"
         code,data=exchange("GET","/api/legacy-album-audit?risk=invalid")
         assert code==400 and "error" in data
         code,data=exchange("GET","/api/legacy-album-audit?topic=Geral+%2B+50k")
