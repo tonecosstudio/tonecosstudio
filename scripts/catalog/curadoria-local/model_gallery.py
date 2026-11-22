@@ -103,8 +103,7 @@ def list_album_candidates(db_path,topic="",limit=60,page=1):
     if topic:
         clauses.append("a.original_topic=?")
         params.append(topic)
-    with smart.db_open(db_path) as db:
-        smart.setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
         rows=db.execute("""SELECT a.original_topic,a.source_album,
             SUM(CASE WHEN m.message_id IS NULL THEN 1 ELSE 0 END) image_count,
             COUNT(*) album_image_count,COUNT(m.message_id) grouped_images,
@@ -180,8 +179,7 @@ def refresh_titles(db_path,group_keys=None):
     return {"updated_titles":updated}
 
 def stats(db_path):
-    with smart.db_open(db_path) as db:
-        smart.setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
         row=db.execute("""SELECT COUNT(*) n,COALESCE(SUM(count),0) photos
             FROM (SELECT COUNT(*) count FROM model_group_members
                  GROUP BY group_key HAVING COUNT(*)>=2)""").fetchone()
