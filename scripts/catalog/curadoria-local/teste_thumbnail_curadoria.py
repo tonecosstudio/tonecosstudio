@@ -40,6 +40,24 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
         raise AssertionError("Unlimited dimensions accepted")
     except ValueError:
         pass
+    # Diagnostic samples are RAM-only, bounded and never reveal source paths.
+    slow_file = Path(root) / "msg_98765.jpg"
+    Image.new("RGB",(512,512),"purple").save(slow_file,format="JPEG")
+    slow_sha=hashlib.sha256(slow_file.read_bytes()).hexdigest()
+    threshold=thumbs.SLOW_PREVIEW_THRESHOLD_MS
+    thumbs.SLOW_PREVIEW_THRESHOLD_MS=0
+    try:
+        thumbs.thumbnail(slow_file,slow_sha,256)
+    finally:
+        thumbs.SLOW_PREVIEW_THRESHOLD_MS=threshold
+    status=thumbs.status()
+    assert 1<=len(status["slow_previews"])<=thumbs.MAX_SLOW_PREVIEWS
+    slow=[x for x in status["slow_previews"] if x["message_id"]==98765]
+    assert len(slow)==1,slow
+    assert slow[0]["type"]=="jpg" and slow[0]["width"]==256
+    assert all(k in slow[0] for k in ("open_ms","decode_ms","encode_ms","total_ms"))
+    assert all(k not in slow[0] for k in ("path","sha256","file_name","source_relative"))
+    assert len(status["slow_previews"])<=8
     assert hashlib.sha256(path.read_bytes()).hexdigest() == original_sha
     st = path.stat()
     os.utime(path, ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))
