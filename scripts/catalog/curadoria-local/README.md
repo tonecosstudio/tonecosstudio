@@ -13,20 +13,20 @@ Os nomes são **metadados editáveis** até a aprovação; não são atribuídos
 
 ## Execução local
 
-Requisitos: Python 3.12+ com biblioteca padrão. Não precisa de Telethon nem da sessão do Telegram para a interface.
+Requisitos: Python 3.12+, com Pillow 13.0.0 para miniaturas WebP (`python -m pip install -r requirements-curadoria.txt` no venv do host). A interface e os endpoints de dados permanecem locais e não precisam de sessão Telegram. Não instalar um segundo host.
 
 ```powershell
 cd scripts/catalog/curadoria-local
 python tonart_curadoria.py
 ```
 
-Abra `http://127.0.0.1:8769`. O navegador sincroniza a listagem a cada 10 segundos. O servidor vincula apenas `127.0.0.1`.
+Abra `http://127.0.0.1:8769`. A importação incremental é de responsabilidade exclusiva do worker existente, não dos endpoints GET; navegação, paginação e filtros fazem somente consultas. O servidor vincula apenas `127.0.0.1`.
 
 ## Segurança
 
 **Não versionar nem sincronizar:** arquivos de sessão Telegram, `*.dpapi`, tokens, bancos SQLite, fotos de grupos privados, logs com dados pessoais ou o inventário preenchido de curadoria. Toda publicação comercial e escolha de imagem exigem revisão e direitos de uso.
 
-API de leitura: `/api/stats`, `/api/items`, `/media/<id>`. API de edição: `/api/annotate`, `/api/materialize`, `/api/export`, `/api/import-tonart-csv`, exigindo origem local e token gerado localmente. Nunca expor a porta ou o token à rede.
+API de leitura: `/api/stats`, `/api/items`, `/media/<id>`, `/thumb/<id>?w=256|480|960`, `/api/performance`, `/api/capabilities`, `/api/telegram-findings/<id>`. API de edição: `/api/annotate`, `/api/materialize`, `/api/export`, `/api/import-tonart-csv`, exigindo origem local e token gerado localmente. Nunca expor a porta ou o token à rede.
 
 Este diretório é apenas a **implementação versionada**. A instalação Windows já existente usa uma cópia local e uma pasta de dados separada. Evite executar dois servidores na mesma porta.
 
@@ -37,11 +37,11 @@ python teste_curadoria.py
 python teste_ui.py
 ```
 
-O E2E usa um diretório temporário e uma imagem fictícia. Verifica edição, conflito de revisão, exportação por hardlink sem modificar a origem e preferência do Telegram para o mesmo SHA-256.
+O E2E usa um diretório temporário e uma imagem fictícia. Verifica edição, conflito de revisão, exportação por hardlink sem modificar a origem e preferência do Telegram para o mesmo SHA-256. `teste_thumbnail_curadoria.py` valida WebP, cache, ETag e preservação dos arquivos; `teste_ui.py` verifica a prancha paginada e uso de miniaturas.
 
 ## Nomeação e agrupamento em paralelo
 
-A etapa de **nomeação** foi implementada em `name_curadoria.py` e usa o **mesmo SQLite local** da Curadoria Visual, sem criar outro banco. Ela examina cada imagem independentemente, extrai estúdio, título, universo e variante das legendas estruturadas do Telegram e sugere nomes únicos como `deadpool-diorama-msg13588.jpg`. Caso uma imagem não tenha legenda, pode herdar o nome de um álbum somente quando todas as legendas válidas desse álbum concordam.
+A etapa de **nomeação** foi implementada em `name_curadoria.py` e usa o **mesmo SQLite local** da Curadoria Visual, sem criar outro banco. Ela examina cada imagem independentemente, extrai estúdio, título, universo e variante das legendas estruturadas do Telegram e sugere nomes únicos como `deadpool-diorama-msg13588.jpg`. Uma imagem sem legenda pode receber evidência contextual **para revisão**, mas título e álbum compartilhados não comprovam ser a mesma escultura. A identificação exige o Telegram original e evidências independentes.
 
 Os nomes são preservados em `name_proposals` com evidência, confiança, estado, revisão e histórico em `name_proposal_events`. A nomeação participa do ciclo incremental, mas não impede que uma galeria reúna imagens ainda sem nome. A revisão visual e a identificação podem avançar em paralelo no mesmo SQLite. As propostas não são nomes oficiais comprovados, nem aprovações comerciais.
 
@@ -49,7 +49,7 @@ Abra a interface e use **1. Nomes propostos** para buscar, conferir a imagem, a 
 
 Use **Exportar nomes propostos** para gerar exclusivamente no computador o arquivo privado `curadoria-local/manifesto-nomes-propostos.csv`, com referências ao Telegram. O botão **Gerar nomes confirmados** materializa somente as imagens confirmadas sob `curadoria-local/modelos-revisados/<estúdio>/<modelo>/<nome>-msg<ID>.<ext>`, por hardlink, sem mover ou alterar a origem. Conflitos de SHA interrompem a operação; não sobrescreve arquivos existentes.
 
-**2. Agrupar depois** permanece disponível para verificar álbuns e duplicatas, porém nomes iguais não são prova suficiente de uma única estatueta. O agrupamento exige álbum compartilhado ou identidade exata de conteúdo. Nenhuma das etapas publica no catálogo de produção. A execução após reinício reutiliza os checkpoints persistidos no SQLite local.
+**2. Agrupar depois** permanece disponível para verificar álbuns e duplicatas, porém nomes iguais não são prova suficiente de uma única estatueta. O agrupamento automático considera somente mídia de SHA-256 idêntico; fotos diferentes são vinculadas à mesma escultura somente após comparação visual explícita, preservando variantes. Nenhuma das etapas publica no catálogo de produção. A execução após reinício reutiliza os checkpoints persistidos no SQLite local.
 
 ### APIs e testes desta etapa
 
@@ -275,3 +275,13 @@ Para desinstalação intencional: `INICIAR_CURADORIA.ps1 -Uninstall`.
 A comparação host/site é somente leitura e deve ser solicitada explicitamente pelo operador. Uma varredura paginada da API pública consome leituras do D1; o inventário íntegro verificado é reutilizado em memória por seis horas, com horário da observação visível na interface.
 
 Se a origem retornar erro ou dados incompletos, o host responde HTTP 503 e o código catalog_upstream_unavailable com retry_after_seconds, sem inferir que o catálogo está vazio ou divergente. O cooldown de 30 minutos impede novas varreduras enquanto a origem estiver indisponível. Nenhuma ficha é aprovada, publicada ou replicada no D1/R2 por esta operação. O cooldown reside apenas na memória do único processo supervisionado do host.
+
+
+## Escala e operação do host — 22/11/2026
+
+- **Miniaturas sem escrever novas imagens no disco:** o endpoint `/thumb/<id>?w=256|480|960` reduz sob demanda os originais a WebP. A cache é LRU em RAM, limitada a 512 entradas / 24 MiB, com até 3 decodificações simultâneas. ETag, HTTP 304 e cache privado por 600 segundos reduzem tráfego repetido; clique na imagem continua abrindo `/media/<id>` com resolução original.
+- **Prancha escalável:** galeria agrupada abre a prancha nativa, deduplica imagens por SHA-256 e exibe no máximo 24 por página, com navegação. Seleção e alterações continuam a usar as APIs e a revisão otimista já existentes, sem alterar a origem.
+- **Consultas puras:** `/api/stats`, `/api/items`, `/api/names`, `/api/models`, `/api/gallery-candidates`, `/api/album-candidates` e sugestões visuais leem SQLite em modo somente leitura. Apenas o ciclo de ingestão incremental e as operações de revisão explícitas podem modificar o SQLite local.
+- **MCP com contrato comum:** `/api/capabilities` declara a operação `images.thumbnail` e `system.performance`; `/api/performance` mostra acertos, falhas, bytes e evicções da cache. O MCP deve usar esses contratos de host sem serviços, pastas, banco ou indexadores paralelos.
+- **Fonte e limites:** o download Telegram e a publicação do catálogo pertencem aos owners existentes; manter `Geral +50k` e outros estúdios fora de intervenções concorrentes; jamais publicar propostas como direitos verificados. Os controles funcionam mesmo com dezenas de milhares de mensagens porque não varrem/reexportam a coleção por clique.
+
