@@ -89,7 +89,9 @@ with tempfile.TemporaryDirectory(prefix="tonart-visual-split-") as tmp:
         {"message_ids":[]},{"note":"curta"}
     ):
         try:
-            attempt(revision=2,**bad)
+            kw={"revision":2}
+            kw.update(bad)
+            attempt(**kw)
             raise AssertionError("Unsafe split accepted: "+str(bad))
         except (ValueError, RuntimeError):
             pass
@@ -111,12 +113,12 @@ with tempfile.TemporaryDirectory(prefix="tonart-visual-split-") as tmp:
             (103,new_key,"reviewed_split"),
             (104,new_key,"reviewed_split")
         ],members
-        groups=[tuple(r) for r in db.execute("""
-            SELECT group_key,state,revision FROM model_groups ORDER BY group_key
-        """)]
-        assert groups==[
-            ("a"*24,"revisar",3),(new_key,"revisar",0)
-        ],groups
+        groups={r["group_key"]:(r["state"],r["revision"]) for r in db.execute("""
+            SELECT group_key,state,revision FROM model_groups
+        """)}
+        assert groups=={
+            "a"*24:("revisar",3),new_key:("revisar",0)
+        },groups
         evidence=[tuple(r) for r in db.execute("""
             SELECT group_key,source_url,source_type
             FROM model_group_evidence ORDER BY source_url,source_type
