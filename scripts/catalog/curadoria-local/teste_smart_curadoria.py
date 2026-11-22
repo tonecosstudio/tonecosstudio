@@ -27,8 +27,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
                (mid,digest,image.name,"Poke Studio","2026-11-19",caption,album,m.utc()))
     first=m.process_batch(dbpath,100)
     assert first["model_groups"]==2,first
-    assert first["images_grouped"]==3,first
-    assert first["images_needing_review"]==1,first
+    assert first["images_grouped"]==2,first
+    assert first["images_needing_review"]==2,first
     assert first["model_states"]=={"provavel":2},first
     assert m.process_batch(dbpath,100)["processed"]==0
     with m.db_open(dbpath,readonly=True) as ro:
@@ -66,14 +66,18 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     assert m.list_models(dbpath,q="Nothing")["total"]==0
     assert m.list_models(dbpath,state="provavel")["total"]==2
     assert m.list_models(dbpath,state="confirmado")["total"]==0
-    assert m.list_models(dbpath,min_images=2)["total"]==1
+    assert m.list_models(dbpath,min_images=2)["total"]==0
     assert m.list_models(dbpath,unnamed_only=True)["total"]==0
     assert all("total_count" not in row for row in groups["items"])
-    couple=next(g for g in groups["items"] if g["image_count"]==2)
+    # A shared Telegram album is not a visual review, so 102 stays
+    # independent/unnamed; even a matching name never merges distinct bytes.
+    with m.db_open(dbpath,readonly=True) as db:
+        assert db.execute("SELECT 1 FROM model_group_members WHERE message_id=102").fetchone() is None
+    couple=next(g for g in groups["items"] if g["sample_message"]==101)
     detail=m.model_detail(dbpath,couple["group_key"])
     assert detail["identity_conflicts"]==[],detail  # banco isolado sem modulo de nomes
-    assert {a["message_id"] for a in detail["images"]}=={101,102},detail
-    assert len(detail["evidence"])==2,detail
+    assert {a["message_id"] for a in detail["images"]}=={101},detail
+    assert len(detail["evidence"])==1,detail
     try:
         m.review_model(dbpath,couple["group_key"],0,"confirmado")
         assert False,"sem fonte oficial deveria rejeitar"
@@ -90,10 +94,34 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
          ("▪️ Pikachu - Pokémon\n▫️ Versão: Diorama\n▫️ Estúdio: Poke Studio",))
     changed=m.process_batch(dbpath,100)
     assert changed["processed"]==1,changed
-    assert changed["images_grouped"]==3,changed
+    assert changed["images_grouped"]==2,changed
     assert changed["model_groups"]==2,changed
     assert changed["model_states"]=={"confirmado":1,"provavel":1},changed
     for mid in [101,102,103,104]:
         p=source/("msg_%d.jpg"%mid)
         assert p.read_bytes()==("CONTENT_"+str(mid)).encode()
-    print("E2E SMART APROVADO: album, variantes, reprocessamento, evidências, revisão, concorrência otimista, originais íntegros")
+    # Two named media entries in the same album may be different sculptures.
+    # Keep separate model groups until reviewed_angles explicitly joins them.
+    with closing(sqlite3.connect(dbpath)) as conn, conn as db:
+        for mid in (105, 106):
+            content=("CONTENT_"+str(mid)).encode()
+            (source/("msg_%d.jpg"%mid)).write_bytes(content)
+            db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)", (
+                mid, hashlib.sha256(content).hexdigest(), "msg_%d.jpg"%mid,
+                "Poke Studio", "2026-11-19",
+                "▪️ Gengar - Pokémon\\n▫️ Estúdio: Poke Studio",
+                "album-mixed-sculptures", m.utc()))
+    new=m.process_batch(dbpath,100)
+    assert new["processed"]==2,new
+    with m.db_open(dbpath,readonly=True) as db:
+        keys=db.execute(
+            "SELECT message_id,group_key FROM model_group_members "
+            "WHERE message_id IN (105,106) ORDER BY message_id"
+        ).fetchall()
+        assert len(keys)==2
+        assert keys[0]["group_key"]!=keys[1]["group_key"]
+        for mid in (102,104):
+            assert db.execute("SELECT 1 FROM model_group_members WHERE message_id=?",(mid,)).fetchone() is None
+    for mid in (105,106):
+        assert (source/("msg_%d.jpg"%mid)).read_bytes()==("CONTENT_"+str(mid)).encode()
+    print("E2E SMART APROVADO: álbum não mescla esculturas, variantes, reprocessamento, evidências, revisão, concorrência otimista, originais íntegros")
