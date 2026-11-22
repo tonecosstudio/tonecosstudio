@@ -1,4 +1,15 @@
 
+## CHECKPOINT — 22/11/2026 — OrdaX MCP Marvel/DC/One Piece +145: total 658
+
+- **Processo supervisionado concluído:** cf544eb5-af30-4154-b9b2-5e42d6f9ad06, exit 0; 2.813 títulos lidos, 147 correspondências exatas iniciais, 390 títulos retidos, 2 aliases conhecidos preservados (Rogue, Invisible Woman/Sue Storm).
+- **Supabase privado auditado:** **145 novos cadastros**, total **658 identidades / 658 identity_keys únicas / 16 franquias**. Marvel Comics 79 (77 novos), DC Comics 47 (47 novos), One Piece 22 (21 novos), Pokémon 445, Naruto 28, Dragon Ball 21. **ZERO vínculos de esculturas ou tags comerciais**, D1/Worker/site intactos. Fonte comunitária independente/não oficial registrada com ID externo, URL e SHA.
+- **Código após PR:** scripts/catalog/validate-hero-piece-references.py e testes, checkpoint/lock supervisionados, leitura de um commit GitHub imutável akabab/superhero-api e busca One Piece de títulos já existentes, sem writes canônicos no script; todas as escritas privadas ocorreram só via conector autorizado.
+- **Estado durável local:** C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/ com hero-piece-manifest.json, hero-piece-supervised.json, hero-piece-exact-private.jsonl e hero-piece-hold-private.jsonl. NÃO versionar relatórios privados.
+- **Próximo passo:** avançar nos universos ainda não cobertos, aliases e categorias; evitar reprocessar os 658. Quota D1, migration 0029 e M5 seguem sem autorização de publicação.
+
+---
+
+
 ## CHECKPOINT — 22/11/2026 — OrdaX MCP Naruto/Dragon Ball +49: total 513
 
 - Processos auditados: Naruto 859946cd-82e5-4506-99f0-ad8cc1745b7e (1431 referências, 28 exatos, 19 retidos, exit 0); Dragon Ball 2af837a3-84ae-42a6-83e-880c5c3d0cb6 (58 referências, 21 exatos, 87 retidos, exit 0). Fontes comunitárias, NÃO oficiais. Freezer/Vegetto retidos por alias regional.
