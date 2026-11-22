@@ -42,8 +42,17 @@ let queueRequestId=0,chosenLegacyAudit=null;
 function resetReviewQueue(){
  queuePageIndex=0;queueCursors=[""];queueNextCursor="";queueHasMore=false;queueRequestId++;
 }
+let lastSplitGalleryKey="";
 function selectLegacyAuditGroup(item){
  chosenLegacyAudit=item;
+ boardSplitSelection.clear();
+ el("legacySplitForm").hidden=item.review_state!=="attention";
+ el("legacySplitOpenNew").hidden=true;
+ lastSplitGalleryKey="";
+ el("legacySplitTitle").value="";
+ el("legacySplitVariant").value="";
+ el("legacySplitNote").value="";
+ updateBoardSplitCount();
  el("nameReview").hidden=true;
  el("legacyAuditReview").hidden=false;
  el("legacyAuditTitle").textContent=(item.title||"Modelo sem título")+" · "+item.original_topic;
@@ -83,10 +92,54 @@ el("legacyAuditSave").onclick=async()=>{
   el("legacyAuditStatus").textContent=decision==="same_sculpture"
     ?"Auditoria visual registrada; sem liberar identidade comercial ou publicação."
     :"Pendência editorial registrada. Galeria intacta; corrigir somente após revisão.";
-  if(decision==="same_sculpture")el("legacyAuditForm").hidden=true;
+  if(decision==="same_sculpture"){
+   el("legacyAuditForm").hidden=true;
+   el("legacySplitForm").hidden=true;
+   boardSplitSelection.clear();
+  }else{
+   el("legacySplitForm").hidden=decision!=="different_sculptures";
+  }
+  updateBoardSplitCount();
   notify("Revisão registrada no histórico canônico. Nenhuma foto foi movida.");
   resetReviewQueue();await refreshReviewQueue();
  }catch(e){notify("Auditoria da galeria: "+e.message);}
+ finally{control.disabled=false;}
+};
+el("legacySplitOpenNew").onclick=()=>{
+ if(lastSplitGalleryKey)openBoard(lastSplitGalleryKey);
+};
+el("legacySplitSave").onclick=async()=>{
+ if(!chosenLegacyAudit || chosenLegacyAudit.review_state!=="attention"){
+  notify("Registre antes uma auditoria de esculturas diferentes.");return;
+ }
+ const ids=[...boardSplitSelection].sort((a,b)=>a-b);
+ const note=el("legacySplitNote").value.trim();
+ if(ids.length<1 || ids.length>=chosenLegacyAudit.photos || note.length<15){
+  notify("Selecione apenas a escultura diferente na prancha e descreva a evidência (15+ caracteres).");
+  return;
+ }
+ const item=chosenLegacyAudit;
+ const control=el("legacySplitSave");
+ control.disabled=true;
+ try{
+  const result=await post("/api/split-legacy-gallery",{
+   group_key:item.group_key,revision:item.revision,
+   message_ids:ids,title:el("legacySplitTitle").value.trim(),
+   variant:el("legacySplitVariant").value.trim(),note
+  });
+  chosenLegacyAudit={...item,revision:result.source_revision,
+    photos:result.remaining_ids.length,review_state:"attention"};
+  lastSplitGalleryKey=result.new_group;
+  boardSplitSelection.clear();
+  el("legacySplitForm").hidden=true;
+  el("legacySplitOpenNew").hidden=false;
+  el("legacyAuditStatus").textContent=
+   "Separação registrada: "+result.moved_ids.length+" mensagem(ns) na nova galeria "+
+   result.new_group+". Todos os originais preservados; estado em revisão.";
+  if(el("boardDialog").open)el("boardDialog").close();
+  notify("Separação atômica registrada no histórico; sem aprovação comercial.");
+  resetReviewQueue();await refreshReviewQueue();
+ }catch(e){notify("Separação bloqueada: "+e.message);}
  finally{control.disabled=false;}
 };
 async function refreshReviewQueue(){
