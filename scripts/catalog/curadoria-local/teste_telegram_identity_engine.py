@@ -166,6 +166,34 @@ class TelegramIdentityEngineTests(unittest.TestCase):
         self.assertEqual(candidate.variant, "1/6; Battle Scarred")
         self.assertEqual(candidate.source_message_id, 10)
 
+    def test_short_explicit_pokemon_name_and_alt_version_are_structured(self):
+        for name in ("Mew", "Red"):
+            with self.subTest(name=name):
+                parsed = engine.parse_telegram_caption(
+                    "Pokerus Studio",
+                    f"▪️ {name} - Pokémon\n▫️ Estúdio: Pokerus Studio\n\n#Pokerus_Studio #{name}",
+                    message_id=800,
+                )
+                selected = [
+                    c for c in parsed.candidates if c.evidence_type == "telegram_structured_caption"
+                ]
+                self.assertEqual(len(selected), 1)
+                self.assertEqual((selected[0].title, selected[0].universe), (name, "Pokémon"))
+                self.assertEqual(selected[0].status, "provavel")
+        alt = engine.parse_telegram_caption(
+            "Pokerus Studio",
+            "▪️ Umbreon - Alt Version\n▫️ Estúdio: Pokerus Studio\n\n#Pokerus_Studio #Umbreon",
+            message_id=801,
+        )
+        self.assertEqual(len(alt.candidates), 1)
+        self.assertEqual((alt.candidates[0].title, alt.candidates[0].universe,
+                          alt.candidates[0].variant), ("Umbreon", "", "Alt Version"))
+        # No matching character hashtag: do not automatically accept a short name.
+        no_tag = engine.parse_telegram_caption(
+            "Pokerus Studio", "▪️ Red - Pokémon\n▫️ Estúdio: Pokerus Studio"
+        )
+        self.assertNotEqual(no_tag.identity_status, "telegram_found")
+
     def test_free_text_examples_are_candidates_without_confirming_single_words(self):
         cases = {
             "Wonder Woman — Battle Scarred": ("Wonder Woman", "Battle Scarred", "revisar"),
