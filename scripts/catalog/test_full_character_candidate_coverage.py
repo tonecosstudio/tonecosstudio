@@ -60,6 +60,8 @@ class AllCandidateAuditTests(unittest.TestCase):
                          "editorial_flags_require_review")
         self.assertEqual(audit.classify_row(row("Pikachu","Pokémon/Dragon Ball"),identities)[0],
                          "universe_unverified_or_combined")
+        self.assertEqual(audit.classify_row(row("Ancient Sea Kaiju","Kaijumon"),identities)[0],
+                         "creator_collection_requires_franchise_review")
 
     def test_full_queue_every_source_row_gets_one_status_and_duplicate_kept(self):
         q=self.root/"input.csv"
