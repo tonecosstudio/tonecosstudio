@@ -551,6 +551,8 @@ def ensure_schema(db: sqlite3.Connection) -> None:
     );
     CREATE INDEX IF NOT EXISTS idx_telegram_history_links_asset
         ON telegram_history_links(source_chat_id,asset_message_id);
+    CREATE INDEX IF NOT EXISTS idx_telegram_history_album_scope
+        ON telegram_history_messages(source_chat_id,topic_id,grouped_id);
     CREATE INDEX IF NOT EXISTS idx_telegram_coverage_status
         ON telegram_identity_coverage(coverage_status,identity_status);
     """)
@@ -1149,6 +1151,34 @@ def _existing_manual_revision(db: sqlite3.Connection, message_id: int, proposal:
     return False
 
 
+def _album_history_evidence(db: sqlite3.Connection, asset: sqlite3.Row) -> list[sqlite3.Row]:
+    """Exact Telegram album context for manual review, never automatic naming.
+
+    The downloader may omit source_album even when the fetched Telegram media
+    messages contain grouped_id. Resolve only same-chat, same-topic media IDs
+    with verified coverage; a shared character name is never enough.
+    """
+    return db.execute("""
+        SELECT sibling.message_id, sibling.text, sibling.topic_id, sibling.topic_name
+        FROM telegram_history_messages original
+        JOIN telegram_identity_coverage scope
+          ON scope.message_id=original.message_id
+         AND scope.source_chat_id=original.source_chat_id
+         AND scope.topic_id=original.topic_id
+         AND scope.topic_name=original.topic_name
+        JOIN telegram_history_messages sibling
+          ON sibling.source_chat_id=original.source_chat_id
+         AND sibling.topic_id=original.topic_id
+         AND sibling.topic_name=original.topic_name
+         AND sibling.grouped_id=original.grouped_id
+        WHERE original.message_id=? AND original.topic_name=?
+          AND original.has_media=1 AND original.grouped_id!=''
+          AND sibling.message_id!=original.message_id
+          AND sibling.has_media=1 AND TRIM(sibling.text)!=''
+        ORDER BY sibling.message_id LIMIT 20
+    """, (int(asset["message_id"]), asset["original_topic"])).fetchall()
+
+
 def _related_candidates(
     db: sqlite3.Connection,
     asset: sqlite3.Row,
@@ -1210,6 +1240,24 @@ def _related_candidates(
                     "status": "provavel" if has_reply_link and candidate.confidence >= 0.65 else "revisar",
                 }
             ))
+    if include_album_context:
+        linked_sources = {int(row["message_id"]) for row in rows}
+        for album in _album_history_evidence(db, asset):
+            if int(album["message_id"]) in linked_sources:
+                continue
+            parsed = parse_telegram_caption(
+                album["topic_name"], album["text"],
+                message_id=int(album["message_id"]),
+            )
+            for candidate in parsed.candidates:
+                candidates.append(TelegramCandidate(
+                    **{
+                        **asdict(candidate),
+                        "evidence_type": "telegram_album_context",
+                        "confidence": min(candidate.confidence, 0.52),
+                        "status": "revisar",
+                    }
+                ))
     return candidates
 
 
@@ -1825,11 +1873,23 @@ def list_telegram_findings(db_path: str | Path, message_id: int) -> dict[str, An
               ON h.source_chat_id=l.source_chat_id AND h.message_id=l.evidence_message_id
             WHERE l.asset_message_id=? ORDER BY h.message_id
         """, (int(message_id),)).fetchall()
+        related_messages = [dict(row) for row in links]
+        existing_sources = {int(row["evidence_message_id"]) for row in links}
+        for album in _album_history_evidence(db, asset):
+            if int(album["message_id"]) not in existing_sources:
+                related_messages.append({
+                    "evidence_message_id": int(album["message_id"]),
+                    "relation_type": "same_album",
+                    "topic_id": album["topic_id"],
+                    "topic_name": album["topic_name"],
+                    "text": album["text"],
+                })
+                existing_sources.add(int(album["message_id"]))
         return {
             "message_id": int(message_id),
             "candidates": [asdict(candidate) for candidate in candidates],
             "coverage": dict(coverage) if coverage else {},
-            "related_messages": [dict(row) for row in links],
+            "related_messages": related_messages,
         }
 
 
