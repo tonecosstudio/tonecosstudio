@@ -143,3 +143,19 @@ Resultado verificado no desktop autorizado:
 Os arquivos privados estão na mesma pasta C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/: fila-reconciliacao-franquias.csv, conflitos-universos.jsonl e fila-revisao-personagens.csv (agora ordenada P1/P2/P3 com tipos e URLs de evidência), além dos inventários já existentes. São filas derivadas, não outra SSOT. O catalogador público continua sendo o Worker/D1 canônico.
 
 **Próximo gate:** quando a cota D1 permitir, reconciliar os 88 IDs históricos e os 436 candidatos restantes com as tabelas atuais categories/franchises, resolver colisões, revisar identidades editoriais e só então promover tags e vínculos por lote idempotente, com owner autorizado. A migration 0029 permanece preparada somente em código, sem autorização M5/cutover.
+
+### Pré-validação de identidades contra o D1 atual — 22/11/2026
+
+A rotina **única** `scripts/catalog/prepare-canonical-taxonomy.py` agora aceita opcionalmente `--d1-taxonomy-snapshot <arquivo.json>` para reconciliar a fila já gerada com uma exportação **completa e recente** das tabelas canônicas D1. Não há segundo cadastro, aplicação de migration, inserção de tags ou alteração de modelos.
+
+**Bloqueio observado:** a consulta real a `sqlite_master` no Cloudflare D1 falhou com código **7500**, por esgotamento da quota diária de leituras. `SELECT 1` ter sucesso não indica que há quota (não lê linhas). Portanto, **nenhum resultado de matching no D1 atual foi afirmado** nesta etapa.
+
+**Contrato de exportação aceito:** JSON privado com `schema: "tonart.catalog.d1-taxonomy-snapshot/1"`, `database: "tonecos-catalogo"`, `exported_at_utc` em UTC, `export_completed: true`, arrays completos `categories` (`id,name,slug`) e `franchises` (`id,name,slug,category_id`), acompanhados por `categories_total` e `franchises_total` iguais ao comprimento real de cada array. A exportação deve vir da autoridade Cloudflare D1 já existente — **não sintetizar dados de staging como se fossem produção**. As consultas necessárias quando a quota permitir são limitadas às duas tabelas de taxonomia, ordenadas por ID. Nenhum SELECT de fotos, `models` ou R2 é necessário para esse preflight.
+
+A validação recusa exportação truncada, banco incorreto, IDs repetidos, slug malformado, categoria ausente, timestamp fora de UTC, exportação mais antiga que 24 horas ou com data futura. O processamento dessas validações ocorre **antes de substituir relatórios**. Se não houver arquivo atual, remove apenas os arquivos derivados de pré-validação D1 para impedir exibição de resultados velhos como atuais, preservando os inventários e as evidências originais.
+
+**Arquivos opcionais gerados na mesma pasta de trabalho (somente com snapshot válido):** `franquias-preflight-d1.jsonl`, `personagens-preflight-d1.jsonl` e `fila-validacao-d1-franquias.csv`. Resultado separa candidatos a IDs existentes, colisões/aliases para revisão, homônimos em diferentes categorias, ID histórico divergente, potencial crossover e franquia ainda sem equivalente. Nenhum ID de personagem é criado; P1 apenas encaminha nomes para revisão editorial humana. Nunca ligar modelos por substring, nome genérico ou variante.
+
+**Provas locais:** `python -B scripts/catalog/test_prepare_canonical_taxonomy.py -q`: **8/8** incluindo CLI com exportação completa de teste, bloqueio de exportação vencida sem corromper relatórios, exclusão de pré-validação antiga, colisões de IDs, homônimos e títulos comerciais. O teste usa somente SQLite/JSON sintéticos e não comprova publicação em D1.
+
+**Gate:** após retornar a disponibilidade da quota, o owner do D1 prepara uma exportação completa em operação de leitura econômica e executa o preflight. Os casos sem conflito seguem para revisão; só o publicador autorizado pode gravar identities/links no D1 após M5, sem mudar status, licença ou galeria.
