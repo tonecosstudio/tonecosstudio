@@ -11,6 +11,15 @@ assert 'id="namesMode"' in html
 assert 'id="queueMode"' in html
 assert 'id="queueFilters"' in html and 'id="queueResults"' in html
 assert 'id="queueKind"' in html and 'id="queueVariant"' in html
+assert 'id="legacyWallControls"' in html
+assert 'id="legacyWallPageSize"' in html and 'id="legacyWallViews"' in html
+assert 'id="legacyWallFocus"' in html
+assert 'id="queueSiteStatus"' in html and 'id="queueSiteCheck"' in html
+assert 'id="boardSize"' in html
+assert 'className="audit-previews"' in js
+assert '"/api/catalog-sync-summary"' in js
+assert 'gallery.legacy_audit' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+assert 'catalog.summary' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 assert 'async function refreshReviewQueue()' in js
 assert 'function resetReviewQueue()' in js
 assert 'queueCursors[queuePageIndex]' in js
@@ -176,12 +185,15 @@ const end=source.indexOf('let albumCandidates=',start);
 assert(start>=0&&end>start);
 class Element{
  constructor(tag='div'){this.tagName=tag;this.children=[];this.hidden=false;
-  this.disabled=false;this.value='';this.textContent='';}
+  this.disabled=false;this.value='';this.textContent='';
+  this.classList={toggle:()=>true,contains:()=>false,remove:()=>{}};}
  append(...children){this.children.push(...children);}
  replaceChildren(...children){this.children=[...children];}
 }
 const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
- 'legacyAuditFilters','queueVariantLabel','legacyAuditReview','nameReview',
+ 'legacyAuditFilters','legacyWallControls','legacyWallPageSize',
+ 'legacyWallViews','legacyWallFocus','queueSiteCheck','queueSiteStatus',
+ 'queueVariantLabel','legacyAuditReview','nameReview',
  'legacyAuditTitle','legacyAuditMeta','legacyAuditDecision','legacyAuditNotes',
  'legacyAuditOpenBoard','legacyAuditSave','legacyAuditForm','legacyAuditStatus',
  'legacySplitForm','legacySplitSave','legacySplitOpenNew','legacySplitTitle',
@@ -191,8 +203,11 @@ const elements=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
 elements.queueKind.value='legacy_groups';
 elements.legacyAuditState.value='pending';
 elements.legacyAuditRisk.value='all';
+elements.legacyWallPageSize.value='96';
+elements.legacyWallViews.value='4';
 const group={group_key:'a'.repeat(24),title:'Garrosh',original_topic:'Luftmensch',
- sample_message:20231,photos:10,unique_files:10,source_albums:1,
+ sample_message:20231,preview_ids:[20231,20232,20233,20234],
+ photos:10,unique_files:10,source_albums:1,
  risk_label:'Galeria grande',review_state:'pending',revision:0,priority:2};
 const boards=[],posts=[],paths=[],selection=new Set();
 const ctx=vm.createContext({
@@ -227,7 +242,13 @@ vm.runInContext(source.slice(start,end),ctx);
  assert.strictEqual(elements.legacyAuditFilters.hidden,false);
  assert.strictEqual(elements.queueVariantLabel.hidden,true);
  assert.strictEqual(elements.queueResults.children.length,1);
- assert.strictEqual(elements.queueResults.children[0].children[0].src,'/thumb/20231');
+ assert.strictEqual(elements.legacyWallControls.hidden,false);
+ assert.strictEqual(elements.queueResults.children[0].children[0].className,'audit-previews');
+ assert.deepStrictEqual(
+  Array.from(elements.queueResults.children[0].children[0].children,x=>x.src),
+  ['/thumb/20231','/thumb/20232','/thumb/20233','/thumb/20234']
+ );
+ assert(paths[0].includes('limit=96') && paths[0].includes('previews=4'));
  elements.queueResults.children[0].onclick();
  assert.deepStrictEqual(boards,[group.group_key]);
  assert.strictEqual(elements.legacyAuditReview.hidden,false);
