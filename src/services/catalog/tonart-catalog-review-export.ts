@@ -86,11 +86,11 @@ export function buildTonartCatalogReviewCsv(
   if (!Array.isArray(models) || models.length < 1 || models.length > 12) {
     throw new Error("tonart_catalog_export_page_invalid");
   }
-  const ids = new Set(models.map((model) => model.id));
-  for (const id of proposals.keys()) {
-    if (!ids.has(id)) throw new Error("tonart_catalog_editorial_out_of_page");
-  }
-  const lines = [HEADERS.map(cell).join(";")];
+  // The gateway must supply one distinct canonical model and slug per
+  // exported row. Duplicate rows could turn one editorial proposal into
+  // ambiguous or repeated review work; refuse them before producing CSV.
+  const ids = new Set<string>();
+  const slugs = new Set<string>();
   for (const model of models) {
     if (
       !model ||
@@ -103,6 +103,17 @@ export function buildTonartCatalogReviewCsv(
     ) {
       throw new Error("tonart_catalog_export_model_invalid");
     }
+    if (ids.has(model.id) || slugs.has(model.slug)) {
+      throw new Error("tonart_catalog_export_duplicate_identity");
+    }
+    ids.add(model.id);
+    slugs.add(model.slug);
+  }
+  for (const id of proposals.keys()) {
+    if (!ids.has(id)) throw new Error("tonart_catalog_editorial_out_of_page");
+  }
+  const lines = [HEADERS.map(cell).join(";")];
+  for (const model of models) {
     const proposal = validateTonartCatalogEditorialProposal(
       model,
       proposals.get(model.id),

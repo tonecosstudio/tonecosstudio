@@ -3,7 +3,7 @@ import type { PublicCatalogModel } from "./public-catalog-gateway";
 import { buildTonartCatalogReviewCsv, validateTonartCatalogEditorialProposal } from "./tonart-catalog-review-export";
 
 const model: PublicCatalogModel = {
-  id: "11111111-1111-4111-8111-111111111111",
+  id: "mdl_11111111111111111111",
   slug: "boneco-exemplo",
   code: "TS-01",
   name: "Boneco, edição especial",
@@ -27,7 +27,7 @@ describe("TONART one-page editorial review export", () => {
     expect(lines[0]).toContain('"ID canônico"');
     expect(lines[0]).toContain('"Novo nome";"Nova variante"');
     expect(lines[1]).toMatch(/;"";""$/);
-    expect(lines[1]).toContain('"11111111-1111-4111-8111-111111111111"');
+    expect(lines[1]).toContain('"mdl_11111111111111111111"');
     expect(lines[1]).toContain('"Boneco, edição especial"');
     expect(lines[1]).toContain('"media/boneco/card.webp"');
     expect(lines[1]).toContain('"Chave cadastrada; entrega não verificada"');
@@ -67,6 +67,15 @@ describe("TONART one-page editorial review export", () => {
       [model.id, { name: "  Boneco, edição especial  ", variant: "   " }],
     ]));
     expect(csv.trimEnd().split("\r\n")[1]).toMatch(/;"";""$/);
+  });
+
+  it("rejects repeated model identities or slugs instead of duplicating editorial proposals", () => {
+    const second = { ...model, id: "mdl_22222222222222222222", slug: "another-model" };
+    expect(() => buildTonartCatalogReviewCsv([model, { ...second, id: model.id }]))
+      .toThrow("tonart_catalog_export_duplicate_identity");
+    expect(() => buildTonartCatalogReviewCsv([model, { ...second, slug: model.slug }]))
+      .toThrow("tonart_catalog_export_duplicate_identity");
+    expect(() => buildTonartCatalogReviewCsv([model, second])).not.toThrow();
   });
 
   it("rejects out-of-page drafts rather than exporting the wrong page", () => {
