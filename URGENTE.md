@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — 25 novas wikis concluídas: 934 identidades privadas
+
+- **Supabase canônico real:** **934 identidades / 934 keys únicas / 55 franquias**, +82 nesta rodada (45+37 inserções; 3 dos 85 matches já existiam), **zero vínculos de esculturas e zero tags públicas**. OrdaX MCP supervisionado `22406dda-5614-41b3-b765-aa8c38f96856` exit 0.
+- **Código reutilizado:** `scripts/catalog/validate-fandom-character-categories.py` expandiu 25 fontes já verificadas, parâmetro `--only-new` para não repetir as primeiras 15 wikis e escrever relatórios separados. 85 correspondências verificáveis; 76 retidos; novas origens são wikis comunitárias NÃO OFICIAIS. Não construir outro publicador/banco/SSOT.
+- **Auditoria dos 2.813 títulos em 527 universos:** **963 títulos com correspondência exata** na SSOT privada, **1.850 títulos restantes sem correspondência exata**, distribuídos em 681 não verificados em franquia existente, 708 sem vocabulário privado, 46 Kaijumon coleção de criador, 183 flags, 103 variantes/multi, 57 universo incerto, 48 aliases, 7 colisões cross-franchise, 17 duplicações normalizadas. Não confundir títulos com personagens distintos ou modelos vinculados.
+- **Fonte de retomada privada:** pasta `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/`, `fandom-new-sources-characters-manifest.json`, `identity-names-snapshot-934-private.json` e `auditoria-934/`. Snapshot é somente leitura derivada; sempre confirmar estado atual do Supabase, SHA e outros agentes.
+- **Próximos lotes:** focar 708 títulos sem vocabulário e 681 sem prova individual, depois aliases e coleções, sem repetir wikis processadas. Sem deploy, sem D1 0029, sem M5 GO, sem imagens, Telegram/R2, status comercial ou alteração de direitos.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Saint Seiya +8, Kaijumon classificado corretamente; 852 identidades
 
 - **Efeito real:** +8 novas identidades Saint Seiya no Supabase privado, auditado **852 identidades/852 identity_keys únicas, 35 franquias, 0 vínculos de esculturas e 0 tags comerciais**; 8 títulos exatos registrados com evidência comunitária de página de personagem; 18 aliases e 28 nomes de Saint Seiya retidos. OrdaX MCP `f7751a05-e004-4ad1-86f9-26496dfe5eff` exit 0; referência Seiyapedia Fandom, não oficial.

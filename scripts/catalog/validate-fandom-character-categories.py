@@ -45,6 +45,34 @@ WORLDS={
     "avatar: the last airbender":("avatar","Avatar: The Last Airbender"),
     "fire emblem: three houses":("fireemblem","Fire Emblem: Three Houses"),
     "one piece":("onepiece","One Piece"),
+    # These independent fandom hosts were individually checked for real wiki
+    # category pages on 2026-11-22. Only names with exact subject and character
+    # categories become private proposals. Fandom is not an IP rights authority.
+    "ghostbusters":("ghostbusters","Ghostbusters"),
+    "captain tsubasa":("captaintsubasa","Captain Tsubasa"),
+    "the king of fighters":("snk","The King of Fighters"),
+    "gremlins":("gremlins","Gremlins"),
+    "gargoyles":("gargoyles","Gargoyles"),
+    "masters of the universe":("heman","Masters of the Universe"),
+    "the witcher":("witcher","The Witcher"),
+    "alien":("alien","Alien"),
+    "spawn":("spawn","Spawn"),
+    "resident evil":("residentevil","Resident Evil"),
+    "darkstalkers":("darkstalkers","Darkstalkers"),
+    "cowboy bebop":("cowboybebop","Cowboy Bebop"),
+    "honkai: star rail":("honkai-star-rail","Honkai: Star Rail"),
+    "street sharks":("streetsharks","Street Sharks"),
+    "persona 5":("megamitensei","Persona 5"),
+    "fullmetal alchemist":("fullmetal-alchemist","Fullmetal Alchemist"),
+    "spy x family":("spy-x-family","Spy x Family"),
+    "yu yu hakusho":("yuyuhakusho","Yu Yu Hakusho"),
+    "the boys":("the-boys","The Boys"),
+    "the last of us":("thelastofus","The Last of Us"),
+    "cyberpunk":("cyberpunk","Cyberpunk"),
+    "fairy tail":("fairytail","Fairy Tail"),
+    "kingdom hearts":("kingdomhearts","Kingdom Hearts"),
+    "one punch man":("onepunchman","One Punch Man"),
+    "the seven deadly sins":("nanatsu-no-taizai","The Seven Deadly Sins"),
 }
 MAX_BATCH=5
 CATEGORY_MATCH=re.compile(r"(?:^|[^a-z])characters?(?:[^a-z]|$)",re.I)
@@ -174,14 +202,24 @@ def run(args):
         "status":"running","started_at_utc":datetime.now(timezone.utc).isoformat(),
         "no_canonical_writes":True
     }
-    statefile=args.out/"fandom-character-supervised.json"
+    scope_name="fandom-new-sources" if getattr(args,"only_new",False) else "fandom"
+    statefile=args.out/(scope_name+"-character-supervised.json")
     def stage(label,**info):
         state.update({"stage":label,"updated_at_utc":datetime.now(timezone.utc).isoformat(),**info})
         atomic_json(statefile,state)
         print(json.dumps({"stage":label,**info},ensure_ascii=False),flush=True)
     results,holds,domains=[],[],{}
     try:
-        for (host,franchise) in sorted(set(WORLDS.values()),key=lambda x:x[1]):
+        prior_sources={
+            "myheroacademia","bleach","attackontitan","kimetsu-no-yaiba",
+            "jujutsu-kaisen","chainsaw-man","hunterxhunter","streetfighter",
+            "mortalkombat","mario","zelda","finalfantasy","avatar",
+            "fireemblem","onepiece"
+        }
+        unique_sources=set(WORLDS.values())
+        if getattr(args,"only_new",False):
+            unique_sources={record for record in unique_sources if record[0] not in prior_sources}
+        for (host,franchise) in sorted(unique_sources,key=lambda x:x[1]):
             relevant=[r for r in rows if WORLDS.get(r["franchise_candidate_key"])==(host,franchise)]
             if not relevant:continue
             clean=[r["display_name_candidate"] for r in relevant if not r["review_flags"]]
@@ -229,9 +267,9 @@ def run(args):
             unique[k]=x
         for k in cross_duplicates:unique.pop(k,None)
         results=sorted(unique.values(),key=lambda x:(x["franchise"],normalize(x["character_name"])))
-        jsonl(args.out/"fandom-characters-exact-private.jsonl",results)
-        jsonl(args.out/"fandom-characters-held-private.jsonl",holds)
-        atomic_json(args.out/"fandom-characters-manifest.json",{
+        jsonl(args.out/(scope_name+"-characters-exact-private.jsonl"),results)
+        jsonl(args.out/(scope_name+"-characters-held-private.jsonl"),holds)
+        atomic_json(args.out/(scope_name+"-characters-manifest.json"),{
             "schema":"tonart.taxonomy.fandom-character-categories/1",
             "queue_sha256":sha256(args.queue.read_bytes()),
             "sources":domains,"verified_unique":len(results),
@@ -258,4 +296,5 @@ if __name__=="__main__":
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--queue",type=pathlib.Path,required=True)
     p.add_argument("--out",type=pathlib.Path,required=True)
+    p.add_argument("--only-new",action="store_true",default=False)
     sys.exit(run(p.parse_args()))
