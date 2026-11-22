@@ -178,7 +178,7 @@ class Element{
 const ids=['queueKind','queueVariant','legacyAuditState','legacyAuditRisk',
  'legacyAuditFilters','queueVariantLabel','legacyAuditReview','nameReview',
  'legacyAuditTitle','legacyAuditMeta','legacyAuditDecision','legacyAuditNotes',
- 'legacyAuditOpenBoard','legacyAuditSave','legacyAuditStatus','queueResults',
+ 'legacyAuditOpenBoard','legacyAuditSave','legacyAuditForm','legacyAuditStatus','queueResults',
  'queueSummary','summary','page','prev','next'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element(id)]));
 elements.queueKind.value='legacy_groups';
@@ -229,7 +229,7 @@ vm.runInContext(source.slice(start,end),ctx);
  assert.strictEqual(posts[0].revision,0);
  assert.strictEqual(posts[0].group_key,group.group_key);
  assert.strictEqual(posts[0].decision,'same_sculpture');
- assert.strictEqual(elements.legacyAuditForm?.hidden||true,true);
+ assert.strictEqual(elements.legacyAuditForm.hidden,true);
  assert(paths.length>=2);
  console.log('NATIVE_GROUP_AUDIT_UI_E2E_OK');
 })().catch(e=>{console.error(e);process.exitCode=1});
