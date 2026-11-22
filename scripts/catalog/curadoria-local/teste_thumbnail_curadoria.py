@@ -47,6 +47,47 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
         pass
     print("MINIATURAS E2E APROVADAS: WebP, dimensões, cache, ETag, limites e original intacto")
 
+# Large Telegram GIFs are allowed only as guarded first-frame previews.
+# A sparse synthetic file exercises the 25 MiB boundary without user media.
+with tempfile.TemporaryDirectory(prefix="tonart-gif-first-frame-") as root:
+    animated=Path(root)/"large.gif"
+    im=Image.new("RGB",(48,48),"purple")
+    im.save(animated,format="GIF")
+    im.close()
+    before_header=animated.open("rb").read(6)
+    with animated.open("r+b") as media:
+        media.truncate(thumbs.MAX_SOURCE_BYTES+1)
+    assert animated.stat().st_size==thumbs.MAX_SOURCE_BYTES+1
+    frame=thumbs.thumbnail(animated,"synthetic-large-gif",256)
+    assert frame[:4]==b"RIFF" and frame[8:12]==b"WEBP"
+    with Image.open(BytesIO(frame)) as preview:
+        assert preview.size==(48,48)
+    assert animated.open("rb").read(6)==before_header
+    disguised=Path(root)/"disguised.jpg"
+    animated.rename(disguised)
+    try:
+        thumbs.thumbnail(disguised,"disguised",256)
+        raise AssertionError("Oversized non-GIF accepted")
+    except thumbs.ThumbnailUnavailable:
+        pass
+    disguised.rename(animated)
+    with animated.open("r+b") as media:
+        media.seek(0);media.write(b"NOTGIF")
+    try:
+        thumbs.etag(animated,"disguised-gif",256)
+        raise AssertionError("GIF extension without actual GIF signature accepted")
+    except thumbs.ThumbnailUnavailable:
+        pass
+    with animated.open("r+b") as media:
+        media.seek(0);media.write(before_header)
+        media.truncate(thumbs.MAX_GIF_SOURCE_BYTES+1)
+    try:
+        thumbs.thumbnail(animated,"oversized-gif",256)
+        raise AssertionError("64 MiB GIF bound ignored")
+    except thumbs.ThumbnailUnavailable:
+        pass
+    print("GIF 25-64 MiB E2E: first frame only, spoof rejected, hard cap preserved")
+
 # The real HTTP handler uses the same local contract as the OrdaX MCP.
 # Test against an isolated SQLite and private synthetic JPEG, never the host.
 import http.client
