@@ -215,8 +215,7 @@ def process_batch(db_path,limit=300):
             "needs_review_images":ungrouped,**stats(db_path)}
 
 def stats(db_path):
-    with db_open(db_path) as db:
-        setup(db)
+    with db_open(db_path,readonly=True) as db:
         by_state={r["state"]:r["n"] for r in db.execute(
             "SELECT state,COUNT(*) n FROM model_groups GROUP BY state")}
         total=db.execute("SELECT COUNT(*) FROM assets").fetchone()[0]
