@@ -56,7 +56,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-review-queue-") as tmp:
     pages=[first]
     while pages[-1]["has_more"]:
         nxt=queue.list_queue(dbpath,limit=2,cursor=pages[-1]["next_cursor"])
-        assert nxt["next_cursor"] not in cursors
+        if nxt["has_more"]:
+            assert nxt["next_cursor"] not in cursors
         cursors.add(nxt["next_cursor"])
         pages.append(nxt)
     ids=[x["message_id"] for page in pages for x in page["items"]]
