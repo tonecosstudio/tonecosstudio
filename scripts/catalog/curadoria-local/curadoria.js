@@ -3,6 +3,15 @@ const el=id=>document.getElementById(id);
 let chosenName=null,nameTotal=0;
 let items=[],selected=null,currentPage=1,topic="",status="",search="",total=0,refreshing=false,typing=false;
 const fmt=n=>Number(n||0).toLocaleString("pt-BR");
+function setThumb(img,messageId,width=480){
+  const mid=Number(messageId);
+  if(!Number.isSafeInteger(mid)||mid<=0)return;
+  const original="/media/"+mid;
+  img.loading="lazy";
+  img.decoding="async";
+  img.onerror=()=>{img.onerror=null;img.src=original;};
+  img.src="/thumb/"+mid+"?w="+width;
+}
 const fields={studio:"studio",model:"model",character_name:"character",universe:"universe",file_label:"fileLabel",status:"status",notes:"notes"};
 function text(parent,tag,value,cls){const e=document.createElement(tag);if(cls)e.className=cls;e.textContent=String(value??"");parent.append(e);return e}
 function notify(s){el("notice").textContent=s;setTimeout(()=>{if(el("notice").textContent===s)el("notice").textContent=""},7000)}
@@ -11,9 +20,9 @@ async function post(route,data){const r=await fetch(route,{method:"POST",headers
 function drawTopics(topics){const node=el("topics");node.replaceChildren();const all=document.createElement("button");all.className="topic"+(!topic?" active":"");text(all,"span","Todos os estúdios");text(all,"span",fmt(total));all.onclick=()=>selectTopic("");node.append(all);
 topics.forEach(x=>{const b=document.createElement("button");b.className="topic"+(topic===x.name?" active":"");text(b,"span",x.name);text(b,"span",fmt(x.count));b.onclick=()=>selectTopic(x.name);node.append(b)})}
 function selectTopic(name){topic=name;currentPage=1;refresh()}
-function drawGallery(){const root=el("gallery");root.replaceChildren();for(const x of items){const b=document.createElement("button");b.className="tile"+(selected?.message_id===x.message_id?" active":"");const img=document.createElement("img");img.loading="lazy";img.src="/media/"+x.message_id;img.alt=x.model||"Mensagem "+x.message_id;b.append(img);const d=document.createElement("div");d.className="details";text(d,"div",x.model||x.character_name||"Imagem #"+x.message_id);text(d,"div",x.original_topic,"sub");text(d,"span",x.status,"pill");b.append(d);b.onclick=()=>selectImage(x);root.append(b)}if(!items.length)text(root,"p","Nenhuma imagem encontrada.","empty");
+function drawGallery(){const root=el("gallery");root.replaceChildren();for(const x of items){const b=document.createElement("button");b.className="tile"+(selected?.message_id===x.message_id?" active":"");const img=document.createElement("img");img.loading="lazy";setThumb(img,x.message_id);img.alt=x.model||"Mensagem "+x.message_id;b.append(img);const d=document.createElement("div");d.className="details";text(d,"div",x.model||x.character_name||"Imagem #"+x.message_id);text(d,"div",x.original_topic,"sub");text(d,"span",x.status,"pill");b.append(d);b.onclick=()=>selectImage(x);root.append(b)}if(!items.length)text(root,"p","Nenhuma imagem encontrada.","empty");
 el("summary").textContent=fmt(total)+" imagens nesta visualização";el("page").textContent="Página "+currentPage;el("prev").disabled=currentPage<=1;el("next").disabled=currentPage*48>=total}
-function selectImage(item){selected=item;el("notSelected").hidden=true;el("editor").hidden=false;el("large").src="/media/"+item.message_id;el("fileId").textContent="Mensagem "+item.message_id+" · "+item.original_topic;el("originalCaption").textContent=item.source_caption||"Sem legenda nesta mensagem. Consulte o álbum e o arquivo original antes de identificar.";for(const [key,id]of Object.entries(fields)){el(id).value=item[key]||(key==="studio"?item.original_topic:"")}drawGallery()}
+function selectImage(item){selected=item;el("notSelected").hidden=true;el("editor").hidden=false;setThumb(el("large"),item.message_id,960);el("fileId").textContent="Mensagem "+item.message_id+" · "+item.original_topic;el("originalCaption").textContent=item.source_caption||"Sem legenda nesta mensagem. Consulte o álbum e o arquivo original antes de identificar.";for(const [key,id]of Object.entries(fields)){el(id).value=item[key]||(key==="studio"?item.original_topic:"")}drawGallery()}
 async function refresh(){if(refreshing)return;refreshing=true;try{const stats=await api("/api/stats");el("numImages").textContent=fmt(stats.total);el("numPending").textContent=fmt(stats.by_status.pendente||0);el("numCheck").textContent=fmt(stats.source_checkpoint);const q=new URLSearchParams({page:currentPage,limit:48,topic,status,q:search});const data=await api("/api/items?"+q);items=data.items;total=data.total;drawTopics(stats.topics);drawGallery();if(selected){const latest=items.find(x=>x.message_id===selected.message_id);if(latest&&!typing)selected=latest}}catch(e){notify("Erro de sincronização: "+e.message)}finally{refreshing=false}}
 el("search").addEventListener("input",()=>{search=el("search").value;currentPage=1;clearTimeout(window.searchTimer);window.searchTimer=setTimeout(refresh,350)});
 el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;refresh()};
@@ -75,7 +84,7 @@ el("loadAlbumCandidate").onclick=()=>{
  for(const mid of (item.all_message_ids||item.message_ids)){
   const wrapper=document.createElement("div");
   const a=document.createElement("a");a.href="/media/"+mid;a.target="_blank";a.rel="noopener noreferrer";
-  const img=document.createElement("img");img.src="/media/"+mid;img.loading="lazy";
+  const img=document.createElement("img");setThumb(img,mid);img.loading="lazy";
   img.alt="Mensagem "+mid;img.className="preview";
   a.append(img);
   const taken=already.get(mid);
@@ -110,7 +119,7 @@ async function refreshModels(){
   const root=el("modelResults");root.replaceChildren();
   for(const g of result.items){
    const b=document.createElement("button");b.className="tile";
-   const img=document.createElement("img");img.loading="lazy";img.src="/media/"+g.sample_message;img.alt=g.title;b.append(img);
+   const img=document.createElement("img");img.loading="lazy";setThumb(img,g.sample_message);img.alt=g.title;b.append(img);
    const details=document.createElement("div");details.className="details";
    text(details,"div",g.title);
    text(details,"div",g.studio+(g.universe?" · "+g.universe:""),"sub");
@@ -154,7 +163,7 @@ async function openModel(key){
   }
   for(const item of uniquePhotos.values()){
    const a=document.createElement("a");a.href="/media/"+item.message_id;a.target="_blank";a.rel="noopener";
-   const img=document.createElement("img");img.src="/media/"+item.message_id;img.alt="Mensagem "+item.message_id;img.loading="lazy";img.className="preview";
+   const img=document.createElement("img");setThumb(img,item.message_id);img.alt="Mensagem "+item.message_id;img.loading="lazy";img.className="preview";
    a.append(img);text(a,"div","#"+item.message_id,"sub");
    const cell=document.createElement("div");cell.append(a);
    const edit=document.createElement("button");edit.textContent="Nomear esta foto";
@@ -225,7 +234,7 @@ async function refreshNames(){
   const root=el("nameResults");root.replaceChildren();
   for(const item of data.items){
    const tile=document.createElement("button");tile.className="tile";
-   const img=document.createElement("img");img.loading="lazy";img.src="/media/"+item.message_id;
+   const img=document.createElement("img");img.loading="lazy";setThumb(img,item.message_id);
    img.alt=item.title||"Mensagem "+item.message_id;tile.append(img);
    const infoBox=document.createElement("div");infoBox.className="details";
    text(infoBox,"div",item.title||"Sem nome identificado");
@@ -247,7 +256,7 @@ async function refreshNames(){
 }
 function openName(item){
  chosenName=item;el("nameReview").hidden=false;
- el("namePreview").src="/media/"+item.message_id;
+ setThumb(el("namePreview"),item.message_id,960);
  el("nameCaption").textContent=item.source_caption||"Legenda ausente: revisão necessária.";
  el("nameTitle").value=item.title||"";
  el("nameStudio").value=item.studio||"";
@@ -349,7 +358,7 @@ async function showTelegramEvidence(item){
      preview.loading="lazy";
      preview.style.objectFit="contain";
      preview.alt="Imagem da mensagem "+sourceId;
-     preview.src="/media/"+sourceId;
+     setThumb(preview,sourceId,256);
      card.append(preview);
    }
    const detail=document.createElement("div");
@@ -398,7 +407,7 @@ async function showNameReferences(item){
    const group=document.createElement("div");
    group.className="buttons";group.style.alignItems="center";group.style.marginBottom="8px";
    const img=document.createElement("img");img.width=70;img.height=85;
-   img.style.objectFit="contain";img.src="/media/"+candidate.candidate_message_id;
+   img.style.objectFit="contain";setThumb(img,candidate.candidate_message_id,256);
    img.alt="Imagem semelhante #"+candidate.candidate_message_id;img.loading="lazy";
    group.append(img);
    const content=document.createElement("div");
@@ -479,8 +488,52 @@ el("saveVisualGallery").onclick=async()=>{
 
 /* Prancha ampliada: vista unica das fotos do mesmo group_key canonico.
    Deduplica apenas na exibicao por SHA; nao modifica o acervo nem propoe fusoes. */
+const BOARD_PAGE_SIZE=24;
+let boardAllPhotos=[];
+let boardCurrentTitle="";
+let boardPage=1;
+function renderBoardPage(){
+  const root=el("boardPhotos");root.replaceChildren();
+  const total=boardAllPhotos.length;
+  const pages=Math.max(1,Math.ceil(total/BOARD_PAGE_SIZE));
+  boardPage=Math.max(1,Math.min(boardPage,pages));
+  const start=(boardPage-1)*BOARD_PAGE_SIZE;
+  for(const photo of boardAllPhotos.slice(start,start+BOARD_PAGE_SIZE)){
+    const figure=document.createElement("figure");
+    figure.className="board-photo";
+    const link=document.createElement("a");
+    link.href="/media/"+photo.message_id;
+    link.target="_blank";link.rel="noopener noreferrer";
+    const image=document.createElement("img");
+    setThumb(image,photo.message_id,960);
+    image.alt="Foto "+photo.message_id+" de "+boardCurrentTitle;
+    link.append(image);figure.append(link);
+    const caption=document.createElement("figcaption");
+    caption.className="sub";
+    caption.textContent=[
+      "#"+photo.message_id,
+      photo.match_reason==="reviewed_angles"?"Ângulos revisados":"Agrupamento provisório: conferir escultura",
+      photo.source_album?"Álbum: "+photo.source_album:"",
+      (photo.source_caption||"Legenda não disponível").slice(0,340)
+    ].filter(Boolean).join("\n");
+    figure.append(caption);
+    const edit=document.createElement("button");
+    edit.textContent="Nomear esta foto";
+    edit.onclick=async()=>{
+      el("boardDialog").close();
+      await editGalleryPhotoName(photo.message_id);
+    };
+    figure.append(edit);root.append(figure);
+  }
+  if(!total)text(root,"p","Sem fotos no grupo; revisar origem.","empty");
+  el("boardPage").textContent="Página "+boardPage+" de "+pages+
+    " · mostrando "+(total?start+1:0)+"–"+Math.min(total,start+BOARD_PAGE_SIZE)+
+    " de "+total+" fotos";
+  el("boardPrev").disabled=boardPage<=1;
+  el("boardNext").disabled=boardPage>=pages;
+}
 async function openBoard(key){
-  if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha invalido.");return;}
+  if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha inválido.");return;}
   try{
     const group=await api("/api/model/"+key);
     const photos=new Map();
@@ -488,44 +541,21 @@ async function openBoard(key){
       const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
       if(!photos.has(fingerprint))photos.set(fingerprint,item);
     }
-    el("boardTitle").textContent=group.title||"Modelo sem titulo";
+    boardAllPhotos=Array.from(photos.values());
+    boardCurrentTitle=group.title||"Modelo sem título";
+    boardPage=1;
+    el("boardTitle").textContent=boardCurrentTitle;
     el("boardMeta").textContent=[
       group.studio,group.variant,group.state,
-      photos.size+" fotos unicas",group.images.length+" mensagens",
+      photos.size+" fotos únicas",(group.images||[]).length+" mensagens",
       (group.identity_conflicts||[]).length+" conflitos de identidade"
     ].filter(Boolean).join(" | ");
-    const root=el("boardPhotos");root.replaceChildren();
-    for(const photo of photos.values()){
-      const figure=document.createElement("figure");
-      figure.className="board-photo";
-      const link=document.createElement("a");
-      link.href="/media/"+photo.message_id;
-      link.target="_blank";link.rel="noopener noreferrer";
-      const image=document.createElement("img");
-      image.src=link.href;image.loading="lazy";
-      image.alt="Foto "+photo.message_id+" de "+group.title;
-      link.append(image);figure.append(link);
-      const caption=document.createElement("figcaption");
-      caption.className="sub";
-      caption.textContent=[
-        "#"+photo.message_id,
-        photo.match_reason==="reviewed_angles"?"Angulo revisado":"Agrupamento provis?rio",
-        photo.source_album?"Album: "+photo.source_album:"",
-        (photo.source_caption||"Legenda indisponivel").slice(0,340)
-      ].filter(Boolean).join("\n");
-      figure.append(caption);
-      const edit=document.createElement("button");
-      edit.textContent="Nomear esta foto";
-      edit.onclick=async()=>{
-        el("boardDialog").close();
-        await editGalleryPhotoName(photo.message_id);
-      };
-      figure.append(edit);root.append(figure);
-    }
-    if(!photos.size)text(root,"p","Sem fotos no grupo; revisar origem.","empty");
+    renderBoardPage();
     el("boardDialog").showModal();
   }catch(e){notify("Prancha: "+e.message);}
 }
+el("boardPrev").onclick=()=>{boardPage--;renderBoardPage();el("boardDialog").scrollTop=0;};
+el("boardNext").onclick=()=>{boardPage++;renderBoardPage();el("boardDialog").scrollTop=0;};
 el("openBoardBtn").onclick=()=>{if(chosenGroup)openBoard(chosenGroup.group_key)};
 el("propagateGalleryName").onclick=async()=>{
   if(!chosenGroup)return;
