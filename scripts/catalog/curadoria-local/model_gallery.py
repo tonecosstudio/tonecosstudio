@@ -43,7 +43,8 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
             raise ValueError("Identidades ou variantes discordantes: não unir")
         for r in rows:
             if r["previous_key"]!=group_key and (
-                r["match_reason"] in ("reviewed_angles","reviewed_split") or r["group_state"]=="confirmado"):
+                r["match_reason"] in ("reviewed_angles","reviewed_split")
+                or r["gallery_visual_audited"] or r["group_state"]=="confirmado"):
                 raise ValueError("Imagem já pertence a outra galeria revisada ou confirmada")
         named=next((r for r in rows if (r["title"] or "").strip()),None)
         studio=named["studio"] if named else topic
