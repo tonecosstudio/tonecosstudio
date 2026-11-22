@@ -15,7 +15,7 @@ import smart_curadoria as smart
 
 GROUP_KEY = re.compile(r"^[0-9a-f]{24}$")
 CURSOR = re.compile(r"^([0-3]):([1-9][0-9]{0,3}):([0-9a-f]{24})$")
-STATES = frozenset(("pending", "audited", "all"))
+STATES = frozenset(("new", "attention", "pending", "audited", "all"))
 RISKS = frozenset(("all", "variants", "albums", "large"))
 DECISIONS = frozenset(("same_sculpture", "different_sculptures", "needs_more_evidence"))
 EXCLUDED = "Geral + 50k"
@@ -100,6 +100,10 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
         params.extend(["%"+q+"%"]*5)
     if state=="pending":
         filters.append("audited=0")
+    elif state=="new":
+        filters.append("audited=0 AND attention=0")
+    elif state=="attention":
+        filters.append("audited=0 AND attention=1")
     elif state=="audited":
         filters.append("audited=1")
     if risk=="variants":
