@@ -125,8 +125,10 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       screen.queryByRole("region", { name: /coleções por estúdio/i }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByText("3DXM")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Chibi" })).toBeInTheDocument();
+    expect(screen.getByText("3DXM")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Filtrar por tag Chibi" }),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
     await waitFor(() =>
       expect(
@@ -158,6 +160,64 @@ describe("Telegram-only public studio gallery", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Limpar filtros" }));
     expect(window.location.search).not.toContain("categoria=");
+  });
+
+  it("renders unique structured chips and filters Ace by exact franchise-scoped character", async () => {
+    const ace = {
+      ...model,
+      name: "Ace",
+      character: "Ace",
+      studio: "RedBushido",
+      category: "Animes & Desenhos",
+      categorySlug: "animes-desenhos",
+      franchise: "One Piece",
+      franchiseSlug: "one-piece",
+      variant: "",
+    };
+    const fetcher = vi.fn(async () =>
+      Response.json({ total: 2, offset: 0, limit: 24, items: [ace] }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    render(<TelegramStudioCatalog />);
+    const open = await screen.findByRole("button", {
+      name: /abrir galeria de ace/i,
+    });
+    const card = open.closest("article");
+    expect(card).not.toBeNull();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por categoria Animes & Desenhos",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia One Piece",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).getByRole("button", { name: "Filtrar por personagem Ace" }),
+    ).toBeInTheDocument();
+    // The title is shown once, rather than repeating the character above itself.
+    expect(within(open).getAllByText("Ace")).toHaveLength(1);
+    fireEvent.click(
+      within(card!).getByRole("button", { name: "Filtrar por personagem Ace" }),
+    );
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls.some(([uri]) => {
+          const params = new URL(
+            String(uri),
+            "https://catalogo.tonartstudio.com.br",
+          ).searchParams;
+          return (
+            params.get("franchise") === "one-piece" &&
+            params.get("character") === "Ace"
+          );
+        }),
+      ).toBe(true),
+    );
+    expect(window.location.search).toContain("franquia=one-piece");
+    expect(window.location.search).toContain("personagem=Ace");
   });
 
   it("lists studios alphabetically and opens a separate studio collection", async () => {

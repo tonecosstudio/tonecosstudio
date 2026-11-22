@@ -21,6 +21,8 @@ type ModelRow = {
   telegram_gallery_order: string | null
   category?: string
   category_slug?: string
+  franchise?: string
+  franchise_slug?: string
 }
 type ImageRow = { image_id: string; source_sha256: string; position: number }
 
@@ -103,6 +105,7 @@ function normalize(m: ModelRow) {
     variant: m.variant_name || '', imageCount: Number(m.image_count),
     provisional: m.telegram_name_provisional === 1,
     category: m.category || '', categorySlug: m.category_slug || '',
+    franchise: m.franchise || '', franchiseSlug: m.franchise_slug || '',
   }
 }
 export async function routeTelegramStudioShowcase(
@@ -126,12 +129,16 @@ export async function routeTelegramStudioShowcase(
       const q = url.searchParams.get('q')?.trim() ?? ''
       const provisional = url.searchParams.get('provisional')
       const category = url.searchParams.get('category') ?? ''
+      const franchise = url.searchParams.get('franchise') ?? ''
+      const character = url.searchParams.get('character') ?? ''
       const rawOffset = url.searchParams.get('offset') ?? '0'
       const rawLimit = url.searchParams.get('limit') ?? '24'
-      const allowed = new Set(['studio', 'q', 'category', 'provisional', 'offset', 'limit'])
+      const allowed = new Set(['studio', 'q', 'category', 'franchise', 'character', 'provisional', 'offset', 'limit'])
       if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
           studio.length > 120 || /\p{Cc}/u.test(studio) ||
           category.length > 80 || (category !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)) ||
+          franchise.length > 80 || (franchise !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(franchise)) ||
+          character.length > 80 || /\p{Cc}/u.test(character) || (character && (!franchise || character !== character.trim())) ||
           q.length > 80 || /\p{Cc}/u.test(q) ||
           (provisional !== null && provisional !== '0' && provisional !== '1') ||
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
@@ -142,13 +149,16 @@ export async function routeTelegramStudioShowcase(
       const values: unknown[] = []
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
       if (category) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f JOIN categories c ON c.id=f.category_id WHERE c.slug=?)'); values.push(category) }
+      if (franchise) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f WHERE f.slug=?)'); values.push(franchise) }
+      // Character identity is franchise-scoped; a substring never identifies a character.
+      if (character) { where.push('m.telegram_character=? COLLATE NOCASE'); values.push(character) }
       if (provisional !== null) {
         where.push('m.telegram_name_provisional=' + (provisional === '1' ? '1' : '0'))
       }
       if (q) {
         const term = '%' + q.replace(/[%_\\]/g, '') + '%'
-        where.push("(m.name LIKE ? OR m.telegram_character LIKE ? OR COALESCE(m.variant_name,'') LIKE ?)")
-        values.push(term, term, term)
+        where.push("(m.name LIKE ? OR m.telegram_character LIKE ? OR COALESCE(m.variant_name,'') LIKE ? OR m.franchise_id IN (SELECT f.id FROM franchises f WHERE f.name LIKE ?))")
+        values.push(term, term, term, term)
       }
       const condition = where.join(' AND ')
       const count = await env.DB.prepare('SELECT COUNT(*) AS total FROM models m WHERE ' + condition)
@@ -162,6 +172,8 @@ export async function routeTelegramStudioShowcase(
         ' SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,m.variant_name,m.image_count,m.telegram_name_provisional,' +
         ' (SELECT c.name FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category,' +
         ' (SELECT c.slug FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category_slug,' +
+        ' (SELECT f.name FROM franchises f WHERE f.id=m.franchise_id) AS franchise,' +
+        ' (SELECT f.slug FROM franchises f WHERE f.id=m.franchise_id) AS franchise_slug,' +
         ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1' +
         ' ORDER BY CASE WHEN m.cover_storage_key=(' +
         " 'telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +
@@ -182,7 +194,12 @@ export async function routeTelegramStudioShowcase(
     const id = (mediaMatch || detailMatch)![1]
     if (!ID.test(id)) return json({ error: 'not_found' }, 404)
     const model = await env.DB.prepare('SELECT m.id,m.name,m.telegram_studio,m.telegram_character,m.telegram_origin_id,' +
-      'm.variant_name,m.image_count,m.telegram_name_provisional,m.telegram_gallery_order FROM models m WHERE m.id=? AND ' + VISIBLE + ' LIMIT 1')
+      'm.variant_name,m.image_count,m.telegram_name_provisional,m.telegram_gallery_order,' +
+      ' (SELECT f.name FROM franchises f WHERE f.id=m.franchise_id) AS franchise,' +
+      ' (SELECT f.slug FROM franchises f WHERE f.id=m.franchise_id) AS franchise_slug,' +
+      ' (SELECT c.name FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category,' +
+      ' (SELECT c.slug FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category_slug' +
+      ' FROM models m WHERE m.id=? AND ' + VISIBLE + ' LIMIT 1')
       .bind(id).first<ModelRow>()
     if (!model) return json({ error: 'not_found' }, 404)
     if (mediaMatch) {
