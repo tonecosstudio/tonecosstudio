@@ -1,5 +1,21 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Fila priorizada de revisão — 22/11/2026
+
+A tela **Fila de revisão**, na interface privada em `http://127.0.0.1:8769`, usa o **mesmo SQLite e a mesma revisão otimista de `name_proposals`**. Não existe worker, banco de tarefas, serviço de claims ou cópia de mídia. A fila é derivada em consultas SQL somente leitura; o clique abre o formulário de revisão já existente.
+
+- **Prioridades operacionais:** sem nome (0), grupo herdado da antiga regra por álbum (1), nome marcado para revisão (2), proposta sem fonte oficial vinculada (3) e outros registros (4). São riscos/pendências de curadoria; **nenhum estado certifica direitos comerciais**.
+- **Filtros:** estúdio/tópico, pendência, variante presente/ausente e busca por identidade/franquia/legenda/ID. O tópico `Geral + 50k` é deliberadamente excluído e rejeitado nesta fila para não colidir com a missão independente desse lote.
+- **Paginação por cursor:** `priority:message_id` com ordenação por prioridade ascendente e mensagem descendente. Limite **1–48** por chamada. Evita varredura profunda via `OFFSET`, funciona com revisões paralelas e impede resultados duplicados enquanto as prioridades não são alteradas. Uma revisão pode mudar a prioridade; o painel reinicia a navegação após salvar. Escritas são protegidas pela revisão otimista existente, não por bloqueios permanentes.
+- **Contrato único UI/MCP:** `GET /api/review-queue?topic=<estúdio>&kind=attention&variant=all&q=&cursor=&limit=48`, operação `review.queue` em `GET /api/capabilities`. Tipos de filtro: `attention`, `unlabeled`, `legacy_album`, `manual_review`, `missing_source`, `confirmed`, `all`. Variantes: `all`, `with`, `without`. Não é um endpoint de escrita; inputs inválidos retornam HTTP 400.
+- **Provas Windows reais:** SQLite com **38.598 imagens** e **7.409 pendências na fila**, excluindo `Geral + 50k`; primeira página de 48 em aproximadamente **51 ms** e filtro manual de Pokerus Studio com **4 imagens** em **24 ms** durante o pré-deploy. A API após ativação retornou exatamente os IDs `6884, 6883, 6882, 6881`. Duas páginas consecutivas com 12 itens não repetiram IDs; oito GETs concorrentes terminaram em HTTP 200; filtros proibidos retornaram HTTP 400; `PRAGMA quick_check(1)=ok`. Esses tempos são amostras do computador autorizado, não SLAs.
+- **Testes:** `python teste_review_queue.py` exercita prioridades, filtros, isolamento, cursores e endpoint HTTP com base temporária; `python teste_ui.py` valida a integração de controles e sintaxe JS. Nenhum arquivo de origem Telegram, bucket, D1 ou cadastro público é modificado.
+
+A fila evoluirá como **produto de revisão visual**, incluindo categorias confiáveis, fontes e observabilidade; não deve ser substituída por scripts independentes de nomeação em massa.
+
+---
+
+
 Aplicativo **privado e local** para identificar imagens durante o download do Telegram. Não é um novo backend do catálogo público e não altera a importação existente.
 
 ## Separação dos dados
