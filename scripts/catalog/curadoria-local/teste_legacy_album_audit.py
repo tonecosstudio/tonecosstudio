@@ -4,9 +4,13 @@ from contextlib import closing
 import json
 import sqlite3
 import tempfile
+import http.client
+import threading
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import legacy_album_audit as audit
+import tonart_curadoria as host
 
 with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     dbpath=Path(root)/"curadoria.sqlite3"
@@ -145,4 +149,55 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
         assert parsed["publication_approved"] is False
         assert db.execute("""SELECT state,revision FROM model_groups
             WHERE group_key=?""",("a"*24,)).fetchone()==("provavel",1)
+    # HTTP contract shared by UI and MCP. All data stays synthetic.
+    original_db=host.DB_PATH
+    host.DB_PATH=dbpath
+    service=ThreadingHTTPServer(("127.0.0.1",0),host.Handler)
+    service.daemon_threads=True
+    worker=threading.Thread(target=service.serve_forever,daemon=True)
+    worker.start()
+    def exchange(method,path,body=None):
+        with closing(http.client.HTTPConnection(
+            "127.0.0.1",service.server_port,timeout=7,
+        )) as conn:
+            payload=json.dumps(body).encode("utf-8") if body is not None else None
+            headers=({
+                "Origin":f"http://{host.HOST}:{host.PORT}",
+                "X-Tonart-Token":host.TOKEN,
+                "Content-Type":"application/json"
+            } if method=="POST" else {})
+            conn.request(method,path,body=payload,headers=headers)
+            response=conn.getresponse()
+            return response.status,json.loads(response.read().decode("utf-8"))
+    try:
+        code,data=exchange("GET","/api/legacy-album-audit?state=pending&limit=2")
+        assert code==200 and data["total"]==1
+        assert data["items"][0]["group_key"]=="c"*24
+        code,data=exchange("GET","/api/legacy-album-audit?risk=invalid")
+        assert code==400 and "error" in data
+        code,data=exchange("GET","/api/legacy-album-audit?topic=Geral+%2B+50k")
+        assert code==400
+        code,data=exchange("GET","/api/capabilities")
+        assert code==200 and all(
+            any(x["id"]==op for x in data["operations"])
+            for op in ("gallery.legacy_audit","gallery.legacy_audit_review")
+        )
+        body={
+            "group_key":"c"*24,"revision":1,
+            "decision":"same_sculpture",
+            "note":"Três vistas originais revisadas; mesma base, geometria e pose."
+        }
+        code,data=exchange("POST","/api/audit-legacy-gallery",body)
+        assert code==200 and data["revision"]==2
+        assert data["publication_approved"] is False
+        code,data=exchange("POST","/api/audit-legacy-gallery",body)
+        assert code==409 and "error" in data
+        code,data=exchange("GET","/api/legacy-album-audit?state=pending")
+        assert code==200 and data["total"]==0
+    finally:
+        service.shutdown()
+        service.server_close()
+        worker.join(timeout=6)
+        host.DB_PATH=original_db
+
     print("AUDITORIA DE GALERIAS E2E: fila agrupada, cursores, revisão otimista, conflitos, histórico, originais intocados")
