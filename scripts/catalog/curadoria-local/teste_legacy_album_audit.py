@@ -83,6 +83,18 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     )
     assert second["items"][0]["group_key"]=="c"*24,second
     assert not second["has_more"] and not second["next_cursor"]
+    # One SQL read returns front and back angles for each group; no N+1.
+    wall=audit.list_groups(dbpath,state="all",limit=96,previews=4)
+    assert wall["total"]==3 and wall["previews"]==4
+    by_key={item["group_key"]:item["preview_ids"] for item in wall["items"]}
+    assert by_key["a"*24]==[101,102,103],by_key
+    assert by_key["b"*24]==[111,112],by_key
+    assert by_key["c"*24]==[201,202,203],by_key
+    dense=audit.list_groups(dbpath,state="all",limit=96,previews=6)
+    assert dense["previews"]==6
+    assert all(1<=len(x["preview_ids"])<=6 for x in dense["items"])
+    no_preview=audit.list_groups(dbpath,state="all",limit=96,previews=0)
+    assert all("preview_ids" not in x for x in no_preview["items"])
     assert audit.list_groups(dbpath,state="audited")["total"]==1
     assert audit.list_groups(dbpath,state="all")["total"]==3
     assert audit.list_groups(dbpath,state="pending",risk="variants")["total"]==1
@@ -93,7 +105,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     for kwargs in (
         {"topic":"Geral + 50k"},{"state":"not_a_state"},
         {"risk":"not_a_risk"},{"cursor":"0:0:bad"},
-        {"limit":9999},{"limit":"bad"}
+        {"limit":9999},{"limit":"bad"},{"previews":2},
+        {"previews":999},{"previews":"invalid"}
     ):
         try:
             audit.list_groups(dbpath,**kwargs)
