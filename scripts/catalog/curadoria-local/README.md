@@ -1,5 +1,17 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Miniaturas escaláveis e telemetria de decodificação — 22/11/2026
+
+O mecanismo canônico de miniaturas do host, `thumbnail_curadoria.py`, foi aprimorado **sem criar serviço paralelo ou alterar mídia de origem**. A interface `curadoria.js` utiliza exclusivamente `/thumb/{message_id}?w=256|480|960` para grades e pranchas. Se a miniatura não puder ser gerada, mostra um pequeno **placeholder SVG local** (CSP `img-src data:`) e não requisita automaticamente a imagem original em tamanho integral; o acesso manual à origem permanece disponível nas fichas. Cache permanece **somente RAM**, limitado a 512 itens / 24 MiB, com no máximo três decodificadores simultâneos.
+
+Uma foto real da Kuton Sculpts (`msg_23137.gif`) tinha **60.187.954 bytes, 1.024×1.024 px e 299 quadros**, e recebia HTTP 503 pela limitação geral de 25 MiB. A política agora admite **apenas GIF realmente identificado por assinatura GIF87a/GIF89a até 64 MiB**, verificando novamente o formato Pillow, o teto de 36 milhões de pixels e decodificando **somente o primeiro quadro**. Outros tipos continuam com teto de 25 MiB. A imagem real produziu WebP de **13.902 bytes** em **168,6 ms** no teste isolado; a instalação ativa confirmou HTTP 200 e mesmo resultado em bytes, sem tocar arquivo original. Testes sintéticos cobrem extensão disfarçada, GIF inválido, GIF acima de 64 MiB, ETag/304 e ausência de escritas via GET.
+
+Para diagnosticar carga de milhares de imagens, `GET /api/performance` mantém contadores *em memória* `active_decoders`, `queue_wait_samples`, `queue_wait_ms_total/max`, `process_samples`, `process_ms_total/max/mean`, além de hits, misses, falhas e limites. Rejeições precoces de origem também são contadas, antes da decodificação. Não há persistência de caminho privado, conteúdo de fotos, identificação pessoal, novo SQL ou polling periódico. Em verificação física de 32 miniaturas frias com 6 clientes: **32/32 HTTP 200**, **0,94 s** de tempo total, espera máxima **57,2 ms**, processamento médio **56,3 ms**, nenhuma falha, `active_decoders=0` no encerramento; `PRAGMA quick_check(1)=ok` e 38.598 assets preservados. Teste maior anterior de 96 miniaturas teve pico intermitente de 36,69 s no primeiro carregamento e 0,65 s após cache; outra medição com 48 miniaturas de 480 px levou 0,92 s. Não atribuir o pico sem evidência: os novos contadores permitem verificar contenção e custo de processamento nas próximas medições.
+
+**SSOT:** `tonecosstudio/tonecosstudio/main`; host local existente `TONART Curadoria Host` é a única instância. O módulo e a interface foram sincronizados por hash e substituição atômica, reiniciando exclusivamente a tarefa do host. Site, D1, R2, imagens Telegram e aprovação comercial permaneceram inalterados.
+
+
+
 ## Pranchas coletivas em escala — 22/11/2026
 
 O host local existente `http://127.0.0.1:8769` agora permite **revisão visual em larga escala** sobre o SQLite privado canônico, sem abrir cada modelo individualmente ou criar serviços, thumbnails persistentes ou bancos paralelos.
