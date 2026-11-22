@@ -46,7 +46,7 @@ def _key(path: Path, sha256: str, width: int) -> tuple:
 def etag(path: Path, sha256: str, width: int) -> str:
     key = _key(path, sha256, width)
     fingerprint = hashlib.sha256(json.dumps(
-        ("webp-v1", *key), ensure_ascii=False
+        ("webp-v2", *key), ensure_ascii=False
     ).encode("utf-8")).hexdigest()[:32]
     return '"' + fingerprint + '"'
 
@@ -97,7 +97,7 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
                         normalized = image
                     try:
                         payload = BytesIO()
-                        normalized.save(payload, format="WEBP", quality=78, method=3)
+                        normalized.save(payload, format="WEBP", quality=76, method=1)
                         result = payload.getvalue()
                     finally:
                         if normalized is not image:
