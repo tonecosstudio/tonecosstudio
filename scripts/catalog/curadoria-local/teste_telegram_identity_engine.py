@@ -402,6 +402,20 @@ class TelegramIdentityEngineTests(unittest.TestCase):
                 grouped_id="album-700", has_media=True,
             ),
         ])
+        album = engine.list_telegram_album(self.db_path, 701)
+        self.assertTrue(album["has_album"])
+        self.assertTrue(album["read_only"])
+        self.assertEqual(album["studio"], "Pokerus Studio")
+        self.assertEqual(album["album_id"], "album-700")
+        self.assertEqual(
+            [item["message_id"] for item in album["items"]], [700, 701]
+        )
+        self.assertFalse(album["truncated"])
+        # Same album ID in a different studio must never leak into the board.
+        other_album = engine.list_telegram_album(self.db_path, 702)
+        self.assertEqual(
+            [item["message_id"] for item in other_album["items"]], [702]
+        )
         result = engine.list_telegram_findings(self.db_path, 701)
         contextual = [
             c for c in result["candidates"]
