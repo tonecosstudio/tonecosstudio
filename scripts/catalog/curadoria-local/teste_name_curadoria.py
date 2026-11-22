@@ -28,6 +28,14 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
                 (mid,sha,p.name,"Poke Studio",caption,album))
     assert m.proposed_name({"title":"Zoro vs Mihawk Diorama","variant":"Diorama 1/10"},5739,"foo.jpg")=="zoro-vs-mihawk-diorama-1-10-msg5739.jpg"
     first=m.process_batch(db,50)
+    # Event lookups must remain indexed as the private curation history grows.
+    with closing(sqlite3.connect(db)) as conn:
+        indexes = {row[1] for row in conn.execute("PRAGMA index_list(name_proposal_events)")}
+        assert "idx_name_proposal_events_message_type" in indexes,indexes
+        columns = [row[2] for row in conn.execute(
+            "PRAGMA index_info(idx_name_proposal_events_message_type)"
+        )]
+        assert columns == ["message_id", "event_type"],columns
     assert first["images_processed"]==4,first
     assert first["names_proposed"]==3,first
     assert first["awaiting_name_review"]==1,first
