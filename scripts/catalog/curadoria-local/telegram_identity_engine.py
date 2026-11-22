@@ -1128,6 +1128,29 @@ def _related_candidates(
         asset["original_topic"], asset["source_caption"] or "",
         message_id=int(asset["message_id"]),
     ).candidates)
+    # An exact-ID media message in the saved Telegram history may contain a
+    # caption missing from the downloader index. Reject mismatched chat/topic
+    # provenance rather than attaching text from a neighboring message.
+    original = db.execute("""
+        SELECT h.text, h.topic_name
+        FROM telegram_history_messages h
+        JOIN telegram_identity_coverage c
+          ON c.message_id=h.message_id
+         AND c.source_chat_id=h.source_chat_id
+         AND c.topic_id=h.topic_id
+         AND c.topic_name=h.topic_name
+        WHERE h.message_id=? AND h.has_media=1
+          AND h.topic_name=? LIMIT 1
+    """, (int(asset["message_id"]), asset["original_topic"])).fetchone()
+    if original:
+        parsed = parse_telegram_caption(
+            original["topic_name"], original["text"] or "",
+            message_id=int(asset["message_id"]),
+        )
+        for candidate in parsed.candidates:
+            candidates.append(TelegramCandidate(
+                **{**asdict(candidate), "evidence_type": "telegram_original_message"},
+            ))
     rows = db.execute("""
         SELECT h.message_id,h.text,h.topic_name
         FROM telegram_history_links l JOIN telegram_history_messages h
@@ -1179,19 +1202,25 @@ def _record_candidate_event(
         """, (int(message_id), event_type, evidence, _now()))
 
 
-def apply_telegram_evidence(db_path: str | Path, *, limit: int = 1000) -> dict[str, int]:
-    """Write caption/reply candidates into existing name_proposals, never confirmed."""
+def apply_telegram_evidence(
+    db_path: str | Path, *, limit: int = 1000, original_topic: str | None = None,
+) -> dict[str, int]:
+    """Write provisional Telegram candidates, optionally within one studio topic."""
     processed = proposed = ambiguous = protected = 0
     with _open_curadoria(db_path) as db:
         if not _table_exists(db, "name_proposals"):
             return {"processed": 0, "proposed": 0, "ambiguous": 0, "preserved_manual": 0}
         db.execute("BEGIN IMMEDIATE")
-        assets = db.execute("""
+        asset_sql = """
             SELECT message_id,sha256,original_topic,source_caption,source_album,source_relative
             FROM assets
             WHERE lower(replace(replace(trim(COALESCE(original_topic,'')),' ',''),'+',''))!='geral50k'
-            ORDER BY message_id
-        """).fetchall()
+        """
+        asset_params: tuple[str, ...] = ()
+        if original_topic is not None:
+            asset_sql += " AND original_topic=?"
+            asset_params = (original_topic,)
+        assets = db.execute(asset_sql + " ORDER BY message_id", asset_params).fetchall()
         for asset in assets:
             mid = int(asset["message_id"])
             candidates = _related_candidates(db, asset)
