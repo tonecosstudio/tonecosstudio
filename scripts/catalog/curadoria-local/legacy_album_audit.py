@@ -7,6 +7,7 @@ existente, com revisão otimista e fotografia dos SHA-256, sem modificar relaç�
 from __future__ import annotations
 
 from contextlib import closing
+import hashlib
 import json
 import re
 
@@ -173,7 +174,8 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
 
 
 def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
-                      expected_member_ids=None, expected_sha256s=None):
+                      expected_member_ids=None, expected_sha256s=None,
+                      batch_id=None, batch_size=None):
     """Shared audit decision under a caller-owned write transaction.
 
     The single-review endpoint preserves its existing API. Batch reviews
@@ -239,6 +241,9 @@ def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
         "identity_approved":False,
         "publication_approved":False,
     }
+    if batch_id is not None:
+        audit["batch_id"]=batch_id
+        audit["batch_size"]=batch_size
     db.execute("""INSERT INTO curation_events(
         group_key,event_type,detail,occurred_at)
         VALUES(?,?,?,?)""",(
@@ -268,6 +273,50 @@ def record_review(db_path, *, group_key, revision, decision, note):
             raise
 
 
+def _committed_batch_receipt(db, reviews, batch_id):
+    """Reconstruct the exact receipt from canonical audit events only.
+
+    Do not replay a batch whose group has undergone later edits. The read-only
+    check makes retries after a lost HTTP response inexpensive and harmless.
+    """
+    results=[]
+    for item in reviews:
+        event=db.execute("""
+            SELECT event_type,detail FROM curation_events
+            WHERE group_key=? AND event_type IN (
+              'visual_gallery_audited','visual_gallery_audit_attention'
+            ) ORDER BY event_id DESC LIMIT 1
+        """,(item["group_key"],)).fetchone()
+        if not event:
+            return None
+        try:
+            detail=json.loads(event["detail"])
+        except (TypeError,ValueError):
+            return None
+        if (detail.get("batch_id")!=batch_id or
+            detail.get("batch_size")!=len(reviews) or
+            detail.get("classification")!=item["decision"] or
+            detail.get("notes")!=item["note"].strip() or
+            detail.get("member_ids")!=item["member_ids"] or
+            detail.get("sha256s")!=item["sha256s"]):
+            return None
+        rev=db.execute("SELECT revision FROM model_groups WHERE group_key=?",
+                       (item["group_key"],)).fetchone()
+        if rev is None or rev["revision"]!=item["revision"]+1:
+            return None
+        results.append({
+            "ok":True,"group_key":item["group_key"],
+            "decision":item["decision"],"event_type":event["event_type"],
+            "revision":rev["revision"],"members":len(item["member_ids"]),
+            "publication_approved":False,"group_relations_changed":False,
+        })
+    return {
+        "ok":True,"reviewed":len(results),"results":results,
+        "publication_approved":False,"group_relations_changed":False,
+        "atomic":True,"batch_id":batch_id,"replayed":True,
+    }
+
+
 def record_reviews_batch(db_path, *, reviews):
     """Commit up to 12 distinct, individually evidenced gallery reviews.
 
@@ -292,25 +341,50 @@ def record_reviews_batch(db_path, *, reviews):
                 or ids!=sorted(set(ids))
                 or any(not isinstance(h,str) or not h.strip() for h in hashes)):
             raise ValueError("Fotografias da revisão precisam ser identificadas por ID e hash")
+        if (type(item.get("revision")) is not int or item["revision"]<0 or
+            item.get("decision") not in DECISIONS or
+            not isinstance(item.get("note"),str) or
+            not 15<=len(item["note"].strip())<=500):
+            raise ValueError("Classificação, revisão ou justificativa inválida")
         keys.append(key)
     if len(set(keys))!=len(keys):
         raise ValueError("Galeria repetida na remessa")
-    # Validate every gallery and journal every result while holding the same
-    # lock. The complete batch is committed once, or fully rolled back.
+    normalized=sorted((
+        {"group_key":item["group_key"],"revision":item["revision"],
+         "decision":item["decision"],"note":item["note"].strip(),
+         "member_ids":item["member_ids"],"sha256s":item["sha256s"]}
+        for item in reviews
+    ),key=lambda x:x["group_key"])
+    batch_id=hashlib.sha256(json.dumps(
+        normalized,sort_keys=True,separators=(",",":"),ensure_ascii=False
+    ).encode("utf-8")).hexdigest()
+    # Fast read-only replay, including the case where the first HTTP
+    # response was lost after commit. No SQLite writer lock is required.
+    with closing(smart.db_open(db_path,readonly=True)) as db:
+        prior=_committed_batch_receipt(db,reviews,batch_id)
+        if prior is not None:
+            return prior
+    # Validate under the writer lock as well: another request could commit
+    # this exact batch between the read-only check and BEGIN IMMEDIATE.
     with closing(smart.db_open(db_path)) as db:
         db.execute("BEGIN IMMEDIATE")
         try:
+            prior=_committed_batch_receipt(db,reviews,batch_id)
+            if prior is not None:
+                db.rollback()
+                return prior
             stamp=smart.utc()
             results=[]
             for item in reviews:
                 results.append(_record_review_tx(
                     db,group_key=item["group_key"],
-                    revision=item.get("revision"),
-                    decision=item.get("decision"),
-                    note=item.get("note"),
+                    revision=item["revision"],
+                    decision=item["decision"],
+                    note=item["note"],
                     stamp=stamp,
                     expected_member_ids=item["member_ids"],
                     expected_sha256s=item["sha256s"],
+                    batch_id=batch_id,batch_size=len(reviews),
                 ))
             db.commit()
             return {
@@ -318,7 +392,7 @@ def record_reviews_batch(db_path, *, reviews):
                 "results":results,
                 "publication_approved":False,
                 "group_relations_changed":False,
-                "atomic":True,
+                "atomic":True,"batch_id":batch_id,"replayed":False,
             }
         except BaseException:
             db.rollback()
