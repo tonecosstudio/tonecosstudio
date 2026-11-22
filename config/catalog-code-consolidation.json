@@ -9,7 +9,7 @@
   "origin": {
     "repository": "washingtonmsdj/catalogo",
     "repositoryId": 1398242143,
-    "observedMainSha": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
+    "observedMainSha": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
     "openPullRequestsAtAudit": [
       266,
       264,
@@ -168,7 +168,7 @@
   "lastVerifiedDate": "2026-11-04",
   "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy.",
   "staging": {
-    "sourceMain": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
+    "sourceMain": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
     "sourceFixPullRequest": 266,
     "sourceFixHead": "59983806acb7a338ae3b9c1ddfd524561ff8a02f",
     "sourceFixStatusAtImport": "open-draft-not-merged",
@@ -361,22 +361,22 @@
     }
   },
   "productionObservation": {
-    "observedDate": "2026-11-21",
+    "observedDate": "2026-11-22",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "72409d0f-5081-4e28-a8f1-ec3965446a4e",
-    "currentVersionId": "81d141df-b4e6-4f3f-8548-eb6a6dcaf4a0",
-    "currentVersionNumber": 39,
+    "currentDeploymentId": "749a743b-ced7-4723-9465-4b47e612075d",
+    "currentVersionId": "aa8fd20c-857c-4780-a15e-021569a32251",
+    "currentVersionNumber": 50,
     "currentTrafficPercent": 100,
     "currentVersionSourceCommit": null,
-    "currentVersionDeployedAt": "2026-11-21T03:13:05.530069Z",
-    "previousVersionId": "7db9b4ff-c711-44ee-9f49-a0aaae51c923",
-    "previousVersionNumber": 41,
+    "currentVersionDeployedAt": "2026-11-21T23:05:32.396115Z",
+    "previousVersionId": "d2f5333c-6285-47c5-a917-746f79cab4b0",
+    "previousVersionNumber": 49,
     "previousVersionMayBeRollbackCandidate": false,
     "rollbackTestedAgainstProduction": false,
     "observedMainAheadOfProductionByCommits": null,
     "runtimeFileChangesBetweenProductionSourceAndObservedMain": null,
-    "observedSourceMainSha": "8d3ae13a6b26d77dd30ea728c8682c2c04318ace",
+    "observedSourceMainSha": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
     "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
     "sourceWorkflowTriggers": [
       "push/main with runtime paths",
@@ -384,16 +384,19 @@
     ],
     "sourceDispatchCanApplyRemoteD1Migrations": true,
     "currentSettingsBindings": [
+      "ADMIN_SUPABASE_ANON_KEY",
+      "ADMIN_SUPABASE_URL",
+      "CORS_ORIGINS",
       "DB",
       "MEDIA",
-      "TURNSTILE_SECRET_KEY",
-      "CORS_ORIGINS"
+      "PRIVATE_TELEGRAM",
+      "TURNSTILE_SECRET_KEY"
     ],
     "sourceWorkflowDisabledVerified": false,
     "releaseGoApproved": false,
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "Read-only 2026-11-21 audit: production rollback to Worker v39/81d141df after 503 caused by missing D1 migration 0025. Former v41/7db9b4ff is incompatible and must not be selected as rollback. Production Worker source SHA is not independently attested; runtime delta is unverified. Washington origin writer workflows remain administratively active despite if:false job guards; no M5 authorization. Recheck all live identities, schema, queues and rollback/credentials before cutover."
+    "note": "Read-only 2026-11-22 reconciliation: source main 62fa6b5 is exactly one documentation-only commit after the previously pinned 8d3ae13 (README.md and docs/CONTINUIDADE-OPERACIONAL.md only). Worker v50/aa8fd20c is live at 100% via Wrangler in the existing Cloudflare account with canonical D1 and R2 bindings; active Worker source commit is not independently attested. Previous v49 is NOT a tested rollback candidate. Five GitHub workflows in the source repository remain administratively active, and M5 authorization, rollback proof, target credentials and D1 index 0028 are absent or not verified. This observation is not release approval; recheck identities, version and schema immediately before cutover."
   }
 }
