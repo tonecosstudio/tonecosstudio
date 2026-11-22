@@ -506,6 +506,7 @@ class Handler(BaseHTTPRequestHandler):
                         DB_PATH,topic=p.get("topic",[""])[0],
                         state=p.get("state",["pending"])[0],
                         risk=p.get("risk",["all"])[0],
+                        q=p.get("q",[""])[0],
                         cursor=p.get("cursor",[""])[0],
                         limit=p.get("limit",["24"])[0]))
                 except ValueError as exc:
