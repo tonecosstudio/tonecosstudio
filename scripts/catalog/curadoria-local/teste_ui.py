@@ -373,3 +373,33 @@ model_test=subprocess.run(
 )
 assert model_test.returncode==0,model_test.stderr
 assert "MODEL_WALL_96_IMAGES_UI_E2E_OK" in model_test.stdout
+
+
+# A corrupt or oversized preview must never trigger a second full-resolution
+# GET for a 60 MB GIF (or dozens of image cards at once).
+thumb_failure_js=r"""
+const assert=require('assert'),vm=require('vm'),fs=require('fs');
+const source=fs.readFileSync(process.argv[1],'utf8');
+const begin=source.indexOf('function setThumb(');
+const end=source.indexOf('const fields=',begin);
+assert(begin>=0&&end>begin);
+const ctx=vm.createContext({encodeURIComponent,Number});
+vm.runInContext(source.slice(begin,end),ctx);
+const img={src:'',alt:'',loading:'',decoding:'',onerror:null};
+vm.runInContext('setThumb',ctx)(img,23137,256);
+assert.strictEqual(img.src,'/thumb/23137?w=256');
+assert.strictEqual(img.loading,'lazy');
+assert.strictEqual(typeof img.onerror,'function');
+img.onerror();
+assert(img.src.startsWith('data:image/svg+xml;charset=utf-8,'));
+assert(!img.src.includes('/media/23137'));
+assert.strictEqual(img.onerror,null);
+assert(img.alt.includes('Prévia indisponível'));
+console.log('THUMBNAIL_FAIL_CLOSED_UI_OK');
+"""
+thumb_failure=subprocess.run(
+    ["node","-e",thumb_failure_js,str(script)],
+    capture_output=True,text=True,timeout=15,
+)
+assert thumb_failure.returncode==0,thumb_failure.stderr
+assert "THUMBNAIL_FAIL_CLOSED_UI_OK" in thumb_failure.stdout
