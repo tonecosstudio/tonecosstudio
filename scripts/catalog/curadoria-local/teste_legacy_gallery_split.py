@@ -250,5 +250,59 @@ with tempfile.TemporaryDirectory(prefix="tonart-visual-split-") as tmp:
         assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
     print("VISUAL SPLIT HTTP OK: token, 200, 403, 409, capabilities and originals preserved")
 
+    # Legacy albums already audited as the same sculpture still carry the
+    # old telegram_album reason. They must not be reassigned by caption changes
+    # or stolen by a new visual-gallery operation.
+    with closing(smart.db_open(path)) as db:
+        protected_key="e"*24
+        db.execute("""INSERT INTO model_groups(
+          group_key,studio,title,state,created_at,updated_at)
+          VALUES(?,?,?,'provavel','synthetic','synthetic')""",
+          (protected_key,"Studio A","Already audited subject"))
+        for mid in (301,302,303):
+            db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",(
+                mid,"auditedhash-"+str(mid),str(mid)+".jpg","Studio A",
+                "2026-11-22","Original photo","album-protected","synthetic",
+            ))
+            db.execute("""INSERT INTO name_proposals(
+                message_id,studio,title,source_fingerprint)
+                VALUES(?,?,?,?)""",(
+                    mid,"Studio A","Already audited subject","seed",
+                ))
+            if mid!=303:
+                db.execute("""INSERT INTO model_group_members(
+                    message_id,group_key,match_reason,updated_at)
+                    VALUES(?,?,'telegram_album','synthetic')""",
+                    (mid,protected_key))
+        db.commit()
+    proven=audit.record_review(
+        path,group_key="e"*24,revision=0,decision="same_sculpture",
+        note="As fotos 301 e 302 mostram a mesma base e pose da escultura.",
+    )
+    assert proven["revision"]==1
+    with closing(smart.db_open(path)) as db:
+        db.execute("UPDATE assets SET source_caption=? WHERE message_id=?",
+                   ("▪️ Diferente - Other line",301))
+        db.commit()
+    smart.process_batch(path,limit=100)
+    with closing(smart.db_open(path,readonly=True)) as db:
+        for mid in (301,302):
+            member=db.execute("""
+                SELECT group_key,match_reason FROM model_group_members
+                WHERE message_id=?""",(mid,)).fetchone()
+            assert tuple(member)==("e"*24,"telegram_album"),(mid,member)
+        assert db.execute("""
+            SELECT outcome FROM curation_seen WHERE message_id=301
+        """).fetchone()[0]=="visual_gallery_audited"
+    try:
+        galleries.register_visual_gallery(
+            path,[301,303],"Studio A",
+            "Do not steal already visually audited source gallery",
+        )
+        raise AssertionError("Existing audited gallery was stolen")
+    except ValueError as exc:
+        assert "outra galeria revisada" in str(exc),str(exc)
+    print("VISUAL AUDIT PROTECTION OK: caption changes and manual regroup cannot override the audited legacy gallery")
+
     print("VISUAL SPLIT E2E OK: audit gate, revision, SHA duplicates, events,"
           " transaction, anti-rejoin and originals intact")
