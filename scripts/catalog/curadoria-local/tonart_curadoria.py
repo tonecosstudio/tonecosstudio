@@ -383,6 +383,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"albums.candidates","method":"GET","path":"/api/album-candidates","effect":"read","pagination":True},
                     {"id":"studios.official_sources","method":"GET","path":"/api/official-sources","effect":"read"},
                     {"id":"images.visual_candidates","method":"GET","path":"/api/visual-candidates/{message_id}","effect":"read"},
+                    {"id":"images.telegram_evidence","method":"GET","path":"/api/telegram-findings/{message_id}","effect":"read"},
                     {"id":"external_candidates.list","method":"GET","path":"/api/candidates","effect":"read"},
                     {"id":"images.annotate","method":"POST","path":"/api/annotate","effect":"write"},
                     {"id":"names.export","method":"POST","path":"/api/export-names","effect":"write"},
@@ -426,6 +427,14 @@ class Handler(BaseHTTPRequestHandler):
                 mid=int(route.path.rsplit("/",1)[-1])
                 return self.respond({"message_id":mid,"candidates":visual.get_candidates(DB_PATH,mid),
                     "note":"Semelhança visual: NÃO é confirmação de identidade"})
+            if route.path.startswith("/api/telegram-findings/"):
+                raw_id=route.path.rsplit("/",1)[-1]
+                if not raw_id.isascii() or not raw_id.isdecimal() or len(raw_id)>12:
+                    return self.respond({"error":"message_id invalido"},400)
+                try:
+                    return self.respond(telegram_identity.findings(DB_PATH,int(raw_id)))
+                except ValueError:
+                    return self.respond({"error":"imagem nao encontrada"},404)
             if route.path=="/api/names":
                 p=parse_qs(route.query)
                 return self.respond(naming.list_names(DB_PATH,
