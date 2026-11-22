@@ -1739,7 +1739,7 @@ def research_official_pending(
 
 def status_counts(db_path: str | Path) -> dict[str, int]:
     """Measured counters from the existing Curadoria database and its local cache."""
-    with _open_curadoria(db_path) as db:
+    with _readonly_db(db_path) as db:
         counts = {
             "telegram_identifications": db.execute("""
                 SELECT COUNT(*) FROM telegram_identity_coverage WHERE identity_status='telegram_found'
@@ -1840,7 +1840,7 @@ def record_cycle(
 
 
 def last_cycle_status(db_path: str | Path) -> dict[str, Any]:
-    with _open_curadoria(db_path) as db:
+    with _readonly_db(db_path) as db:
         row = db.execute("""
             SELECT started_at,finished_at,status,aggregate_json
             FROM telegram_identity_runs ORDER BY run_id DESC LIMIT 1
@@ -1855,7 +1855,7 @@ def last_cycle_status(db_path: str | Path) -> dict[str, Any]:
 
 def list_telegram_findings(db_path: str | Path, message_id: int) -> dict[str, Any]:
     """Return candidate evidence for the existing local review UI/API to consume."""
-    with _open_curadoria(db_path) as db:
+    with _readonly_db(db_path) as db:
         asset = db.execute("""
             SELECT message_id,original_topic,source_caption FROM assets WHERE message_id=?
         """, (int(message_id),)).fetchone()
