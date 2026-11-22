@@ -45,7 +45,10 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 .board-dialog{width:min(1520px,96vw);max-width:96vw;max-height:94vh;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:0}
 .board-dialog::backdrop{background:rgba(0,0,0,.83)}
 .board-head{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:18px 22px;background:var(--panel);position:sticky;top:0;z-index:1;border-bottom:1px solid var(--line)}
-.board-head h2{margin:0}.board-body{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.board-head h2{margin:0}
+.board-head .buttons{align-items:center;justify-content:flex-end}
+@media(max-width:760px){.board-head{flex-wrap:wrap}.board-head .buttons{width:100%;justify-content:flex-start}}
+.board-body{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
 .board-photo{border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;padding:12px;min-width:0}
 .board-photo img{width:100%;height:320px;object-fit:contain;background:#0c0d10}
 .board-photo .split-choice{display:flex;gap:8px;align-items:center;padding:8px 0;font-size:0.9rem}.board-photo .split-choice input{width:auto}
@@ -133,7 +136,10 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <p class="sub" id="exports"></p>
 </aside>
 </main>
-<dialog id="boardDialog" class="board-dialog" aria-labelledby="boardTitle"><div class="board-head"><div><h2 id="boardTitle">Prancha de revisao</h2><div id="boardMeta" class="sub"></div></div><button id="closeBoard">Fechar prancha</button></div><div id="boardPhotos" class="board-body"></div><nav class="board-pagination" aria-label="Páginas da prancha"><button id="boardPrev" type="button">Anterior</button><span id="boardPage" aria-live="polite"></span><span id="boardSplitSelection" aria-live="polite" hidden></span>
+<dialog id="boardDialog" class="board-dialog" aria-labelledby="boardTitle"><div class="board-head"><div><h2 id="boardTitle">Prancha de revisao</h2><div id="boardMeta" class="sub"></div></div><div class="buttons"><button id="boardPrevGroup" type="button" hidden>Modelo anterior</button>
+<span id="boardGroupPosition" class="sub" aria-live="polite" hidden></span>
+<button id="boardNextGroup" type="button" hidden>Próximo modelo</button>
+<button id="closeBoard">Fechar prancha</button></div></div><div id="boardPhotos" class="board-body"></div><nav class="board-pagination" aria-label="Páginas da prancha"><button id="boardPrev" type="button">Anterior</button><span id="boardPage" aria-live="polite"></span><span id="boardSplitSelection" aria-live="polite" hidden></span>
 <label for="boardSize">Fotos por página
 <select id="boardSize"><option value="24">24</option><option value="48" selected>48</option><option value="96">96</option></select></label>
 <button id="boardNext" type="button">Próxima</button></nav></dialog>
