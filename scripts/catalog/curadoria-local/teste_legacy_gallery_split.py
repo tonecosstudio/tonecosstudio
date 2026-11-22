@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Fail-closed visual gallery split: synthetic SQLite, transactional and replay tests."""
 from contextlib import closing
+import http.client
 import json
 import sqlite3
 import tempfile
+import threading
+from http.server import ThreadingHTTPServer
 from pathlib import Path
 
 import legacy_album_audit as audit
 import model_gallery as galleries
 import smart_curadoria as smart
+import tonart_curadoria as host
 
 with tempfile.TemporaryDirectory(prefix="tonart-visual-split-") as tmp:
     path=Path(tmp)/"curadoria.sqlite3"
@@ -170,5 +174,81 @@ with tempfile.TemporaryDirectory(prefix="tonart-visual-split-") as tmp:
         raise AssertionError("Regrouping stole a manually split image")
     except ValueError:
         pass
+
+    # Exercise the real HTTP endpoint on an additional isolated synthetic
+    # gallery. Never send writes to the running TONART host or its real DB.
+    with closing(smart.db_open(path)) as db:
+        key="c"*24
+        db.execute("""INSERT INTO model_groups(
+            group_key,studio,title,state,created_at,updated_at
+        ) VALUES(?,?,?,'provavel','synthetic','synthetic')""",(
+            key,"Studio A","Another provisional sculpture",
+        ))
+        for mid in (201,202,203):
+            db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",(
+                mid,"hash-"+str(mid),str(mid)+".jpg","Studio A",
+                "2026-11-22","Telegram caption","album-extra","synthetic",
+            ))
+            db.execute("""INSERT INTO name_proposals(
+                message_id,studio,title,source_fingerprint
+            ) VALUES(?,?,?,?)""",(
+                mid,"Studio A","Another provisional sculpture","seed",
+            ))
+            db.execute("""INSERT INTO model_group_members
+               (message_id,group_key,match_reason,updated_at)
+               VALUES(?,?,'telegram_album','synthetic')""",(mid,key))
+        db.commit()
+    audit.record_review(path,group_key="c"*24,revision=0,
+        decision="different_sculptures",
+        note="A imagem 203 mostra uma segunda escultura, comparada visualmente.")
+    old_database=host.DB_PATH
+    host.DB_PATH=path
+    server=ThreadingHTTPServer(("127.0.0.1",0),host.Handler)
+    server.daemon_threads=True
+    worker=threading.Thread(target=server.serve_forever,daemon=True)
+    worker.start()
+    def send(method,endpoint,body=None,auth=True):
+        with closing(http.client.HTTPConnection(
+            "127.0.0.1",server.server_port,timeout=7,
+        )) as conn:
+            headers={"Content-Type":"application/json"}
+            if auth:
+                headers["Origin"]=f"http://{host.HOST}:{host.PORT}"
+                headers["X-Tonart-Token"]=host.TOKEN
+            conn.request(method,endpoint,
+                         body=json.dumps(body).encode("utf-8") if body else None,
+                         headers=headers)
+            response=conn.getresponse()
+            return response.status,json.loads(response.read().decode("utf-8"))
+    request={
+        "group_key":"c"*24,"revision":1,"message_ids":[203],
+        "title":"Segunda escultura provisória",
+        "note":"A foto 203 mostra outra base e geometria; separar para revisão.",
+    }
+    try:
+        code,detail=send("POST","/api/split-legacy-gallery",request,auth=False)
+        assert code==403 and "error" in detail,(code,detail)
+        code,detail=send("POST","/api/split-legacy-gallery",request)
+        assert code==200 and detail["ok"] and detail["moved_ids"]==[203],detail
+        assert detail["originals_preserved"] is True
+        assert detail["publication_approved"] is False
+        code,detail=send("POST","/api/split-legacy-gallery",request)
+        assert code==409 and "error" in detail
+        code,caps=send("GET","/api/capabilities")
+        assert code==200
+        assert any(op["id"]=="gallery.legacy_split" for op in caps["operations"])
+    finally:
+        server.shutdown()
+        server.server_close()
+        worker.join(timeout=5)
+        host.DB_PATH=old_database
+    with closing(smart.db_open(path,readonly=True)) as db:
+        assert db.execute(
+            "SELECT COUNT(*) FROM model_group_members WHERE group_key=?",
+            ("c"*24,),
+        ).fetchone()[0]==2
+        assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
+    print("VISUAL SPLIT HTTP OK: token, 200, 403, 409, capabilities and originals preserved")
+
     print("VISUAL SPLIT E2E OK: audit gate, revision, SHA duplicates, events,"
           " transaction, anti-rejoin and originals intact")
