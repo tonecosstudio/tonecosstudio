@@ -92,6 +92,40 @@ if (!(Test-TonartHealth)) {
         if (Test-TonartHealth) { $healthy = $true; break }
         Start-Sleep -Milliseconds 500
     }
+    if (!$healthy -and $state -eq 'Running') {
+        # A task stuck in Running can hide a dead HTTP listener. Recover only
+        # after the initial grace period and only after verifying task ownership.
+        $current = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
+        Assert-OwnedTask $current
+        if ($current.State -eq 'Running') {
+            Stop-ScheduledTask -TaskName $taskName -ErrorAction Stop
+        }
+        # A venv pythonw launcher may leave its Python child alive after
+        # the scheduler stops the parent. Never terminate unrelated Python jobs.
+        $orphaned = @(Get-CimInstance Win32_Process -Filter "Name='pythonw.exe'" |
+            Where-Object { $_.CommandLine -and $_.CommandLine.Contains($launchArgs) })
+        foreach ($process in $orphaned) {
+            Stop-Process -Id $process.ProcessId -Force -ErrorAction Stop
+        }
+        $stopped = $false
+        for ($i=0; $i -lt 20; $i++) {
+            if ((Get-ScheduledTask -TaskName $taskName -ErrorAction Stop).State -ne 'Running') {
+                $stopped = $true
+                break
+            }
+            Start-Sleep -Milliseconds 250
+        }
+        if (!$stopped) { throw 'Tarefa TONART nao parou; reinicio abortado.' }
+        if (Test-TonartHealth) {
+            $healthy = $true
+        } else {
+            Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+            for ($i=0; $i -lt 35; $i++) {
+                if (Test-TonartHealth) { $healthy = $true; break }
+                Start-Sleep -Milliseconds 500
+            }
+        }
+    }
     if (!$healthy) { throw 'Curadoria nao iniciou; consultar historico da task TONART.' }
 }
 if (!$NoBrowser) { Start-Process $endpoint }
