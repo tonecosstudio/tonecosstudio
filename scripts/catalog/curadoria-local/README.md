@@ -1,5 +1,15 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Sincronização incremental por transações curtas — 22/11/2026
+
+A `tonart_curadoria.sync()` foi ajustada na **mesma implementação canônica**: uma sincronização grande do Telegram não mantém mais uma transação de escrita aberta até terminar todas as imagens. Depois do pré-filtro incremental, o host executa `SYNC_WRITE_BATCH = 128` alterações por transação SQLite e comita cada bloco antes de iniciar o seguinte. O processamento continua em ordem crescente de `message_id`, usa `ON CONFLICT ... WHERE` já existente para evitar sobrescritas desnecessárias, e preserva o estado editorial/annotations. Nenhuma nova tabela, fila, worker, cópia, serviço, cache persistente ou arquivo da origem é criado.
+
+A estratégia de retomada continua utilizando o maior `message_id` confirmado no SQLite menos a janela de reconciliação já existente. **Teste sintético `teste_sync_write_batches.py`:** lote de 305 imagens; falha injetada antes do segundo escritor deixou 128 registros completos, uma execução seguinte importou os 177 restantes em duas transações, uma execução sem mudanças não abriu writer, e uma legenda de origem alterada resultou em exatamente uma atualização. `PRAGMA quick_check(1)=ok`. O teste não acessou nem alterou a biblioteca privada real.
+
+**Instalação física:** atualização de `tonart_curadoria.py` e do teste correspondente via CAS/SHA, com validação do owner da tarefa e disponibilidade momentânea do writer, seguida de restart controlado **somente** da tarefa `TONART Curadoria Host`. `/health` e `/api/capabilities` continuaram funcionando. Essa alteração reduz a duração de locks gerados pela importação incremental; **não comprova que toda a contenção intermitente do SQLite foi eliminada**, pois outros caminhos de escrita continuam usando transações próprias. Monitorar a duração real antes de elevar timeouts, ampliar concorrência ou criar outro processo. Site/D1/R2 permanecem somente leitura nesse fluxo.
+
+
+
 ## Remessas editoriais atômicas e idempotentes — 22/11/2026
 
 O host privado existente `http://127.0.0.1:8769` agora dispõe de **remessa editorial** em `Fila de revisão → Auditar galerias antigas → Revisão editorial em lote`. Cada galeria requer abertura da prancha completa, visita de todas as páginas, caixa de confirmação, decisão **individual** (`same_sculpture`, `different_sculptures` ou `needs_more_evidence`) e justificativa própria de 15–500 caracteres. A seleção visual e as anotações não são aprovadas automaticamente; o operador pode revisar, retirar ou limpar os itens **antes** de registrar.
