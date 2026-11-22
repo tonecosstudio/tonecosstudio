@@ -26,7 +26,7 @@ Abra `http://127.0.0.1:8769`. A importação incremental é de responsabilidade 
 
 **Não versionar nem sincronizar:** arquivos de sessão Telegram, `*.dpapi`, tokens, bancos SQLite, fotos de grupos privados, logs com dados pessoais ou o inventário preenchido de curadoria. Toda publicação comercial e escolha de imagem exigem revisão e direitos de uso.
 
-API de leitura: `/api/stats`, `/api/items`, `/media/<id>`, `/thumb/<id>?w=256|480|960`, `/api/performance`, `/api/capabilities`, `/api/telegram-findings/<id>`. API de edição: `/api/annotate`, `/api/materialize`, `/api/export`, `/api/import-tonart-csv`, exigindo origem local e token gerado localmente. Nunca expor a porta ou o token à rede.
+API de leitura: `/api/stats`, `/api/items`, `/media/<id>`, `/thumb/<id>?w=256|480|960`, `/api/performance`, `/api/capabilities`, `/api/telegram-findings/<id>`, `/api/telegram-album/<id>`. API de edição: `/api/annotate`, `/api/materialize`, `/api/export`, `/api/import-tonart-csv`, exigindo origem local e token gerado localmente. Nunca expor a porta ou o token à rede.
 
 Este diretório é apenas a **implementação versionada**. A instalação Windows já existente usa uma cópia local e uma pasta de dados separada. Evite executar dois servidores na mesma porta.
 
@@ -280,7 +280,7 @@ Se a origem retornar erro ou dados incompletos, o host responde HTTP 503 e o có
 ## Escala e operação do host — 22/11/2026
 
 - **Miniaturas sem escrever novas imagens no disco:** o endpoint `/thumb/<id>?w=256|480|960` reduz sob demanda os originais a WebP. A cache é LRU em RAM, limitada a 512 entradas / 24 MiB, com até 3 decodificações simultâneas. ETag, HTTP 304 e cache privado por 600 segundos reduzem tráfego repetido; clique na imagem continua abrindo `/media/<id>` com resolução original.
-- **Prancha escalável:** galeria agrupada abre a prancha nativa, deduplica imagens por SHA-256 e exibe no máximo 24 por página, com navegação. Seleção e alterações continuam a usar as APIs e a revisão otimista já existentes, sem alterar a origem.
+- **Prancha escalável:** galeria agrupada abre a prancha nativa, deduplica imagens por SHA-256 e exibe no máximo 24 por página, com navegação. **Abrir prancha do álbum** na tela de nomes usa `GET /api/telegram-album/<id>` e mostra a coleção de mídia original com correspondência exata de chat, tópico e álbum, mesmo quando não existe galeria aprovada. Limite de 100 mídias por consulta; **álbum não prova uma só escultura**, portanto leitura da prancha não cria grupos nem revisões. Clique na foto abre o original em resolução integral.
 - **Consultas puras:** `/api/stats`, `/api/items`, `/api/names`, `/api/models`, `/api/gallery-candidates`, `/api/album-candidates` e sugestões visuais leem SQLite em modo somente leitura. Apenas o ciclo de ingestão incremental e as operações de revisão explícitas podem modificar o SQLite local.
 - **MCP com contrato comum:** `/api/capabilities` declara a operação `images.thumbnail` e `system.performance`; `/api/performance` mostra acertos, falhas, bytes e evicções da cache. O MCP deve usar esses contratos de host sem serviços, pastas, banco ou indexadores paralelos.
 - **Fonte e limites:** o download Telegram e a publicação do catálogo pertencem aos owners existentes; manter `Geral +50k` e outros estúdios fora de intervenções concorrentes; jamais publicar propostas como direitos verificados. Os controles funcionam mesmo com dezenas de milhares de mensagens porque não varrem/reexportam a coleção por clique.
