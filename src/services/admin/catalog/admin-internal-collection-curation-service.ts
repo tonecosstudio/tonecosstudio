@@ -662,6 +662,48 @@ export async function saveInternalCollectionCuration(input: {
   return count;
 }
 
+/**
+ * Register an evidence-backed private character identity before any model is linked.
+ * Never writes D1/public tags; the same key is used by model verification later.
+ */
+export async function registerReviewedCatalogCharacterIdentity(input: {
+  characterName: string;
+  franchise: string;
+  evidenceOrigin: string;
+  evidenceNote: string;
+}): Promise<string> {
+  const name = input.characterName.trim();
+  const franchise = input.franchise.trim();
+  const origin = input.evidenceOrigin.trim();
+  const note = input.evidenceNote.trim();
+  if (
+    !name || name.length > 160 || !franchise || franchise.length > 160 ||
+    !origin || origin.length > 240 || origin.toLowerCase().startsWith("automatic:") ||
+    note.length < 20 || note.length > 1000 ||
+    [name, franchise, origin, note].some((s) =>
+      [...s].some((char) => char.charCodeAt(0) < 32 || char === "<" || char === ">"))
+  ) {
+    throw new Error("catalog_character_registry_invalid");
+  }
+  const data = asRecord(
+    await callAdminRpc<unknown>("admin_register_catalog_character_identity", {
+      p_character_name: name,
+      p_franchise: franchise,
+      p_evidence_origin: origin,
+      p_evidence_note: note,
+    }),
+    "catalog_character_registry_result_invalid",
+  );
+  const id = asString(data.identityId, "catalog_character_registry_result_invalid");
+  if (!UUID_PATTERN.test(id) ||
+      data.characterName !== name || data.franchise !== franchise ||
+      data.modelLinked !== false || data.visibility !== "private" ||
+      typeof data.created !== "boolean") {
+    throw new Error("catalog_character_registry_result_invalid");
+  }
+  return id;
+}
+
 export async function verifyCatalogModelCharacterIdentity(input: {
   model: CanonicalCurationModelRef;
   characterName: string;

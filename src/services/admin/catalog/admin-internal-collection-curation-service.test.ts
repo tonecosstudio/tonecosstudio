@@ -18,6 +18,7 @@ import {
   ensureAdminInternalCollection,
   getInternalCollectionCurationPage,
   INTERNAL_COLLECTION_TEMPLATES,
+  registerReviewedCatalogCharacterIdentity,
   removeCatalogCurationTagAlias,
   saveCatalogModelClassifications,
   saveInternalCollectionCuration,
@@ -34,6 +35,64 @@ const TAG_ID = "33333333-3333-4333-8333-333333333301";
 describe("internal catalog curation service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("registers reviewed character identities privately before linking any models", async () => {
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: MODEL_ID, characterName: "Cammy", franchise: "Street Fighter",
+      created: false, modelLinked: false, visibility: "private",
+    });
+    await expect(registerReviewedCatalogCharacterIdentity({
+      characterName: " Cammy ", franchise: " Street Fighter ",
+      evidenceOrigin: "official_source_checked:2026-11-22",
+      evidenceNote: "Fonte oficial Capcom confirmando a identidade de Cammy.",
+    })).resolves.toBe(MODEL_ID);
+    expect(mocks.callAdminRpc).toHaveBeenCalledWith(
+      "admin_register_catalog_character_identity", {
+        p_character_name: "Cammy", p_franchise: "Street Fighter",
+        p_evidence_origin: "official_source_checked:2026-11-22",
+        p_evidence_note: "Fonte oficial Capcom confirmando a identidade de Cammy.",
+      },
+    );
+  });
+
+  it("blocks automatic, evidence-free and public results from character registration", async () => {
+    const payload = {
+      characterName: "Abra", franchise: "Pokémon",
+      evidenceOrigin: "manual_admin:confirmed",
+      evidenceNote: "Fonte Pokémon oficial revista, Pokédex #063.",
+    };
+    for (const invalid of [
+      { ...payload, evidenceOrigin: "automatic:caption" },
+      { ...payload, evidenceNote: "sem prova" },
+      { ...payload, characterName: "  " },
+      { ...payload, franchise: "Other<bad>" },
+    ]) {
+      await expect(registerReviewedCatalogCharacterIdentity(invalid))
+        .rejects.toThrow("catalog_character_registry_invalid");
+    }
+    expect(mocks.callAdminRpc).not.toHaveBeenCalled();
+    mocks.callAdminRpc.mockResolvedValue({
+      identityId: MODEL_ID, characterName: "Abra", franchise: "Pokémon",
+      created: true, modelLinked: true, visibility: "public",
+    });
+    await expect(registerReviewedCatalogCharacterIdentity(payload))
+      .rejects.toThrow("catalog_character_registry_result_invalid");
+  });
+
+  it("keeps the character-first RPC private and idempotent without publishing a model", () => {
+    const migration = readRepositorySource(
+      "supabase/migrations/20261122213621_private_character_vocabulary.sql",
+    );
+    expect(migration).toContain("private_api.assert_tonart_curation_service_role()");
+    expect(migration).toContain("ON CONFLICT (identity_key) DO NOTHING");
+    expect(migration).toContain("WHERE identity_key=v_key FOR UPDATE");
+    expect(migration).toContain("'modelLinked',false");
+    expect(migration).toContain("TO service_role;");
+    expect(migration).toContain("FROM PUBLIC,anon,authenticated;");
+    expect(migration).not.toContain("INSERT INTO public.catalog_curation_model_profiles");
+    expect(migration.match(/^BEGIN;$/gm)).toHaveLength(1);
+    expect(migration.match(/^COMMIT;$/gm)).toHaveLength(1);
   });
 
   it("preserves all commercial admin identities and private editorial RPCs in the single gateway", () => {
@@ -89,6 +148,7 @@ describe("internal catalog curation service", () => {
       "admin_upsert_catalog_curation_tags",
       "admin_upsert_collection_curation_models",
       "admin_verify_catalog_model_identity",
+      "admin_register_catalog_character_identity",
     ]) {
       expect(allowed).toContain(name);
       expect(userContext).not.toContain(name);

@@ -1,3 +1,11 @@
+## CHECKPOINT — 22/11/2026 — Primeiras 21 identidades privadas e cadastro antes de vincular modelos
+
+- **Supabase TONART (efeito real):** 21 registros em `catalog_character_identities` com fontes oficiais e chaves únicas. Verificado diretamente: 21 linhas/21 chaves, 0 perfis de modelos e 0 `catalog_curation_model_tags`. É curadoria **privada**, sem escrita no D1 e sem tags públicas. Não duplicar o seed em JSON ou migrations.
+- **Correção estrutural na main (após merge):** migration Supabase CLI `20261122213621_private_character_vocabulary.sql` registra personagem **sem** modelo, reutilizando chave e a tabela atuais; método no serviço admin, allowlist service-role existente, 26 testes direcionados passaram. Nova migration/Edge RPC **ainda não implantada**.
+- **Próximo passo:** reconciliar IDs `franchises` no D1 depois de liberada quota 7500, revisar aliases `Ace`/Portgas D. Ace, aprovar lote de vínculos editoriais e usar apenas o publicador D1 existente quando M5 permitir. Sem importação de imagens, sem checkout ou SEO.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Preflight D1 de taxonomia (sem escrita)
 
 - **PR seguinte à #80:** adiciona à mesma rotina `scripts/catalog/prepare-canonical-taxonomy.py` conciliação opcional por exportação atual do D1, mantendo os 527 universos e 2.813 títulos candidatos como base; rejeita entradas incompletas, antigas e ambíguas. Não cria novo banco, Worker ou publicador.
