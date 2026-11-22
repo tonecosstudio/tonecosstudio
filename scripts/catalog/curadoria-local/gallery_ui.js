@@ -37,7 +37,7 @@ async function loadGalleryCandidates(next=false){
       const card=document.createElement("label");
       card.style.cssText="display:block;border:1px solid var(--line);border-radius:8px;padding:7px;min-width:0";
       const img=document.createElement("img");
-      img.src="/media/"+item.message_id;
+      setThumb(img,item.message_id);
       img.loading="lazy";
       img.alt=item.title||("Foto "+item.message_id);
       img.style.cssText="width:100%;height:180px;object-fit:contain;background:#0c0d0f";
