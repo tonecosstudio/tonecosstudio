@@ -450,6 +450,11 @@ def findings(curadoria_db_path: str | Path, message_id: int) -> dict[str, Any]:
     return identity.list_telegram_findings(curadoria_db_path, message_id)
 
 
+def album(curadoria_db_path: str | Path, message_id: int) -> dict[str, Any]:
+    """Serve one evidence-only Telegram album contact board for app and MCP."""
+    return identity.list_telegram_album(curadoria_db_path, message_id)
+
+
 def status(curadoria_db_path: str | Path) -> dict[str, Any]:
     """Aggregate-only status for the existing local app's /api/stats response."""
     return {
