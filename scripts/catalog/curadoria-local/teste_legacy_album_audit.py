@@ -110,6 +110,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-album-audit-") as root:
     assert audit.list_groups(dbpath,state="pending")["total"]==2
     listing=audit.list_groups(dbpath,topic="Studio B")
     assert listing["items"][0]["review_state"]=="attention"
+    assert listing["items"][0]["split_eligible"] is True
     try:
         audit.record_review(
             dbpath,group_key="c"*24,revision=0,
