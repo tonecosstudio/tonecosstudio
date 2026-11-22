@@ -149,6 +149,26 @@ def process_batch(db_path,limit=300):
                  WHERE message_id=? AND outcome='visual_split_review'""",
                  (mid,)).fetchone():
                 continue
+            # An explicit gallery-wide visual audit also owns the current
+            # membership. Older audited albums may still carry the historic
+            # 'telegram_album' match_reason, so checking reviewed_angles alone
+            # would silently discard human work when Telegram metadata changes.
+            audited=db.execute("""SELECT 1
+                FROM model_group_members m
+                JOIN curation_events e ON e.group_key=m.group_key
+                WHERE m.message_id=? AND e.event_type='visual_gallery_audited'
+                LIMIT 1""",(mid,)).fetchone()
+            if audited:
+                db.execute("""INSERT INTO curation_seen(
+                     message_id,fingerprint,outcome,processed_at
+                     ) VALUES(?,?,'visual_gallery_audited',?)
+                     ON CONFLICT(message_id) DO UPDATE SET
+                     fingerprint=excluded.fingerprint,outcome=excluded.outcome,
+                     processed_at=excluded.processed_at""",
+                     (mid,fp,utc()))
+                changed+=1
+                if changed>=limit:break
+                continue
             # Galerias revisadas visualmente têm prioridade sobre a sugestão
             # automática baseada apenas em legenda / álbum. Uma mudança no
             # downloader não deve desmontar ou sobrescrever a revisão humana.
