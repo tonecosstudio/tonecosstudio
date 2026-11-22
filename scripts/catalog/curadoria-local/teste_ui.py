@@ -16,6 +16,11 @@ assert 'id="legacyWallPageSize"' in html and 'id="legacyWallViews"' in html
 assert 'id="legacyWallFocus"' in html
 assert 'id="queueSiteStatus"' in html and 'id="queueSiteCheck"' in html
 assert 'id="boardSize"' in html
+assert 'id="boardPrevGroup"' in html and 'id="boardNextGroup"' in html
+assert 'id="boardGroupPosition"' in html
+assert 'async function navigateBoardGroup(step)' in js
+assert 'if(!el("boardDialog").open)el("boardDialog").showModal()' in js
+
 assert 'id="modelWallControls"' in html
 assert 'id="modelWallPageSize"' in html and 'id="modelWallViews"' in html
 assert 'id="modelWallFocus"' in html
@@ -333,7 +338,7 @@ const fixture={
 };
 const context=vm.createContext({
   viewMode:'models',el:id=>elements[id],status:'',topic:'',search:'',
-  currentPage:1,modelTotal:0,Date,URLSearchParams,fmt:n=>String(n),
+  currentPage:1,modelTotal:0,boardBatchGroups:[],Date,URLSearchParams,fmt:n=>String(n),
   document:{createElement:()=>new Element()},
   text:(parent,tag,value)=>{const item=new Element();item.textContent=String(value);parent.append(item);},
   setThumb:(img,mid,size)=>{img.src='/thumb/'+mid+'?w='+size;},
