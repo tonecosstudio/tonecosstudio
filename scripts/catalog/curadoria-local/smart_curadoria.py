@@ -128,10 +128,10 @@ def process_batch(db_path,limit=300):
              FROM assets a ORDER BY a.message_id""").fetchall()
         seen={r["message_id"]:r["fingerprint"] for r in db.execute(
             "SELECT message_id,fingerprint FROM curation_seen")}
-        albums={}
-        for a in assets:
-            if a["source_album"] and a["source_caption"]:
-                albums.setdefault((a["original_topic"],a["source_album"]),[]).append(a["source_caption"])
+        # A Telegram grouped_id may contain different sculpts, variants or
+        # even multiple distinct pieces. Never inherit names or group models
+        # solely from source_album: only identical file content may merge
+        # automatically; reviewed_angles is the authority for different photos.
         changed=0
         identified=0
         ungrouped=0
@@ -160,20 +160,11 @@ def process_batch(db_path,limit=300):
                 continue
             caption=a["source_caption"] or ""
             result=identify(a["original_topic"],caption)
-            derived=False
-            if result is None and a["source_album"]:
-                candidates=[identify(a["original_topic"],v) for v in
-                    albums.get((a["original_topic"],a["source_album"]),[])]
-                candidates=[c for c in candidates if c]
-                # Só propagar legenda quando TODOS os candidatos no álbum concordam.
-                if candidates and len({c["group_key"] for c in candidates})==1:
-                    result=candidates[0].copy()
-                    result["confidence"]=0.68
-                    derived=True
             if result:
-                # Nomes iguais não provam que se trata da MESMA estatueta.
-                # Somente álbum compartilhado ou conteúdo idêntico permitem fusão automática.
-                cluster=("album:"+str(a["source_album"])) if a["source_album"] else ("sha256:"+str(a["sha256"]))
+                # Album membership and identical names do not establish visual
+                # identity. Distinct media bytes become distinct provisional
+                # models until reviewed as angles of one sculpture.
+                cluster="sha256:"+str(a["sha256"])
                 key=hashlib.sha256(json.dumps([result["group_key"],cluster],ensure_ascii=False).encode()).hexdigest()[:24]
                 stamp=utc()
                 db.execute("""INSERT INTO model_groups(
@@ -189,16 +180,16 @@ def process_batch(db_path,limit=300):
                       VALUES(?,?,?,?) ON CONFLICT(message_id) DO UPDATE SET
                       group_key=excluded.group_key,match_reason=excluded.match_reason,
                       updated_at=excluded.updated_at""",
-                   (mid,key,"telegram_album" if derived else "telegram_caption",stamp))
+                   (mid,key,"telegram_caption",stamp))
                 url=SOURCE_C+str(mid)
                 db.execute("""INSERT OR IGNORE INTO model_group_evidence
                    (group_key,source_url,source_type,description,recorded_at)
-                   VALUES(?,?,?,?,?)""",(key,url,"telegram_album" if derived else "telegram_caption",
-                           "Legenda/álbum Telegram, sem verificação externa",stamp))
+                   VALUES(?,?,?,?,?)""",(key,url,"telegram_caption",
+                           "Legenda Telegram exata; sem verificação externa",stamp))
                 if not prev or prev["group_key"]!=key:
                     db.execute("""INSERT INTO curation_events(group_key,message_id,event_type,detail,occurred_at)
                       VALUES(?,?,'auto_candidate',?,?)""",
-                      (key,mid,"álbum consistente" if derived else "legenda estruturada",stamp))
+                      (key,mid,"legenda estruturada",stamp))
                 identified+=1
                 outcome="probable"
             else:
