@@ -150,6 +150,20 @@ export function assessCutoverReadiness(contract, state) {
     'cloudflare_active_version_unverified_or_changed',
   )
 
+  // Reuse the Cloudflare settings GET already performed for binding checks.
+  // A matching set of binding names alone does not prove runtime compatibility.
+  const remote = observed.workerSettings
+  const flags = remote?.compatibility_flags
+  add(
+    remote?.compatibility_date === WORKER_CONFIG.compatibility_date &&
+      Array.isArray(flags) &&
+      JSON.stringify([...flags].sort()) ===
+        JSON.stringify([...(WORKER_CONFIG.compatibility_flags ?? [])].sort()) &&
+      typeof remote?.observability?.enabled === 'boolean' &&
+      remote.observability.enabled === WORKER_CONFIG.observability?.enabled,
+    'worker_runtime_settings_mismatch',
+  )
+
   const bindings = observed.bindings
   const findBinding = name => Array.isArray(bindings) ? bindings.find(x => x.name === name) : undefined
   const expectedNames = ['CORS_ORIGINS', 'DB',
@@ -180,7 +194,8 @@ export function assessCutoverReadiness(contract, state) {
     'private_telegram_r2_binding_unverified',
   )
   add(
-    cors?.type === 'plain_text' && typeof cors.text === 'string' && cors.text.length > 0,
+    cors?.type === 'plain_text' && typeof WORKER_CONFIG.vars?.CORS_ORIGINS === 'string' &&
+      cors.text === WORKER_CONFIG.vars.CORS_ORIGINS,
     'cors_binding_unverified',
   )
   add(
@@ -329,6 +344,7 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
   }
   state.cloudflareAccountId = account
   state.deployment = (deploy.result?.deployments ?? [])[0]
+  state.workerSettings = settings.result
   state.bindings = settings.result?.bindings
   if (showcaseSchema !== null) state.showcaseSchema = showcaseSchema
   return state

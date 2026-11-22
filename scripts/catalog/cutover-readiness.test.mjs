@@ -5,6 +5,13 @@ import { assessCutoverReadiness, inspectLiveReadOnly } from './cutover-readiness
 
 const original = JSON.parse(readFileSync(new URL('../../config/catalog-code-consolidation.json', import.meta.url), 'utf8'))
 const schema = JSON.parse(readFileSync(new URL('../../services/catalogo/config/catalog-schema-contract.json', import.meta.url), 'utf8'))
+const workerConfig = JSON.parse(readFileSync(new URL('../../services/catalogo/wrangler.jsonc', import.meta.url), 'utf8'))
+const workerSettings = {
+  compatibility_date: workerConfig.compatibility_date,
+  compatibility_flags: [...workerConfig.compatibility_flags],
+  observability: { enabled: workerConfig.observability.enabled },
+}
+
 const showcaseTriggers = schema.requiredObjects.triggers.filter(name => name.startsWith('trg_telegram_showcase_'))
 const retiringWriters = original.origin.additionalWriterWorkflows
 const writerFromApiUrl = url => retiringWriters.find(
@@ -16,7 +23,7 @@ const bindings = [
   { name: 'DB', type: 'd1', id: '87006366-60f3-4937-af73-2ef5a5f901fb' },
   { name: 'MEDIA', type: 'r2_bucket', bucket_name: 'tonecos-catalogo-media' },
   { name: 'PRIVATE_TELEGRAM', type: 'r2_bucket', bucket_name: 'tonecos-catalogo-staging' },
-  { name: 'CORS_ORIGINS', type: 'plain_text', text: 'https://tonartstudio.com.br' },
+  { name: 'CORS_ORIGINS', type: 'plain_text', text: workerConfig.vars.CORS_ORIGINS },
   { name: 'ADMIN_SUPABASE_URL', type: 'secret_text' },
   { name: 'ADMIN_SUPABASE_ANON_KEY', type: 'secret_text' },
   { name: 'TURNSTILE_SECRET_KEY', type: 'secret_text' },
@@ -60,6 +67,7 @@ const fullState = () => ({
   sourceMediaBlobSha: original.staging.fileBlobs['worker/media.ts'],
   cloudflareAccountId: original.runtime.cloudflareAccountId,
   deployment: structuredClone(deployment), bindings: structuredClone(bindings),
+  workerSettings: structuredClone(workerSettings),
   showcaseSchema: {
     column: 'telegram_showcase_visible',
     migration: schema.latestMigration,
@@ -157,7 +165,9 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
       return Response.json({ success: true, result: { deployments: [structuredClone(deployment)] } })
     }
     if (u.endsWith('/settings')) {
-      return Response.json({ success: true, result: { bindings: structuredClone(bindings) } })
+      return Response.json({ success: true, result: {
+        ...structuredClone(workerSettings), bindings: structuredClone(bindings),
+      } })
     }
     if (u.endsWith('/query')) {
       assert.equal(init.method, 'POST')
@@ -211,6 +221,37 @@ test('M5 requires existing private Telegram R2, admin secrets and exact Worker b
   }
   const valid = assessCutoverReadiness(contract, fullState())
   assert.equal(valid.ready, true, JSON.stringify(valid.blockers))
+})
+
+test('M5 runtime settings and exact CORS must match the Worker SSOT', () => {
+  const cases = [
+    { reason: 'wrong compatibility date', mutate: state => {
+      state.workerSettings.compatibility_date = '2020-01-01'
+    }, blocker: 'worker_runtime_settings_mismatch' },
+    { reason: 'missing compatibility flag', mutate: state => {
+      state.workerSettings.compatibility_flags = []
+    }, blocker: 'worker_runtime_settings_mismatch' },
+    { reason: 'observability changed', mutate: state => {
+      state.workerSettings.observability.enabled = !workerSettings.observability.enabled
+    }, blocker: 'worker_runtime_settings_mismatch' },
+    { reason: 'missing Cloudflare settings', mutate: state => {
+      delete state.workerSettings
+    }, blocker: 'worker_runtime_settings_mismatch' },
+    { reason: 'different CORS origins', mutate: state => {
+      state.bindings.find(x => x.name === 'CORS_ORIGINS').text = 'https://unexpected.example'
+    }, blocker: 'cors_binding_unverified' },
+    { reason: 'blank CORS origins', mutate: state => {
+      state.bindings.find(x => x.name === 'CORS_ORIGINS').text = ''
+    }, blocker: 'cors_binding_unverified' },
+  ]
+  for (const { reason, mutate, blocker } of cases) {
+    const state = fullState()
+    mutate(state)
+    const result = assessCutoverReadiness(approvedContract(), state)
+    assert.equal(result.ready, false, reason)
+    assert.ok(result.blockers.includes(blocker), reason)
+  }
+  assert.deepEqual(assessCutoverReadiness(approvedContract(), fullState()), { ready: true, blockers: [] })
 })
 
 test('source activity, drift or missing live bindings block the cutover', () => {
