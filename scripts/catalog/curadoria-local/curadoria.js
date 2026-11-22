@@ -156,7 +156,8 @@ el("legacyBatchSubmit").onclick=async()=>{
      throw Error("Recibo de auditoria incompleto");
    }
    legacyBatchReviews.splice(0);renderLegacyBatch();
-   el("legacyBatchStatus").textContent=
+   el("legacyBatchStatus").textContent=receipt.replayed?
+     "Recibo recuperado: "+receipt.reviewed+" galerias já estavam registradas. Nenhuma nova escrita.":
      receipt.reviewed+" galerias registradas atomicamente; sem publicação.";
    auditBoardEvidence=null;
    el("legacyBatchAttested").checked=false;
