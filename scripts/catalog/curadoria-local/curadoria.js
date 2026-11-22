@@ -46,7 +46,7 @@ let lastSplitGalleryKey="";
 function selectLegacyAuditGroup(item){
  chosenLegacyAudit=item;
  boardSplitSelection.clear();
- el("legacySplitForm").hidden=item.review_state!=="attention";
+ el("legacySplitForm").hidden=!item.split_eligible;
  el("legacySplitOpenNew").hidden=true;
  lastSplitGalleryKey="";
  el("legacySplitTitle").value="";
@@ -88,7 +88,8 @@ el("legacyAuditSave").onclick=async()=>{
    group_key:item.group_key,revision:item.revision,decision,note
   });
   chosenLegacyAudit={...item,revision:result.revision,
-    review_state:decision==="same_sculpture"?"audited":"attention"};
+    review_state:decision==="same_sculpture"?"audited":"attention",
+    split_eligible:decision==="different_sculptures"};
   el("legacyAuditStatus").textContent=decision==="same_sculpture"
     ?"Auditoria visual registrada; sem liberar identidade comercial ou publicação."
     :"Pendência editorial registrada. Galeria intacta; corrigir somente após revisão.";
@@ -109,7 +110,7 @@ el("legacySplitOpenNew").onclick=()=>{
  if(lastSplitGalleryKey)openBoard(lastSplitGalleryKey);
 };
 el("legacySplitSave").onclick=async()=>{
- if(!chosenLegacyAudit || chosenLegacyAudit.review_state!=="attention"){
+ if(!chosenLegacyAudit || !chosenLegacyAudit.split_eligible){
   notify("Registre antes uma auditoria de esculturas diferentes.");return;
  }
  const ids=[...boardSplitSelection].sort((a,b)=>a-b);
@@ -128,7 +129,8 @@ el("legacySplitSave").onclick=async()=>{
    variant:el("legacySplitVariant").value.trim(),note
   });
   chosenLegacyAudit={...item,revision:result.source_revision,
-    photos:result.remaining_ids.length,review_state:"attention"};
+    photos:result.remaining_ids.length,review_state:"attention",
+    split_eligible:false};
   lastSplitGalleryKey=result.new_group;
   boardSplitSelection.clear();
   el("legacySplitForm").hidden=true;
