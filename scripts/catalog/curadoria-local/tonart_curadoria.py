@@ -47,6 +47,7 @@ catalog_sync = _DeferredModule("catalog_sync_status")
 telegram_identity = _DeferredModule("telegram_curadoria_adapter")
 thumbs = _DeferredModule("thumbnail_curadoria")
 review_queue = _DeferredModule("review_queue")
+legacy_album_audit = _DeferredModule("legacy_album_audit")
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -392,6 +393,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"images.telegram_evidence","method":"GET","path":"/api/telegram-findings/{message_id}","effect":"read"},
                     {"id":"images.telegram_album_board","method":"GET","path":"/api/telegram-album/{message_id}","effect":"read"},
                     {"id":"review.queue","method":"GET","path":"/api/review-queue","effect":"read"},
+                    {"id":"gallery.legacy_audit","method":"GET","path":"/api/legacy-album-audit","effect":"read"},
+                    {"id":"gallery.legacy_audit_review","method":"POST","path":"/api/audit-legacy-gallery","effect":"write"},
                     {"id":"external_candidates.list","method":"GET","path":"/api/candidates","effect":"read"},
                     {"id":"images.annotate","method":"POST","path":"/api/annotate","effect":"write"},
                     {"id":"names.export","method":"POST","path":"/api/export-names","effect":"write"},
@@ -496,6 +499,17 @@ class Handler(BaseHTTPRequestHandler):
                    page=p.get("page",["1"])[0],limit=p.get("limit",["48"])[0],
                    topic=p.get("topic",[""])[0][:120],q=p.get("q",[""])[0][:120],
                    status=p.get("status",[""])[0][:20]))
+            if route.path=="/api/legacy-album-audit":
+                p=parse_qs(route.query)
+                try:
+                    return self.respond(legacy_album_audit.list_groups(
+                        DB_PATH,topic=p.get("topic",[""])[0],
+                        state=p.get("state",["pending"])[0],
+                        risk=p.get("risk",["all"])[0],
+                        cursor=p.get("cursor",[""])[0],
+                        limit=p.get("limit",["24"])[0]))
+                except ValueError as exc:
+                    return self.respond({"error":str(exc)},400)
             if route.path=="/api/review-queue":
                 p=parse_qs(route.query)
                 try:
@@ -560,6 +574,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(naming.materialize_confirmed(DB_PATH,SOURCE,APP_DIR))
             if self.path=="/api/export-names":
                 return self.respond(naming.export_manifest(DB_PATH,APP_DIR/"manifesto-nomes-propostos.csv"))
+            if self.path=="/api/audit-legacy-gallery":
+                return self.respond(legacy_album_audit.record_review(
+                    DB_PATH,group_key=obj.get("group_key",""),
+                    revision=obj.get("revision"),
+                    decision=obj.get("decision",""),
+                    note=obj.get("note","")))
             if self.path=="/api/review-name":
                 return self.respond(naming.review_name(DB_PATH,
                     obj.get("message_id",0),obj.get("revision",-1),
