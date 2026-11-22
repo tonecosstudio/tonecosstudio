@@ -632,6 +632,14 @@ let boardAllPhotos=[];
 let boardCurrentTitle="";
 let boardPage=1;
 let boardMode="gallery";
+let boardSplitSelection=new Set();
+function updateBoardSplitCount(){
+ const ids=[...boardSplitSelection].sort((a,b)=>a-b);
+ el("legacySplitSelected").textContent=ids.length+" foto(s) selecionada(s): "+
+   (ids.length?ids.map(x=>"#"+x).join(", "):"nenhuma");
+ el("boardSplitSelection").textContent=ids.length+" marcada(s)";
+ el("boardSplitSelection").hidden=boardMode!=="legacy_split";
+}
 function renderBoardPage(){
   const root=el("boardPhotos");root.replaceChildren();
   const total=boardAllPhotos.length;
@@ -658,6 +666,26 @@ function renderBoardPage(){
       (photo.source_caption||"Legenda não disponível").slice(0,340)
     ].filter(Boolean).join("\n");
     figure.append(caption);
+    if(boardMode==="legacy_split"){
+      const choice=document.createElement("label");
+      choice.className="split-choice";
+      const checkbox=document.createElement("input");
+      checkbox.type="checkbox";
+      checkbox.checked=boardSplitSelection.has(photo.message_id);
+      checkbox.onchange=()=>{
+        // All Telegram messages with identical bytes must move together.
+        for(const sibling of boardAllPhotos){
+          if(sibling.sha256===photo.sha256){
+            if(checkbox.checked)boardSplitSelection.add(sibling.message_id);
+            else boardSplitSelection.delete(sibling.message_id);
+          }
+        }
+        renderBoardPage();
+      };
+      choice.append(checkbox);
+      text(choice,"span","Selecionar esta escultura para separar");
+      figure.append(choice);
+    }
     const edit=document.createElement("button");
     edit.textContent="Nomear esta foto";
     edit.onclick=async()=>{
@@ -672,6 +700,7 @@ function renderBoardPage(){
     " de "+total+" fotos";
   el("boardPrev").disabled=boardPage<=1;
   el("boardNext").disabled=boardPage>=pages;
+  updateBoardSplitCount();
 }
 async function openBoard(key){
   if(!/^[0-9a-f]{24}$/.test(String(key||""))){notify("ID de prancha inválido.");return;}
@@ -682,14 +711,19 @@ async function openBoard(key){
       const fingerprint=(item.sha256||"").trim()||("msg:"+item.message_id);
       if(!photos.has(fingerprint))photos.set(fingerprint,item);
     }
-    boardAllPhotos=Array.from(photos.values());
+    const splitActive=viewMode==="queue" &&
+      el("queueKind").value==="legacy_groups" &&
+      chosenLegacyAudit?.group_key===key &&
+      chosenLegacyAudit.review_state!=="audited";
+    boardAllPhotos=splitActive?(group.images||[]):Array.from(photos.values());
     boardCurrentTitle=group.title||"Modelo sem título";
     boardPage=1;
-    boardMode="gallery";
+    boardMode=splitActive?"legacy_split":"gallery";
     el("boardTitle").textContent=boardCurrentTitle;
     el("boardMeta").textContent=[
       group.studio,group.variant,group.state,
       photos.size+" fotos únicas",(group.images||[]).length+" mensagens",
+      splitActive?"Marque apenas as fotos da escultura diferente":"",
       (group.identity_conflicts||[]).length+" conflitos de identidade"
     ].filter(Boolean).join(" | ");
     renderBoardPage();
