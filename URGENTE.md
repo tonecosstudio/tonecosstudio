@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Lote inteiro de 2.813 títulos auditado; 844 identidades privadas
+
+- **Efeito real no Supabase:** +130 identidades nesta fase (de 714 para **844**, todas com chaves distintas), 34 franquias, zero vínculos de modelos ou tags comerciais. Warcraft 26 novos (Wiki independente); wikis Fandom 104 novos (124 matches, 20 preservados, 166 retidos), fontes por ID/URL/SHA.
+- **OrdaX MCP supervisionado:** Warcraft `e965d1a9-3291-4bf4-b83b-24b7fffbf86f` e Fandom `7907d687-9362-4c1f-92b7-d2e824153efa`, exit 0. Não repetir esses lotes só por iniciar nova conversa.
+- **Auditoria atual com snapshot real de 844:** 2.813/2.813 títulos de 527 universos receberam decisão individual; **873 com correspondência exata**, **1.940 pendentes** (612 sem personagem verificado em franquia existente, 926 sem franquia/vocabulário privado, 183 flags, 103 variantes/multichar, 57 universos incertos, 35 aliases, 7 franquias cruzadas, 17 nomes normalizados duplicados). Contagens de títulos não são contagens de personagens únicos; nada foi vinculado às esculturas.
+- **Ferramentas canônicas adicionadas após PR:** `scripts/catalog/validate-warcraft-character-reference.py` e `scripts/catalog/validate-fandom-character-categories.py` com testes, usando mesmo inventário e diretório privado de checkpoints. Snapshot privado atual `identity-names-snapshot-844-private.json` e auditoria `auditoria-844/` apenas relatórios derivados, não publicar arquivos.
+- **Próximo lote:** Saint Seiya, universos sem vocabulário e exceções (aliases, títulos de produtos, crossovers), somente fontes verificadas; Jikan expirou por timeout e páginas sem categoria não comprovam identidade. D1/M5/rights/media/Worker/Site seguem intactos e sem GO.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Lote total classificado, 714 identidades privadas
 
 - **Supabase verificado:** total **714 identidades únicas e 714 identity_keys**, 21 franquias, **+56 novos cadastros neste ciclo** (12 Star Wars, 8 Digimon, 12 LoL, 7 Yu-Gi-Oh! monstros e 17 Genshin). Sem vínculos de modelos e sem tags comerciais; não confundir com cadastros públicos.
