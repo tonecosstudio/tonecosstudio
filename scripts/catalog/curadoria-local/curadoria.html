@@ -97,6 +97,15 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <div class="pages"><button id="prev">Anterior</button><span id="page">Página 1</span><button id="next">Próxima</button></div>
 </section>
 <aside class="right"><div id="legacyAuditReview" hidden><h2>Auditoria visual de galeria</h2><strong id="legacyAuditTitle"></strong><p id="legacyAuditMeta" class="sub"></p><button type="button" id="legacyAuditOpenBoard">Abrir prancha ampliada</button><p class="sub">Confira todas as fotos e variantes. Registrar uma classificação NÃO altera as relações de grupo nem confirma direitos.</p><div id="legacyAuditForm"><div class="formfield"><label for="legacyAuditDecision">Conclusão da revisão visual</label><select id="legacyAuditDecision"><option value="">Selecione após conferir as imagens</option><option value="same_sculpture">Mesma escultura, vistas diferentes</option><option value="different_sculptures">Esculturas diferentes: precisa separar</option><option value="needs_more_evidence">Evidência insuficiente: manter pendente</option></select></div><div class="formfield"><label for="legacyAuditNotes">Justificativa visual (mínimo 15 caracteres)</label><textarea id="legacyAuditNotes" placeholder="Descreva geometria, base, composição, variante e outras evidências verificadas."></textarea></div><button id="legacyAuditSave" type="button">Registrar revisão no histórico</button></div><p id="legacyAuditStatus" class="sub" aria-live="polite"></p>
+<section id="legacyBatchPanel" aria-label="Remessa de revisão visual" class="sync-panel">
+ <h3>Revisão editorial em lote</h3>
+ <p class="sub">Até 12 galerias por remessa, cada uma com decisão e justificativa próprias. Inspecione todas as páginas da prancha; não se trata de publicação comercial.</p>
+ <label for="legacyBatchAttested"><input id="legacyBatchAttested" type="checkbox"> Conferi todas as fotos desta galeria na prancha, não somente as amostras.</label>
+ <div class="buttons"><button id="legacyBatchStage" type="button">Adicionar esta revisão à remessa</button></div>
+ <div id="legacyBatchList" class="sub" aria-live="polite"></div>
+ <div class="buttons"><button id="legacyBatchSubmit" type="button" disabled>Registrar remessa no histórico</button><button id="legacyBatchClear" type="button" disabled>Limpar remessa</button></div>
+ <p id="legacyBatchStatus" class="sub" aria-live="polite">Nenhuma revisão aguardando registro.</p>
+</section>
 <div id="legacySplitForm" hidden>
  <h3>Separar esculturas comprovadamente diferentes</h3>
  <p class="sub">Abra a prancha, marque todas as mensagens de uma única escultura e volte para registrar a separação. Mídias SHA-256 idênticas são selecionadas juntas. Só grupos com auditoria prévia de esculturas diferentes podem ser separados.</p>
