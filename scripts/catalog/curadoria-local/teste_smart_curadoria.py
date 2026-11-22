@@ -109,7 +109,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
             db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)", (
                 mid, hashlib.sha256(content).hexdigest(), "msg_%d.jpg"%mid,
                 "Poke Studio", "2026-11-19",
-                "▪️ Gengar - Pokémon\\n▫️ Estúdio: Poke Studio",
+                "▪️ Gengar - Pokémon\n▫️ Estúdio: Poke Studio",
                 "album-mixed-sculptures", m.utc()))
     new=m.process_batch(dbpath,100)
     assert new["processed"]==2,new
