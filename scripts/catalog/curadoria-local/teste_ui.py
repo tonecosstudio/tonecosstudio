@@ -26,6 +26,11 @@ assert 'min_images:el("multiplePhotosOnly").checked?2:1' in js
 assert 'id="multiplePhotosOnly"' in html
 assert 'id="boardDialog"' in html and 'id="openBoardBtn"' in html
 assert 'id="boardPrev"' in html and 'id="boardNext"' in html and 'id="boardPage"' in html
+assert 'id="nameTelegramAlbumBoard"' in html
+assert 'async function openTelegramAlbumBoard(mid)' in js
+assert '/api/telegram-album/' in js
+assert 'images.telegram_album_board' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+
 assert 'const BOARD_PAGE_SIZE=24;' in js
 assert 'function renderBoardPage()' in js
 assert 'function setThumb(img,messageId,width=480)' in js
