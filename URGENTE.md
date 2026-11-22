@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — OrdaX MCP lote Pokémon +430 identidades privadas
+
+- **Missão física supervisionada:** `computer.process_start` no DESKTOP-4UFL03B, process_id `f257d6fe-2cf0-45ef-8a40-db5fe47aa0fe`, 5/5 etapas, exit 0, logs com `source-commit:cd5f6c6232f23430aa6089896d96230f5f7ecef4`. Inventário lido sem alterar SQLite, imagens, Telegram, R2 ou D1.
+- **Dados realmente analisados:** de 564 títulos Pokémon, 445 espécies distintas com correspondência **exata** no índice PokeAPI imutável de 1.025 espécies; 119 retidas por variante/conflito/ausência. Há 413 potenciais correspondências históricas por NOME com o catálogo antigo, sem associação a modelos.
+- **Supabase privado auditado após 5 lotes:** `catalog_character_identities` de **34 para 464** registros, **430 novos**, 464 keys distintas, **445 Pokémon**, 13 franquias. `catalog_curation_model_profiles=0`, `catalog_curation_model_tags=0`. Fonte PokeAPI é **independente/comunitária**, não referência primária oficial; código e evidências por espécie/commit registrados nos 430 novos registros. Não houve liberação comercial.
+- **Arquivos privados:** mesma pasta `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/`: `pokemon-especies-exatas-privado.jsonl`, `pokemon-ambiguos-revisao-privado.jsonl`, `pokemon-verified-manifest.json`, `pokemon-verified-mission.json`. NÃO versionar dados privados no GitHub.
+- **Próxima etapa:** rodar validação em lote para franquias restantes usando somente referências comprováveis, evitar reprocessar a mesma fonte e inserir apenas identidades reais revisáveis na tabela existente. D1 migration 0029, publicação Worker/site e vínculos aguardam GO M5.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — 34 personagens privados / 13 novos Pokémon / curadoria horária
 
 - **Supabase TONART real:** 13 personagens Pokémon adicionados com fonte oficial individual e chave editorial idempotente. Auditoria: **34 identidades, 34 chaves únicas, 13 franquias editoriais, 15 Pokémon; 0 vínculos de modelos e 0 tags de modelos**. Nenhuma publicação D1, imagem, galeria ou alteração comercial.
