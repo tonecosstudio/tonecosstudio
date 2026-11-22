@@ -277,7 +277,8 @@ test('M5 ownership is manual-only, isolated from builds and Cloudflare', () => {
   const verifyGuard = "    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'verify')";
   assert.equal(workflow.split(verifyGuard).length - 1, 4, 'four heavy jobs must skip M5 ownership-only runs');
 
-  const manualJob = workflow.split('  catalog-m5-ownership:')[1];
+  const manualJob = workflow.split('  catalog-m5-ownership:')[1]
+    ?.split('  catalog-controlled-worker-release:')[0];
   assert.ok(manualJob, 'M5 ownership inspection must reuse the existing quality workflow');
   assert.ok(manualJob.includes('refs/heads/main'));
   assert.ok(manualJob.includes('--ownership-only'));
