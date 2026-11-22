@@ -1205,12 +1205,21 @@ def _record_candidate_event(
 def apply_telegram_evidence(
     db_path: str | Path, *, limit: int = 1000, original_topic: str | None = None,
 ) -> dict[str, int]:
-    """Write provisional Telegram candidates, optionally within one studio topic."""
+    """Write provisional Telegram candidates with bounded SQLite write transactions."""
     processed = proposed = ambiguous = protected = 0
     with _open_curadoria(db_path) as db:
         if not _table_exists(db, "name_proposals"):
             return {"processed": 0, "proposed": 0, "ambiguous": 0, "preserved_manual": 0}
-        db.execute("BEGIN IMMEDIATE")
+        write_chunk = 0
+
+        def finish_processed() -> None:
+            nonlocal processed, write_chunk
+            processed += 1
+            write_chunk += 1
+            if write_chunk >= 32:
+                db.commit()
+                write_chunk = 0
+
         asset_sql = """
             SELECT message_id,sha256,original_topic,source_caption,source_album,source_relative
             FROM assets
@@ -1241,6 +1250,11 @@ def apply_telegram_evidence(
                 continue
             if processed >= max(1, min(int(limit), 10000)):
                 break
+            # Compute candidates before taking the writer lock. Each batch
+            # commits after 32 changed assets so the UI and other reviewers
+            # are not blocked by a full-history transaction.
+            if write_chunk == 0:
+                db.execute("BEGIN IMMEDIATE")
             proposal = db.execute("SELECT * FROM name_proposals WHERE message_id=?", (mid,)).fetchone()
             if _existing_manual_revision(db, mid, proposal):
                 db.execute("""
@@ -1249,7 +1263,7 @@ def apply_telegram_evidence(
                     WHERE message_id=?
                 """, (evidence_fingerprint, _now(), mid))
                 protected += 1
-                processed += 1
+                finish_processed()
                 continue
             candidate_keys = {candidate.key() for candidate in ordered}
             existing_key = None
@@ -1350,8 +1364,9 @@ def apply_telegram_evidence(
                     if ordered else "Nenhum nome recuperado; cobertura completa depende de varredura Telegram.",
                 _now(), mid,
             ))
-            processed += 1
-        db.commit()
+            finish_processed()
+        if write_chunk:
+            db.commit()
     return {
         "processed": processed, "proposed": proposed, "ambiguous": ambiguous,
         "preserved_manual": protected,
