@@ -18,8 +18,7 @@ def candidates(db_path, group_key, page=1, limit=48, query=""):
     page=max(1,int(page))
     limit=max(1,min(120,int(limit)))
     query=str(query or "").strip()[:120]
-    with smart.db_open(db_path) as db:
-        smart.setup(db)
+    with smart.db_open(db_path,readonly=True) as db:
         group=db.execute("SELECT group_key FROM model_groups WHERE group_key=?",(key,)).fetchone()
         if not group:raise ValueError("Galeria não encontrada")
         topics=db.execute("""SELECT DISTINCT a.original_topic FROM model_group_members m
