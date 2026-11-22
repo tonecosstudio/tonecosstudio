@@ -229,6 +229,55 @@ class TelegramIdentityEngineTests(unittest.TestCase):
         ))
         self.assertEqual(engine.list_telegram_findings(self.db_path, 200)["related_messages"][0]["evidence_message_id"], 220)
 
+    def test_exact_original_media_message_restores_missing_caption_and_keeps_studio_scope(self):
+        self.add_asset(610, topic="Abe3D")
+        self.add_asset(611, topic="Other Studio")
+        self.add_asset(612, topic="Abe3D")
+        with engine._open_curadoria(self.db_path) as db:
+            for message_id, topic_id, topic_name in (
+                (610, 5, "Abe3D"),
+                (611, 7, "Other Studio"),
+                (612, 5, "Abe3D"),
+            ):
+                db.execute("""
+                    UPDATE telegram_identity_coverage SET
+                        source_chat_id=?, topic_id=?, topic_name=?
+                    WHERE message_id=?
+                """, (SOURCE_CHAT, topic_id, topic_name, message_id))
+            db.commit()
+        engine.ingest_history_messages(self.db_path, SOURCE_CHAT, [
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 610, 5, "Abe3D",
+                "▪️ Wonder Woman - DC\n▫️ Estúdio: Abe3D", has_media=True,
+            ),
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 611, 7, "Other Studio",
+                "Title: Other Character", has_media=True,
+            ),
+            engine.TelegramHistoryMessage(
+                SOURCE_CHAT, 612, 6, "Wrong Topic",
+                "Title: Misattributed Name", has_media=True,
+            ),
+        ])
+        result = engine.apply_telegram_evidence(
+            self.db_path, original_topic="Abe3D",
+        )
+        self.assertEqual(result["proposed"], 1)
+        with _test_db(self.db_path) as db:
+            rows = db.execute("""
+                SELECT message_id,title,evidence_type,status FROM name_proposals
+                WHERE message_id IN (610,611,612) ORDER BY message_id
+            """).fetchall()
+        self.assertEqual(rows[0], (
+            610, "Wonder Woman", "telegram_original_message", "provavel",
+        ))
+        self.assertEqual(rows[1][1], "")
+        self.assertEqual(rows[2][1], "")
+        self.assertEqual(
+            engine.apply_telegram_evidence(self.db_path, original_topic="Abe3D")["proposed"],
+            0,
+        )
+
     def test_temporal_proximity_never_creates_a_relation(self):
         self.add_asset(300)
         message = engine.TelegramHistoryMessage(
