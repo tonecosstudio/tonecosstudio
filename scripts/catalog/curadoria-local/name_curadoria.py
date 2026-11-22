@@ -70,6 +70,10 @@ def setup(db):
        message_id INTEGER NOT NULL, event_type TEXT NOT NULL,
        evidence TEXT NOT NULL, occurred_at TEXT NOT NULL
     );
+    -- The evidence/event lookup always has message_id and event_type.
+    -- Without this index, a single Telegram proposal scans all event history.
+    CREATE INDEX IF NOT EXISTS idx_name_proposal_events_message_type
+      ON name_proposal_events(message_id, event_type);
     """)
 
 def source_fingerprint(asset):
