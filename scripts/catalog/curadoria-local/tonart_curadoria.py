@@ -395,6 +395,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"review.queue","method":"GET","path":"/api/review-queue","effect":"read"},
                     {"id":"gallery.legacy_audit","method":"GET","path":"/api/legacy-album-audit","effect":"read"},
                     {"id":"gallery.legacy_audit_review","method":"POST","path":"/api/audit-legacy-gallery","effect":"write"},
+                    {"id":"gallery.legacy_split","method":"POST","path":"/api/split-legacy-gallery","effect":"write"},
                     {"id":"external_candidates.list","method":"GET","path":"/api/candidates","effect":"read"},
                     {"id":"images.annotate","method":"POST","path":"/api/annotate","effect":"write"},
                     {"id":"names.export","method":"POST","path":"/api/export-names","effect":"write"},
@@ -575,6 +576,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(naming.materialize_confirmed(DB_PATH,SOURCE,APP_DIR))
             if self.path=="/api/export-names":
                 return self.respond(naming.export_manifest(DB_PATH,APP_DIR/"manifesto-nomes-propostos.csv"))
+            if self.path=="/api/split-legacy-gallery":
+                return self.respond(legacy_album_audit.split_reviewed_gallery(
+                    DB_PATH,group_key=obj.get("group_key",""),
+                    revision=obj.get("revision"),
+                    message_ids=obj.get("message_ids",[]),
+                    title=obj.get("title",""),
+                    variant=obj.get("variant",""),
+                    note=obj.get("note","")))
             if self.path=="/api/audit-legacy-gallery":
                 return self.respond(legacy_album_audit.record_review(
                     DB_PATH,group_key=obj.get("group_key",""),
