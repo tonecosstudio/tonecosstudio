@@ -39,6 +39,17 @@ export function assertTraffic(versions, previous, candidate, phase) {
     throw Error('Worker deployment does not match expected release phase')
   }
 }
+/**
+ * Roll back only if live traffic has diverged from the version previously
+ * verified before upload. A failed stage can leave a partially created 0% split.
+ */
+export function rollbackPlan(versions, previous) {
+  validId(previous)
+  if (!Array.isArray(versions) || versions.length < 1) throw Error('Missing rollback deployment evidence')
+  return versions.length === 1 && versions[0].id === previous && versions[0].percent === 100
+    ? 'no-op'
+    : 'restore'
+}
 export function uploadedVersion(text) {
   const entries=String(text).split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map((s,i)=>{
     try{return JSON.parse(s)}catch{throw Error('Malformed Wrangler upload line '+(i+1))}
@@ -118,6 +129,11 @@ async function main(){
   }else if(mode==='uploaded'){
     if(!a)throw Error('Missing Wrangler NDJSON file')
     result=uploadedVersion(readFileSync(a,'utf8'))
+  }else if(mode==='rollback-plan'){
+    result=rollbackPlan(await readLiveDeployment(),validId(a))
+  }else if(mode==='rollback-verify'){
+    assertTraffic(await readLiveDeployment(),validId(a),null,'before')
+    result=await smoke(process.env.CATALOG_API_URL)
   }else if(mode==='staged'){
     assertTraffic(await readLiveDeployment(),a,b,'staged')
     result=await smoke(process.env.CATALOG_API_URL,b)

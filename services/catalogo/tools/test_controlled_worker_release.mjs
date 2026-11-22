@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {readFileSync} from 'node:fs'
-import {deploymentVersions,assertTraffic,uploadedVersion,readLiveDeployment,smoke} from './controlled_worker_release.mjs'
+import {deploymentVersions,assertTraffic,rollbackPlan,uploadedVersion,readLiveDeployment,smoke} from './controlled_worker_release.mjs'
 
 const previous='aa8fd20c-857c-4780-a15e-021569a32251'
 const candidate='dddddddd-1111-2222-3333-aaaaaaaaaaaa'
@@ -18,6 +18,16 @@ test('exact previous, zero-traffic candidate and promoted version are verified',
   assert.throws(()=>deploymentVersions(deployment([[previous,101]])))
   assert.throws(()=>deploymentVersions({result:{deployments:[]}}))
 })
+test('rollback planning handles partial staging, promotion and already-restored traffic',()=>{
+  const read=entries=>deploymentVersions(deployment(entries))
+  assert.equal(rollbackPlan(read([[previous,100]]),previous),'no-op')
+  assert.equal(rollbackPlan(read([[previous,100],[candidate,0]]),previous),'restore')
+  assert.equal(rollbackPlan(read([[previous,60],[candidate,40]]),previous),'restore')
+  assert.equal(rollbackPlan(read([[candidate,100]]),previous),'restore')
+  assert.throws(()=>rollbackPlan([],previous))
+  assert.throws(()=>rollbackPlan(read([[previous,100]]),'not-a-version'))
+})
+
 test('Wrangler event file must contain exactly one version-upload event',()=>{
   assert.equal(uploadedVersion(JSON.stringify({type:'version-upload',version_id:candidate})),candidate)
   assert.throws(()=>uploadedVersion('invalid json'))
@@ -71,7 +81,10 @@ test('one existing workflow owns controlled release, protected by M5 and rollbac
   assert.ok(job.includes('environment: production'))
   assert.ok(job.indexOf('cutover-readiness.mjs --live')<job.indexOf('wrangler versions upload'))
   assert.ok(job.includes('@0%'))
-  assert.ok(job.includes('steps.stage.outcome'))
+  assert.ok(job.includes("steps.stage.outcome == 'failure'"))
+  assert.ok(job.includes("steps.stage.outcome == 'success'"))
+  assert.ok(job.includes('cancelled()'))
+  assert.ok(job.indexOf('rollback-plan') < job.indexOf('rollback-verify'))
   assert.ok(job.includes('ROLLBACK_PREVIOUS_VERSION'))
   assert.doesNotMatch(job,/wrangler d1|migrations apply|wrangler r2 object put/i)
 })

@@ -429,10 +429,23 @@ jobs:
       - name: Verify promoted Worker and public read routes
         run: node services/catalogo/tools/controlled_worker_release.mjs promoted "$STAGED_WORKER_VERSION"
 
-      - name: Restore original version if any post-staging verification fails
-        if: ${{ failure() && steps.stage.outcome == 'success' }}
-        run: >-
-          npx wrangler versions deploy
-          "${ROLLBACK_PREVIOUS_VERSION}@100%"
-          --message "TONART M5 rollback ${{ github.sha }}"
-          --yes --config "$WRANGLER_CONFIG"
+      - name: Restore verified previous version after any partial stage or promotion failure
+        if: ${{ (failure() || cancelled()) && (steps.stage.outcome == 'success' || steps.stage.outcome == 'failure') }}
+        run: |
+          set -euo pipefail
+          previous="${ROLLBACK_PREVIOUS_VERSION:?Rollback version not verified}"
+          # If metadata is unavailable, still attempt recovery to the exact
+          # version that was validated before upload. Never claim success on error.
+          if ! plan="$(node services/catalogo/tools/controlled_worker_release.mjs rollback-plan "$previous")"; then
+            echo "::warning::Unable to read deployment; attempting recovery to the verified previous version."
+            plan="restore"
+          fi
+          if [[ "$plan" == "restore" ]]; then
+            npx wrangler versions deploy "$previous@100%" \
+              --message "TONART M5 rollback ${{ github.sha }}" \
+              --yes --config "$WRANGLER_CONFIG"
+          elif [[ "$plan" != "no-op" ]]; then
+            echo "::error::Invalid rollback decision."
+            exit 2
+          fi
+          node services/catalogo/tools/controlled_worker_release.mjs rollback-verify "$previous"
