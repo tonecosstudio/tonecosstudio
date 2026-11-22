@@ -53,6 +53,17 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     groups=m.list_models(dbpath)
     assert groups["total"]==2,groups
     assert len(groups["items"])==2
+    model_wall=m.list_models(dbpath,page=1,limit=96,previews=4)
+    assert model_wall["total"]==2 and model_wall["previews"]==4
+    assert len(model_wall["items"])==2
+    assert all(len(g["preview_ids"])==1 for g in model_wall["items"])
+    assert all(g["preview_ids"][0]==g["sample_message"] for g in model_wall["items"])
+    assert all("preview_ids" not in g for g in groups["items"])
+    try:
+        m.list_models(dbpath,previews=2)
+        raise AssertionError("Noncanonical preview setting accepted")
+    except ValueError:
+        pass
     first_page=m.list_models(dbpath,page=1,limit=1)
     second_page=m.list_models(dbpath,page=2,limit=1)
     assert first_page["total"]==second_page["total"]==2
