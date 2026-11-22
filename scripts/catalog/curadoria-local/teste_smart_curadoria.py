@@ -135,4 +135,33 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
             assert db.execute("SELECT 1 FROM model_group_members WHERE message_id=?",(mid,)).fetchone() is None
     for mid in (105,106):
         assert (source/("msg_%d.jpg"%mid)).read_bytes()==("CONTENT_"+str(mid)).encode()
+    # A gallery can contain many Telegram messages with byte-identical
+    # photographs. Its contact board must show only distinct SHA-256 media.
+    with closing(m.db_open(dbpath)) as db:
+        key=db.execute("SELECT group_key FROM model_group_members WHERE message_id=105").fetchone()[0]
+        same_sha=db.execute("SELECT sha256 FROM assets WHERE message_id=105").fetchone()[0]
+        for mid in (107,108,109):
+            (source/("msg_%d.jpg"%mid)).write_bytes(b"CONTENT_105")
+            db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",(
+                mid,same_sha,"msg_%d.jpg"%mid,"Poke Studio",
+                "2026-11-19","","album-mixed-sculptures",m.utc()))
+            db.execute("""INSERT INTO model_group_members(
+                message_id,group_key,match_reason,updated_at)
+                VALUES(?,?,'telegram_album',?)""",(mid,key,m.utc()))
+        (source/"msg_110.jpg").write_bytes(b"CONTENT_110")
+        db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)",(
+            110,hashlib.sha256(b"CONTENT_110").hexdigest(),
+            "msg_110.jpg","Poke Studio","2026-11-19","",
+            "album-mixed-sculptures",m.utc()))
+        db.execute("""INSERT INTO model_group_members(
+            message_id,group_key,match_reason,updated_at)
+            VALUES(?,?, 'telegram_album',?)""",(110,key,m.utc()))
+        db.commit()
+    with closing(m.db_open(dbpath,readonly=True)) as db:
+        thumbs=m.gallery_preview_ids(db,[key],6)
+        assert thumbs[key]==[105,110],thumbs
+        assert len(thumbs[key])==2
+    assert all((source/("msg_%d.jpg"%mid)).read_bytes()==b"CONTENT_105"
+               for mid in (107,108,109))
+    print("PRANCHA SHA-256: mensagens repetidas omitidas da vista; originais preservados")
     print("E2E SMART APROVADO: álbum não mescla esculturas, variantes, reprocessamento, evidências, revisão, concorrência otimista, originais íntegros")
