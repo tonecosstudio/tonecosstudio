@@ -1,6 +1,6 @@
 # TONART — Fichas de personagens, universos e descoberta relacionada
 
-**Estado:** requisito de produto definido pelo proprietário em 16/11/2026; **implementação ainda pendente**, sem autorização implícita de deploy, indexação, alterações no Worker produtivo ou liberação comercial. Este documento é a especificação funcional de referência, **não** uma nova fonte de verdade para o catálogo.
+**Estado:** requisito de produto definido pelo proprietário em 16/11/2026; **contrato estrutural transversal preparado em 22/11/2026, publicação e integração ainda pendentes**, sem autorização implícita de deploy, indexação, alterações no Worker produtivo ou liberação comercial. Este documento é a especificação funcional de referência, **não** uma nova fonte de verdade para o catálogo.
 
 ## Objetivo e experiência do visitante
 
@@ -75,3 +75,36 @@ Este quadro define *responsabilidades*, **não nomes finais de tabelas ou migrat
 - [ ] Testes direcionados cobrem sucesso, erro, vazio, responsividade, teclado, retorno aos filtros e links antigos; noindex, ofertas e deploy permanecem fechados até GO explícito.
 
 **Próxima ação recomendada:** executar a **Fase A** e entregar o menor contrato/PR necessário para a **Fase B**, sem começar por um novo banco ou por um redesign. Ao concluir etapas, registrar progresso no checkpoint `URGENTE.md`; este documento mantém a definição de produto, não uma lista paralela de status.
+
+
+## SSOT transversal: Telegram e catálogo antigo (contrato preparado em 22/11/2026)
+
+**Não criar outro catálogo ou outra fonte de autoridade.** O D1 canônico `tonecos-catalogo` é a autoridade das identidades classificadas que podem ser servidas publicamente. A curadoria privada no Supabase/SQLite continua sendo a origem de **propostas, evidências e decisões editoriais**, e não outra API de tags pública. Somente o publicador autorizado transforma decisões confirmadas em vínculos do D1; o frontend nunca publica ou grava tags.
+
+### Reutilização, não substituição
+
+| Dimensão | Fonte e identidade | Regra |
+| --- | --- | --- |
+| Categoria | D1 `categories.id` e `slug` existentes | Uma categoria, sem duplicar textos por modelo |
+| Franquia/universo | D1 `franchises.id`, categoria e slug existentes | Mesmo universo compartilhado entre Telegram e modelos antigos; colisões de slug são verificadas com o ID |
+| Personagem | D1 `catalog_characters.id` na projeção revisada; `editorial_identity_id` associa a identidade privada já existente | Uma identidade estável, com franquia, nome canônico, versão e evidência; nunca derivar ID da grafia de um título |
+| Sinônimos | D1 `catalog_character_aliases` na projeção revisada, originados de aliases editoriais aprovados | Encontram a mesma identidade; não criam novo personagem |
+| Associação a modelos | D1 `catalog_model_characters` por `models.id` + `character_id` | Suporta `tg_*` e `mdl_*`, muitos modelos por personagem e vários personagens por modelo, sem juntar galerias |
+| Temas e atributos | `catalog_curation_tags` e `catalog_curation_model_tags` privados já existentes | `theme_genre`, `characteristic` e `narrative_role` não se confundem com franquia ou personagem |
+
+**Implementação de base preparada, ainda não aplicada:** `services/catalogo/migrations/0029_canonical_characters_across_sources.sql` acrescenta somente a projeção de personagens, aliases e associações no **mesmo D1**. Nenhum dado é copiado ou aprovado automaticamente pela migration. O mapeamento é versionado e restrito a entradas confirmadas, com vínculos cruzados de franquias permitidos somente com evidência explícita de crossover. A representação privada de um candidato não é um segundo cadastro canônico: ela é descartável/reconciliável depois da publicação aprovada.
+
+**Idempotência:** o importador canônico deve buscar primeiro `editorial_identity_id` já mapeado e, em seguida, fazer uma conciliação determinística por franquia e identidade verificada. Não gerar novos personagens com base apenas em `lower(name)`, `telegram_character`, similaridade visual ou IA. Aliases e renomeações preservam IDs; divergências são retidas para revisão. Revisão ou revogação precisa atualizar o vínculo publicado sem alterar fotos, modelo, slug, estúdio, versão de galeria ou direitos.
+
+### Sequência de integração sem reimportar imagens
+
+1. **Inventário somente leitura:** aproveitar o snapshot já existente dos modelos D1 e as decisões editoriais da curadoria (sem repetir SELECTs de todo o acervo enquanto a quota D1 estiver esgotada). Comparar categorias/franquias e identidades já confirmadas; produzir lote privado com `confirmed`, `candidate`, `conflict`, `unknown`. A duplicação de uma escultura e a coincidência de personagem são problemas diferentes.
+2. **Reconciliação por evidência:** vincular à mesma identidade os modelos antigos e do Telegram comprovadamente correspondentes. Reaproveitar os IDs aprovados e registrar a revisão da fonte; não publicar automaticamente rascunhos ou direitos não avaliados. Casos ambíguos, como `Ace` versus `Ace McCloud`, nunca são unidos por substring.
+3. **Único owner de escrita:** depois de autorizado o cutover M5, adaptar **o publicador existente** para aplicar somente links revisados, por lotes idempotentes e com comparação de revisão; não criar um sincronizador público autônomo ou uma segunda API Supabase. O D1 continua sendo a única autoridade pública.
+4. **Contrato público compartilhado:** estender a API do Worker/gateway existente para retornar chips `{kind, id, label, slug}` e buscar modelos por **ID** de categoria, franquia ou personagem. A seleção deve percorrer a mesma tabela `models`, respeitando a regra de visibilidade **de cada origem**: `published=1` para catálogo comercial e o gate da vitrine Telegram para `published=0`. As duas origens só devem aparecer juntas na experiência unificada depois de preservados esses gates.
+5. **Interface única:** tags visíveis uma vez, em ordem categoria → franquia → personagem → variante editorial; variante não é identidade. Clique em personagem filtra pelo ID, não por `LIKE`. Estúdio é crédito/coleção independente, não substitui a categoria. Páginas de personagens e relações `RelatedModels` reutilizam a mesma consulta paginada, sem índice paralelo nem varredura global a cada acesso.
+6. **Auditoria incremental:** alterações de nome, alias ou classificação confirmadas impactam todos os modelos vinculados por ID; conflitos permanecem em curadoria. Publicar a revisão somente pelos gates já definidos, sem ativar SEO, contas, orçamentos ou direitos automaticamente.
+
+**Exemplos de aceite após a reconciliação:** Ace (One Piece) em estúdios diferentes e `Portgas D. Ace` no acervo antigo podem compartilhar um `character_id` **se a evidência confirmar que representam o mesmo personagem**; Abra de quatro estúdios pode compartilhar a identidade Pokémon; Ace McCloud deve continuar outro personagem. Os 1.093 modelos Telegram com categoria/franquia pendente mantêm essa condição até revisão — não fabricar tags para completar a interface.
+
+**Estado verificável deste contrato:** migration aditiva e testes SQLite locais preparados, sem escrita no D1/R2 e sem alteração do Worker produtivo. A PR #77 já melhorou os chips do Telegram, mas o filtro textual `telegram_character` é uma solução transitória de apresentação: não é ainda a identidade canônica compartilhada com os modelos antigos. A implementação do publicador, a conciliação real e a API unificada são etapas pendentes. A habilitação em produção depende da autoridade de deploy/cutover M5 existente, além da disponibilidade do D1.
