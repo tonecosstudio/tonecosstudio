@@ -278,6 +278,41 @@ class TelegramIdentityEngineTests(unittest.TestCase):
             0,
         )
 
+    def test_evidence_writer_yields_between_32_changed_assets(self):
+        for message_id in range(1000, 1034):
+            self.add_asset(message_id, f"Title: Hero {message_id}", topic="Abe3D")
+
+        real_candidates = engine._related_candidates
+        seen = [0]
+        checked = [False]
+
+        def probe_candidates(db, asset, **kwargs):
+            seen[0] += 1
+            if seen[0] == 33:
+                # Transaction from first 32 assets must be committed before
+                # the 33rd candidate is inspected.
+                with sqlite3.connect(self.db_path, timeout=0.2) as observer:
+                    observer.execute("BEGIN IMMEDIATE")
+                    observer.rollback()
+                checked[0] = True
+            return real_candidates(db, asset, **kwargs)
+
+        engine._related_candidates = probe_candidates
+        try:
+            result = engine.apply_telegram_evidence(
+                self.db_path, original_topic="Abe3D", limit=100,
+            )
+        finally:
+            engine._related_candidates = real_candidates
+        self.assertTrue(checked[0])
+        self.assertEqual(result["proposed"], 34)
+        self.assertEqual(
+            engine.apply_telegram_evidence(
+                self.db_path, original_topic="Abe3D", limit=100,
+            )["proposed"],
+            0,
+        )
+
     def test_temporal_proximity_never_creates_a_relation(self):
         self.add_asset(300)
         message = engine.TelegramHistoryMessage(
