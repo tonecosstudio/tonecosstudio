@@ -66,7 +66,7 @@ assert 'async function openTelegramAlbumBoard(mid)' in js
 assert '/api/telegram-album/' in js
 assert 'images.telegram_album_board' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
 
-assert 'const BOARD_PAGE_SIZE=24;' in js
+assert 'let BOARD_PAGE_SIZE=48;' in js
 assert 'function renderBoardPage()' in js
 assert 'function setThumb(img,messageId,width=480)' in js
 assert 'img.src="/thumb/"+mid+"?w="+width;' in js
