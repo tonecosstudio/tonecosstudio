@@ -1,0 +1,4 @@
+# Dependência somente da miniaturização local. Instalação no venv do host:
+# python -m pip install -r requirements-curadoria.txt
+# A Curadoria e o MCP permanecem no processo e banco existentes.
+Pillow==13.0.0
