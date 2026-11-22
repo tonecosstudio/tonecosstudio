@@ -254,8 +254,42 @@ def stats(db_path):
                 "images_waiting":total-processed,"model_groups":groups,
                 "model_states":by_state}
 
-def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unnamed_only=False):
-    page=max(1,int(page)); limit=max(1,min(int(limit),120))
+def gallery_preview_ids(db, group_keys, previews):
+    """Sample first/last views in ONE bounded read for many gallery cards.
+
+    Uses the existing members index; does not decode, fetch or mutate images.
+    Kept in the model engine as SSOT for regular and legacy-audit walls.
+    """
+    if previews not in (0,1,4,6):
+        raise ValueError("Vistas permitidas: 0, 1, 4 ou 6")
+    keys=list(dict.fromkeys(group_keys))
+    if not keys or previews==0:
+        return {}
+    if len(keys)>120:
+        raise ValueError("Lote de galerias excede 120")
+    rows=db.execute("""
+      WITH ranked AS (
+        SELECT group_key,message_id,
+          ROW_NUMBER() OVER(PARTITION BY group_key ORDER BY message_id) first_rank,
+          ROW_NUMBER() OVER(PARTITION BY group_key ORDER BY message_id DESC) last_rank
+        FROM model_group_members
+        WHERE group_key IN (""" + ",".join("?" for _ in keys) + """)
+      )
+      SELECT group_key,message_id FROM ranked
+      WHERE first_rank<=? OR last_rank<=?
+      ORDER BY group_key,message_id
+    """,keys+[(previews+1)//2,previews//2]).fetchall()
+    result={key:[] for key in keys}
+    for row in rows:
+        result[row["group_key"]].append(row["message_id"])
+    return result
+
+
+def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unnamed_only=False,previews=0):
+    page=max(1,int(page)); limit=max(1,min(int(limit),96))
+    try: previews=int(previews)
+    except (ValueError,TypeError) as exc: raise ValueError("Vistas inválidas") from exc
+    if previews not in (0,1,4,6): raise ValueError("Vistas inválidas")
     min_images=max(1,min(40,int(min_images)))
     group_clauses=[]
     group_args=[]
@@ -321,7 +355,13 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unna
         items=[dict(row) for row in rows]
         for item in items:
             item.pop("total_count",None)
-        return {"total":count,"page":page,"limit":limit,"items":items}
+        if previews and items:
+            sampled=gallery_preview_ids(db,[item["group_key"] for item in items],previews)
+            for item in items:
+                item["preview_ids"]=sampled[item["group_key"]]
+        output={"total":count,"page":page,"limit":limit,"items":items}
+        if previews:output["previews"]=previews
+        return output
 
 def model_detail(db_path,key):
     if not re.fullmatch("[0-9a-f]{24}",key): raise ValueError("ID de grupo inválido")
