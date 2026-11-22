@@ -8,6 +8,16 @@ assert '<script>' not in html
 assert script.exists()
 js=script.read_text(encoding="utf-8")
 assert 'id="namesMode"' in html
+assert 'id="queueMode"' in html
+assert 'id="queueFilters"' in html and 'id="queueResults"' in html
+assert 'id="queueKind"' in html and 'id="queueVariant"' in html
+assert 'async function refreshReviewQueue()' in js
+assert 'function resetReviewQueue()' in js
+assert 'queueCursors[queuePageIndex]' in js
+assert 'el("queueMode").onclick=()=>setView("queue")' in js
+assert '/api/review-queue' in js
+assert 'review.queue' in (root/'tonart_curadoria.py').read_text(encoding='utf-8')
+
 assert 'id="nameReview"' in html
 assert 'id="materializeNames"' in html
 assert 'async function refreshNames' in js
