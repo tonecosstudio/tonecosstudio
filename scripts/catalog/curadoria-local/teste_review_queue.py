@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Read-only queue regression using synthetic data and no Telegram originals."""
 import sqlite3
+from contextlib import closing
 import tempfile
 from pathlib import Path
 import review_queue as queue
 
 with tempfile.TemporaryDirectory(prefix="tonart-review-queue-") as tmp:
     dbpath=Path(tmp)/"curadoria.sqlite3"
-    with sqlite3.connect(dbpath) as db:
+    with closing(sqlite3.connect(dbpath)) as db:
         db.executescript("""
             CREATE TABLE assets(
               message_id INTEGER PRIMARY KEY,sha256 TEXT NOT NULL,
@@ -82,7 +83,7 @@ with tempfile.TemporaryDirectory(prefix="tonart-review-queue-") as tmp:
             raise AssertionError("Unsafe filter accepted: "+str(args))
         except ValueError:
             pass
-    with sqlite3.connect(dbpath) as db:
+    with closing(sqlite3.connect(dbpath)) as db:
         assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
         assert db.execute("SELECT COUNT(*) FROM name_proposals").fetchone()[0]==8
         assert db.execute("SELECT COUNT(*) FROM model_group_members").fetchone()[0]==1
