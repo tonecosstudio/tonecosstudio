@@ -29,6 +29,9 @@ const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId
 const WORKER_NAME = CANONICAL.runtime.worker
 const WORKER_D1 = WORKER_CONFIG.d1_databases?.find(binding => binding.binding === 'DB')
 const WORKER_MEDIA = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding === 'MEDIA')
+const WORKER_PRIVATE_TELEGRAM = WORKER_CONFIG.r2_buckets?.find(binding => binding.binding === 'PRIVATE_TELEGRAM')
+const REQUIRED_ADMIN_SECRETS = ['ADMIN_SUPABASE_ANON_KEY', 'ADMIN_SUPABASE_URL']
+const REQUIRED_WORKER_SECRETS = [...REQUIRED_ADMIN_SECRETS, 'TURNSTILE_SECRET_KEY']
 const REQUIRED_SHOWCASE_COLUMN = 'telegram_showcase_visible'
 const REQUIRED_SHOWCASE_MIGRATION = SCHEMA_CONTRACT.requiredMigrations?.find(x => x.startsWith('0025_telegram_showcase_'))
 const REQUIRED_SHOWCASE_TRIGGERS = SCHEMA_CONTRACT.requiredObjects?.triggers?.filter(x => x.startsWith('trg_telegram_showcase_')) ?? []
@@ -96,6 +99,11 @@ export function assessCutoverReadiness(contract, state) {
     WORKER_CONFIG.name === WORKER_NAME &&
       WORKER_D1?.database_name === contract?.runtime?.d1 &&
       WORKER_MEDIA?.bucket_name === contract?.runtime?.r2 &&
+      WORKER_PRIVATE_TELEGRAM?.bucket_name === 'tonecos-catalogo-staging' &&
+      Array.isArray(WORKER_CONFIG.r2_buckets) && WORKER_CONFIG.r2_buckets.length === 2 &&
+      Array.isArray(WORKER_CONFIG.secrets?.required) &&
+      WORKER_CONFIG.secrets.required.length === REQUIRED_WORKER_SECRETS.length &&
+      REQUIRED_WORKER_SECRETS.every(name => WORKER_CONFIG.secrets.required.includes(name)) &&
       WORKER_CONFIG.main === 'worker/entry.ts',
     'staged_worker_config_mismatch',
   )
@@ -144,8 +152,18 @@ export function assessCutoverReadiness(contract, state) {
 
   const bindings = observed.bindings
   const findBinding = name => Array.isArray(bindings) ? bindings.find(x => x.name === name) : undefined
+  const expectedNames = ['CORS_ORIGINS', 'DB',
+    ...(WORKER_CONFIG.r2_buckets ?? []).map(binding => binding.binding),
+    ...(WORKER_CONFIG.secrets?.required ?? [])].sort()
+  const actualNames = Array.isArray(bindings) ? bindings.map(binding => binding?.name).sort() : []
+  add(
+    Array.isArray(bindings) && JSON.stringify(actualNames) === JSON.stringify(expectedNames),
+    'worker_binding_inventory_mismatch',
+  )
   const db = findBinding('DB')
   const media = findBinding('MEDIA')
+  const privateTelegram = findBinding('PRIVATE_TELEGRAM')
+  const cors = findBinding('CORS_ORIGINS')
   const turnstile = findBinding('TURNSTILE_SECRET_KEY')
   add(
     db?.type === 'd1' && WORKER_D1?.database_id && db.id === WORKER_D1.database_id,
@@ -156,6 +174,19 @@ export function assessCutoverReadiness(contract, state) {
     'existing_r2_binding_unverified',
   )
   add(turnstile?.type === 'secret_text', 'turnstile_secret_presence_unverified')
+  add(
+    privateTelegram?.type === 'r2_bucket' &&
+      privateTelegram.bucket_name === WORKER_PRIVATE_TELEGRAM?.bucket_name,
+    'private_telegram_r2_binding_unverified',
+  )
+  add(
+    cors?.type === 'plain_text' && typeof cors.text === 'string' && cors.text.length > 0,
+    'cors_binding_unverified',
+  )
+  add(
+    REQUIRED_ADMIN_SECRETS.every(name => findBinding(name)?.type === 'secret_text'),
+    'administrative_secret_bindings_unverified',
+  )
   // A Worker that selects telegram_showcase_visible returns HTTP 503 on the old
   // D1 schema. Verify the actual applied migration and all relevant triggers
   // before authorizing a new version, never rely only on a tracked SQL file.

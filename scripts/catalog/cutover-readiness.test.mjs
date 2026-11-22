@@ -15,6 +15,10 @@ const deployment = { versions: [{ version_id: original.productionObservation.cur
 const bindings = [
   { name: 'DB', type: 'd1', id: '87006366-60f3-4937-af73-2ef5a5f901fb' },
   { name: 'MEDIA', type: 'r2_bucket', bucket_name: 'tonecos-catalogo-media' },
+  { name: 'PRIVATE_TELEGRAM', type: 'r2_bucket', bucket_name: 'tonecos-catalogo-staging' },
+  { name: 'CORS_ORIGINS', type: 'plain_text', text: 'https://tonartstudio.com.br' },
+  { name: 'ADMIN_SUPABASE_URL', type: 'secret_text' },
+  { name: 'ADMIN_SUPABASE_ANON_KEY', type: 'secret_text' },
   { name: 'TURNSTILE_SECRET_KEY', type: 'secret_text' },
 ]
 
@@ -185,6 +189,28 @@ test('Cloudflare schema inspection is metadata-only and never runs DDL or model 
   } finally {
     globalThis.fetch = previous
   }
+})
+
+test('M5 requires existing private Telegram R2, admin secrets and exact Worker bindings', () => {
+  const contract = approvedContract()
+  const cases = [
+    { name: 'private bucket removed', mutate: s => { s.bindings = s.bindings.filter(b => b.name !== 'PRIVATE_TELEGRAM') }, blocker: 'private_telegram_r2_binding_unverified' },
+    { name: 'private bucket retargeted', mutate: s => { s.bindings.find(b => b.name === 'PRIVATE_TELEGRAM').bucket_name = 'unexpected-bucket' }, blocker: 'private_telegram_r2_binding_unverified' },
+    { name: 'admin URL missing', mutate: s => { s.bindings = s.bindings.filter(b => b.name !== 'ADMIN_SUPABASE_URL') }, blocker: 'administrative_secret_bindings_unverified' },
+    { name: 'admin key wrong type', mutate: s => { s.bindings.find(b => b.name === 'ADMIN_SUPABASE_ANON_KEY').type = 'plain_text' }, blocker: 'administrative_secret_bindings_unverified' },
+    { name: 'CORS missing', mutate: s => { s.bindings = s.bindings.filter(b => b.name !== 'CORS_ORIGINS') }, blocker: 'cors_binding_unverified' },
+    { name: 'unexpected legacy binding', mutate: s => { s.bindings.push({ name: 'LEGACY_DB', type: 'd1' }) }, blocker: 'worker_binding_inventory_mismatch' },
+    { name: 'duplicate Worker binding', mutate: s => { s.bindings.push({ ...s.bindings[0] }) }, blocker: 'worker_binding_inventory_mismatch' },
+  ]
+  for (const { name, mutate, blocker } of cases) {
+    const state = fullState()
+    mutate(state)
+    const result = assessCutoverReadiness(contract, state)
+    assert.equal(result.ready, false, name)
+    assert.ok(result.blockers.includes(blocker), name + ': ' + JSON.stringify(result.blockers))
+  }
+  const valid = assessCutoverReadiness(contract, fullState())
+  assert.equal(valid.ready, true, JSON.stringify(valid.blockers))
 })
 
 test('source activity, drift or missing live bindings block the cutover', () => {
