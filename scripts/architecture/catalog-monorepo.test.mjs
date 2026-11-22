@@ -267,3 +267,20 @@ test('the canonical plan is discoverable and supersedes the old transfer proposa
   assert.match(source('docs/MIGRACAO_CATALOGO_MONOREPO.md'), /M0.*M1.*M2.*M3.*M4.*M5.*M6/s);
   assert.doesNotMatch(source('docs/OPERACAO_CLOUDFLARE_PAGES.md'), /Destino desejado:\s*\*\*tonecosstudio\/catalogo/);
 });
+
+test('M5 ownership can run manually without triggering builds or touching Cloudflare', () => {
+  const workflow = source('.github/workflows/quality.yml');
+  assert.match(workflow, /- m5-ownership\n/);
+  assert.match(workflow, /- verify\n/);
+  assert.match(workflow, /cancel-in-progress: >-\n/);
+  for (const job of ['quality', 'unit', 'build', 'authority']) {
+    const match = workflow.match(new RegExp('^  ' + job + ':\\n(?:(?!^  [\\w-]+:).)*?^    if: ([^\\n]+)', 'ms'));
+    assert.ok(match, 'missing ' + job + ' job guard');
+    assert.match(match[1], /inputs\\.operation == 'verify'/);
+  }
+  const manualJob = workflow.split('  catalog-m5-ownership:\n')[1];
+  assert.ok(manualJob, 'read-only M5 inspection must live in the existing quality workflow');
+  assert.match(manualJob, /refs\\/heads\\/main/);
+  assert.match(manualJob, /--ownership-only/);
+  assert.doesNotMatch(manualJob, /CLOUDFLARE_API_TOKEN|wrangler|deploy|migration|npm ci/i);
+});

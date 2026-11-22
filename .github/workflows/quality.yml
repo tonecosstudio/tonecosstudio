@@ -66,17 +66,29 @@ on:
       - 'package-lock.json'
       - '.github/workflows/quality.yml'
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Run the full quality gate or the read-only M5 ownership check
+        required: true
+        type: choice
+        options:
+          - verify
+          - m5-ownership
+        default: verify
 
 permissions:
   contents: read
 
 concurrency:
-  group: quality-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Manual M5 ownership inspections never cancel (or get cancelled by) push CI.
+  group: >-
+    ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref) }}
+  cancel-in-progress: >-
+    ${{ github.event_name != 'workflow_dispatch' || inputs.operation == 'verify' }}
 
 jobs:
   quality:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'verify')
     name: Build, test and security
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -134,7 +146,7 @@ jobs:
           fi
 
   unit:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'verify')
     name: Unit coverage
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -158,7 +170,7 @@ jobs:
         run: npm run test:coverage
 
   build:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'verify')
     name: Production build and dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -185,7 +197,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
   authority:
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'verify')
     name: Authority audits
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -302,3 +314,28 @@ jobs:
       - name: Verify canonical TONART release candidate
         if: github.event.pull_request.number == 4 && github.head_ref == 'integration/tonecosstudio-canonical-20261101'
         run: npm run release:verify
+
+  # Existing workflow, no second production pipeline: GitHub metadata only.
+  # No Cloudflare token, D1 query, Worker deployment or migration is possible.
+  catalog-m5-ownership:
+    name: M5 ownership (read-only, fail-closed)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'm5-ownership'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Inspect source writers and canonical M5 owner (read-only)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/catalog/cutover-readiness.mjs --ownership-only
