@@ -122,8 +122,19 @@ with tempfile.TemporaryDirectory(prefix="tonart-batch-audit-") as temp:
         assert [r["decision"] for r in result["results"]]==[
             "same_sculpture","needs_more_evidence"
         ]
-        code,_=call([one,two])
-        assert code==409,"Concurrent duplicate batch accepted"
+        assert result["replayed"] is False
+        assert len(result["batch_id"])==64
+        code,replayed=call([one,two])
+        assert code==200 and replayed["replayed"] is True
+        assert replayed["batch_id"]==result["batch_id"]
+        assert replayed["reviewed"]==2
+        # Order is immaterial for the deterministic commit digest.
+        code,reordered=call([two,one])
+        assert code==200 and reordered["replayed"] is True
+        assert reordered["batch_id"]==result["batch_id"]
+        changed={**one,"note":"Uma justificativa diferente não pode repetir a remessa antiga."}
+        code,_=call([changed,two])
+        assert code==409,"Different decisions cannot reuse an old receipt"
     finally:
         server.shutdown()
         server.server_close()
@@ -137,6 +148,8 @@ with tempfile.TemporaryDirectory(prefix="tonart-batch-audit-") as temp:
             "visual_gallery_audited","visual_gallery_audit_attention"
         ]
         assert all(json.loads(e["detail"])["publication_approved"] is False for e in events)
+        assert all(json.loads(e["detail"])["batch_id"]==result["batch_id"] for e in events)
+        assert all(json.loads(e["detail"])["batch_size"]==2 for e in events)
         assert db.execute("SELECT COUNT(*) FROM model_group_members").fetchone()[0]==original_members
         assert db.execute("SELECT SUM(revision) FROM model_groups").fetchone()[0]==2
         assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
