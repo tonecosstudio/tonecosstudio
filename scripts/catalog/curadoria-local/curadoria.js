@@ -33,7 +33,10 @@ el("original").onclick=()=>{if(selected)window.open("https://t.me/c/2370335738/"
 el("export").onclick=async()=>{try{const result=await post("/api/export",{});el("exports").textContent="Manifesto gravado em: "+result.path;notify("Manifesto gerado para revisão, sem publicação.")}catch(e){notify(e.message)}};
 el("materialize").onclick=async()=>{try{const result=await post("/api/materialize",{});el("exports").textContent="Pastas revisadas: "+result.root+" | novas "+result.created+" | existentes "+result.existing;notify("Pastas nomeadas geradas, sem modificar originais.")}catch(e){notify(e.message)}};
 el("compare").onclick=async()=>{try{const result=await post("/api/import-tonart-csv",{path:el("tonartFile").value});el("exports").textContent="Comparadas "+result.candidates+" imagens TONART; duplicatas exatas com Telegram: "+result.exact_hash_matches;notify("Comparação em staging; nada foi publicado ou apagado.")}catch(e){notify(e.message)}};
-refresh();setInterval(()=>{if(!typing)refresh()},10000);
+refresh();setInterval(()=>{
+  // Reviews own their page; no background polling during walls or dialogs.
+  if(!typing&&!document.hidden&&viewMode!=="queue"&&!el("boardDialog").open)refresh();
+},60000);
 
 /* Fluxo de revisão por MODELO. Não confirma automaticamente sugestões do Telegram. */
 let viewMode="models",chosenGroup=null,modelTotal=0;
@@ -148,13 +151,16 @@ async function refreshReviewQueue(){
  if(viewMode!=="queue")return;
  const grouped=el("queueKind").value==="legacy_groups";
  el("legacyAuditFilters").hidden=!grouped;
+ el("legacyWallControls").hidden=!grouped;
  el("queueVariantLabel").hidden=grouped;
  if(!grouped)el("legacyAuditReview").hidden=true;
  const requestId=++queueRequestId;
  const params=grouped
    ?new URLSearchParams({
      topic,state:el("legacyAuditState").value,risk:el("legacyAuditRisk").value,
-     q:search,cursor:queueCursors[queuePageIndex]||"",limit:24
+     q:search,cursor:queueCursors[queuePageIndex]||"",
+     limit:el("legacyWallPageSize").value,
+     previews:el("legacyWallViews").value
    })
    :new URLSearchParams({
      topic,kind:el("queueKind").value,variant:el("queueVariant").value,
@@ -168,13 +174,25 @@ async function refreshReviewQueue(){
   queueHasMore=data.has_more===true;
   const node=el("queueResults");
   node.replaceChildren();
+  node.classList.toggle("audit-wall",grouped);
   for(const item of data.items||[]){
    const tile=document.createElement("button");
-   tile.className="tile";
-   const img=document.createElement("img");
-   setThumb(img,grouped?item.sample_message:item.message_id);
-   img.alt=(item.title||"Sem nome")+" · "+(item.original_topic||"");
-   tile.append(img);
+   tile.className=grouped?"tile audit-tile":"tile";
+   if(grouped){
+     const sheet=document.createElement("div");
+     sheet.className="audit-previews";
+     const mids=item.preview_ids?.length?item.preview_ids:[item.sample_message];
+     for(const mid of mids){
+       const image=document.createElement("img");setThumb(image,mid,256);
+       image.alt="Ângulo de "+(item.title||"modelo sem nome")+" · mensagem "+mid;
+       sheet.append(image);
+     }
+     tile.append(sheet);
+   }else{
+     const image=document.createElement("img");setThumb(image,item.message_id);
+     image.alt=(item.title||"Sem nome")+" · "+(item.original_topic||"");
+     tile.append(image);
+   }
    const detail=document.createElement("div");
    detail.className="details";
    text(detail,"div",item.title||"Sem nome identificado");
@@ -362,6 +380,11 @@ el("saveModelReview").onclick=async()=>{
  }catch(e){notify(e.message)}
 };
 function setView(mode){
+ if(mode!=="queue"&&document.body.classList.contains("wall-focus")){
+  document.body.classList.remove("wall-focus");
+  el("legacyWallFocus").textContent="Expandir prancha coletiva";
+  el("legacyWallFocus").setAttribute("aria-pressed","false");
+ }
  viewMode=mode;currentPage=1;status="";el("statusFilter").value="";
  el("gallery").hidden=mode!=="images";
  el("modelResults").hidden=mode!=="models";
@@ -481,9 +504,35 @@ el("exportNames").onclick=async()=>{
 };
 el("namesMode").onclick=()=>setView("names");
 el("queueMode").onclick=()=>setView("queue");
-for(const filter of ["queueKind","queueVariant","legacyAuditState","legacyAuditRisk"]){
+for(const filter of ["queueKind","queueVariant","legacyAuditState","legacyAuditRisk",
+                     "legacyWallPageSize","legacyWallViews"]){
  el(filter).onchange=()=>{el("legacyAuditReview").hidden=true;resetReviewQueue();refreshReviewQueue();};
 }
+el("legacyWallFocus").onclick=()=>{
+ const focused=document.body.classList.toggle("wall-focus");
+ el("legacyWallFocus").textContent=focused?"Mostrar painel editorial":"Expandir prancha coletiva";
+ el("legacyWallFocus").setAttribute("aria-pressed",String(focused));
+};
+el("queueSiteCheck").onclick=async()=>{
+ const button=el("queueSiteCheck");
+ if(button.disabled)return;
+ button.disabled=true;
+ el("queueSiteStatus").textContent="Conferindo site público e SQLite local…";
+ try{
+  const site=await api("/api/catalog-sync-summary");
+  el("queueSiteStatus").textContent=
+   "Site "+fmt(site.site_models)+" fichas · Host "+fmt(site.host_groups)+
+   " grupos · Correspondentes "+fmt(site.matched)+
+   " · Só host "+fmt(site.local_only_count)+
+   " · Só site "+fmt(site.site_only_count)+
+   " · Divergências de metadados "+fmt(site.differences_count)+
+   ". Inventário "+site.observed_at+
+   ". A curadoria privada não é publicada automaticamente.";
+ }catch(e){
+  el("queueSiteStatus").textContent="Alinhamento indisponível: "+e.message+
+   ". Nenhuma publicação foi realizada.";
+ }finally{button.disabled=false;}
+};
 selectTopic=function(name){topic=name;currentPage=1;if(viewMode==="queue")resetReviewQueue();refresh()};
 el("statusFilter").onchange=()=>{status=el("statusFilter").value;currentPage=1;refresh()};
 el("prev").onclick=()=>{
@@ -682,7 +731,7 @@ el("saveVisualGallery").onclick=async()=>{
 
 /* Prancha ampliada: vista unica das fotos do mesmo group_key canonico.
    Deduplica apenas na exibicao por SHA; nao modifica o acervo nem propoe fusoes. */
-const BOARD_PAGE_SIZE=24;
+let BOARD_PAGE_SIZE=48;
 let boardAllPhotos=[];
 let boardCurrentTitle="";
 let boardPage=1;
@@ -818,6 +867,11 @@ async function openTelegramAlbumBoard(mid){
 }
 el("nameTelegramAlbumBoard").onclick=()=>{
   if(chosenName)openTelegramAlbumBoard(chosenName.message_id);
+};
+el("boardSize").onchange=()=>{
+ const next=Number(el("boardSize").value);
+ if(![24,48,96].includes(next))return;
+ BOARD_PAGE_SIZE=next;boardPage=1;renderBoardPage();
 };
 el("boardPrev").onclick=()=>{boardPage--;renderBoardPage();el("boardDialog").scrollTop=0;};
 el("boardNext").onclick=()=>{boardPage++;renderBoardPage();el("boardDialog").scrollTop=0;};
