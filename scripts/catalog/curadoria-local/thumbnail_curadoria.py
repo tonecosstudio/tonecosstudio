@@ -20,6 +20,8 @@ MAX_GIF_SOURCE_BYTES = 64 * 1024 * 1024  # still decode first frame only
 MAX_IMAGE_PIXELS = 36_000_000
 MAX_CACHE_BYTES = 24 * 1024 * 1024
 MAX_CACHE_ITEMS = 512
+SLOW_PREVIEW_THRESHOLD_MS = 500.0
+MAX_SLOW_PREVIEWS = 8
 
 _LOCK = Lock()
 _DECODE_SLOTS = BoundedSemaphore(3)
@@ -36,6 +38,7 @@ _PROCESS_COUNT = 0
 _PROCESS_MS_TOTAL = 0.0
 _PROCESS_MS_MAX = 0.0
 _ACTIVE_DECODERS = 0
+_SLOW_PREVIEWS: list[dict] = []
 
 
 class ThumbnailUnavailable(RuntimeError):
@@ -103,6 +106,8 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
         raise ThumbnailUnavailable("Muitas miniaturas simultâneas; repetir consulta")
     wait_ms = (perf_counter()-began_waiting)*1000
     began_processing = perf_counter()
+    trace = {"open_ms": 0.0, "decode_ms": 0.0, "encode_ms": 0.0}
+    rendered = False
     with _LOCK:
         _QUEUE_WAIT_COUNT += 1
         _QUEUE_WAIT_MS_TOTAL += wait_ms
@@ -124,7 +129,9 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
             ) from exc
         try:
             Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
+            opening = perf_counter()
             with Image.open(path) as source:
+                trace["open_ms"] = (perf_counter() - opening) * 1000
                 if source.format != "GIF" and key[3] > MAX_SOURCE_BYTES:
                     raise ThumbnailUnavailable("Somente GIF pode exceder 25 MiB")
                 if source.width * source.height > MAX_IMAGE_PIXELS:
@@ -132,17 +139,22 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
                 if getattr(source, "is_animated", False):
                     source.seek(0)
                 source.draft("RGB", (width, width))
+                decoding = perf_counter()
                 image = ImageOps.exif_transpose(source)
                 try:
                     image.thumbnail((width, width), Image.Resampling.LANCZOS)
+                    trace["decode_ms"] = (perf_counter() - decoding) * 1000
                     if image.mode not in ("RGB", "RGBA"):
                         normalized = image.convert("RGBA" if "A" in image.getbands() else "RGB")
                     else:
                         normalized = image
                     try:
                         payload = BytesIO()
+                        encoding = perf_counter()
                         normalized.save(payload, format="WEBP", quality=76, method=1)
+                        trace["encode_ms"] = (perf_counter() - encoding) * 1000
                         result = payload.getvalue()
+                        rendered = True
                     finally:
                         if normalized is not image:
                             normalized.close()
@@ -178,6 +190,28 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
             _PROCESS_MS_TOTAL += work_ms
             _PROCESS_MS_MAX = max(_PROCESS_MS_MAX,work_ms)
             _ACTIVE_DECODERS -= 1
+            if rendered and work_ms >= SLOW_PREVIEW_THRESHOLD_MS:
+                # Only bounded diagnostic metadata on private loopback:
+                # never retain or expose the absolute file path or SHA.
+                name = path.stem
+                message_id = int(name[4:]) if (
+                    name.startswith("msg_") and name[4:].isdigit()
+                ) else None
+                sample = {
+                    "message_id": message_id,
+                    "type": path.suffix.lower().lstrip("."),
+                    "source_kib": round(key[3] / 1024, 1),
+                    "width": width,
+                    "total_ms": round(work_ms, 1),
+                    "open_ms": round(trace["open_ms"], 1),
+                    "decode_ms": round(trace["decode_ms"], 1),
+                    "encode_ms": round(trace["encode_ms"], 1),
+                }
+                _SLOW_PREVIEWS.append(sample)
+                _SLOW_PREVIEWS.sort(
+                    key=lambda item: item["total_ms"], reverse=True
+                )
+                del _SLOW_PREVIEWS[MAX_SLOW_PREVIEWS:]
         _DECODE_SLOTS.release()
 
 
@@ -198,4 +232,6 @@ def status() -> dict[str, int]:
             "process_ms_total": round(_PROCESS_MS_TOTAL,1),
             "process_ms_max": round(_PROCESS_MS_MAX,1),
             "process_ms_mean": round(_PROCESS_MS_TOTAL / max(1,_PROCESS_COUNT),1),
+            "slow_preview_threshold_ms": SLOW_PREVIEW_THRESHOLD_MS,
+            "slow_previews": [dict(row) for row in _SLOW_PREVIEWS],
         }
