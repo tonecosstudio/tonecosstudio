@@ -15,6 +15,7 @@ import json
 
 ALLOWED_WIDTHS = frozenset((256, 480, 960))
 MAX_SOURCE_BYTES = 25 * 1024 * 1024
+MAX_GIF_SOURCE_BYTES = 64 * 1024 * 1024  # still decode first frame only
 MAX_IMAGE_PIXELS = 36_000_000
 MAX_CACHE_BYTES = 24 * 1024 * 1024
 MAX_CACHE_ITEMS = 512
@@ -37,8 +38,18 @@ def _key(path: Path, sha256: str, width: int) -> tuple:
     if width not in ALLOWED_WIDTHS:
         raise ValueError("Largura de miniatura inválida")
     file_info = path.stat()
-    if not file_info.st_size or file_info.st_size > MAX_SOURCE_BYTES:
-        raise ThumbnailUnavailable("Arquivo fora dos limites de miniatura")
+    if not file_info.st_size:
+        raise ThumbnailUnavailable("Arquivo vazio: miniatura indisponível")
+    if file_info.st_size > MAX_SOURCE_BYTES:
+        # Animated Telegram GIFs may be large on disk despite tiny first
+        # frames. Keep the cap strict for all other media and reject disguised
+        # extensions using the actual first six bytes.
+        if (path.suffix.casefold() != ".gif" or
+            file_info.st_size > MAX_GIF_SOURCE_BYTES):
+            raise ThumbnailUnavailable("Arquivo fora dos limites de miniatura")
+        with path.open("rb") as media:
+            if media.read(6) not in (b"GIF87a",b"GIF89a"):
+                raise ThumbnailUnavailable("GIF original inválido")
     return (str(path.resolve()), str(sha256), file_info.st_mtime_ns,
             file_info.st_size, int(width))
 
@@ -83,6 +94,8 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
         try:
             Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
             with Image.open(path) as source:
+                if source.format != "GIF" and key[3] > MAX_SOURCE_BYTES:
+                    raise ThumbnailUnavailable("Somente GIF pode exceder 25 MiB")
                 if source.width * source.height > MAX_IMAGE_PIXELS:
                     raise ThumbnailUnavailable("Resolução da origem excede limite seguro")
                 if getattr(source, "is_animated", False):
