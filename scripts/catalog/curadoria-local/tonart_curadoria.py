@@ -634,6 +634,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond({"error":str(exc)},409)
         except ValueError as exc:
             return self.respond({"error":str(exc)},400)
+        except sqlite3.OperationalError as exc:
+            if "locked" in str(exc).lower() or "busy" in str(exc).lower():
+                # SQLite serializes writers. This is a transient concurrency
+                # conflict, not an internal server error or a successful write.
+                return self.respond({
+                    "error":"Curadoria ocupada por outra escrita. Consulte o histórico da remessa antes de reenviar."
+                },409)
+            return self.respond({"error":"Erro de armazenamento na curadoria"},500)
         except Exception as exc:
             return self.respond({"error":str(exc)},500)
 
