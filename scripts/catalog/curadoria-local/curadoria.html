@@ -131,7 +131,9 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <section id="studioMissionMergePanel" class="sync-panel" aria-label="Possíveis fotos da mesma estatueta entre galerias">
 <h3>Mesma estatueta? Comparar duas galerias</h3>
 <p class="sub">Candidatos com título, franquia e variante semelhantes, publicados próximos no Telegram. Somente a inspeção física da base, pose e detalhes pode confirmar. Nenhuma fusão é automática.</p>
-<div class="buttons"><button type="button" id="studioMissionMergeLoad">Comparar galerias</button>
+<div class="buttons"><label for="studioMissionMergeGap">Distância entre mensagens
+<select id="studioMissionMergeGap" aria-label="Alcance da busca entre publicações"><option value="120">Até 120 IDs (mais próximas)</option><option value="500" selected>Até 500 IDs (mais resultados)</option></select></label>
+<button type="button" id="studioMissionMergeLoad">Comparar galerias</button>
 <button type="button" id="studioMissionCrossCaptionLoad">Encontrar renders iguais com legendas diferentes</button>
 <button type="button" id="studioMissionFingerprintsScan">Completar impressões visuais do estúdio</button></div>
 <p id="studioMissionMergeStatus" role="status" class="sub">Consulta disponível na missão de agrupamento.</p>
