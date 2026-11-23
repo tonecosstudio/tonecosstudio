@@ -451,3 +451,10 @@ assert 'gallery.cross_gallery_candidates' in (root/"tonart_curadoria.py").read_t
 assert '/api/reject-gallery-pair' in (root/"studio_missions_ui.js").read_text(encoding='utf-8')
 assert '/api/merge-reviewed-galleries' in (root/"studio_missions_ui.js").read_text(encoding='utf-8')
 assert 'gallery.reject_pair' in (root/"tonart_curadoria.py").read_text(encoding='utf-8')
+
+assert 'id="studioMissionCrossCaptionLoad"' in html
+assert 'id="studioMissionCrossCaptionResults"' in html
+assert 'id="modelReviewRelated"' in html
+assert '/api/gallery-visual-cross-caption?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert '/api/correct-gallery-caption' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert 'gallery.cross_caption_visual_candidates' in (root/"tonart_curadoria.py").read_text(encoding='utf8')

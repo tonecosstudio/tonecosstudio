@@ -391,6 +391,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
+                    {"id":"gallery.cross_caption_visual_candidates","method":"GET","path":"/api/gallery-visual-cross-caption","effect":"read","max_limit":48,"automatic_merge":False},
+                    {"id":"gallery.correct_cross_caption","method":"POST","path":"/api/correct-gallery-caption","effect":"write","requires":"physical_SHA_and_visual_reviewer","commercial_approval":False},
                     {"id":"gallery.reject_pair","method":"POST","path":"/api/reject-gallery-pair","effect":"write","touches":"audit_events_only"},
                     {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
                     {"id":"models.review","method":"POST","path":"/api/review-model","effect":"write"},
@@ -579,6 +581,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(catalog_sync.compare(DB_PATH))
             if route.path=="/api/catalog-sync-summary":
                 return self.respond(catalog_sync.compare_summary(DB_PATH))
+            if route.path=="/api/gallery-visual-cross-caption":
+                p=parse_qs(route.query)
+                return self.respond(gallery_ops.cross_caption_visual_candidates(
+                    DB_PATH,SOURCE,studio=p.get("studio",["Wicked"])[0],
+                    limit=p.get("limit",["12"])[0]))
             if route.path=="/api/gallery-merge-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery_ops.cross_gallery_candidates(
@@ -606,7 +613,9 @@ class Handler(BaseHTTPRequestHandler):
                     previews=p.get("previews",["0"])[0]))
             if route.path.startswith("/api/model/"):
                 key=gallery_ops.merged_key(DB_PATH,route.path.split("/")[-1])
-                return self.respond(smart.model_detail(DB_PATH,key))
+                detail=smart.model_detail(DB_PATH,key)
+                detail["related_galleries"]=gallery_ops.related_sculpture_galleries(DB_PATH,key)
+                return self.respond(detail)
             if route.path=="/api/candidates":
                 with connect(DB_PATH) as db:
                     rows=db.execute("""SELECT filename,sha256,model,matched_message_id,status
@@ -667,6 +676,13 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("ID de galeria invalido")
                 return self.respond(naming.propagate_reviewed_gallery_names(
                     DB_PATH,limit=40,group_key=key))
+            if self.path=="/api/correct-gallery-caption":
+                return self.respond(gallery_ops.correct_cross_caption(
+                    DB_PATH,SOURCE,target_key=obj.get("target_key"),
+                    reference_key=obj.get("reference_key"),
+                    target_rev=obj.get("target_rev"),reference_rev=obj.get("reference_rev"),
+                    target_mid=obj.get("target_mid"),reference_mid=obj.get("reference_mid"),
+                    note=obj.get("note","")))
             if self.path=="/api/reject-gallery-pair":
                 return self.respond(gallery_ops.reject_pair(
                     DB_PATH,group_a=obj.get("group_a"),group_b=obj.get("group_b"),

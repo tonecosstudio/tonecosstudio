@@ -497,6 +497,16 @@ async function openModel(key){
    edit.onclick=()=>editGalleryPhotoName(item.message_id);
    cell.append(edit);imgs.append(cell);
   }
+  const related=el("modelReviewRelated");related.replaceChildren();
+  for(const row of (g.related_galleries||[])){
+    const button=document.createElement("button");button.type="button";
+    button.textContent=row.title+" · "+(row.variant||"versão padrão")+" · "+row.photos+" foto(s)";
+    button.onclick=()=>openModel(row.group_key);
+    related.append(button);
+  }
+  if(!(g.related_galleries||[]).length){
+    text(related,"p","Nenhuma variante relacionada com evidência registrada.","sub");
+  }
   const evidence=el("modelReviewEvidence");evidence.replaceChildren();
   for(const conflict of (g.identity_conflicts||[])){
    text(evidence,"p","Atenção: um mesmo arquivo possui nomes diferentes: "+conflict.titles+". Confirme a identidade pela fonte original antes de aprovar esta ficha.","sub");
