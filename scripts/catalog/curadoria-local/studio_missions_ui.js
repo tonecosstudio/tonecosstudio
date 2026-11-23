@@ -11,6 +11,81 @@
   const label=el("studioMissionPage");
   const fmt=new Intl.NumberFormat("pt-BR");
   const studioMetrics=new Map();
+
+  // Live contact boards are model-centered, not 24 unrelated photo tiles.
+  // Existing SQLite and thumbnail endpoints remain the only sources.
+  const livePanel=el("studioMissionLiveGalleries");
+  const liveCards=el("studioMissionGalleryResults");
+  const liveStatus=el("studioMissionGalleryStatus");
+  const livePageLabel=el("studioMissionGalleryPage");
+  const livePrev=el("studioMissionGalleryPrev");
+  const liveNext=el("studioMissionGalleryNext");
+  let livePage=1,livePages=0,liveSerial=0;
+  async function loadLiveGalleries(reset=false){
+    const seq=++liveSerial;
+    if(reset)livePage=1;
+    const isGrouping=mission.value==="grouping";
+    livePanel.hidden=!isGrouping;
+    if(!isGrouping)return;
+    const current=studio.value;
+    livePrev.disabled=true;liveNext.disabled=true;
+    liveStatus.textContent="Carregando esculturas diretamente do host...";
+    try{
+      const params=new URLSearchParams({studio:current,
+        page:String(livePage),limit:"12"});
+      const response=await get("/api/studio-missions/galleries?"+params);
+      if(seq!==liveSerial||current!==studio.value||mission.value!=="grouping")return;
+      livePages=response.pages;
+      liveCards.replaceChildren();
+      for(const group of response.items){
+        const card=node("article",undefined,"studio-gallery-card");
+        card.append(node("strong",(group.title||"Escultura sem nome")+
+          (group.variant?" · "+group.variant:"")));
+        card.append(node("small",(group.universe||"Franquia pendente")+
+          " · "+group.photos+" foto(s), "+group.unique_photos+
+          " vista(s) distintas · galeria "+group.state));
+        const pictures=node("div",undefined,"studio-gallery-pictures");
+        for(const id of group.preview_ids){
+          const a=node("a");
+          a.href="/media/"+id;a.target="_blank";a.rel="noopener noreferrer";
+          a.title="Abrir a fotografia original #"+id;
+          const img=node("img");
+          img.src="/thumb/"+id+"?w=256";
+          img.loading="lazy";img.decoding="async";
+          img.alt="Fotografia #"+id+" da escultura "+(group.title||"sem nome");
+          a.append(img);pictures.append(a);
+        }
+        card.append(pictures);
+        const open=node("button","Abrir galeria para revisão");
+        open.type="button";
+        open.addEventListener("click",async()=>{
+          try{
+            if(typeof setView!=="function"||typeof openModel!=="function")
+              throw Error("Editor canônico indisponível");
+            setView("models");
+            await openModel(group.group_key);
+          }catch(err){liveStatus.textContent="Não foi possível abrir: "+err.message;}
+        });
+        card.append(open);liveCards.append(card);
+      }
+      livePageLabel.textContent="Página "+response.page+" de "+(response.pages||0);
+      liveStatus.textContent=response.total+" galerias · "+current+
+        " · prévias carregadas sob demanda (somente leitura).";
+      if(!response.items.length)liveCards.append(node("p","Nenhuma galeria nesta página."));
+      livePrev.disabled=livePage<=1;
+      liveNext.disabled=livePage>=livePages;
+    }catch(err){
+      if(seq===liveSerial){
+        liveCards.replaceChildren();
+        liveStatus.textContent="Falha ao carregar esculturas: "+err.message;
+      }
+    }
+  }
+  livePrev.addEventListener("click",()=>{if(livePage>1){livePage--;loadLiveGalleries();}});
+  liveNext.addEventListener("click",()=>{if(livePage<livePages){livePage++;loadLiveGalleries();}});
+  studio.addEventListener("change",()=>loadLiveGalleries(true));
+  mission.addEventListener("change",()=>loadLiveGalleries(true));
+
   let page=1,pages=0,busy=false,serial=0;
   function updateSelection(){
     prepare.hidden=mission.value!=="grouping";
@@ -292,6 +367,7 @@
   // Candidate discovery for Mission 1. Never mutate an audited gallery here.
   const mergePanel=el("studioMissionMergePanel");
   const mergeLoad=el("studioMissionMergeLoad");
+  const mergeGap=el("studioMissionMergeGap");
   const mergeMore=el("studioMissionMergeMore");
   const mergeResults=el("studioMissionMergeResults");
   const mergeStatus=el("studioMissionMergeStatus");
@@ -303,7 +379,7 @@
     mergeStatus.textContent="Comparando metadados e proximidade no SQLite...";
     try{
       const q=new URLSearchParams({studio:studio.value,page:String(mergePage),
-        limit:"12",max_gap:"120"});
+        limit:"12",max_gap:mergeGap.value});
       const result=await get("/api/gallery-merge-candidates?"+q);
       for(const item of result.items){
         const card=node("article",undefined,"studio-evidence-row");
@@ -317,6 +393,70 @@
           img.src="/thumb/"+mid+"?w=256";views.append(img);
         }
         card.append(views);
+        // Expand on demand: compare EVERY available photo of both galleries
+        // inside the existing host. No JPEG board, second database or writes.
+        const compareButton=node("button","Comparar todas as fotos lado a lado");
+        compareButton.type="button";
+        compareButton.setAttribute("aria-expanded","false");
+        const comparison=node("section",undefined,"studio-pair-comparison");
+        comparison.hidden=true;
+        comparison.setAttribute("aria-label","Comparação visual das duas galerias");
+        let comparisonReady=false;
+        compareButton.addEventListener("click",async()=>{
+          if(!comparison.hidden){
+            comparison.hidden=true;
+            card.classList.remove("studio-pair-expanded");
+            compareButton.setAttribute("aria-expanded","false");
+            compareButton.textContent="Comparar todas as fotos lado a lado";
+            return;
+          }
+          comparison.hidden=false;
+          card.classList.add("studio-pair-expanded");
+          compareButton.setAttribute("aria-expanded","true");
+          compareButton.textContent="Fechar comparação lado a lado";
+          if(comparisonReady)return;
+          comparison.replaceChildren(node("p","Carregando apenas as fotografias deste par...","sub"));
+          compareButton.disabled=true;
+          try{
+            const groups=await Promise.all([
+              get("/api/model/"+item.group_a),get("/api/model/"+item.group_b)
+            ]);
+            if(groups[0].revision!==item.revision_a ||
+               groups[1].revision!==item.revision_b){
+              throw Error("Uma galeria foi revisada; atualize a fila antes de decidir.");
+            }
+            const columns=node("div",undefined,"studio-pair-columns");
+            groups.forEach((group,i)=>{
+              const col=node("section",undefined,"studio-pair-column");
+              col.append(node("strong","Galeria "+(i===0?"A":"B")+" · "+
+                group.images.length+" foto(s) · "+(group.variant||"sem variante")));
+              const photos=node("div",undefined,"studio-pair-images");
+              for(const photo of group.images){
+                const link=node("a");
+                link.href="/media/"+photo.message_id;
+                link.target="_blank";link.rel="noopener noreferrer";
+                link.title="Abrir original Telegram #"+photo.message_id;
+                const img=node("img");
+                img.loading="lazy";img.decoding="async";
+                img.alt="Vista da galeria "+(i===0?"A":"B")+", foto #"+photo.message_id;
+                img.src="/thumb/"+photo.message_id+"?w=480";
+                link.append(img,node("small","#"+photo.message_id));
+                photos.append(link);
+              }
+              if(!group.images.length)photos.append(node("p","Galeria sem fotos.","sub"));
+              col.append(photos);
+              columns.append(col);
+            });
+            comparison.replaceChildren(
+              node("p","Compare pose, base, proporções e acessórios; título igual não prova a mesma escultura. Nenhuma alteração é feita nesta comparação.","sub"),
+              columns
+            );
+            comparisonReady=true;
+          }catch(err){
+            comparison.replaceChildren(node("p","Comparação indisponível: "+err.message,"sub"));
+          }finally{compareButton.disabled=false;}
+        });
+        card.append(compareButton,comparison);
         for(const [key,count,index] of [[item.group_a,item.photos_a,"A"],
                                          [item.group_b,item.photos_b,"B"]]){
           const open=node("button","Inspecionar galeria "+index+
@@ -393,6 +533,9 @@
     finally{mergeBusy=false;mergeLoad.disabled=false;mergeMore.disabled=false;}
   }
   mergeLoad.addEventListener("click",()=>loadMergeCandidates(true));
+  mergeGap.addEventListener("change",()=>{
+    if(mission.value==="grouping")loadMergeCandidates(true);
+  });
   const crossLoad=el("studioMissionCrossCaptionLoad");
   const crossResults=el("studioMissionCrossCaptionResults");
   let crossBusy=false;
@@ -413,7 +556,7 @@
         const previews=node("div",undefined,"studio-merge-previews");
         for(const mid of [item.message_a,item.message_b]){
           const img=node("img");img.loading="lazy";img.alt="Original Telegram #"+mid;
-          img.src="/thumb/"+mid+"?w=320";previews.append(img);
+          img.src="/thumb/"+mid+"?w=480";previews.append(img);
         }
         card.append(previews);
         const note=node("textarea");note.rows=3;note.maxLength=600;
@@ -593,8 +736,11 @@
       opt.value=item.studio;studio.append(opt);
     }
     if(data.studios.length){
-      studio.value=data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
+      const requested=new URLSearchParams(window.location.search).get("studio");
+      studio.value=data.studios.some(x=>x.studio===requested)?requested:
+        data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
       load();
+      loadLiveGalleries(true);
     }else status.textContent="Não há estúdios canônicos cadastrados.";
   }).catch(err=>status.textContent="Missões indisponíveis: "+err.message);
 })();

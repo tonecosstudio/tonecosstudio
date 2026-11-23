@@ -1,5 +1,9 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Pranchas vivas de esculturas no MESMO host — 23/11/2026
+
+**Visão editorial por modelo, não por JPEG:** GET /api/studio-missions/galleries?studio=Wicked&page=1&limit=12 oferece páginas com uma ficha por grupo canônico, quatro vistas distintas por SHA, contagem física e acesso aos mesmos editores e originais. Só lê SQLite mode=ro/query_only; jamais cria galeria, confirma nome, funde escultura ou altera direitos. O painel de missões agrega estes cards por estúdio; use http://127.0.0.1:8769/?studio=Wicked no computador do host para abrir diretamente Wicked. As pranchas JPG históricas podem ser exportadas manualmente, mas não são necessárias no fluxo principal. Porta e banco são os existentes; backlog de conexões do MESMO servidor ampliado para 64 para suportar miniaturas sob demanda, sem processo extra.
+
 ## Missões visuais em escala por estúdio — 23/11/2026
 
 **Gargalo corrigido:** não escalar por revisões pontuais de poucos modelos. O mesmo TONART Curadoria Host passa a mostrar pranchas paginadas por estúdio, permitindo duas missões com a MESMA foto e os MESMOS IDs: (1) decidir quais fotografias representam a mesma escultura e variantes, (2) identificar nome, personagem e franquia com fontes editoriais. A consulta visual nunca funde esculturas nem aprova nomes automaticamente.
