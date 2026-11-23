@@ -392,6 +392,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
+                    {"id":"gallery.relate_orphan_variant","method":"POST","path":"/api/relate-orphan-variant","effect":"write","requires":"same_physical_sha_distinct_variant_and_audited_reference","commercial_approval":False},
                     {"id":"gallery.cross_caption_visual_candidates","method":"GET","path":"/api/gallery-visual-cross-caption","effect":"read","max_limit":48,"automatic_merge":False},
                     {"id":"visual.fingerprints.coverage","method":"GET","path":"/api/visual-fingerprint-coverage","effect":"read","scope":"studio"},
                     {"id":"visual.fingerprints.scan_studio","method":"POST","path":"/api/scan-studio-fingerprints","effect":"write","max_limit":128,"requires":"physical_sha256","scope":"studio","automatic_approval":False},
@@ -703,6 +704,14 @@ class Handler(BaseHTTPRequestHandler):
                          "originals_mutated":False})
                 finally:
                     VISUAL_SCAN_LOCK.release()
+            if self.path=="/api/relate-orphan-variant":
+                return self.respond(gallery_ops.relate_orphan_variant(
+                    DB_PATH,SOURCE,orphan_mid=obj.get("orphan_mid"),
+                    orphan_revision=obj.get("orphan_revision"),
+                    reference_key=obj.get("reference_key"),
+                    reference_revision=obj.get("reference_revision"),
+                    reference_mid=obj.get("reference_mid"),
+                    note=obj.get("note","")))
             if self.path=="/api/correct-gallery-caption":
                 return self.respond(gallery_ops.correct_cross_caption(
                     DB_PATH,SOURCE,target_key=obj.get("target_key"),

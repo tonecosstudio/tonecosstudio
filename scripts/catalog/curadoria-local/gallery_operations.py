@@ -522,3 +522,118 @@ def related_sculpture_galleries(db_path, group_key):
             if row:
                 seen.add(key);items.append(dict(row))
         return items
+
+def relate_orphan_variant(db_path,media_root,*,orphan_mid,orphan_revision,
+                          reference_key,reference_revision,reference_mid,note):
+    """First-class, idempotent single-image VARIANT gallery, never duplicate media.
+
+    Use only when ungrouped photo is physically byte-identical to a visual-
+    audited existing gallery but its printing package variant is different.
+    """
+    if (type(orphan_mid) is not int or type(reference_mid) is not int
+        or orphan_mid<=0 or reference_mid<=0 or orphan_mid==reference_mid):
+        raise ValueError("Duas mensagens diferentes obrigatórias")
+    if type(orphan_revision) is not int or orphan_revision<0:
+        raise ValueError("Revisão da foto avulsa obrigatória")
+    if type(reference_revision) is not int or reference_revision<0:
+        raise ValueError("Revisão da galeria referência obrigatória")
+    if not isinstance(reference_key,str) or not re.fullmatch("[0-9a-f]{24}",reference_key):
+        raise ValueError("ID de galeria inválido")
+    note=str(note or "").strip()
+    if not 65<=len(note)<=600:
+        raise ValueError("Justifique igualdade física e diferença de pacote (65-600 caracteres)")
+    media_root=Path(media_root).resolve()
+    stamp=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        orphan=db.execute("""SELECT a.message_id,a.source_relative,a.original_topic,a.sha256,
+            p.studio,p.title,p.universe,p.variant,p.status,p.revision,
+            m.group_key AS previous_key
+            FROM assets a JOIN name_proposals p USING(message_id)
+            LEFT JOIN model_group_members m USING(message_id)
+            WHERE a.message_id=?""",(orphan_mid,)).fetchone()
+        reference=db.execute("SELECT * FROM model_groups WHERE group_key=?",(reference_key,)).fetchone()
+        if not orphan or not reference:raise ValueError("Foto ou galeria ausente")
+        if orphan['previous_key']:
+            old=db.execute("""SELECT detail FROM curation_events
+                WHERE group_key=? AND event_type='gallery_variant_singleton_linked'
+                ORDER BY event_id DESC LIMIT 1""",(orphan['previous_key'],)).fetchone()
+            if old:
+                detail=json.loads(old['detail'])
+                if (detail.get('orphan_message_id')==orphan_mid and
+                    detail.get('reference_group_key')==reference_key):
+                    return {'already_linked':True,'group_key':orphan['previous_key'],
+                            'source_message_id':orphan_mid,'reference_group_key':reference_key}
+            raise ValueError("Foto já vinculada a galeria: recarregue")
+        if orphan['revision']!=orphan_revision or reference['revision']!=reference_revision:
+            raise RuntimeError("Revisão concorrente: recarregue antes de vincular")
+        if (orphan['studio']!=reference['studio'] or
+            orphan['original_topic']!=reference['studio'] or
+            orphan['studio'].casefold()=="geral + 50k"):
+            raise ValueError("Coleções diferentes")
+        for key in ("title","universe"):
+            if smart.normalize(orphan[key])!=smart.normalize(reference[key]):
+                raise ValueError("Título/franquia distintos; exige correção editorial independente")
+        if (not orphan['title'] or not orphan['variant']
+            or not reference['variant'] or
+            smart.normalize(orphan['variant'])==smart.normalize(reference['variant'])):
+            raise ValueError("Variantes diferentes e explícitas obrigatórias")
+        if not db.execute("SELECT 1 FROM curation_events WHERE group_key=? AND event_type='visual_gallery_audited' LIMIT 1",(reference_key,)).fetchone():
+            raise ValueError("Falta auditoria visual da galeria de referência")
+        ref=db.execute("""SELECT a.message_id,a.source_relative,a.sha256,a.original_topic
+             FROM model_group_members m JOIN assets a USING(message_id)
+             WHERE m.group_key=? AND a.message_id=?""",(reference_key,reference_mid)).fetchone()
+        if not ref or ref['original_topic']!=orphan['original_topic']:
+            raise ValueError("Imagem da referência não pertence à galeria")
+        if orphan['sha256']!=ref['sha256']:
+            raise ValueError("Imagens diferentes: não vincular variantes só pela legenda")
+        for photo in (orphan,ref):
+            file=(media_root/photo['source_relative']).resolve()
+            if (not file.is_relative_to(media_root) or not file.is_file()
+                or file.stat().st_size>30*1024*1024):
+                raise ValueError("Original físico ausente ou externo")
+            with file.open('rb') as stream:
+                digest=hashlib.file_digest(stream,'sha256').hexdigest()
+            if digest!=photo['sha256']:
+                raise ValueError("SHA-256 físico incompatível")
+        key=hashlib.sha256(json.dumps(["visual-variant-singleton-v1",
+             orphan['studio'],orphan_mid],ensure_ascii=False).encode()).hexdigest()[:24]
+        if db.execute("SELECT 1 FROM model_groups WHERE group_key=?",(key,)).fetchone():
+            raise ValueError("Conflito de ID da variante")
+        db.execute("""INSERT INTO model_groups
+            (group_key,studio,title,universe,variant,state,confidence,revision,created_at,updated_at)
+            VALUES(?,?,?,?,?,'revisar',0.0,0,?,?)""",
+            (key,orphan['studio'],orphan['title'],orphan['universe'],orphan['variant'],stamp,stamp))
+        db.execute("""INSERT INTO model_group_members
+            (message_id,group_key,match_reason,updated_at)
+            VALUES(?,?,'reviewed_same_render_distinct_variant',?)""",
+            (orphan_mid,key,stamp))
+        db.execute("""INSERT INTO model_group_evidence
+            (group_key,source_url,source_type,description,recorded_at)
+            VALUES(?,?,?,?,?)""",
+            (key,smart.SOURCE_C+str(orphan_mid),'visual_review_exact_original_sha',
+             note[:500],stamp))
+        detail={'orphan_message_id':orphan_mid,'reference_message_id':reference_mid,
+            'orphan_variant':orphan['variant'],'reference_variant':reference['variant'],
+            'reference_group_key':reference_key,'new_group_key':key,
+            'sha256':orphan['sha256'],'visual_note':note,
+            'same_render':True,'distinct_print_variants':True,
+            'identity_approved':False,'rights_approved':False,'published':False}
+        proof=json.dumps(detail,ensure_ascii=False,sort_keys=True)
+        db.execute("""INSERT INTO curation_events(group_key,event_type,detail,occurred_at)
+            VALUES(?,'gallery_variant_singleton_linked',?,?)""",(key,proof,stamp))
+        db.execute("""INSERT INTO curation_events(group_key,event_type,detail,occurred_at)
+            VALUES(?,'visual_gallery_audited',?,?)""",(key,proof,stamp))
+        for group,other in ((key,reference_key),(reference_key,key)):
+            db.execute("""INSERT INTO curation_events(group_key,event_type,detail,occurred_at)
+                VALUES(?,'gallery_same_sculpture_variant_link',?,?)""",
+                (group,json.dumps({**detail,'other_key':other},
+                                  ensure_ascii=False,sort_keys=True),stamp))
+        db.commit()
+        return {'already_linked':False,'group_key':key,
+            'reference_group_key':reference_key,'source_message_id':orphan_mid,
+            'variant':orphan['variant'],'reference_variant':reference['variant'],
+            'images_added':1,'source_sha256':orphan['sha256'],
+            'state':'revisar','names_approved':False,
+            'rights_changed':False,'originals_modified':False,'packages_merged':False}
