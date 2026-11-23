@@ -46,6 +46,23 @@ dois botões explícitos com nota obrigatória: fusão física verificada
 e manutenção separada. Nenhuma decisão é automática.
 
 
+## Galeria legítima de foto única, com nome JÁ confirmado
+
+A mesma operação gallery.create (POST /api/create-gallery) permite agora
+UMA foto isolada, apenas quando a identidade editorial da mensagem
+está previamente confirmada com fonte HTTPS, o arquivo físico é
+conferido pelo SHA-256 apresentado, a revisão CAS coincide, existe
+nota visual com 65-600 caracteres e NÃO há imagem do mesmo SHA
+já agrupada em outra galeria. O grupo singular fica REVISAR, mesmo
+que o nome esteja confirmado: são aprovações independentes.
+Registra eventos visual_singleton_reviewed e visual_gallery_audited,
+fonte original Telegram e fonte de identidade (não de direitos).
+Repetição da mesma operação retorna o grupo sem mudar evidências.
+Sem tabelas novas, serviços adicionais, nomes/liberações automáticas
+ou publicação de modelos. Para SHA igual já agrupado e variante
+diferente, usar a operação específica de vínculo de variante acima.
+O fluxo anterior para duas ou mais fotos permanece idêntico.
+
 ## Foto Telegram avulsa que reutiliza a MESMA imagem de outra variante
 
 A capacidade MCP gallery.relate_orphan_variant usa o MESMO host em
