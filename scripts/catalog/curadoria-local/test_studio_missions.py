@@ -187,6 +187,41 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual((done["studio_count"],done["sheets"],done["images"]),(3,4,31))
         self.assertEqual(hashlib.sha256(a.read_bytes()).hexdigest(),original_sha)
 
+    def test_windows_manifest_replace_failure_preserves_last_commit(self):
+        from unittest.mock import patch
+        output=self.root/"replace_failure"
+        initial=missions.generate_all(self.path,self.media,output)
+        self.assertTrue(initial["generation_complete"])
+        studio_dir=output/missions._slug("A Studio")
+        official=studio_dir/"manifest.json"
+        committed_before=official.read_bytes()
+        self.assertEqual(len(json.loads(committed_before)["sheets"]),2)
+        db=sqlite3.connect(self.path)
+        db.execute("UPDATE name_proposals SET title='New reviewed title',revision=revision+1 WHERE message_id=1")
+        db.commit();db.close()
+        real_atomic=missions._atomic_replace
+        def fail_final_commit(src,dst):
+            if Path(dst)==official:
+                raise PermissionError("simulated Windows sharing violation")
+            return real_atomic(src,dst)
+        with patch.object(missions,"_atomic_replace",side_effect=fail_final_commit):
+            with self.assertRaises(PermissionError):
+                missions.generate_all(self.path,self.media,output,
+                                      studios=["A Studio"],write_index=False)
+        # No partial official manifesto even though the JPEG was updated.
+        self.assertEqual(official.read_bytes(),committed_before)
+        checkpoint=studio_dir/"manifest.progress.json"
+        self.assertEqual(len(json.loads(checkpoint.read_text(encoding="utf8"))["sheets"]),2)
+        blocked=missions.finalize_index(self.path,output)
+        self.assertFalse(blocked["generation_complete"])
+        # Idempotent retry consumes the checkpoint without redoing old pages.
+        missions.generate_all(self.path,self.media,output,
+                              studios=["A Studio"],write_index=False)
+        self.assertFalse(checkpoint.exists())
+        self.assertEqual(len(json.loads(official.read_text(encoding="utf8"))["sheets"]),2)
+        verified=missions.finalize_index(self.path,output)
+        self.assertTrue(verified["generation_complete"])
+
     def test_path_traversal_blocked(self):
         self.assertRaises(ValueError,missions._source,self.media,"../../private.txt")
         self.assertTrue(missions._source(self.media,"msg_1.jpg").is_file())
