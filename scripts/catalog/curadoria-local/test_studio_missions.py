@@ -8,6 +8,25 @@ import unittest
 from pathlib import Path
 import studio_missions as missions
 
+class ReadPathPerformanceTests(unittest.TestCase):
+    def test_readers_do_not_hit_filesystem_realpath(self):
+        # A minimal SQLite fixture avoids generating a JPG for this test.
+        from unittest.mock import patch
+        import smart_curadoria as smart
+        with tempfile.TemporaryDirectory(prefix="tonart-path-") as temp:
+            dbpath=Path(temp)/"curadoria.sqlite3"
+            with sqlite3.connect(dbpath) as db:
+                db.execute("CREATE TABLE marker(value INTEGER)")
+                db.execute("INSERT INTO marker VALUES(42)")
+            with patch.object(Path,"resolve",side_effect=AssertionError(
+                "filesystem realpath used on a hot read path")):
+                with missions.db_open(dbpath) as db:
+                    self.assertEqual(db.execute("SELECT value FROM marker").fetchone()[0],42)
+                    self.assertEqual(db.execute("PRAGMA query_only").fetchone()[0],1)
+                with smart.db_open(dbpath,readonly=True) as db:
+                    self.assertEqual(db.execute("SELECT value FROM marker").fetchone()[0],42)
+                    self.assertEqual(db.execute("PRAGMA query_only").fetchone()[0],1)
+
 class StudioMissionsTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
