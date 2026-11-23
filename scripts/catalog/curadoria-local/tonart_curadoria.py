@@ -457,6 +457,15 @@ class Handler(BaseHTTPRequestHandler):
                         limit=p.get("limit",["24"])[0]))
                 except ValueError as exc:
                     return self.respond({"error":str(exc)},400)
+            if route.path=="/api/studio-missions/galleries":
+                p=parse_qs(route.query)
+                try:
+                    return self.respond(studio_missions.gallery_board(
+                        DB_PATH,studio=p.get("studio",[""])[0],
+                        page=p.get("page",["1"])[0],
+                        limit=p.get("limit",["12"])[0]))
+                except ValueError as exc:
+                    return self.respond({"error":str(exc)},400)
             if route.path=="/api/studio-missions/board":
                 p=parse_qs(route.query)
                 try:
