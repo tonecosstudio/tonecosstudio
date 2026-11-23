@@ -22,6 +22,7 @@ type Props = {
   photoIndex: number;
   copyMessage: string;
   facets: ModelGalleryFacet[];
+  showStudioVariant?: boolean;
   imageUrl: (path: string | null | undefined) => string | undefined;
   onClose: () => void;
   onCopy: () => void;
@@ -39,6 +40,7 @@ export default function TelegramModelGallery({
   photoIndex,
   copyMessage,
   facets,
+  showStudioVariant = false,
   imageUrl,
   onClose,
   onCopy,
@@ -314,7 +316,7 @@ export default function TelegramModelGallery({
               >
                 {detail.name}
               </h2>
-              {detail.variant && (
+              {showStudioVariant && detail.variant && (
                 <p className="mt-3 text-sm leading-6 text-[#c9c9bb]">
                   Versão: {detail.variant}
                 </p>
