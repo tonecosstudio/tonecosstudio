@@ -3,6 +3,22 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+## Galeria pública de modelos — contrato UI/UX (22/11/2026)
+
+Problema comprovado na captura do usuário: abrir o post deixava o catálogo visível atrás da imagem ampliada, com controles soltos e navegação da galeria pouco clara.
+
+A implementação oficial permanece em src/TelegramStudioCatalog.tsx, com o visualizador existente extraído para src/TelegramModelGallery.tsx (não cria rota, API ou serviço paralelos). O visualizador monta sua camada no document.body por portal, usa fundo sólido e cabeçalho com Fechar sempre visível, restaura o foco e bloqueia rolagem do conteúdo de fundo. No desktop, render principal com proporção preservada e painel lateral de identificação/variante/status/tags/cópia do link; no celular, painel em sequência com rolagem do overlay, sem perder o cabeçalho.
+
+Com duas ou mais imagens REAIS da ficha do Worker: setas sobre a foto, miniaturas horizontais com seleção acessível, contador, teclas direita/esquerda e gesto touch; com só uma imagem: não mostrar navegação sem função. Um JPEG de múltiplos ângulos ou esculturas continua contando como UMA imagem da API e não deve ser subdividido automaticamente.
+
+Manter os mesmos IDs, deep links com parâmetro modelo e filtros categoria/franquia, mídia validada por SHA/rota, mensagens de falha, ausência de ações comerciais e política editorial. Fichas provisórias não geram tags verificadas de personagens; franquias provisórias continuam com o rótulo em revisão. O cartão sinaliza N fotos somente se imageCount > 1.
+
+Gate de release: testes de src/TelegramStudioCatalog.test.tsx (navegação, portal, backdrop, foco, links, fotos únicas e múltiplas), TypeScript, lint, build de produção e verificação da UI real no domínio. Escopo Vercel SOMENTE tonart-catalogo-publico (prj_6uaHlw05JQIxn8z9ocFH9MarES3p), equipe jogo-brasils-projects. Nunca alterar tonart-studio-public ou o site comercial.
+
+Continuidade de dados independente da UI: 92 estúdios Telegram, 4.433 grupos, 3.772 IDs físicos verificados e 661 sem ficha pública; nenhum novo vínculo/tag de personagem por causa dessa alteração. Não tocar D1, R2, Worker, Supabase, direitos, M5 ou migração 0029.
+
+---
+
 ## 1. Dois frontends, uma autoridade de catálogo
 
 | Superfície | Endereço planejado | Entrada de build | Acesso |
