@@ -100,6 +100,36 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual(manifest["sheets"][0]["preview_errors"] if "preview_errors" in manifest["sheets"][0] else manifest["sheets"][0]["errors"],[])
         self.assertNotEqual(hashlib.sha256(a.read_bytes()).hexdigest(),before)
 
+    def test_shard_ownership_stable(self):
+        for studio in ("A Studio","B Studio","RinArtPoke","Wicked"):
+            owner=missions.shard_for_studio(studio,4)
+            self.assertIn(owner,range(4))
+            self.assertEqual(sum(missions.shard_for_studio(studio,4)==i
+                                 for i in range(4)),1)
+            self.assertEqual(owner,missions.shard_for_studio(studio,4))
+        self.assertRaises(ValueError,missions.shard_for_studio,"A Studio",0)
+        self.assertRaises(ValueError,missions.shard_for_studio,"A Studio",9)
+
+    def test_finalization_fails_closed_until_every_page_is_verified(self):
+        output=self.root/"sharded"
+        missions.generate_all(self.path,self.media,output,studios=["A Studio"],
+                              write_index=False)
+        self.assertFalse((output/"index.json").exists())
+        partial=missions.finalize_index(self.path,output)
+        self.assertEqual(partial["state"],"incomplete")
+        self.assertFalse(partial["generation_complete"])
+        missions.generate_all(self.path,self.media,output,studios=["B Studio"],
+                              write_index=False)
+        final=missions.finalize_index(self.path,output)
+        self.assertEqual(final["state"],"complete")
+        self.assertTrue(final["generation_complete"])
+        self.assertEqual((final["studio_count"],final["sheets"]),(2,3))
+        bad=output/missions._slug("A Studio")/"prancha-001.jpg"
+        bad.write_bytes(b"corrupted")
+        invalid=missions.finalize_index(self.path,output)
+        self.assertEqual(invalid["state"],"incomplete")
+        self.assertFalse(invalid["generation_complete"])
+
     def test_path_traversal_blocked(self):
         self.assertRaises(ValueError,missions._source,self.media,"../../private.txt")
         self.assertTrue(missions._source(self.media,"msg_1.jpg").is_file())
