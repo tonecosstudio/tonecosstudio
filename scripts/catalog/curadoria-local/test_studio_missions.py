@@ -78,7 +78,9 @@ class StudioMissionsTests(unittest.TestCase):
         # changing identities, gallery links or commercial rights.
         import smart_curadoria as smart
         import name_curadoria as naming
-        with sqlite3.connect(self.path) as db:
+        # Build the real schema in memory; the image fixture intentionally
+        # defines a minimal historical audit table without every live column.
+        with sqlite3.connect(":memory:") as db:
             smart.setup(db)
             naming.setup(db)
             names_plan=list(db.execute(
