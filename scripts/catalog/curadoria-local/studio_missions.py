@@ -41,6 +41,21 @@ def studio_index(path):
         groups={x["studio"]:dict(x) for x in db.execute("""
             SELECT studio,COUNT(*) groups,SUM(state='confirmado') groups_confirmed
             FROM model_groups WHERE studio<>? GROUP BY studio""",(EXCLUDED,))}
+        # Historical visual audit events are not confirmed names or rights.
+        audits={x["studio"]:x["audited"] for x in db.execute("""
+            SELECT g.studio,COUNT(DISTINCT g.group_key) audited
+            FROM model_groups g JOIN curation_events e
+              ON e.group_key=g.group_key
+             AND e.event_type='visual_gallery_audited'
+            WHERE g.studio<>? GROUP BY g.studio""",(EXCLUDED,))}
+        sizes={x["studio"]:dict(x) for x in db.execute("""
+            SELECT studio,SUM(photos=1) single_groups,
+                   SUM(photos>=2) multi_groups
+            FROM (SELECT g.studio,COUNT(m.message_id) photos
+              FROM model_groups g LEFT JOIN model_group_members m
+              ON m.group_key=g.group_key WHERE g.studio<>?
+              GROUP BY g.group_key)
+            GROUP BY studio""",(EXCLUDED,))}
         names={x["studio"]:dict(x) for x in db.execute("""
             SELECT n.studio,COUNT(*) images,SUM(gm.message_id IS NULL) ungrouped,
                    SUM(n.status='confirmado') names_confirmed
@@ -77,6 +92,9 @@ def studio_index(path):
             studio=name,collection_type=("studio_with_groups" if name in groups
                                           else "topic_without_groups"),
             groups=g.get("groups",0),groups_confirmed=g.get("groups_confirmed") or 0,
+            groups_with_visual_audit_event=int(audits.get(name) or 0),
+            groups_single_photo=int(sizes.get(name,{}).get("single_groups") or 0),
+            groups_multiple_photos=int(sizes.get(name,{}).get("multi_groups") or 0),
             images=count,ungrouped=loose,ungrouped_unique_media=unique,
             identical_media_reposts=loose-unique,
             album_review_candidates=int(album_review.get(name) or 0),

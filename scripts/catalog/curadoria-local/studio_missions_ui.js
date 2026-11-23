@@ -10,6 +10,7 @@
   const selected=new Map();
   const label=el("studioMissionPage");
   const fmt=new Intl.NumberFormat("pt-BR");
+  const studioMetrics=new Map();
   let page=1,pages=0,busy=false,serial=0;
   function updateSelection(){
     prepare.hidden=mission.value!=="grouping";
@@ -98,9 +99,13 @@
         tile.append(original,meta);gallery.append(tile);
       }
       label.textContent="Prancha "+data.page+" de "+(data.pages||0);
+      const stats=studioMetrics.get(studio.value);
       status.textContent=fmt.format(data.total)+" fotos · "+studio.value+
-        (mission.value==="grouping"?" · Missão 1: agrupar apenas esculturas comprovadas.":
-         " · Missão 2: verificar nome/personagem/franquia e fonte oficial.");
+        (stats?" · Auditorias visuais registradas "+fmt.format(stats.groups_with_visual_audit_event)+
+          "/"+fmt.format(stats.groups)+" (não é aprovação comercial)"+
+          " · Nomes confirmados "+fmt.format(stats.names_confirmed)+"/"+fmt.format(stats.images):"")+
+        (mission.value==="grouping"?" · Missão 1: conferir esculturas sem refazer auditorias anteriores.":
+         " · Missão 2: verificar personagem e franquia em fonte do estúdio.");
       updateSelection();
       if(!data.items.length)gallery.append(node("p","Nenhuma foto nesta página."));
     }catch(err){
@@ -222,6 +227,7 @@
       " álbuns distintos identificados. Consulte a fila para ver provas.";
     studio.replaceChildren();
     for(const item of data.studios){
+      studioMetrics.set(item.studio,item);
       const opt=node("option",item.studio+" · "+item.images+" fotos · "+item.pages+" pranchas"+
         (item.collection_type==="topic_without_groups"?" · origem não classificada":"")+
         (item.album_review_candidates?" · "+item.album_review_candidates+" álbuns para comparar":""));

@@ -17,6 +17,18 @@
 **Regras obrigatórias:** mesmos nomes e álbuns não bastam para fundir esculturas. Misturas de autoria e versões exigem evidência específica. Nome confirmado não autoriza direitos, venda, publicação de tags, M5, Worker, D1, R2, Supabase nem Site. O SQLite e seus eventos são a SSOT; JPEGs e manifestos são descartáveis. Os testes test_studio_missions.py validam paginação, duas missões, modo somente leitura, proibição do Geral, caminhos seguros, retomada, SHA e invalidação após alteração editorial.
 
 
+## Histórico de auditorias não equivale a confirmação de nomes
+
+O índice de estúdios registra groups_with_visual_audit_event como número
+de galerias distintas com evento visual_gallery_audited; informa também
+groups_single_photo e groups_multiple_photos. Os nomes confirmados são
+contados separadamente por names_confirmed, sem aprovar automaticamente
+outra identidade, variante, licença ou publicação. Wicked possui 500
+eventos associados a 500 grupos (incluindo 376 com uma só foto) enquanto
+a missão editorial ainda exige fontes específicas para confirmar nomes.
+O painel exibe essa distinção explicitamente, sem criar outro serviço,
+fila persistente ou SSOT.
+
 ## Fila de evidências das duas missões — sem segundo serviço
 
 O mesmo host expõe GET /api/studio-missions/candidates?kind=albums|reposts&studio=<opcional>&cursor=0&limit=24. A operação fica cadastrada em /api/capabilities para o OrdaX MCP e na seção **Fila de evidências** da interface atual. Modo albums seleciona **somente álbuns com pelo menos dois SHA físicos distintos ainda livres**; retorna origem, IDs e página de acesso na prancha. Modo reposts encontra um SHA registrado idêntico a foto já presente em grupo e classifica **physical_sha_recheck_required**, **metadata_or_variant_mismatch**, **confirmed_gallery_locked**, **ambiguous_multiple_gallery_anchors** ou **source_topic_mismatch**. Qualquer retorno é somente hipótese de vinculação: uma postagem pode mudar, e SHA cadastrado não substitui verificação SHA-256 dos bytes físicos antes de usar o endpoint canônico /api/append-gallery. As duas missões compartilham IDs, não geram segundo banco, worker, fila de escrita, auto-nomeação, auto-confirmação ou aprovação de direitos. Paginação usa cursor estável por message_id, com limite 12/24/48; não retorna caminhos privados.

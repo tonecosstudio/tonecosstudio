@@ -25,10 +25,14 @@ class StudioMissionsTests(unittest.TestCase):
             CREATE TABLE model_groups(group_key TEXT PRIMARY KEY,studio TEXT,state TEXT,
              revision INTEGER,title TEXT,universe TEXT,variant TEXT);
             CREATE TABLE model_group_members(message_id INTEGER PRIMARY KEY,group_key TEXT);
+            CREATE TABLE curation_events(event_id INTEGER PRIMARY KEY,group_key TEXT,event_type TEXT);
         """)
         c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("a"*24,"A Studio","revisar",1,"Foo","Franchise","Variant"))
         c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("b"*24,"B Studio","confirmado",2,"Bar","Franchise","Variant"))
         c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("c"*24,"Geral + 50k","revisar",0,"Trash","",""))
+        # Same group may have multiple events, never double-count it.
+        c.execute("INSERT INTO curation_events(group_key,event_type) VALUES(?,?)",("a"*24,"visual_gallery_audited"))
+        c.execute("INSERT INTO curation_events(group_key,event_type) VALUES(?,?)",("a"*24,"visual_gallery_audited"))
         from PIL import Image
         for i in range(1,29):
             picture=self.media/f"msg_{i}.jpg"
@@ -61,6 +65,12 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual(x["sheets"],3)
         self.assertEqual(x["studios"][0]["ungrouped"],24)
         self.assertEqual(x["studios"][0]["pages"],2)
+        self.assertEqual(x["studios"][0]["groups_with_visual_audit_event"],1)
+        self.assertEqual(x["studios"][0]["groups_multiple_photos"],1)
+        self.assertEqual(x["studios"][0]["groups_single_photo"],0)
+        self.assertEqual(x["studios"][1]["groups_with_visual_audit_event"],0)
+        self.assertEqual(x["studios"][1]["groups_single_photo"],1)
+        self.assertEqual(x["studios"][1]["names_confirmed"],2)
         self.assertEqual(x["missions"],["grouping","naming"])
 
     def test_two_missions_same_pages(self):
