@@ -292,6 +292,7 @@
   // Candidate discovery for Mission 1. Never mutate an audited gallery here.
   const mergePanel=el("studioMissionMergePanel");
   const mergeLoad=el("studioMissionMergeLoad");
+  const mergeGap=el("studioMissionMergeGap");
   const mergeMore=el("studioMissionMergeMore");
   const mergeResults=el("studioMissionMergeResults");
   const mergeStatus=el("studioMissionMergeStatus");
@@ -303,7 +304,7 @@
     mergeStatus.textContent="Comparando metadados e proximidade no SQLite...";
     try{
       const q=new URLSearchParams({studio:studio.value,page:String(mergePage),
-        limit:"12",max_gap:"120"});
+        limit:"12",max_gap:mergeGap.value});
       const result=await get("/api/gallery-merge-candidates?"+q);
       for(const item of result.items){
         const card=node("article",undefined,"studio-evidence-row");
@@ -457,6 +458,9 @@
     finally{mergeBusy=false;mergeLoad.disabled=false;mergeMore.disabled=false;}
   }
   mergeLoad.addEventListener("click",()=>loadMergeCandidates(true));
+  mergeGap.addEventListener("change",()=>{
+    if(mission.value==="grouping")loadMergeCandidates(true);
+  });
   const crossLoad=el("studioMissionCrossCaptionLoad");
   const crossResults=el("studioMissionCrossCaptionResults");
   let crossBusy=false;
