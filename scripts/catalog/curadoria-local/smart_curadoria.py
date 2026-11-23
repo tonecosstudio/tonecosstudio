@@ -374,8 +374,9 @@ def list_models(db_path,page=1,limit=48,topic="",q="",state="",min_images=1,unna
 
 def model_detail(db_path,key):
     if not re.fullmatch("[0-9a-f]{24}",key): raise ValueError("ID de grupo inválido")
-    with db_open(db_path) as db:
-        setup(db)
+    # Gallery detail is a GET/read-only path. Never run schema DDL here.
+    # All schema migrations remain the responsibility of canonical writers.
+    with db_open(db_path,readonly=True) as db:
         row=db.execute("SELECT * FROM model_groups WHERE group_key=?",(key,)).fetchone()
         if row is None: raise ValueError("Modelo não encontrado")
         members=db.execute("""SELECT a.message_id,a.sha256,a.source_relative,a.source_caption,
