@@ -63,6 +63,26 @@ ou publicação de modelos. Para SHA igual já agrupado e variante
 diferente, usar a operação específica de vínculo de variante acima.
 O fluxo anterior para duas ou mais fotos permanece idêntico.
 
+## Galeria provisória de foto única — agrupamento sem confirmar nome
+
+POST /api/create-gallery (capacidade gallery.create) admite review_only=true
+para uma fotografia avulsa com título legível no render, proposta
+provavel/revisar e sem legenda Telegram estruturada. A mesma
+implementação existente exige mensagem, estúdio e revisão CAS,
+justificativa visual de 65–600 caracteres, SHA256 completo e conferência
+física do arquivo original. Render SHA já agrupado é bloqueado,
+evitando duplicar vistas de variantes. A nova ficha fica em revisar,
+sem confirmar nome, franquia, pacote STL, direitos ou publicação.
+A operação antiga com nome confirmado e fonte oficial HTTPS permanece
+inalterada quando review_only=false. A aprovação de identidade segue
+exclusivamente na segunda missão.
+
+GET /api/gallery-singleton-candidates consulta somente fotos sem
+galeria do estúdio selecionado, com limite e paginação. O aplicativo
+da Curadoria apresenta fotos e pede justificativa antes de salvar
+no mesmo endpoint/catálogo. Nada roda automaticamente.
+Nenhuma tabela nova, daemon, índice ou writer paralelo.
+
 ## Foto Telegram avulsa que reutiliza a MESMA imagem de outra variante
 
 A capacidade MCP gallery.relate_orphan_variant usa o MESMO host em

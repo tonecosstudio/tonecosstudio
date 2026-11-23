@@ -13,7 +13,7 @@ NOTE=("Esta fotografia KNULL/JULY TERM mostra a escultura única Wicked Knull e 
       "com braços e asas, sem outras vistas equivalentes no acervo comparado. "
       "O nome editorial já foi confirmado em fonte oficial, sem licença de STL.")
 
-def prepare(folder,*,confirmed=True):
+def prepare(folder,*,confirmed=True,evidence_type=None):
     source=folder/"media";source.mkdir()
     dbp=folder/"curadoria.sqlite3"
     img=Image.new("RGB",(74,73),"#16191e")
@@ -27,11 +27,12 @@ def prepare(folder,*,confirmed=True):
         db.execute("INSERT INTO assets VALUES(101,?,?,'Wicked','','')",(sha,f.name))
         db.execute("""INSERT INTO name_proposals
           (message_id,studio,title,universe,variant,filename,status,
-            official_url,revision,source_fingerprint,modified_at)
+            official_url,evidence_type,revision,source_fingerprint,modified_at)
           VALUES(101,'Wicked','Knull','Marvel','',?,
-           ?,?,2,'fingerprint','t')""",
+           ?,?,?,2,'fingerprint','t')""",
            (f.name,"confirmado" if confirmed else "provavel",
-            "https://www.patreon.com/3dWicked/posts/july-term-knull-54560911" if confirmed else ""))
+             "https://www.patreon.com/3dWicked/posts/july-term-knull-54560911" if confirmed else "",
+            evidence_type if evidence_type is not None else "telegram_caption"))
         db.commit()
     return dbp,source,sha
 
@@ -64,6 +65,42 @@ with tempfile.TemporaryDirectory(prefix="tonart-singleton-unconfirmed-") as tmp:
     try:apply(db,source,sha)
     except ValueError:pass
     else:raise AssertionError("unconfirmed singleton accepted")
+with tempfile.TemporaryDirectory(prefix="tonart-singleton-provisional-") as tmp:
+    db,source,sha=prepare(Path(tmp),confirmed=False,evidence_type="embedded_render_title")
+    assert gallery.singleton_candidates(db,"Wicked")["total"]==1
+    outcome=apply(db,source,sha,editorial_only=True)
+    assert outcome["created"] and outcome["singleton"] and outcome["editorial_only"]
+    assert not outcome["names_changed"] and not outcome["identity_confirmed_by_action"]
+    assert gallery.singleton_candidates(db,"Wicked")["total"]==0
+    replay=apply(db,source,sha,editorial_only=True)
+    assert replay["replayed"] and replay["singleton"] and replay["editorial_only"]
+    assert not replay["rights_changed"]
+    with closing(smart.db_open(db,readonly=True)) as conn:
+        row=conn.execute("SELECT status,title,revision,official_url FROM name_proposals WHERE message_id=101").fetchone()
+        assert (row["status"],row["title"],row["revision"],row["official_url"])==("provavel","Knull",2,"")
+        event=conn.execute("SELECT detail FROM curation_events WHERE event_type='visual_singleton_reviewed'").fetchone()
+        info=json.loads(event["detail"])
+        assert info["editorial_only"] and info["name_status"]=="provavel"
+        assert conn.execute("SELECT COUNT(*) FROM model_group_evidence WHERE source_type='official_identity_only'").fetchone()[0]==0
+        assert conn.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
+with tempfile.TemporaryDirectory(prefix="tonart-singleton-provisional-invalid-") as tmp:
+    db,source,sha=prepare(Path(tmp),confirmed=False,evidence_type="telegram_caption")
+    assert gallery.singleton_candidates(db,"Wicked")["total"]==0
+    try:apply(db,source,sha,editorial_only=True)
+    except ValueError:pass
+    else:raise AssertionError("Non-render provisional source accepted")
+    try:apply(db,source,sha,editorial_only="true")
+    except ValueError:pass
+    else:raise AssertionError("Untrusted string used as boolean bypass")
+with tempfile.TemporaryDirectory(prefix="tonart-singleton-provisional-stale-") as tmp:
+    db,source,sha=prepare(Path(tmp),confirmed=False,evidence_type="embedded_render_title")
+    try:apply(db,source,sha,editorial_only=True,expected_revision=1)
+    except RuntimeError:pass
+    else:raise AssertionError("stale CAS accepted")
+    (source/"msg_101.png").write_bytes(b"tampered")
+    try:apply(db,source,sha,editorial_only=True)
+    except ValueError:pass
+    else:raise AssertionError("tampered original accepted")
 with tempfile.TemporaryDirectory(prefix="tonart-singleton-tamper-") as tmp:
     db,source,sha=prepare(Path(tmp))
     (source/"msg_101.png").write_bytes(b"tampered")
@@ -98,6 +135,46 @@ with tempfile.TemporaryDirectory(prefix="tonart-singleton-http-") as tmp:
         status,detail=call("GET","/api/model/"+res["group_key"])
         assert status==200 and len(detail["images"])==1
         print("SINGLETON GALLERY OK: physical SHA, confirmed editorial identity, HTTP auth, CAS, replay, no rights")
+    finally:
+        server.shutdown();server.server_close();thread.join(timeout=3)
+        host.DB_PATH,host.SOURCE,host.PORT,host.TOKEN=previous
+
+with tempfile.TemporaryDirectory(prefix="tonart-singleton-provisional-http-") as tmp:
+    db,source,sha=prepare(Path(tmp),confirmed=False,evidence_type="embedded_render_title")
+    previous=(host.DB_PATH,host.SOURCE,host.PORT,host.TOKEN)
+    host.DB_PATH=db;host.SOURCE=source;host.TOKEN="fixture-token"
+    server=ThreadingHTTPServer(("127.0.0.1",0),host.Handler)
+    host.PORT=server.server_address[1]
+    thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+    try:
+        def call(method,path,data=None,token=None):
+            c=http.client.HTTPConnection("127.0.0.1",host.PORT,timeout=14)
+            headers={"Content-Type":"application/json",
+                "Origin":f"http://127.0.0.1:{host.PORT}"}
+            if token is not None:headers["X-Tonart-Token"]=token
+            c.request(method,path,json.dumps(data).encode() if data is not None else None,headers)
+            response=c.getresponse();code=response.status
+            body=json.loads(response.read());c.close()
+            return code,body
+        code,caps=call("GET","/api/capabilities")
+        assert code==200
+        assert any(x["id"]=="gallery.singletons_review_queue" for x in caps["operations"])
+        code,queue=call("GET","/api/gallery-singleton-candidates?studio=Wicked&page=1&limit=12")
+        assert code==200 and queue["total"]==1 and queue["items"][0]["message_id"]==101
+        request={"message_ids":[101],"topic":"Wicked","note":NOTE,
+            "sha256":sha,"revision":2,"review_only":True}
+        assert call("POST","/api/create-gallery",request,"bad")[0]==403
+        status,result=call("POST","/api/create-gallery",{**request,"revision":1},"fixture-token")
+        assert status in (400,409),(status,result)
+        status,result=call("POST","/api/create-gallery",request,"fixture-token")
+        assert status==200 and result["editorial_only"] and result["state"]=="revisar",(status,result)
+        assert call("POST","/api/create-gallery",request,"fixture-token")[1]["replayed"]
+        detail=call("GET","/api/model/"+result["group_key"])[1]
+        assert len(detail["images"])==1
+        assert call("GET","/api/gallery-singleton-candidates?studio=Wicked")[1]["total"]==0
+        with closing(smart.db_open(db,readonly=True)) as c:
+            assert c.execute("SELECT status FROM name_proposals WHERE message_id=101").fetchone()[0]=="provavel"
+        print("E2E PROVISIONAL SINGLETON HTTP OK: read queue, token, CAS, original SHA, review-only, replay, name unchanged")
     finally:
         server.shutdown();server.server_close();thread.join(timeout=3)
         host.DB_PATH,host.SOURCE,host.PORT,host.TOKEN=previous

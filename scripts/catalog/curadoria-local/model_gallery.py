@@ -11,11 +11,21 @@ from pathlib import Path
 import smart_curadoria as smart
 
 def register_visual_gallery(db_path,message_ids,topic,note="",*,
-                            source_root=None,expected_sha256=None,expected_revision=None):
-    """Group reviewed multi-angles OR one officially identified unique photograph."""
+                            source_root=None,expected_sha256=None,
+                            expected_revision=None,editorial_only=False):
+    """Group reviewed angles, or photo-only galleries WITHOUT naming approval.
+
+    editorial_only requires a photographed render's existing provisional
+    identity and physical SHA, but does not require a confirmed character.
+    Both paths create a gallery in REVIEW, never commercial publication.
+    """
+    if type(editorial_only) is not bool:
+        raise ValueError("Modo editorial inválido")
     if not isinstance(message_ids,(list,tuple)) or not 1<=len(message_ids)<=500:
         raise ValueError("Selecione de 1 a 500 imagens")
     singleton=len(message_ids)==1
+    if editorial_only and not singleton:
+        raise ValueError("Modo editorial apenas para fotografia única")
     note=str(note or "").strip()
     if singleton:
         if (source_root is None or not isinstance(expected_sha256,str)
@@ -36,8 +46,8 @@ def register_visual_gallery(db_path,message_ids,topic,note="",*,
         db.execute("BEGIN IMMEDIATE")
         rows=db.execute("""SELECT a.message_id,a.original_topic,a.source_relative,a.sha256,
             p.studio,p.title,p.universe,p.variant,p.status AS name_status,
-            p.official_url,p.revision AS name_revision,
-            m.group_key AS previous_key,m.match_reason,g.state AS group_state,
+            p.official_url,p.evidence_type,p.revision AS name_revision,
+            a.source_caption,m.group_key AS previous_key,m.match_reason,g.state AS group_state,
             EXISTS(SELECT 1 FROM curation_events ev
               WHERE ev.group_key=m.group_key
                 AND ev.event_type='visual_gallery_audited') AS gallery_visual_audited
@@ -56,19 +66,29 @@ def register_visual_gallery(db_path,message_ids,topic,note="",*,
             item=rows[0]
             existing=db.execute("SELECT state FROM model_groups WHERE group_key=?",(group_key,)).fetchone()
             if item["previous_key"]==group_key and existing:
-                previous=db.execute("""SELECT 1 FROM curation_events WHERE group_key=?
+                previous=db.execute("""SELECT detail FROM curation_events WHERE group_key=?
                     AND event_type='visual_singleton_reviewed' LIMIT 1""",(group_key,)).fetchone()
                 if previous:
+                    prior=json.loads(previous["detail"])
                     return {"group_key":group_key,"image_count":1,
                         "title":item["title"],"studio":item["studio"],
-                        "state":existing["state"],"created":False,"replayed":True}
+                        "state":existing["state"],"created":False,"replayed":True,
+                        "singleton":True,"editorial_only":bool(prior.get("editorial_only")),
+                        "names_changed":False,"rights_changed":False,
+                        "originals_modified":False}
             if item["previous_key"] is not None or existing:
                 raise ValueError("A foto já pertence a uma galeria")
             if item["name_revision"]!=expected_revision:
                 raise RuntimeError("Nome alterado: recarregue a revisão")
-            if (item["name_status"]!="confirmado" or not item["title"] or
-                not item["studio"] or item["studio"]!=topic or not item["official_url"]
-                or not item["official_url"].startswith("https://")):
+            if editorial_only:
+                if (item["name_status"] not in ("provavel","revisar")
+                    or not item["title"] or not item["studio"] or item["studio"]!=topic
+                    or item["evidence_type"]!="embedded_render_title"
+                    or (item["source_caption"] or "").strip()):
+                    raise ValueError("Revisão de foto única exige título legível no render, sem legenda estruturada e status editorial provisório")
+            elif (item["name_status"]!="confirmado" or not item["title"] or
+                  not item["studio"] or item["studio"]!=topic or not item["official_url"]
+                  or not item["official_url"].startswith("https://")):
                 raise ValueError("Foto única exige nome confirmado com fonte oficial HTTPS")
             if item["sha256"]!=expected_sha256:
                 raise ValueError("Prova SHA da foto divergiu do catálogo")
@@ -128,7 +148,10 @@ def register_visual_gallery(db_path,message_ids,topic,note="",*,
         if not old:
             if singleton:
                 detail=json.dumps({"message_id":ids[0],"sha256":item["sha256"],
-                    "name_status":"confirmado","identity_url":item["official_url"],
+                    "name_status":item["name_status"],
+                    "identity_url":item["official_url"] if not editorial_only else "",
+                    "identity_evidence_type":item["evidence_type"],
+                    "editorial_only":editorial_only,
                     "visual_review":note,"original_preserved":True,
                     "gallery_state":"revisar","rights_approved":False,
                     "publication_approved":False},ensure_ascii=False,sort_keys=True)
@@ -136,12 +159,13 @@ def register_visual_gallery(db_path,message_ids,topic,note="",*,
                     db.execute("""INSERT INTO curation_events
                         (group_key,event_type,detail,occurred_at) VALUES(?,?,?,?)""",
                         (group_key,event_type,detail,stamp))
-                db.execute("""INSERT OR IGNORE INTO model_group_evidence
-                    (group_key,source_url,source_type,description,recorded_at)
-                    VALUES(?,?,'official_identity_only',?,?)""",
-                    (group_key,item["official_url"],
-                     "Confirma somente identidade editorial; não licença ou direito de publicação",
-                     stamp))
+                if not editorial_only:
+                    db.execute("""INSERT OR IGNORE INTO model_group_evidence
+                        (group_key,source_url,source_type,description,recorded_at)
+                        VALUES(?,?,'official_identity_only',?,?)""",
+                        (group_key,item["official_url"],
+                         "Confirma somente identidade editorial; não licença ou direito de publicação",
+                         stamp))
             else:
                 db.execute("""INSERT INTO curation_events
                     (group_key,event_type,detail,occurred_at)
@@ -156,8 +180,38 @@ def register_visual_gallery(db_path,message_ids,topic,note="",*,
         db.commit()
     return {"group_key":group_key,"image_count":len(ids),"title":title,
             "studio":studio,"state":"revisar","created":old is None,
-            "singleton":singleton,"names_changed":False,
+            "singleton":singleton,"editorial_only":bool(singleton and editorial_only),
+            "identity_confirmed_by_action":False,"names_changed":False,
             "rights_changed":False,"originals_modified":False}
+
+def singleton_candidates(db_path,studio="",page=1,limit=24):
+    """Read-only: photos without galleries that have on-image provisional labels."""
+    studio=str(studio or "").strip()
+    if not studio or len(studio)>120 or studio.casefold()=="geral + 50k":
+        raise ValueError("Estúdio específico obrigatório")
+    try:
+        page=int(page);limit=int(limit)
+    except (TypeError,ValueError) as exc:
+        raise ValueError("Paginação inválida") from exc
+    if page<1 or limit<1 or limit>36:raise ValueError("Limite inválido")
+    with smart.db_open(db_path,readonly=True) as db:
+        sql="""FROM assets a JOIN name_proposals p USING(message_id)
+            LEFT JOIN model_group_members m USING(message_id)
+            WHERE a.original_topic=? AND p.studio=?
+              AND m.message_id IS NULL AND p.status IN ('provavel','revisar')
+              AND p.evidence_type='embedded_render_title'
+              AND TRIM(COALESCE(a.source_caption,''))=''
+              AND TRIM(COALESCE(p.title,''))!=''"""
+        total=db.execute("SELECT COUNT(*) "+sql,(studio,studio)).fetchone()[0]
+        rows=db.execute("""SELECT a.message_id,a.sha256,p.title,p.universe,
+            p.variant,p.status,p.revision,p.evidence_type """+sql+
+            """ ORDER BY a.message_id LIMIT ? OFFSET ?""",
+            (studio,studio,limit,(page-1)*limit)).fetchall()
+    return {"studio":studio,"page":page,"limit":limit,"total":total,
+            "has_more":page*limit<total,
+            "items":[dict(row) for row in rows],
+            "read_only":True,"automatic_approval":False}
+
 
 def list_album_candidates(db_path,topic="",limit=60,page=1):
     """Álbuns com ao menos duas fotos livres, inclusive álbuns parciais.
