@@ -6,6 +6,9 @@ Sem fusão, identificação, licença ou publicação automática.
 """
 from __future__ import annotations
 import re
+import json
+import hashlib
+from pathlib import Path
 import model_gallery as gallery
 import smart_curadoria as smart
 
@@ -123,3 +126,97 @@ def append(db_path, group_key, revision, message_ids, note=""):
         db.commit()
         return {"group_key":key,"added":len(added),"total_images":total,
                 "revision":revision+1,"state":"revisar"}
+
+def merged_key(db_path,key):
+    """Resolve old private gallery links from canonical audit events."""
+    if not isinstance(key,str) or not re.fullmatch("[0-9a-f]{24}",key):
+        raise ValueError("ID inválido")
+    with smart.db_open(db_path,readonly=True) as db:
+        for _ in range(8):
+            if db.execute("SELECT 1 FROM model_groups WHERE group_key=?",(key,)).fetchone():
+                return key
+            row=db.execute("SELECT detail FROM curation_events WHERE group_key=? AND event_type='gallery_merged_into' ORDER BY event_id DESC LIMIT 1",(key,)).fetchone()
+            if not row:return key
+            following=json.loads(row["detail"])["target"]
+            if not re.fullmatch("[0-9a-f]{24}",following) or following==key:
+                raise ValueError("Histórico de fusão inválido")
+            key=following
+    raise ValueError("Fusões encadeadas em excesso")
+
+
+def merge_reviewed(db_path,*,target,source,target_rev,source_rev,proofs,note,media_root):
+    """Atomic cross-gallery visual merge; no automated naming or licensing."""
+    if (not all(isinstance(k,str) and re.fullmatch("[0-9a-f]{24}",k) for k in (target,source))
+            or target==source):raise ValueError("Galerias distintas obrigatórias")
+    if any(type(x) is not int or x<0 for x in (target_rev,source_rev)):
+        raise ValueError("Revisões inválidas")
+    note=str(note or "").strip()
+    if not 45<=len(note)<=500:raise ValueError("Descreva a evidência visual da MESMA estatueta")
+    if (type(proofs) is not list or not 2<=len(proofs)<=48
+            or any(type(x) is not dict or set(x)!={'message_id','sha256'}
+            or type(x['message_id']) is not int or x['message_id']<=0
+            or type(x['sha256']) is not str or not re.fullmatch('[0-9a-f]{64}',x['sha256'])
+            for x in proofs)):raise ValueError("Provas SHA-256 completas obrigatórias")
+    hashes={x['message_id']:x['sha256'] for x in proofs}
+    if len(hashes)!=len(proofs):raise ValueError("IDs repetidos")
+    root=Path(media_root).resolve()
+    stamp=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        groups=[db.execute("SELECT * FROM model_groups WHERE group_key=?",(k,)).fetchone() for k in (target,source)]
+        dest,old=groups
+        if not dest or not old:raise ValueError("Galeria ausente: recarregue")
+        if (dest['revision'],old['revision'])!=(target_rev,source_rev):
+            raise RuntimeError("Revisão concorrente: recarregue as galerias")
+        if 'confirmado' in (dest['state'],old['state']):raise ValueError("Grupo confirmado exige outra revisão")
+        if dest['studio'].casefold()=='geral + 50k':raise ValueError("Origem geral excluída")
+        for field in ('studio','title','universe','variant'):
+            if smart.normalize(dest[field])!=smart.normalize(old[field]):
+                raise ValueError("Divergência de modelo/variante: "+field)
+        members={}
+        for k in (target,source):
+            if not db.execute("SELECT 1 FROM curation_events WHERE group_key=? AND event_type='visual_gallery_audited' LIMIT 1",(k,)).fetchone():
+                raise ValueError("Ambas galerias precisam de auditoria visual anterior")
+            rows=db.execute("SELECT m.message_id,a.sha256,a.source_relative,a.original_topic,p.studio,p.title,p.universe,p.variant FROM model_group_members m JOIN assets a USING(message_id) JOIN name_proposals p USING(message_id) WHERE m.group_key=? ORDER BY m.message_id",(k,)).fetchall()
+            if not rows:raise ValueError("Galeria vazia")
+            members[k]=rows
+        expected={r['message_id'] for k in members for r in members[k]}
+        if expected!=set(hashes) or len(expected)!=len(proofs):
+            raise RuntimeError("Fotos alteradas: prova não cobre todos os membros")
+
+        for k,rows in members.items():
+            for r in rows:
+                if r['original_topic']!=dest['studio']:
+                    raise ValueError("Tópico Telegram divergente")
+                for field in ('studio','title','universe','variant'):
+                    if smart.normalize(r[field])!=smart.normalize(dest[field]):
+                        raise ValueError("Foto com variante divergente: "+field)
+                img=(root/r['source_relative']).resolve()
+                if not img.is_relative_to(root) or not img.is_file():
+                    raise ValueError("Original ausente ou caminho externo")
+                with img.open('rb') as fd:
+                    digest=hashlib.file_digest(fd,'sha256').hexdigest()
+                if r['sha256']!=hashes[r['message_id']] or digest!=r['sha256']:
+                    raise ValueError("SHA-256 físico divergente da fonte")
+        updated=db.execute("UPDATE model_groups SET state='revisar',revision=revision+1,updated_at=? WHERE group_key=? AND revision=?",(stamp,target,target_rev))
+        if updated.rowcount!=1:raise RuntimeError("Revisão concorrente")
+        moved=db.execute("UPDATE model_group_members SET group_key=?,match_reason='reviewed_cross_gallery_angles',updated_at=? WHERE group_key=?",(target,stamp,source))
+        if moved.rowcount!=len(members[source]):raise RuntimeError("Membros alterados concorrentemente")
+        db.execute("INSERT OR IGNORE INTO model_group_evidence (group_key,source_url,source_type,description,recorded_at) SELECT ?,source_url,source_type,description,recorded_at FROM model_group_evidence WHERE group_key=?",(target,source))
+        db.execute("DELETE FROM model_group_evidence WHERE group_key=?",(source,))
+        deleted=db.execute("DELETE FROM model_groups WHERE group_key=? AND revision=?",(source,source_rev))
+        if deleted.rowcount!=1:raise RuntimeError("Fusão incompleta")
+        digest=hashlib.sha256(json.dumps(sorted(hashes.items())).encode()).hexdigest()
+        detail=json.dumps({'target':target,'source':source,
+            'moved':[r['message_id'] for r in members[source]],
+            'before_target':[r['message_id'] for r in members[target]],
+            'proof_sha256':digest,'visual_evidence':note,
+            'identity_approved':False,'rights_approved':False},
+            ensure_ascii=False,sort_keys=True)
+        for key,kind in ((target,'gallery_merged_from'),(source,'gallery_merged_into')):
+            db.execute("INSERT INTO curation_events(group_key,event_type,detail,occurred_at) VALUES(?,?,?,?)",(key,kind,detail,stamp))
+        db.commit()
+        return {'group_key':target,'source_key':source,'moved':moved.rowcount,
+            'total_images':len(expected),'revision':target_rev+1,'state':'revisar',
+            'names_changed':False,'rights_changed':False}

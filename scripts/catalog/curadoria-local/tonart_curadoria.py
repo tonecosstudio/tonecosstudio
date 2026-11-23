@@ -389,6 +389,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
+                    {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
                     {"id":"models.review","method":"POST","path":"/api/review-model","effect":"write"},
                     {"id":"images.review_name","method":"POST","path":"/api/review-name","effect":"write"},
@@ -596,7 +597,8 @@ class Handler(BaseHTTPRequestHandler):
                     unnamed_only=p.get("unnamed",["0"])[0]=="1",
                     previews=p.get("previews",["0"])[0]))
             if route.path.startswith("/api/model/"):
-                return self.respond(smart.model_detail(DB_PATH,route.path.split("/")[-1]))
+                key=gallery_ops.merged_key(DB_PATH,route.path.split("/")[-1])
+                return self.respond(smart.model_detail(DB_PATH,key))
             if route.path=="/api/candidates":
                 with connect(DB_PATH) as db:
                     rows=db.execute("""SELECT filename,sha256,model,matched_message_id,status
@@ -657,6 +659,11 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("ID de galeria invalido")
                 return self.respond(naming.propagate_reviewed_gallery_names(
                     DB_PATH,limit=40,group_key=key))
+            if self.path=="/api/merge-reviewed-galleries":
+                return self.respond(gallery_ops.merge_reviewed(
+                    DB_PATH,target=obj.get("target"),source=obj.get("source"),
+                    target_rev=obj.get("target_rev"),source_rev=obj.get("source_rev"),
+                    proofs=obj.get("proofs"),note=obj.get("note",""),media_root=SOURCE))
             if self.path=="/api/append-gallery":
                 return self.respond(gallery_ops.append(DB_PATH,
                    obj.get("group_key",""),obj.get("revision",-1),
