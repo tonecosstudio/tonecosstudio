@@ -1,3 +1,14 @@
+## CHECKPOINT — 22/11/2026 — site TONART tags v2 e continuidade de estúdios
+
+- **Foco atual:** corrigir/deploy do catálogo `catalogo.tonartstudio.com.br` ANTES de avançar a curadoria; depois retomar a fila privada de 92 estúdios/4.433 grupos do Telegram pela missão horária existente. Catálogo antigo permanece fora do escopo até encerrar os estúdios.
+- **Diagnóstico produção:** Vercel `tonart-catalogo-publico` (`prj_6uaHlw05JQIxn8z9ocFH9MarES3p`), equipe `jogo-brasils-projects`, produção atual anterior `bdfd255aa94e4950210ed0923d216e1cf7b2fb93` está desatualizada frente a tonecosstudio/main. Site principal `tonart-studio-public` não alterar.
+- **Causa raiz:** filtros `franchise`/`character` HTTP 400 porque `functions/catalogo-api/[[path]].js` rejeita esses parâmetros na allowlist, apesar de `services/catalogo/worker/telegramPublic.ts` aceitá-los. Reparar proxy reutilizado; modelo provisório não pode exibir título da escultura como personagem verificado. Validar com `scripts/vercel/verify-public-tags-live.mjs` após deploy.
+- **Nova interface:** `telegram-facets-v2`, contrato estático `public/catalog-ui-contract.json` sem dados privados. Identidades Supabase (952) e propostas de vinculação NÃO são tags publicadas. Confirmar SHA do deployment Vercel e HTTP 200 da listagem/franquia, versão UI, rollback.
+- **Retomada da curadoria:** ler docs/CATALOGO-PERSONAGENS-UNIVERSOS.md e docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md; verificar o estado real e os 4433 grupos/92 estúdios no CSV privado; iniciar RinArtPoke já com 3 Pokébolas não-personagens e 3 formas regionais verificadas, não recadastrar como indivíduos. Usar OrdaX MCP, registros por estúdio, sem reinício total ou R2 upload.
+- **Ficam protegidos:** direitos, M5, D1 migration 0029, catálogo principal, Worker e site comercial. Sem lançamento de nomes/tags ainda não comprovados.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — PRIORIDADE TELEGRAM/ESTÚDIOS; catálogo antigo depois
 
 - **Mandato atual:** concluir primeiro **os 92 estúdios Telegram (4.433 grupos)**, personagens, franquias, nomes, formas, acessórios, tags e exceções, pois são os modelos em uso. Congelar na curadoria a fila do catálogo antigo até o encerramento comprovado dos estúdios; não alterar R2/host de outros owners.
