@@ -6,6 +6,7 @@ Run in the original curadoria-local environment:
 import sqlite3
 import tempfile
 from pathlib import Path
+from contextlib import closing
 from unittest.mock import patch
 
 import smart_curadoria as smart
@@ -28,7 +29,8 @@ def exercise(label, module, open_writer):
                 db.execute("INSERT INTO sample(id) VALUES(1)")
                 db.commit()
             assert statements.count("PRAGMAJOURNAL_MODE=WAL") == 1, (label, statements)
-            assert sqlite3.connect(path).execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+            with closing(sqlite3.connect(path)) as verifier:
+                assert verifier.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
             statements.clear()
 
             # Keeping a read snapshot open must not provoke a redundant
@@ -48,7 +50,8 @@ def exercise(label, module, open_writer):
                 assert reader.execute("SELECT count(*) FROM sample").fetchone()[0] == 2
             finally:
                 reader.close()
-            assert sqlite3.connect(path).execute("PRAGMA quick_check(1)").fetchone()[0] == "ok"
+            with closing(sqlite3.connect(path)) as verifier:
+                assert verifier.execute("PRAGMA quick_check(1)").fetchone()[0] == "ok"
 
     print(label, "WAL initialized once; concurrent reader+writer and integrity OK")
 
