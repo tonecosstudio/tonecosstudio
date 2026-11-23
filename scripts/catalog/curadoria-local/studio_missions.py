@@ -31,6 +31,11 @@ def db_open(path):
     return db
 
 def studio_index(path):
+    """All non-General editor labels, including collections with zero galleries.
+
+    A label without model_groups is *unclassified*, never proof of studio
+    authorship. Existing gallery studios preserve their page IDs and SHA.
+    """
     with db_open(path) as db:
         groups={x["studio"]:dict(x) for x in db.execute("""
             SELECT studio,COUNT(*) groups,SUM(state='confirmado') groups_confirmed
@@ -40,20 +45,51 @@ def studio_index(path):
                    SUM(n.status='confirmado') names_confirmed
             FROM name_proposals n JOIN assets a ON a.message_id=n.message_id
             LEFT JOIN model_group_members gm ON gm.message_id=n.message_id
-            WHERE n.studio IN (SELECT studio FROM model_groups)
-              AND a.original_topic<>? GROUP BY n.studio""",(EXCLUDED,))}
+            WHERE a.original_topic<>? GROUP BY n.studio""",(EXCLUDED,))}
+        unique_ungrouped={x["studio"]:x["unique_media"] for x in db.execute("""
+            SELECT studio,COUNT(*) unique_media FROM (
+              SELECT n.studio,a.sha256
+              FROM name_proposals n JOIN assets a ON a.message_id=n.message_id
+              LEFT JOIN model_group_members gm ON gm.message_id=n.message_id
+              WHERE gm.message_id IS NULL AND a.original_topic<>?
+              GROUP BY n.studio,a.sha256
+            ) GROUP BY studio""",(EXCLUDED,))}
+        album_review={x["studio"]:x["review_albums"] for x in db.execute("""
+            SELECT studio,COUNT(*) review_albums FROM (
+              SELECT n.studio,a.original_topic,a.source_album
+              FROM name_proposals n JOIN assets a ON a.message_id=n.message_id
+              LEFT JOIN model_group_members gm ON gm.message_id=n.message_id
+              WHERE gm.message_id IS NULL AND a.original_topic<>?
+                AND TRIM(COALESCE(a.source_album,''))!=''
+              GROUP BY n.studio,a.original_topic,a.source_album
+              HAVING COUNT(DISTINCT a.sha256)>=2
+            ) GROUP BY studio""",(EXCLUDED,))}
     studios=[]
-    for name in sorted(groups,key=str.casefold):
-        g=groups[name]; n=names.get(name,{})
+    for name in sorted(set(groups)|set(names),key=str.casefold):
+        g=groups.get(name,{})
+        n=names.get(name,{})
         count=int(n.get("images") or 0)
-        studios.append(dict(studio=name,groups=g["groups"],
-            groups_confirmed=g["groups_confirmed"] or 0,
-            images=count,ungrouped=n.get("ungrouped") or 0,
+        loose=int(n.get("ungrouped") or 0)
+        unique=int(unique_ungrouped.get(name) or 0)
+        if unique>loose:raise ValueError("Inconsistência: mídia única excede mensagens livres")
+        studios.append(dict(
+            studio=name,collection_type=("studio_with_groups" if name in groups
+                                          else "topic_without_groups"),
+            groups=g.get("groups",0),groups_confirmed=g.get("groups_confirmed") or 0,
+            images=count,ungrouped=loose,ungrouped_unique_media=unique,
+            identical_media_reposts=loose-unique,
+            album_review_candidates=int(album_review.get(name) or 0),
             names_confirmed=n.get("names_confirmed") or 0,
             pages=(count+SIZE-1)//SIZE))
     return dict(schema=SCHEMA,studios=studios,studio_count=len(studios),
+        registered_studio_count=sum(x["collection_type"]=="studio_with_groups" for x in studios),
+        unclassified_collection_count=sum(x["collection_type"]=="topic_without_groups" for x in studios),
         images=sum(x["images"] for x in studios),
         sheets=sum(x["pages"] for x in studios),
+        ungrouped=sum(x["ungrouped"] for x in studios),
+        ungrouped_unique_media=sum(x["ungrouped_unique_media"] for x in studios),
+        identical_media_reposts=sum(x["identical_media_reposts"] for x in studios),
+        album_review_candidates=sum(x["album_review_candidates"] for x in studios),
         missions=["grouping","naming"],read_only=True)
 
 def board_page(path,studio,mission="grouping",page=1,limit=SIZE,include_paths=False):
@@ -65,8 +101,11 @@ def board_page(path,studio,mission="grouping",page=1,limit=SIZE,include_paths=Fa
     if page<1 or page>10000 or limit not in (12,24,48):
         raise ValueError("Paginação fora dos limites")
     with db_open(path) as db:
-        if not db.execute("SELECT 1 FROM model_groups WHERE studio=? LIMIT 1",(studio,)).fetchone():
-            raise ValueError("Estúdio não está na fila canônica")
+        if not db.execute("""SELECT 1 FROM name_proposals n
+              JOIN assets a ON a.message_id=n.message_id
+              WHERE n.studio=? AND a.original_topic<>? LIMIT 1""",
+              (studio,EXCLUDED)).fetchone():
+            raise ValueError("Coleção não está na fila Telegram")
         total=db.execute("""SELECT COUNT(*) FROM name_proposals n
             JOIN assets a ON a.message_id=n.message_id
             WHERE n.studio=? AND a.original_topic<>?""",(studio,EXCLUDED)).fetchone()[0]

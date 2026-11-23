@@ -382,7 +382,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"catalog.summary","method":"GET","path":"/api/catalog-sync-summary","effect":"read"},
                     {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True,"max_limit":96,"previews":[0,1,4,6]},
                     {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
-                    {"id":"studio.missions","method":"GET","path":"/api/studio-missions","effect":"read","mission_ids":["grouping","naming"],"studios":92},
+                    {"id":"studio.missions","method":"GET","path":"/api/studio-missions","effect":"read","mission_ids":["grouping","naming"],"coverage":"all_non_general_collections"},
                     {"id":"studio.board","method":"GET","path":"/api/studio-missions/board","effect":"read","page_size":24,"mission_ids":["grouping","naming"]},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},

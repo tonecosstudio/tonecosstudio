@@ -144,6 +144,49 @@ class StudioMissionsTests(unittest.TestCase):
         corrected=missions.generate_all(self.path,self.media,output)
         self.assertTrue(corrected["generation_complete"])
 
+    def test_unclassified_collection_and_exact_reposts_without_regeneration(self):
+        from PIL import Image
+        out=self.root/"all_studios"
+        original=missions.generate_all(self.path,self.media,out)
+        self.assertEqual((original["studio_count"],original["sheets"]),(2,3))
+        a=out/missions._slug("A Studio")/"prancha-001.jpg"
+        original_sha=hashlib.sha256(a.read_bytes()).hexdigest()
+        new=self.media/"extra.jpg"
+        Image.new("RGB",(75,100),"red").save(new)
+        sha=hashlib.sha256(new.read_bytes()).hexdigest()
+        other=self.media/"different.jpg"
+        Image.new("RGB",(75,100),"green").save(other)
+        other_sha=hashlib.sha256(other.read_bytes()).hexdigest()
+        db=sqlite3.connect(self.path)
+        for mid,rel,srcsha in ((1001,"extra.jpg",sha),(1002,"extra.jpg",sha),
+                               (1003,"different.jpg",other_sha)):
+            db.execute("INSERT INTO assets VALUES(?,?,?,?,?,?)",
+                       (mid,srcsha,rel,"unknown_album","Topico_1234",""))
+            db.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?,?,?)",
+                       (mid,"Topico_1234","Unverified","","","","provavel",0,"",""))
+        db.commit();db.close()
+        idx=missions.studio_index(self.path)
+        self.assertEqual((idx["studio_count"],idx["images"],idx["sheets"]),(3,31,4))
+        self.assertEqual(idx["registered_studio_count"],2)
+        self.assertEqual(idx["unclassified_collection_count"],1)
+        row=next(x for x in idx["studios"] if x["studio"]=="Topico_1234")
+        self.assertEqual(row["collection_type"],"topic_without_groups")
+        self.assertEqual(row["ungrouped"],3)
+        self.assertEqual(row["ungrouped_unique_media"],2)
+        self.assertEqual(row["identical_media_reposts"],1)
+        self.assertEqual(row["album_review_candidates"],1)
+        read=missions.board_page(self.path,"Topico_1234",mission="naming")
+        self.assertEqual(len(read["items"]),3)
+        self.assertTrue(all("source_relative" not in x for x in read["items"]))
+        incomplete=missions.finalize_index(self.path,out)
+        self.assertFalse(incomplete["generation_complete"])
+        missions.generate_all(self.path,self.media,out,studios=["Topico_1234"],
+                              write_index=False)
+        done=missions.finalize_index(self.path,out)
+        self.assertTrue(done["generation_complete"])
+        self.assertEqual((done["studio_count"],done["sheets"],done["images"]),(3,4,31))
+        self.assertEqual(hashlib.sha256(a.read_bytes()).hexdigest(),original_sha)
+
     def test_path_traversal_blocked(self):
         self.assertRaises(ValueError,missions._source,self.media,"../../private.txt")
         self.assertTrue(missions._source(self.media,"msg_1.jpg").is_file())

@@ -17,6 +17,12 @@
 **Regras obrigatórias:** mesmos nomes e álbuns não bastam para fundir esculturas. Misturas de autoria e versões exigem evidência específica. Nome confirmado não autoriza direitos, venda, publicação de tags, M5, Worker, D1, R2, Supabase nem Site. O SQLite e seus eventos são a SSOT; JPEGs e manifestos são descartáveis. Os testes test_studio_missions.py validam paginação, duas missões, modo somente leitura, proibição do Geral, caminhos seguros, retomada, SHA e invalidação após alteração editorial.
 
 
+## Cobertura completa dos tópicos Telegram — 23/11/2026
+
+A primeira rodada de 406 pranchas cobriu os **92 estúdios com model_groups** (8.443 imagens). Auditoria posterior do SQLite mostrou **mais 21 rótulos com fotos sem model_groups (204 fotografias)**, alguns deles tópicos Topico_*, e não estúdios comprovados. O mesmo studio_missions.py agora inclui o conjunto de labels de name_proposals cujo original_topic difere de Geral + 50k, mantendo collection_type=topic_without_groups para **não inferir autoria por rótulo**. A API studio_index informa separadamente registered_studio_count, unclassified_collection_count, ungrouped_unique_media, identical_media_reposts e album_review_candidates (apenas álbuns livres com 2+ SHA diferentes). A interface não trata foto avulsa como erro: uma foto única pode representar um modelo legítimo. **Nenhuma fusão ou renomeação ocorre automaticamente.**
+
+A ampliação é incremental: preservar os JPEGs e manifestos dos 92 estúdios, gerar **somente as 21 coleções adicionais** via opção existente --studio repetida na CLI, e executar --finalize-only para validar a cobertura expandida contra SQLite vivo. Teste dedicado garante que os SHA/JPEG anteriores não são reescritos, que as duplicatas físicas não inflam a contagem de imagens únicas e que Geral + 50k permanece explicitamente fora da missão.
+
 ## Geração paralela segura das pranchas — 23/11/2026
 
 Para evitar que um estúdio com centenas de fotos atrase os demais, a mesma CLI studio_missions.py agora permite **até 8 shards** com atribuição estável de cada estúdio por SHA-256 do seu nome: por exemplo, quatro processos supervisionados OrdaX MCP usam --shards 4 e --shard-index 0, 1, 2 e 3, respectivamente. Cada processo recebe estúdios distintos, usa o mesmo destino privado, atualiza somente seus próprios manifestos e retoma pranchas pelo fingerprint/sha. Não rodar o gerador serial junto com shards; não iniciar o mesmo shard duas vezes.
