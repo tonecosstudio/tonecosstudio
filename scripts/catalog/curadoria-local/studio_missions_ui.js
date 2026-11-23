@@ -736,7 +736,9 @@
       opt.value=item.studio;studio.append(opt);
     }
     if(data.studios.length){
-      studio.value=data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
+      const requested=new URLSearchParams(window.location.search).get("studio");
+      studio.value=data.studios.some(x=>x.studio===requested)?requested:
+        data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
       load();
       loadLiveGalleries(true);
     }else status.textContent="Não há estúdios canônicos cadastrados.";
