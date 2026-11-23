@@ -82,7 +82,10 @@ def connect(path, readonly=False):
                              factory=ManagedConnection)
     else:
         db = sqlite3.connect(path, timeout=10, factory=ManagedConnection)
-        db.execute("PRAGMA journal_mode=WAL")
+        # WAL is a database-wide setting. Repeating a WAL mode assignment on
+        # every writer open can contend with active readers on Windows.
+        if db.execute("PRAGMA journal_mode").fetchone()[0].lower() != "wal":
+            db.execute("PRAGMA journal_mode=WAL")
     db.row_factory = sqlite3.Row
     db.execute("PRAGMA busy_timeout=5000")
     return db
