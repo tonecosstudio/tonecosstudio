@@ -71,6 +71,14 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 .studio-mission-meta strong{font-size:12px;overflow-wrap:anywhere}
 .studio-mission-meta span,.studio-mission-meta small{font-size:11px;color:#bdbac0;overflow-wrap:anywhere}
 .studio-mission-meta button{font-size:11px;padding:6px}
+#studioMissionEvidencePanel{margin-top:16px;border:1px solid #484a50;background:#1c1e23;border-radius:10px;padding:14px}
+#studioMissionEvidencePanel .buttons{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.studio-evidence-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px;max-height:370px;overflow:auto}
+.studio-evidence-row{border:1px solid #3f4149;border-radius:8px;padding:10px;background:#23252b;display:flex;flex-direction:column;gap:7px}
+.studio-evidence-row strong{font-size:12px;overflow-wrap:anywhere}
+.studio-evidence-row small{font-size:11px;color:#bbb8b1;overflow-wrap:anywhere}
+.studio-evidence-thumbs{display:flex;gap:4px}
+.studio-evidence-thumbs img{display:block;width:32%;height:90px;object-fit:contain;background:#111217;border-radius:4px}
 #studioMissionsPanel .studio-mission-choice{display:flex;align-items:center;gap:6px;margin-top:4px;cursor:pointer}
 #studioMissionsPanel .studio-mission-choice input{width:auto;margin:0}
 #studioMissionsPanel .mission-pages{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 0}
@@ -96,6 +104,18 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <button type="button" id="studioMissionPrepare" disabled>Preparar galeria · 0 fotos selecionadas</button>
 <div id="studioMissionBoard" aria-live="polite"></div>
 <div class="mission-pages"><button id="studioMissionPrev" type="button">Anterior</button><span id="studioMissionPage">Prancha</span><button id="studioMissionNext" type="button">Próxima</button></div>
+<section id="studioMissionEvidencePanel" class="sync-panel" aria-label="Fila de evidências verificáveis">
+<strong>Fila de evidências — mesmas missões, sem outra base</strong>
+<p class="sub">Álbuns com fotos fisicamente distintas e republicações SHA idênticas são pistas independentes. A fila só consulta o SQLite; nenhum caso é automaticamente agrupado, nomeado ou publicado.</p>
+<div class="buttons">
+<label for="studioMissionEvidenceKind">Tipo de evidência
+<select id="studioMissionEvidenceKind"><option value="albums">Álbuns com fotos diferentes</option><option value="reposts">Republicações SHA idênticas</option></select></label>
+<button type="button" id="studioMissionEvidenceLoad">Consultar evidências</button>
+</div>
+<p id="studioMissionEvidenceStatus" class="sub" role="status">Aguardando consulta explícita.</p>
+<div id="studioMissionEvidenceResults" class="studio-evidence-list"></div>
+<button id="studioMissionEvidenceMore" type="button" hidden>Carregar mais casos</button>
+</section>
 </section>
 <label style="display:flex;align-items:center;gap:8px;margin:0 0 12px"><input type="checkbox" id="multiplePhotosOnly" style="width:auto"> Apenas galerias com varias fotos</label><label id="unnamedFilter" hidden style="margin:0 0 12px;display:flex;align-items:center;gap:8px"><input id="onlyUnnamedModels" type="checkbox" style="width:auto"> Exibir apenas galerias sem nome</label><div id="queueFilters" class="sync-panel" hidden><strong>Fila priorizada da curadoria</strong><p class="sub">Ordenada por risco de identificação, independente de publicação. O tópico Geral + 50k permanece fora deste fluxo.</p><div class="buttons"><label for="queueKind">Prioridade <select id="queueKind"><option value="attention">Todas as pendências</option><option value="unlabeled">Sem nome</option><option value="legacy_groups">Auditar galerias antigas</option><option value="legacy_album">Fotos em grupos antigos</option><option value="manual_review">Revisar nome</option><option value="missing_source">Fonte oficial pendente</option><option value="confirmed">Nome confirmado</option><option value="all">Todas, inclusive concluídas</option></select></label><label id="queueVariantLabel" for="queueVariant">Variante <select id="queueVariant"><option value="all">Todas as variantes</option><option value="with">Com variante</option><option value="without">Sem variante</option></select></label></div><div id="legacyAuditFilters" class="buttons" hidden><label for="legacyAuditState">Histórico <select id="legacyAuditState"><option value="new" selected>Aguardando primeira revisão</option><option value="attention">Exigem investigação adicional</option><option value="pending">Todas pendentes (inclui investigação)</option><option value="audited">Já auditadas</option><option value="all">Todas</option></select></label><label for="legacyAuditRisk">Atenção <select id="legacyAuditRisk"><option value="all">Todas as galerias</option><option value="variants">Nomes ou variantes divergentes</option><option value="albums">Vários álbuns misturados</option><option value="large">Galerias grandes (8+ fotos)</option></select></label></div><div id="legacyWallControls" class="buttons" hidden>
 <label for="legacyWallPageSize">Galerias por lote

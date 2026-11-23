@@ -23,12 +23,12 @@ class StudioMissionsTests(unittest.TestCase):
              universe TEXT,variant TEXT,filename TEXT,status TEXT,revision INTEGER,
              notes TEXT,official_url TEXT);
             CREATE TABLE model_groups(group_key TEXT PRIMARY KEY,studio TEXT,state TEXT,
-             revision INTEGER,title TEXT);
+             revision INTEGER,title TEXT,universe TEXT,variant TEXT);
             CREATE TABLE model_group_members(message_id INTEGER PRIMARY KEY,group_key TEXT);
         """)
-        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?)",("a"*24,"A Studio","revisar",1,"Foo"))
-        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?)",("b"*24,"B Studio","confirmado",2,"Bar"))
-        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?)",("c"*24,"Geral + 50k","revisar",0,"Trash"))
+        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("a"*24,"A Studio","revisar",1,"Foo","Franchise","Variant"))
+        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("b"*24,"B Studio","confirmado",2,"Bar","Franchise","Variant"))
+        c.execute("INSERT INTO model_groups VALUES(?,?,?,?,?,?,?)",("c"*24,"Geral + 50k","revisar",0,"Trash","",""))
         from PIL import Image
         for i in range(1,29):
             picture=self.media/f"msg_{i}.jpg"
@@ -221,6 +221,47 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual(len(json.loads(official.read_text(encoding="utf8"))["sheets"]),2)
         verified=missions.finalize_index(self.path,output)
         self.assertTrue(verified["generation_complete"])
+
+    def test_two_bounded_readonly_evidence_queues(self):
+        initial=self.path.read_bytes()
+        album=missions.review_candidates(self.path,kind="albums")
+        self.assertTrue(album["read_only"])
+        self.assertFalse(album["automatic_merge"])
+        self.assertEqual(len(album["items"]),1)
+        self.assertEqual(album["items"][0]["studio"],"A Studio")
+        self.assertEqual(album["items"][0]["unique_sha"],24)
+        self.assertEqual(album["items"][0]["page_hint"],1)
+        self.assertEqual(missions.review_candidates(self.path,kind="reposts")["items"],[])
+        self.assertEqual(self.path.read_bytes(),initial)
+        self.assertRaises(ValueError,missions.review_candidates,self.path,kind="unknown")
+        self.assertRaises(ValueError,missions.review_candidates,self.path,kind="albums",studio="Geral + 50k")
+        self.assertRaises(ValueError,missions.review_candidates,self.path,kind="reposts",limit=96)
+
+        db=sqlite3.connect(self.path)
+        anchor=db.execute("SELECT sha256 FROM assets WHERE message_id=1").fetchone()[0]
+        # Test-only synthetic registered SHA; public route still requires
+        # physical file evidence before a write through canonical endpoints.
+        for mid in range(3,16):
+            db.execute("UPDATE assets SET sha256=? WHERE message_id=?",(anchor,mid))
+            db.execute("UPDATE name_proposals SET title='Foo' WHERE message_id=?",(mid,))
+        db.commit();db.close()
+        page1=missions.review_candidates(self.path,kind="reposts",limit=12)
+        self.assertEqual(len(page1["items"]),12)
+        self.assertIsNotNone(page1["next_cursor"])
+        self.assertEqual(page1["items"][0]["message_id"],3)
+        self.assertEqual(page1["items"][0]["review_state"],"physical_sha_recheck_required")
+        self.assertFalse(page1["automatic_naming"])
+        page2=missions.review_candidates(self.path,kind="reposts",
+            cursor=page1["next_cursor"],limit=12)
+        self.assertEqual(len(page2["items"]),1)
+        self.assertEqual(page2["items"][0]["message_id"],15)
+        self.assertIsNone(page2["next_cursor"])
+        # A title or variant difference must block even exact registered SHA.
+        db=sqlite3.connect(self.path)
+        db.execute("UPDATE name_proposals SET title='Different statue' WHERE message_id=3")
+        db.commit();db.close()
+        changed=missions.review_candidates(self.path,kind="reposts",limit=12)
+        self.assertEqual(changed["items"][0]["review_state"],"metadata_or_variant_mismatch")
 
     def test_path_traversal_blocked(self):
         self.assertRaises(ValueError,missions._source,self.media,"../../private.txt")
