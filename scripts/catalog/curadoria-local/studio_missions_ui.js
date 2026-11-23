@@ -457,14 +457,53 @@
     finally{crossBusy=false;crossLoad.disabled=false;}
   }
   crossLoad.addEventListener("click",loadCrossCaptions);
+  const fingerprintButton=el("studioMissionFingerprintsScan");
+  const fingerprintStatus=el("studioMissionFingerprintCoverage");
+  let fingerprintBusy=false;
+  async function loadFingerprintCoverage(){
+    const current=studio.value;
+    try{
+      const qs=new URLSearchParams({studio:current});
+      const counts=await get("/api/visual-fingerprint-coverage?"+qs);
+      if(studio.value!==current)return;
+      fingerprintStatus.textContent="Impressões visuais válidas: "+counts.valid+"/"+counts.total+
+        " · pendentes "+counts.missing+" · erro(s) "+counts.errors+
+        ". Estes índices não confirmam nomes.";
+      fingerprintButton.disabled=counts.complete;
+    }catch(err){
+      fingerprintStatus.textContent="Cobertura visual indisponível: "+err.message;
+    }
+  }
+  fingerprintButton.addEventListener("click",async()=>{
+    if(fingerprintBusy||mission.value!=="grouping")return;
+    fingerprintBusy=true;fingerprintButton.disabled=true;
+    const current=studio.value;
+    fingerprintStatus.textContent="Verificando SHA dos originais e calculando impressões do estúdio...";
+    try{
+      const outcome=await post("/api/scan-studio-fingerprints",{
+        studio:current,limit:96
+      });
+      if(studio.value!==current)return;
+      const item=outcome.after;
+      fingerprintStatus.textContent="Concluído: "+item.valid+"/"+item.total+
+        " impressões válidas; falhas "+item.errors+
+        ". Nenhum nome, galeria ou direito aprovado.";
+      await loadFingerprintCoverage();
+    }catch(err){
+      fingerprintStatus.textContent="Varredura bloqueada: "+err.message;
+      await loadFingerprintCoverage();
+    }finally{fingerprintBusy=false;await loadFingerprintCoverage();}
+  });
+
 
   mergeMore.addEventListener("click",()=>loadMergeCandidates(false));
   studio.addEventListener("change",()=>{
-    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;crossResults.replaceChildren();
+    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;crossResults.replaceChildren();fingerprintStatus.textContent="Consulte a cobertura visual deste estúdio.";loadFingerprintCoverage();
     mergeStatus.textContent="Consulte para comparar este estúdio.";
   });
   mission.addEventListener("change",()=>{
     mergePanel.hidden=mission.value!=="grouping";
+  loadFingerprintCoverage();
   });
   mergePanel.hidden=mission.value!=="grouping";
   get("/api/studio-missions").then(data=>{

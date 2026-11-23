@@ -41,6 +41,7 @@ class _DeferredModule:
 smart = _DeferredModule("smart_curadoria")
 naming = _DeferredModule("name_curadoria")
 visual = _DeferredModule("visual_name_suggestions")
+VISUAL_SCAN_LOCK = threading.Lock()
 gallery = _DeferredModule("model_gallery")
 gallery_ops = _DeferredModule("gallery_operations")
 catalog_sync = _DeferredModule("catalog_sync_status")
@@ -392,6 +393,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
                     {"id":"gallery.cross_caption_visual_candidates","method":"GET","path":"/api/gallery-visual-cross-caption","effect":"read","max_limit":48,"automatic_merge":False},
+                    {"id":"visual.fingerprints.coverage","method":"GET","path":"/api/visual-fingerprint-coverage","effect":"read","scope":"studio"},
+                    {"id":"visual.fingerprints.scan_studio","method":"POST","path":"/api/scan-studio-fingerprints","effect":"write","max_limit":128,"requires":"physical_sha256","scope":"studio","automatic_approval":False},
                     {"id":"gallery.correct_cross_caption","method":"POST","path":"/api/correct-gallery-caption","effect":"write","requires":"physical_SHA_and_visual_reviewer","commercial_approval":False},
                     {"id":"gallery.reject_pair","method":"POST","path":"/api/reject-gallery-pair","effect":"write","touches":"audit_events_only"},
                     {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
@@ -581,6 +584,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(catalog_sync.compare(DB_PATH))
             if route.path=="/api/catalog-sync-summary":
                 return self.respond(catalog_sync.compare_summary(DB_PATH))
+            if route.path=="/api/visual-fingerprint-coverage":
+                p=parse_qs(route.query)
+                return self.respond(visual.studio_coverage(
+                    DB_PATH,studio=p.get("studio",[""])[0]))
             if route.path=="/api/gallery-visual-cross-caption":
                 p=parse_qs(route.query)
                 return self.respond(gallery_ops.cross_caption_visual_candidates(
@@ -676,6 +683,26 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("ID de galeria invalido")
                 return self.respond(naming.propagate_reviewed_gallery_names(
                     DB_PATH,limit=40,group_key=key))
+            if self.path=="/api/scan-studio-fingerprints":
+                studio=str(obj.get("studio") or "").strip()
+                limit=obj.get("limit",64)
+                if type(limit) is not int or not 1<=limit<=128:
+                    raise ValueError("Lote de 1 a 128 imagens obrigatório")
+                if not VISUAL_SCAN_LOCK.acquire(blocking=False):
+                    return self.respond({"error":"Varredura visual já em execução"},409)
+                try:
+                    before=visual.studio_coverage(DB_PATH,studio)
+                    scanned=visual.scan(DB_PATH,SOURCE,limit=limit,
+                        studio=studio,verify_sha=True)
+                    after=visual.studio_coverage(DB_PATH,studio)
+                    if after["valid"] < before["valid"]:
+                        raise RuntimeError("Cobertura visual regrediu")
+                    return self.respond({"studio":studio,"before":before,
+                         "scan":scanned,"after":after,
+                         "identities_approved":False,"galleries_merged":False,
+                         "originals_mutated":False})
+                finally:
+                    VISUAL_SCAN_LOCK.release()
             if self.path=="/api/correct-gallery-caption":
                 return self.respond(gallery_ops.correct_cross_caption(
                     DB_PATH,SOURCE,target_key=obj.get("target_key"),

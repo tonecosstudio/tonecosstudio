@@ -458,3 +458,9 @@ assert 'id="modelReviewRelated"' in html
 assert '/api/gallery-visual-cross-caption?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert '/api/correct-gallery-caption' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert 'gallery.cross_caption_visual_candidates' in (root/"tonart_curadoria.py").read_text(encoding='utf8')
+
+assert 'id="studioMissionFingerprintsScan"' in html
+assert 'id="studioMissionFingerprintCoverage"' in html
+assert '/api/scan-studio-fingerprints' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert '/api/visual-fingerprint-coverage?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert 'visual.fingerprints.scan_studio' in (root/"tonart_curadoria.py").read_text(encoding='utf8')
