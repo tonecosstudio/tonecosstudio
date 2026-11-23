@@ -48,6 +48,7 @@ telegram_identity = _DeferredModule("telegram_curadoria_adapter")
 thumbs = _DeferredModule("thumbnail_curadoria")
 review_queue = _DeferredModule("review_queue")
 legacy_album_audit = _DeferredModule("legacy_album_audit")
+studio_missions = _DeferredModule("studio_missions")
 
 HOST, PORT = "127.0.0.1", 8769
 ROOT = Path(__file__).resolve().parent
@@ -381,6 +382,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"catalog.summary","method":"GET","path":"/api/catalog-sync-summary","effect":"read"},
                     {"id":"models.list","method":"GET","path":"/api/models","effect":"read","pagination":True,"max_limit":96,"previews":[0,1,4,6]},
                     {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
+                    {"id":"studio.missions","method":"GET","path":"/api/studio-missions","effect":"read","mission_ids":["grouping","naming"],"studios":92},
+                    {"id":"studio.board","method":"GET","path":"/api/studio-missions/board","effect":"read","page_size":24,"mission_ids":["grouping","naming"]},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
@@ -418,6 +421,21 @@ class Handler(BaseHTTPRequestHandler):
                 })
             if route.path=="/health":
                 return self.respond({"ok":True,"service":"tonart-curadoria-local","source":str(SOURCE)})
+            if route.path=="/api/studio-missions":
+                return self.respond(studio_missions.studio_index(DB_PATH))
+            if route.path=="/api/studio-missions/board":
+                p=parse_qs(route.query)
+                try:
+                    return self.respond(studio_missions.board_page(
+                        DB_PATH,studio=p.get("studio",[""])[0],
+                        mission=p.get("mission",["grouping"])[0],
+                        page=p.get("page",["1"])[0],
+                        limit=p.get("limit",["24"])[0]))
+                except ValueError as exc:
+                    return self.respond({"error":str(exc)},400)
+            if route.path=="/studio_missions_ui.js":
+                return self.respond((ROOT/"studio_missions_ui.js").read_text(encoding="utf-8"),
+                                    ctype="text/javascript; charset=utf-8")
             if route.path=="/api/performance":
                 return self.respond({
                     "thumbnail_cache":thumbs.status(),

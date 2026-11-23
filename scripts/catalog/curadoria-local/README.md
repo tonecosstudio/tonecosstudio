@@ -1,5 +1,22 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Missões visuais em escala por estúdio — 23/11/2026
+
+**Gargalo corrigido:** não escalar por revisões pontuais de poucos modelos. O mesmo TONART Curadoria Host passa a mostrar pranchas paginadas por estúdio, permitindo duas missões com a MESMA foto e os MESMOS IDs: (1) decidir quais fotografias representam a mesma escultura e variantes, (2) identificar nome, personagem e franquia com fontes editoriais. A consulta visual nunca funde esculturas nem aprova nomes automaticamente.
+
+**Escopo real atual:** 92 estúdios com model_groups; 4.433 grupos e 8.443 fotos de studio em name_proposals, sendo 7.586 já vinculadas a grupos e 857 sem grupo. A divisão de 24 imagens por página dá 406 pranchas, não cinco fixas por estúdio. Geral +50k fica excluído. Os números são leitura do SQLite vivo e mudam conforme revisões reais.
+
+**Contrato HTTP no MESMO host e MCP:**
+- GET /api/studio-missions: lista de estúdios, fotos, grupos, nomes confirmados, páginas, duas missões.
+- GET /api/studio-missions/board?studio=...&mission=grouping|naming&page=1&limit=24: lista somente leitura de fotos, SHA, estado do grupo/nome e os mesmos previews /thumb/{id}?w=256. Estúdio deve existir entre os 92, páginas e tamanho são limitados. O mecanismo usa SQLite mode=ro + query_only e não retorna caminhos de arquivos.
+- A interface Curadoria dispõe de Missões visuais por estúdio. Ao selecionar uma foto, abre os editores existentes de nome ou galeria. Escritas continuam exclusivamente nos endpoints e eventos canônicos com controle otimista de revisão. Nenhum banco, Worker, servidor ou publicador novo foi criado.
+- CLI studio_missions.py gera pranchas JPEG **derivadas e privadas**, reutilizando thumbnail_curadoria.thumbnail e seu cache/limites existentes. Um manifesto por estúdio registra SHA e páginas para retomar sem recalcular JPEGs idênticos. Falhas de prévia são listadas explicitamente; não há alteração de originais, galerias, nomes ou direitos.
+
+**Execução no desktop:** apontar CLI studio_missions.py com --sqlite para espelho-telegram/curadoria-local/curadoria.sqlite3, --media-root para Downloads/telegram-2370335738-images e --out para o diretório privado reconciliacao-taxonomia-20261122/studio-missions-boards. --studio ou --max-studios servem ao smoke; sem filtro gera todos. Usar o OrdaX MCP para iniciar/monitorar o processo, não outro serviço.
+
+**Regras obrigatórias:** mesmos nomes e álbuns não bastam para fundir esculturas. Misturas de autoria e versões exigem evidência específica. Nome confirmado não autoriza direitos, venda, publicação de tags, M5, Worker, D1, R2, Supabase nem Site. O SQLite e seus eventos são a SSOT; JPEGs e manifestos são descartáveis. Os testes test_studio_missions.py validam paginação, duas missões, modo somente leitura, proibição do Geral, caminhos seguros, retomada, SHA e invalidação após alteração editorial.
+
+
 ## Curadoria visual produtiva: 24 galerias, filas independentes e diagnóstico por imagem — 22/11/2026
 
 **Operação física, não apenas protótipo:** duas remessas editoriais do mesmo host TONART foram processadas sobre **24 galerias e 175 fotos originais**, com inspeção das vistas completas em pranchas coletivas privadas e notas específicas por galeria, sem reingestão nem publicação comercial. Remessa 1 (`105bec973c359099f031ce18a2de5bf4f76a3e7b94a7d4bcf08a369142931a30`): 104 fotos, 11 decisões `same_sculpture` e uma `needs_more_evidence` para **The Mummy** (personagens isolados e versões de diorama). Remessa 2 (`4dd83599cf5c97b65d9b9398520ad13725a8322974bbf9db46b7da097b7a4da8`): 71 fotos, 9 decisões `same_sculpture` e três `needs_more_evidence` para **Venomized Iron-Man** (alternativas de cabeça/corpo), **Grommash Hellscream** (imagem colorida divergente) e **Mr. Game & Watch** (peças azuis sem montagem identificável). Uma miniatura de Carnage falhou na prancha, mas foi consultada novamente (HTTP 200, 50 ms) e inspecionada **antes** da confirmação. As duas remessas tiveram recibo HTTP 200 e commit atômico (1,21 s e 2,97 s); o replay real da primeira retornou `replayed=true` sem eventos duplicados. Nenhuma decisão confere licença, identidade comercial ou publicação.
