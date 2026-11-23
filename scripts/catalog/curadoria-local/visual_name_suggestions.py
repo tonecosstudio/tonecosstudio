@@ -8,6 +8,7 @@ Requer Pillow apenas para este processo local opcional.
 from __future__ import annotations
 import argparse
 import json
+import hashlib
 import math
 import sqlite3
 from pathlib import Path
@@ -67,16 +68,40 @@ def safe_path(root,relative):
         return None
     return original
 
-def scan(db_path,source_root,limit=5000):
+def scan(db_path,source_root,limit=5000,*,studio=None,verify_sha=False):
+    """Reuse SSOT fingerprints; optional studio-scoped, physical-SHA-verified batch."""
     root=Path(source_root).resolve()
     limit=max(1,min(20000,int(limit)))
+    if studio is not None:
+        studio=str(studio or "").strip()
+        if not studio or len(studio)>120 or studio.casefold()=="geral + 50k":
+            raise ValueError("Estúdio específico obrigatório")
     with smart.db_open(db_path) as db:
         setup(db)
-        assets=db.execute("SELECT message_id,source_relative,sha256 FROM assets ORDER BY message_id").fetchall()
-        known={r["message_id"]:(r["source_sha"],r["method"]) for r in
-            db.execute("SELECT message_id,source_sha,method FROM visual_fingerprints")}
-    pending=[a for a in assets if known.get(a["message_id"])!=(a["sha256"],POLICY)][:limit]
-    counts={"pending":len(pending),"completed":0,"unavailable":0,"failure":0}
+        if studio is None:
+            assets=db.execute("SELECT message_id,source_relative,sha256 FROM assets ORDER BY message_id").fetchall()
+        else:
+            assets=db.execute("""SELECT a.message_id,a.source_relative,a.sha256
+                FROM assets a JOIN name_proposals p USING(message_id)
+                WHERE a.original_topic=? AND p.studio=? ORDER BY a.message_id""",
+                (studio,studio)).fetchall()
+        known={r["message_id"]:(r["source_sha"],r["method"],r["dhash"]) for r in
+            db.execute("SELECT message_id,source_sha,method,dhash FROM visual_fingerprints")}
+    pending_all=[a for a in assets if (known.get(a["message_id"]) is None
+        or known[a["message_id"]][0]!=a["sha256"]
+        or known[a["message_id"]][1]!=POLICY)]
+    pending=pending_all[:limit]
+    if verify_sha:
+        # Fail BEFORE any writes if an original is missing, moved or differs.
+        for asset in pending:
+            physical=safe_path(root,asset["source_relative"])
+            if physical is None:raise ValueError("Original ausente ou inválido: "+str(asset["message_id"]))
+            with physical.open("rb") as stream:
+                if hashlib.file_digest(stream,"sha256").hexdigest()!=asset["sha256"]:
+                    raise ValueError("SHA-256 físico divergente: "+str(asset["message_id"]))
+    counts={"pending":len(pending),"pending_total_before":len(pending_all),
+            "completed":0,"unavailable":0,"failure":0,
+            "studio":studio or "(all)","physical_sha_verified":bool(verify_sha)}
     rows=[]
     for a in pending:
         source=safe_path(root,a["source_relative"])
@@ -118,6 +143,30 @@ def scan(db_path,source_root,limit=5000):
                  error=excluded.error,analyzed_at=excluded.analyzed_at""",rows)
             db.commit()
     return counts
+
+def studio_coverage(db_path,studio):
+    studio=str(studio or "").strip()
+    if not studio or len(studio)>120 or studio.casefold()=="geral + 50k":
+        raise ValueError("Estúdio específico obrigatório")
+    with smart.db_open(db_path,readonly=True) as db:
+        counts=db.execute("""SELECT COUNT(*) AS total,
+          SUM(CASE WHEN f.method=? AND f.source_sha=a.sha256
+              AND f.dhash IS NOT NULL AND f.ahash IS NOT NULL THEN 1 ELSE 0 END) AS valid,
+          SUM(CASE WHEN f.message_id IS NULL OR f.method!=?
+              OR f.source_sha!=a.sha256 THEN 1 ELSE 0 END) AS missing,
+          SUM(CASE WHEN f.message_id IS NOT NULL AND f.method=?
+              AND f.source_sha=a.sha256 AND (f.dhash IS NULL OR f.ahash IS NULL)
+              THEN 1 ELSE 0 END) AS errors
+          FROM assets a JOIN name_proposals p USING(message_id)
+          LEFT JOIN visual_fingerprints f USING(message_id)
+          WHERE a.original_topic=? AND p.studio=?""",(POLICY,POLICY,POLICY,studio,studio)).fetchone()
+        result=dict(counts)
+        for k,v in result.items():result[k]=int(v or 0)
+        result['studio']=studio
+        result['policy']=POLICY
+        result['complete']=result['valid']==result['total'] and result['errors']==0
+        return result
+
 
 def match(db_path,limit=10000):
     with smart.db_open(db_path) as db:

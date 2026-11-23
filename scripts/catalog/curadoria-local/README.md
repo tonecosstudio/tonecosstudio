@@ -46,6 +46,21 @@ dois botões explícitos com nota obrigatória: fusão física verificada
 e manutenção separada. Nenhuma decisão é automática.
 
 
+## Cobertura incremental das impressões visuais por estúdio
+
+GET /api/visual-fingerprint-coverage?studio=Wicked retorna total,
+válidas, ausentes, falhas e política atual. O MESMO host autoriza
+POST /api/scan-studio-fingerprints com {studio,limit}, lote de 1 a 128;
+consulta SOMENTE o estúdio selecionado e reutiliza o scanner existente
+visual_name_suggestions.scan, a mesma tabela visual_fingerprints e a
+mesma política de hashing. Confere o SHA-256 físico de TODOS os
+originais do lote antes de escrever. Falha fechada se uma foto ou hash
+divergir. Serializa chamadas simultâneas pelo lock do próprio host;
+não confirma nomes, une galerias ou publica. A UI traz controle
+de cobertura/ação na missão de agrupamento. Sem daemon, fila, banco,
+índice ou dependência externa novos. Teste E2E inclui HTTP,
+token, limites, repetição e original adulterado.
+
 ## Impressões visuais já existentes — legendas inconsistentes
 
 GET /api/gallery-visual-cross-caption reutiliza visual_fingerprints
