@@ -7,6 +7,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
+import CatalogEntryPage, { CatalogSectionNavigation } from "@/pages/CatalogEntryPage";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -24,6 +25,7 @@ const LandingPage = lazy(() => import("./pages/LandingPage"));
 const ArcadeLab = lazy(() => import("./pages/ArcadeLab"));
 const CatalogArcade = lazy(() => import("./pages/CatalogArcade"));
 const CatalogModelsArcade = lazy(() => import("./pages/CatalogModelsArcade"));
+const TelegramCatalog = lazy(() => import("./TelegramStudioCatalog"));
 const CatalogCharacterArcade = lazy(
   () => import("./pages/CatalogCharacterArcade"),
 );
@@ -135,6 +137,10 @@ function AppContent() {
             <Routes>
               <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
+              <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
+              <Route path={PUBLIC_ROUTES.catalogHistorical} element={<><CatalogSectionNavigation active="historical" /><CatalogModelsArcade /></>} />
+              <Route path={PUBLIC_ROUTES.catalogReview} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
+              <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
               <Route path={PUBLIC_ROUTES.arcadeLab} element={<ArcadeLab />} />
               <Route
                 path={PUBLIC_ROUTES.migrateOrder}
