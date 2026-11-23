@@ -471,3 +471,9 @@ assert 'id="studioMissionSingletonResults"' in html
 assert '/api/gallery-singleton-candidates?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert 'review_only:true' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert 'gallery.singletons_review_queue' in (root/"tonart_curadoria.py").read_text(encoding='utf8')
+
+assert 'id="modelBatchIdentityPanel"' in html
+assert 'id="modelBatchIdentitySave"' in html
+assert '/api/gallery-identity-proof?' in (root/"curadoria.js").read_text(encoding='utf8')
+assert '/api/confirm-gallery-identity' in (root/"curadoria.js").read_text(encoding='utf8')
+assert 'names.confirm_gallery_identity' in (root/"tonart_curadoria.py").read_text(encoding='utf8')

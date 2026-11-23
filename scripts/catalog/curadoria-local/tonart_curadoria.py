@@ -400,6 +400,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.correct_cross_caption","method":"POST","path":"/api/correct-gallery-caption","effect":"write","requires":"physical_SHA_and_visual_reviewer","commercial_approval":False},
                     {"id":"gallery.reject_pair","method":"POST","path":"/api/reject-gallery-pair","effect":"write","touches":"audit_events_only"},
                     {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
+                    {"id":"names.gallery_identity_proof","method":"GET","path":"/api/gallery-identity-proof","effect":"read","scope":"single_gallery"},
+                    {"id":"names.confirm_gallery_identity","method":"POST","path":"/api/confirm-gallery-identity","effect":"write","requires":"official_https_visual_audit_all_physical_SHA_and_revision_CAS","commercial_approval":False,"batch_max":48},
                     {"id":"models.review","method":"POST","path":"/api/review-model","effect":"write"},
                     {"id":"images.review_name","method":"POST","path":"/api/review-name","effect":"write"},
                     {"id":"images.list","method":"GET","path":"/api/items","effect":"read","pagination":True},
@@ -601,6 +603,10 @@ class Handler(BaseHTTPRequestHandler):
                     DB_PATH,studio=p.get("studio",[""])[0],
                     page=p.get("page",["1"])[0],limit=p.get("limit",["24"])[0],
                     max_gap=p.get("max_gap",["120"])[0]))
+            if route.path=="/api/gallery-identity-proof":
+                q=parse_qs(route.query)
+                return self.respond(naming.gallery_identity_proof(
+                    DB_PATH,q.get("group_key",[""])[0]))
             if route.path=="/api/gallery-singleton-candidates":
                 q=parse_qs(route.query)
                 return self.respond(gallery.singleton_candidates(
@@ -677,6 +683,13 @@ class Handler(BaseHTTPRequestHandler):
                     revision=obj.get("revision"),
                     decision=obj.get("decision",""),
                     note=obj.get("note","")))
+            if self.path=="/api/confirm-gallery-identity":
+                return self.respond(naming.confirm_reviewed_gallery(
+                    DB_PATH,SOURCE,group_key=obj.get("group_key"),
+                    group_revision=obj.get("group_revision"),
+                    proofs=obj.get("proofs"),title=obj.get("title"),
+                    universe=obj.get("universe"),
+                    official_url=obj.get("official_url"),note=obj.get("note","")))
             if self.path=="/api/review-name":
                 return self.respond(naming.review_name(DB_PATH,
                     obj.get("message_id",0),obj.get("revision",-1),
