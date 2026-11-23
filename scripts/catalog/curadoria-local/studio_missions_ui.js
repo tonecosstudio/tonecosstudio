@@ -135,7 +135,91 @@
   prev.addEventListener("click",()=>{if(!busy&&page>1){page--;load()}});
   next.addEventListener("click",()=>{if(!busy&&page<pages){page++;load()}});
   el("studioMissionRefresh").addEventListener("click",load);
+  // Two distinct and explicitly requested evidence queues backed by the
+  // same SQLite. A SHA match is a candidate, never a write/approval.
+  const evidenceKind=el("studioMissionEvidenceKind");
+  const evidenceLoad=el("studioMissionEvidenceLoad");
+  const evidenceMore=el("studioMissionEvidenceMore");
+  const evidenceResults=el("studioMissionEvidenceResults");
+  const evidenceStatus=el("studioMissionEvidenceStatus");
+  let evidenceCursor=0,evidenceBusy=false;
+  function jumpToEvidence(item){
+    if(!Array.from(studio.options).some(o=>o.value===item.studio)){
+      evidenceStatus.textContent="Coleção indisponível no índice atual; recarregue a curadoria.";
+      return;
+    }
+    selected.clear();
+    studio.value=item.studio;
+    mission.value="grouping";
+    page=Math.max(1,Number(item.page_hint)||1);
+    updateSelection();
+    load();
+    el("studioMissionsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  async function loadEvidence(reset){
+    if(evidenceBusy)return;
+    evidenceBusy=true;
+    evidenceLoad.disabled=true;
+    evidenceMore.disabled=true;
+    if(reset){
+      evidenceCursor=0;
+      evidenceResults.replaceChildren();
+    }
+    evidenceStatus.textContent="Buscando evidências no SQLite somente leitura...";
+    const kind=evidenceKind.value;
+    try{
+      const q=new URLSearchParams({kind,cursor:String(evidenceCursor),limit:"24"});
+      const data=await get("/api/studio-missions/candidates?"+q);
+      for(const item of data.items){
+        const card=node("article",undefined,"studio-evidence-row");
+        const summary=kind==="albums"
+          ?item.studio+" · "+item.messages+" mensagens / "+item.unique_sha+" arquivos distintos"
+          :item.studio+" · #"+item.message_id+" = cópia de #"+item.anchor_message_id;
+        card.append(node("strong",summary));
+        const why=kind==="albums"
+          ?item.titles.join(" · ")+" · Álbum "+item.album_id
+          :item.group_title+" · "+item.review_state;
+        card.append(node("small",why));
+        if(kind==="albums"){
+          const photos=node("div",undefined,"studio-evidence-thumbs");
+          for(const id of item.sample_ids.slice(0,3)){
+            const preview=node("img");
+            preview.loading="lazy";preview.alt="Prévia Telegram #"+id;
+            preview.src="/thumb/"+id+"?w=256";
+            photos.append(preview);
+          }
+          card.append(photos);
+        }
+        const jump=node("button","Ver na prancha da Curadoria");
+        jump.type="button";
+        jump.addEventListener("click",()=>jumpToEvidence(item));
+        card.append(jump);
+        evidenceResults.append(card);
+      }
+      evidenceMore.hidden=data.next_cursor===null;
+      evidenceCursor=data.next_cursor===null?evidenceCursor:data.next_cursor;
+      evidenceStatus.textContent=data.items.length?
+        "Casos apresentados sem modificações. Confira originais, variantes e SHA físico antes de qualquer decisão.":
+        "Nenhum caso neste filtro. Não foram criadas novas galerias.";
+    }catch(err){
+      evidenceStatus.textContent="Evidências indisponíveis: "+err.message;
+    }finally{
+      evidenceBusy=false;
+      evidenceLoad.disabled=false;
+      evidenceMore.disabled=false;
+    }
+  }
+  evidenceLoad.addEventListener("click",()=>loadEvidence(true));
+  evidenceMore.addEventListener("click",()=>loadEvidence(false));
+  evidenceKind.addEventListener("change",()=>{
+    evidenceCursor=0;
+    evidenceResults.replaceChildren();
+    evidenceMore.hidden=true;
+    evidenceStatus.textContent="Escolha consultar para atualizar a fila.";
+  });
   get("/api/studio-missions").then(data=>{
+    evidenceStatus.textContent=(data.album_review_candidates||0)+
+      " álbuns distintos identificados. Consulte a fila para ver provas.";
     studio.replaceChildren();
     for(const item of data.studios){
       const opt=node("option",item.studio+" · "+item.images+" fotos · "+item.pages+" pranchas"+

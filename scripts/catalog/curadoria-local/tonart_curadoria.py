@@ -384,6 +384,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"models.inspect","method":"GET","path":"/api/model/{group_key}","effect":"read"},
                     {"id":"studio.missions","method":"GET","path":"/api/studio-missions","effect":"read","mission_ids":["grouping","naming"],"coverage":"all_non_general_collections"},
                     {"id":"studio.board","method":"GET","path":"/api/studio-missions/board","effect":"read","page_size":24,"mission_ids":["grouping","naming"]},
+                    {"id":"studio.review_candidates","method":"GET","path":"/api/studio-missions/candidates","effect":"read","kinds":["albums","reposts"],"cursor":True,"max_limit":48,"automatic_merge":False},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
@@ -423,6 +424,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond({"ok":True,"service":"tonart-curadoria-local","source":str(SOURCE)})
             if route.path=="/api/studio-missions":
                 return self.respond(studio_missions.studio_index(DB_PATH))
+            if route.path=="/api/studio-missions/candidates":
+                p=parse_qs(route.query)
+                try:
+                    return self.respond(studio_missions.review_candidates(
+                        DB_PATH,kind=p.get("kind",["albums"])[0],
+                        studio=p.get("studio",[""])[0],
+                        cursor=p.get("cursor",["0"])[0],
+                        limit=p.get("limit",["24"])[0]))
+                except ValueError as exc:
+                    return self.respond({"error":str(exc)},400)
             if route.path=="/api/studio-missions/board":
                 p=parse_qs(route.query)
                 try:

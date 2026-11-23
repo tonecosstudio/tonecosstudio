@@ -139,6 +139,125 @@ def board_page(path,studio,mission="grouping",page=1,limit=SIZE,include_paths=Fa
         limit=limit,pages=(total+limit-1)//limit,total=total,
         items=items,read_only=True,automatic_decisions=False)
 
+
+def review_candidates(path,kind="albums",studio="",cursor=0,limit=24):
+    """One bounded, read-only evidence queue; never merge or rename by query.
+
+    Albums require >=2 distinct SHA among ungrouped photographs.
+    Reposts show *registered* same-SHA media anchored to a grouped message,
+    with conflicts identified explicitly (physical SHA recheck before POST).
+    """
+    if kind not in ("albums","reposts"):
+        raise ValueError("Tipo de fila desconhecido")
+    if not isinstance(studio,str) or len(studio)>120 or studio==EXCLUDED:
+        raise ValueError("Filtro de estúdio inválido")
+    try:
+        cursor=int(cursor);limit=int(limit)
+    except (TypeError,ValueError) as exc:
+        raise ValueError("Parâmetros de fila inválidos") from exc
+    if cursor<0 or cursor>9007199254740991 or limit not in (12,24,48):
+        raise ValueError("Cursor ou limite fora dos valores permitidos")
+    with db_open(path) as db:
+        if studio and not db.execute("""SELECT 1 FROM name_proposals n
+                 JOIN assets a USING(message_id) WHERE n.studio=?
+                 AND a.original_topic<>? LIMIT 1""",(studio,EXCLUDED)).fetchone():
+            raise ValueError("Coleção ausente da curadoria")
+        params=[EXCLUDED]
+        clause=""
+        if studio:
+            clause=" AND n.studio=?"
+            params.append(studio)
+        items=[]
+        if kind=="albums":
+            rows=db.execute("""SELECT n.studio,a.original_topic,a.source_album,
+                COUNT(*) messages,COUNT(DISTINCT a.sha256) unique_sha,
+                MIN(a.message_id) first_id
+                FROM name_proposals n JOIN assets a USING(message_id)
+                LEFT JOIN model_group_members gm USING(message_id)
+                WHERE gm.message_id IS NULL AND a.original_topic<>?
+                AND TRIM(COALESCE(a.source_album,''))!=''"""+clause+"""
+                GROUP BY n.studio,a.original_topic,a.source_album
+                HAVING COUNT(DISTINCT a.sha256)>=2 AND MIN(a.message_id)>?
+                ORDER BY first_id LIMIT ?""",params+[cursor,limit+1]).fetchall()
+            for r in rows[:limit]:
+                album=db.execute("""SELECT n.message_id,n.title,a.sha256
+                    FROM name_proposals n JOIN assets a USING(message_id)
+                    LEFT JOIN model_group_members gm USING(message_id)
+                    WHERE gm.message_id IS NULL AND n.studio=? AND a.original_topic=?
+                    AND a.source_album=? ORDER BY n.message_id LIMIT 120""",
+                    (r["studio"],r["original_topic"],r["source_album"])).fetchall()
+                rank=db.execute("""SELECT COUNT(*) FROM name_proposals n
+                    JOIN assets a USING(message_id) WHERE n.studio=?
+                    AND a.original_topic<>? AND n.message_id<?""",
+                    (r["studio"],EXCLUDED,r["first_id"])).fetchone()[0]
+                items.append({
+                    "studio":r["studio"],"topic":r["original_topic"],
+                    "album_id":r["source_album"],"first_id":r["first_id"],
+                    "messages":r["messages"],"unique_sha":r["unique_sha"],
+                    "sample_ids":[x["message_id"] for x in album[:6]],
+                    "titles":sorted({x["title"] or "(sem nome)" for x in album})[:8],
+                    "page_hint":rank//SIZE+1,
+                    "review_state":"multiple_distinct_media_unreviewed",
+                    "note":"Álbum e rótulo iguais não provam mesma escultura",
+                })
+            tail=rows[:limit]
+            next_cursor=tail[-1]["first_id"] if len(rows)>limit and tail else None
+        else:
+            rows=db.execute("""SELECT n.message_id,n.studio,n.title,n.universe,
+                n.variant,a.original_topic,a.sha256,
+                COUNT(DISTINCT mg.group_key) anchored_groups,
+                MIN(mg.group_key) group_key,MIN(anchor.message_id) anchor_id
+                FROM name_proposals n JOIN assets a USING(message_id)
+                LEFT JOIN model_group_members own USING(message_id)
+                JOIN assets anchor ON anchor.sha256=a.sha256
+                   AND anchor.message_id<>a.message_id
+                JOIN model_group_members mg ON mg.message_id=anchor.message_id
+                WHERE own.message_id IS NULL AND a.original_topic<>?
+                """+clause+""" AND n.message_id>?
+                GROUP BY n.message_id,n.studio,n.title,n.universe,
+                   n.variant,a.original_topic,a.sha256
+                ORDER BY n.message_id LIMIT ?""",
+                params+[cursor,limit+1]).fetchall()
+            for r in rows[:limit]:
+                group=db.execute("""SELECT studio,title,universe,variant,
+                    state,revision FROM model_groups WHERE group_key=?""",
+                    (r["group_key"],)).fetchone()
+                origins=db.execute("""SELECT DISTINCT a.original_topic
+                    FROM model_group_members m JOIN assets a USING(message_id)
+                    WHERE m.group_key=?""",(r["group_key"],)).fetchall()
+                origin_matches=len(origins)==1 and origins[0][0]==r["original_topic"]
+                metadata_matches=bool(group) and all(
+                    str(r[field] or "").strip().casefold()==
+                    str(group[field] or "").strip().casefold()
+                    for field in ("studio","title","universe","variant"))
+                if r["anchored_groups"]!=1:reason="ambiguous_multiple_gallery_anchors"
+                elif not group or not origin_matches:reason="source_topic_mismatch"
+                elif group["state"]=="confirmado":reason="confirmed_gallery_locked"
+                elif not metadata_matches:reason="metadata_or_variant_mismatch"
+                else:reason="physical_sha_recheck_required"
+                rank=db.execute("""SELECT COUNT(*) FROM name_proposals n
+                    JOIN assets a USING(message_id) WHERE n.studio=?
+                    AND a.original_topic<>? AND n.message_id<?""",
+                    (r["studio"],EXCLUDED,r["message_id"])).fetchone()[0]
+                items.append({
+                    "studio":r["studio"],"message_id":r["message_id"],
+                    "title":r["title"],"group_key":r["group_key"],
+                    "group_title":group["title"] if group else "",
+                    "group_state":group["state"] if group else "",
+                    "anchor_message_id":r["anchor_id"],
+                    "anchored_groups":r["anchored_groups"],
+                    "evidence_sha256":r["sha256"],
+                    "page_hint":rank//SIZE+1,
+                    "review_state":reason,
+                    "automatic_merge":False,
+                    "note":"Mesmo SHA registrado; revalidar bytes físicos e revisão antes de vincular",
+                })
+            tail=rows[:limit]
+            next_cursor=tail[-1]["message_id"] if len(rows)>limit and tail else None
+    return {"schema":SCHEMA,"kind":kind,"studio":studio,"cursor":cursor,
+            "limit":limit,"items":items,"next_cursor":next_cursor,
+            "read_only":True,"automatic_merge":False,"automatic_naming":False}
+
 def _slug(s):
     return (re.sub("[^a-z0-9]+","-",s.casefold()).strip("-")[:50] or "studio")+"-"+hashlib.sha256(s.encode()).hexdigest()[:8]
 
