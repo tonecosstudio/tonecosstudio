@@ -441,3 +441,13 @@ thumb_failure=subprocess.run(
 )
 assert thumb_failure.returncode==0,thumb_failure.stderr
 assert "THUMBNAIL_FAIL_CLOSED_UI_OK" in thumb_failure.stdout
+
+assert 'id="studioMissionMergePanel"' in html
+assert 'id="studioMissionMergeLoad"' in html
+assert 'id="studioMissionMergeResults"' in html
+assert '/api/gallery-merge-candidates?' in (root/"studio_missions_ui.js").read_text(encoding='utf-8')
+assert 'gallery.cross_gallery_candidates' in (root/"tonart_curadoria.py").read_text(encoding='utf-8')
+
+assert '/api/reject-gallery-pair' in (root/"studio_missions_ui.js").read_text(encoding='utf-8')
+assert '/api/merge-reviewed-galleries' in (root/"studio_missions_ui.js").read_text(encoding='utf-8')
+assert 'gallery.reject_pair' in (root/"tonart_curadoria.py").read_text(encoding='utf-8')

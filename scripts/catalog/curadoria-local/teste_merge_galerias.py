@@ -50,6 +50,9 @@ def attempt(path,media,sha_proofs,**kw):
 with tempfile.TemporaryDirectory(prefix="gallery-merge-") as temp:
     folder=Path(temp)
     path,media,proofs=prepare(folder)
+    proposals=gallery.cross_gallery_candidates(path,"Wicked",limit=12)
+    assert proposals["total"]==1 and proposals["read_only"] and not proposals["automatic_merge"]
+    assert proposals["items"][0]["group_a"] in (A,B)
     try: attempt(path,media,proofs,source_rev=1)
     except RuntimeError:pass
     else:raise AssertionError("stale revision accepted")
@@ -62,6 +65,7 @@ with tempfile.TemporaryDirectory(prefix="gallery-merge-") as temp:
     done=attempt(path,media,proofs)
     assert done["moved"]==2 and done["total_images"]==3 and not done["names_changed"],done
     assert gallery.merged_key(path,B)==A
+    assert gallery.cross_gallery_candidates(path,"Wicked",limit=12)["total"]==0
     with closing(smart.db_open(path,readonly=True)) as db:
         assert db.execute("SELECT count(*) FROM model_groups").fetchone()[0]==1
         assert db.execute("SELECT revision FROM model_groups WHERE group_key=?",(A,)).fetchone()[0]==1
@@ -83,6 +87,22 @@ with tempfile.TemporaryDirectory(prefix="gallery-merge-noaudit-") as temp:
     try:attempt(path,media,proofs)
     except ValueError:pass
     else:raise AssertionError("unreviewed gallery accepted")
+with tempfile.TemporaryDirectory(prefix="gallery-reject-") as temp:
+    path,media,proofs=prepare(Path(temp))
+    assert gallery.cross_gallery_candidates(path,"Wicked",limit=12)["total"]==1
+    decision=gallery.reject_pair(path,group_a=A,group_b=B,
+        revision_a=0,revision_b=0,note="São duas esculturas diferentes: uma tem os pés e espada na base enquanto outra está sentada, com fundo e braços distintos.")
+    assert decision["recorded"]
+    assert gallery.cross_gallery_candidates(path,"Wicked",limit=12)["total"]==0
+    assert gallery.reject_pair(path,group_a=B,group_b=A,
+        revision_a=0,revision_b=0,note="São duas esculturas diferentes, uma tem base triangular, outra base redonda, poses e armas diferentes.")["already_reviewed"]
+    with closing(smart.db_open(path,readonly=True)) as db:
+        assert db.execute("SELECT count(*) FROM model_groups").fetchone()[0]==2
+        assert db.execute("SELECT count(*) FROM curation_events WHERE event_type='gallery_pair_distinct_sculptures'").fetchone()[0]==1
+    try:gallery.reject_pair(path,group_a=A,group_b=B,revision_a=1,revision_b=0,
+        note="São duas esculturas diferentes, há mudança na base, na pose e nos acessórios usados.")
+    except RuntimeError:pass
+    else:raise AssertionError("stale reject accepted")
 import threading,http.client,json
 from http.server import ThreadingHTTPServer
 import tonart_curadoria as host
@@ -99,7 +119,12 @@ with tempfile.TemporaryDirectory(prefix="gallery-merge-http-") as temp:
         z=c.getresponse()
         caps=json.loads(z.read())
         assert z.status==200 and any(v["id"]=="gallery.merge_reviewed" for v in caps["operations"])
+        assert any(v["id"]=="gallery.cross_gallery_candidates" for v in caps["operations"])
         c.close()
+        c=http.client.HTTPConnection("127.0.0.1",host.PORT,timeout=8)
+        c.request("GET","/api/gallery-merge-candidates?studio=Wicked&limit=12")
+        z=c.getresponse();candidates=json.loads(z.read());c.close()
+        assert z.status==200 and candidates["total"]==1
         body=json.dumps(dict(target=A,source=B,target_rev=0,source_rev=0,
                              proofs=proofs,note=NOTE)).encode()
         def send(token):
