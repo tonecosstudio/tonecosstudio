@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — primeiro lote de associação privada e nomes: 2.791 propostas, zero publicações
+
+- **SSOT real confirmada:** Supabase privado tem 952 identidades/61 franquias; `catalog_curation_model_profiles=0`, `catalog_curation_model_tags=0`, duas tags editoriais genéricas (`Terror`, `Antagonista`). Essa tabela não suporta `character_identity_id` sem `identity_verified=true`; NÃO inventar confirmação por simples nome. D1 Worker/site M5 seguem bloqueados.
+- **Execução física no DESKTOP-4UFL03B:** `scripts/catalog/prepare-model-character-link-review.py` lê SQLite Telegram `mode=ro` e inventário histórico + 12 partes privadas com UUIDs verdadeiros do Supabase. **4.433 grupos Telegram** => **1.855 correspondências nominais com mesmo universo**, 1.934 sem identidade exata, 412 sem metadados, 145 em estado revisar e 87 universo misturado/incerto. **3.837 IDs históricos** (2.609 mdl_ + 1.228 tg_) => **936 propostas nominais**, 804 sem match, 2.097 sem universo individual. Não somar esses datasets como modelos distintos!
+- **Saída privada:** `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/model-link-review-952/`, arquivos `telegram-model-character-review-private.jsonl`, `historic-model-character-review-private.jsonl`, `model-character-review-priority-private.csv` (2.791 linhas) e `model-character-review-manifest.json` (SHA-256 de entradas). **27 sugestões de grafia/nome** para análise; **nenhuma foi aplicada**. Todas as tags categoria/franquia/personagem são **prévias**, não associações em produção ou D1.
+- **Gates:** validar ID atual D1, evidência visual de cada escultura e revisão editorial antes de criar vínculo real, renomear ou publicar; preservar identidade/variante/fotos/direitos/revisões. D1 0029 e M5 sem GO, sem nova API ou Worker paralelo. Reusar esta fila em vez de repetir o cadastro de 952 personagens.
+- **Próximos passos concretos:** vinculação por ID real das 1.855 propostas Telegram e 936 históricas após conciliação de D1/model SHA, começar pelas 27 grafias com evidência verificável; revisão em lote, não tags inventadas. Outras missões de imagens/Telegram permanecem com seus owners.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — Seis listas em lote: 952 identidades privadas
 
 - **Supabase verdadeiro:** 952 identidades/keys únicas, **61 franquias**, **+18** desde 934 (20 matches, 2 já existentes/duplicados dentro do lote), zero vínculos de modelos e zero tags comerciais. OrdaX MCP supervisionado `868ba75a-1482-48ed-b558-6c44161ba9d0` exit 0.
