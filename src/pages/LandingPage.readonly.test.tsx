@@ -39,7 +39,7 @@ describe("TONART public Home during image review", () => {
         <MemoryRouter><LandingPage /></MemoryRouter>
       </QueryClientProvider>,
     );
-    expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute("href", "/modelos");
+    expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute("href", "/catalogo");
     expect(screen.getByRole("link", { name: /CONHEÇA O ESTÚDIO/ })).toHaveAttribute("href", "/sobre");
     expect(screen.getByRole("link", { name: /Fale com a TONART/ })).toHaveAttribute("href", "/contato");
     expect(screen.queryByRole("heading", { name: /Black Friday/ })).not.toBeInTheDocument();
