@@ -3,7 +3,9 @@ import { PUBLIC_ROUTES } from "./routes";
 import { isPreviewReadOnly } from "./supabase-environment";
 const PUBLIC = new Set<string>([
   PUBLIC_ROUTES.home, PUBLIC_ROUTES.landing, PUBLIC_ROUTES.catalog,
-  PUBLIC_ROUTES.catalogModels, PUBLIC_ROUTES.about, PUBLIC_ROUTES.contact,
+  PUBLIC_ROUTES.catalogModels, PUBLIC_ROUTES.catalogHub,
+  PUBLIC_ROUTES.catalogHistorical, PUBLIC_ROUTES.catalogReview,
+  PUBLIC_ROUTES.catalogReviewStudios, PUBLIC_ROUTES.about, PUBLIC_ROUTES.contact,
   PUBLIC_ROUTES.terms, PUBLIC_ROUTES.privacy,
 ]);
 const SLUG = /^[a-z0-9][a-z0-9-]{0,239}$/;
