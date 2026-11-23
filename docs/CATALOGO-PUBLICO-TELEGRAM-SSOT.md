@@ -3,6 +3,19 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+## Decisão de apresentação — Modelos versus Estúdios (22/11/2026, 23h)
+
+**Diretriz revisada após a captura do catálogo:** informações temáticas de cada modelo permanecem visíveis no acervo geral; somente **tags próprias do modelador/estúdio** pertencem às coleções de estúdios.
+
+- **/ — Modelos:** cartão mostra **nome da escultura, categoria (quando existir) e franquia**. Sem categoria, mostra **nome e franquia**. Não mostrar tag de variante/estúdio (por exemplo Chibi e Full Size), nem chip de personagem repetindo o nome, nem linha com modelador ocupando o cartão geral. Autoria/origem permanece disponível na ficha detalhada e nos dados. Categoria validada e franquia identificada permanecem filtros; franquia provisória deve aparecer como **em revisão**, não aprovada.
+- **/estudios?studio=<origem> — coleção do estúdio:** os cartões podem mostrar tags de categoria, franquia, personagem confirmado e variante/etiquetas do próprio modelador (como Chibi e Full Size), preservando a política editorial.
+- **Galeria aberta:** respeitar contexto: aberta em Modelos, categoria/franquia sem variante ou chip separado de personagem; aberta na coleção de Estúdio, classificação completa e versão do modelador. O estúdio continua indicado como crédito de origem na ficha.
+- **Não alterar SSOT:** nenhuma coluna, taxonomia, pesquisa, API, imagem ou direito foi apagado. Mudança apenas de apresentação no frontend existente, sem segundo componente de tags.
+
+**Gate:** testes de ambas as rotas, fallback sem categoria, ficha aberta e chip de variante exclusivo de estúdio; TypeScript e lint; Vercel somente no projeto tonart-catalogo-publico e smoke real no catálogo e em uma coleção /estudios. Não mexer na curadoria concorrente.
+
+---
+
 ## Galeria pública de modelos — contrato UI/UX (22/11/2026)
 
 Problema comprovado na captura do usuário: abrir o post deixava o catálogo visível atrás da imagem ampliada, com controles soltos e navegação da galeria pouco clara.

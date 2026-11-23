@@ -201,6 +201,10 @@ export default function TelegramStudioCatalog() {
     selected,
   } = route;
 
+  // Studio-specific editorial chips belong in a studio collection, not the
+  // global Modelos feed. The API and top-level search filters remain shared.
+  const showStudioModelTags = view === "studios" && Boolean(studio);
+
   function applyFacet(kind: FacetKind, model: Model) {
     const next: Route = {
       ...route,
@@ -499,8 +503,8 @@ export default function TelegramStudioCatalog() {
                 </h1>
                 <p className="mt-7 max-w-xl text-base leading-8 text-[#b9b9ae] sm:text-lg">
                   Navegue por modelos, personagens, variantes e galerias de
-                  imagens. Use as tags e a classificação da curadoria para
-                  encontrar cada escultura.
+                  imagens. Use a pesquisa e os filtros para encontrar cada
+                  escultura; as tags editoriais ficam nas coleções dos estúdios.
                 </p>
                 <div className="mt-9 flex flex-wrap gap-3">
                   <a
@@ -939,46 +943,66 @@ export default function TelegramStudioCatalog() {
                         )}
                       </div>
                       <div className="px-3 pt-3 sm:px-4 sm:pt-4">
-                        <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                          {model.studio}
-                        </p>
-                        <h3 className="mt-2 line-clamp-2 font-semibold leading-5">
+                        {showStudioModelTags && (
+                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
+                            {model.studio}
+                          </p>
+                        )}
+                        <h3
+                          className={
+                            showStudioModelTags
+                              ? "mt-2 line-clamp-2 font-semibold leading-5"
+                              : "line-clamp-2 font-semibold leading-5"
+                          }
+                        >
                           {model.name}
                         </h3>
                       </div>
                     </button>
-                    <div className="flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
-                      {modelFacets(model).map((facet) =>
-                        model.provisional && facet.kind === "franchise" ? (
-                          <span
-                            key={facet.kind + ":" + tagKey(facet.label)}
-                            aria-label={"Franquia em revisão: " + facet.label}
-                            className="max-w-full truncate rounded-full border border-dashed border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#bac2b1]"
-                          >
-                            {facet.label} · em revisão
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            key={facet.kind + ":" + tagKey(facet.label)}
-                            aria-label={
-                              "Filtrar por " +
-                              (facet.kind === "category"
-                                ? "categoria "
-                                : facet.kind === "franchise"
-                                  ? "franquia "
-                                  : "personagem ") +
-                              facet.label
-                            }
-                            onClick={() => applyFacet(facet.kind, model)}
-                            className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
-                          >
-                            {facet.label}
-                            {model.provisional ? " · em revisão" : ""}
-                          </button>
-                        ),
-                      )}
-                      {model.variant &&
+                    <div
+                      className={
+                        showStudioModelTags
+                          ? "flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4"
+                          : "flex flex-wrap items-center justify-end px-3 pb-3 pt-2 sm:px-4 sm:pb-4"
+                      }
+                    >
+                      {modelFacets(model)
+                        .filter(
+                          (facet) =>
+                            showStudioModelTags || facet.kind !== "character",
+                        )
+                        .map((facet) =>
+                          model.provisional && facet.kind === "franchise" ? (
+                            <span
+                              key={facet.kind + ":" + tagKey(facet.label)}
+                              aria-label={"Franquia em revisão: " + facet.label}
+                              className="max-w-full truncate rounded-full border border-dashed border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#bac2b1]"
+                            >
+                              {facet.label} · em revisão
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              key={facet.kind + ":" + tagKey(facet.label)}
+                              aria-label={
+                                "Filtrar por " +
+                                (facet.kind === "category"
+                                  ? "categoria "
+                                  : facet.kind === "franchise"
+                                    ? "franquia "
+                                    : "personagem ") +
+                                facet.label
+                              }
+                              onClick={() => applyFacet(facet.kind, model)}
+                              className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
+                            >
+                              {facet.label}
+                              {model.provisional ? " · em revisão" : ""}
+                            </button>
+                          ),
+                        )}
+                      {showStudioModelTags &&
+                        model.variant &&
                         tagKey(model.variant) !== tagKey(model.name) &&
                         !modelFacets(model).some(
                           (facet) =>
@@ -1174,7 +1198,14 @@ export default function TelegramStudioCatalog() {
           error={detailError}
           photoIndex={photoIndex}
           copyMessage={copyMessage}
-          facets={detail?.id === selected ? modelFacets(detail) : []}
+          facets={
+            detail?.id === selected
+              ? modelFacets(detail).filter(
+                  (facet) => showStudioModelTags || facet.kind !== "character",
+                )
+              : []
+          }
+          showStudioVariant={showStudioModelTags}
           imageUrl={imageUrl}
           onClose={closeGallery}
           onCopy={copyLink}

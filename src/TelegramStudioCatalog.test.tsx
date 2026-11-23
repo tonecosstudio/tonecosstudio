@@ -233,7 +233,8 @@ describe("Telegram-only public studio gallery", () => {
     expect(window.location.search).not.toContain("modelo=");
   });
 
-  it("never makes a provisional franchise a verified clickable filter inside the gallery", async () => {
+  it("keeps provisional franchise non-clickable on a studio gallery", async () => {
+    window.history.replaceState(null, "", "/estudios?studio=3DXM");
     const provisional = {
       ...model,
       franchise: "Pokémon",
@@ -244,6 +245,8 @@ describe("Telegram-only public studio gallery", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: string) => {
+        if (String(input).endsWith("/studios"))
+          return Response.json({ studios: [{ studio: "3DXM", total: 1 }] });
         if (String(input).endsWith("/" + id))
           return Response.json({ ...provisional, images: detail.images });
         return Response.json({
@@ -291,7 +294,7 @@ describe("Telegram-only public studio gallery", () => {
       ).toBe(true),
     );
   });
-  it("shows models, curadoria status and real tags without studio promotion on the main page", async () => {
+  it("shows name and category in Modelos without studio-specific variant chips", async () => {
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
     expect(await screen.findByText("Aang")).toBeInTheDocument();
@@ -302,10 +305,24 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       screen.queryByRole("region", { name: /coleções por estúdio/i }),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("3DXM")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Filtrar por tag Chibi" }),
+      screen.queryByRole("button", { name: "Filtrar por tag Chibi" }),
+    ).not.toBeInTheDocument();
+    const card = screen
+      .getByRole("button", {
+        name: /abrir galeria de aang/i,
+      })
+      .closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card!).getByText("Aang")).toBeInTheDocument();
+    expect(within(card!).queryByText("3DXM")).toBeNull();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por categoria Anime",
+      }),
     ).toBeInTheDocument();
+    expect(card).toHaveTextContent(/2 imagens/);
+    expect(card).toHaveTextContent(/Em curadoria/);
     fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
     await waitFor(() =>
       expect(
@@ -315,6 +332,130 @@ describe("Telegram-only public studio gallery", () => {
       ).toBe(true),
     );
     expect(window.location.search).toContain("situacao=1");
+  });
+
+  it("shows only category and franchise on Modelos and gallery, not studio variant or character tags", async () => {
+    const approved = {
+      ...model,
+      category: "Animes & Desenhos",
+      categorySlug: "animes-desenhos",
+      franchise: "Pokémon",
+      franchiseSlug: "pokemon",
+      character: "Pikachu",
+      provisional: false,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        if (String(input).endsWith("/" + id))
+          return Response.json({ ...approved, images: detail.images });
+        return Response.json({
+          total: 1,
+          offset: 0,
+          limit: 24,
+          items: [approved],
+        });
+      }),
+    );
+    render(<TelegramStudioCatalog />);
+    const opener = await screen.findByRole("button", {
+      name: /abrir galeria de aang/i,
+    });
+    const card = opener.closest("article");
+    expect(card).not.toBeNull();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por categoria Animes & Desenhos",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia Pokémon",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).queryByRole("button", {
+        name: /Filtrar por personagem|Filtrar por tag/,
+      }),
+    ).toBeNull();
+    expect(within(card!).queryByText("3DXM")).toBeNull();
+
+    fireEvent.click(opener);
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByRole("heading", { name: "Aang" }),
+    ).toBeInTheDocument();
+    const classification = within(dialog).getByLabelText(
+      "Classificação do modelo",
+    );
+    expect(
+      within(classification).getByRole("button", { name: "Animes & Desenhos" }),
+    ).toBeInTheDocument();
+    expect(
+      within(classification).getByRole("button", { name: "Pokémon" }),
+    ).toBeInTheDocument();
+    expect(
+      within(classification).queryByRole("button", { name: "Pikachu" }),
+    ).toBeNull();
+    expect(within(dialog).queryByText("Versão: Chibi")).toBeNull();
+    expect(
+      within(dialog).getByRole("button", { name: "Copiar link deste modelo" }),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to name and franchise when a model has no validated category", async () => {
+    const uncategorized = {
+      ...model,
+      category: null,
+      categorySlug: null,
+      franchise: "Pokémon",
+      franchiseSlug: "pokemon",
+      variant: "Full Size",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        if (String(input).endsWith("/" + id))
+          return Response.json({ ...uncategorized, images: detail.images });
+        return Response.json({
+          total: 1,
+          offset: 0,
+          limit: 24,
+          items: [uncategorized],
+        });
+      }),
+    );
+    render(<TelegramStudioCatalog />);
+    const opener = await screen.findByRole("button", {
+      name: /abrir galeria de aang/i,
+    });
+    const card = opener.closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card!).getByText("Aang")).toBeInTheDocument();
+    expect(
+      within(card!).getByLabelText("Franquia em revisão: Pokémon"),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).queryByRole("button", {
+        name: /Filtrar por categoria|Filtrar por tag/,
+      }),
+    ).toBeNull();
+    expect(within(card!).queryByText("3DXM")).toBeNull();
+    fireEvent.click(opener);
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByRole("heading", { name: "Aang" }),
+    ).toBeInTheDocument();
+    const classification = within(dialog).getByLabelText(
+      "Classificação do modelo",
+    );
+    expect(
+      within(classification).getByText("Pokémon · em revisão"),
+    ).toBeInTheDocument();
+    expect(
+      within(classification).queryByRole("button", { name: /Anime|Full Size/ }),
+    ).toBeNull();
+    expect(within(dialog).queryByText("Versão: Full Size")).toBeNull();
   });
 
   it("filters the complete library by its canonical category", async () => {
@@ -339,7 +480,8 @@ describe("Telegram-only public studio gallery", () => {
     expect(window.location.search).not.toContain("categoria=");
   });
 
-  it("renders unique structured chips and filters Ace by exact franchise-scoped character", async () => {
+  it("renders editorial chips exclusively within the specific studio and filters Ace", async () => {
+    window.history.replaceState(null, "", "/estudios?studio=RedBushido");
     const ace = {
       ...model,
       name: "Ace",
@@ -352,9 +494,11 @@ describe("Telegram-only public studio gallery", () => {
       franchiseSlug: "one-piece",
       variant: "",
     };
-    const fetcher = vi.fn(async () =>
-      Response.json({ total: 2, offset: 0, limit: 24, items: [ace] }),
-    );
+    const fetcher = vi.fn(async (input: string) => {
+      if (String(input).endsWith("/studios"))
+        return Response.json({ studios: [{ studio: "RedBushido", total: 1 }] });
+      return Response.json({ total: 2, offset: 0, limit: 24, items: [ace] });
+    });
     vi.stubGlobal("fetch", fetcher);
     render(<TelegramStudioCatalog />);
     const open = await screen.findByRole("button", {
@@ -398,7 +542,8 @@ describe("Telegram-only public studio gallery", () => {
     expect(window.location.search).toContain("personagem=Ace");
   });
 
-  it("never turns a provisional sculpt title into a verified character tag", async () => {
+  it("never turns a provisional sculpt title into a verified character tag on a studio card", async () => {
+    window.history.replaceState(null, "", "/estudios?studio=3DXM");
     const draft = {
       ...model,
       name: "1602 Scarlet Witch Crown",
@@ -410,9 +555,11 @@ describe("Telegram-only public studio gallery", () => {
       variant: "",
       provisional: true,
     };
-    const fetcher = vi.fn(async () =>
-      Response.json({ total: 1, offset: 0, limit: 24, items: [draft] }),
-    );
+    const fetcher = vi.fn(async (input: string) => {
+      if (String(input).endsWith("/studios"))
+        return Response.json({ studios: [{ studio: "3DXM", total: 1 }] });
+      return Response.json({ total: 1, offset: 0, limit: 24, items: [draft] });
+    });
     vi.stubGlobal("fetch", fetcher);
     render(<TelegramStudioCatalog />);
     const open = await screen.findByRole("button", {
@@ -505,7 +652,8 @@ describe("Telegram-only public studio gallery", () => {
       screen.getByRole("link", { name: /todos os estúdios/i }),
     ).toHaveAttribute("href", "/estudios");
   });
-  it("filters by a model variant tag without opening the gallery or changing to studio view", async () => {
+  it("filters by a model variant chip from a studio collection only", async () => {
+    window.history.replaceState(null, "", "/estudios?studio=3DXM");
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
     expect(await screen.findByText("Aang")).toBeInTheDocument();
@@ -519,7 +667,8 @@ describe("Telegram-only public studio gallery", () => {
         fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Chibi")),
       ).toBe(true);
     });
-    expect(window.location.pathname).toBe("/");
+    expect(window.location.pathname).toBe("/estudios");
+    expect(window.location.search).toContain("studio=3DXM");
     expect(window.location.search).toContain("q=Chibi");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Pesquisar")).toHaveValue("Chibi");
