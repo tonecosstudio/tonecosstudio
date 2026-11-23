@@ -312,3 +312,213 @@ def reject_pair(db_path,*,group_a,group_b,revision_a,revision_b,note):
         db.execute("INSERT INTO curation_events(group_key,event_type,detail,occurred_at) VALUES(?,'gallery_pair_distinct_sculptures',?,?)",(a,detail,stamp))
         db.commit()
         return {'recorded':True,'already_reviewed':False,'group_a':a,'group_b':b}
+
+def _visual_same_render(image_a, image_b, *, threshold=1.5):
+    """Compare decoded pixels; hashes alone are NOT same-sculpture evidence."""
+    from PIL import Image, ImageOps, ImageChops, ImageStat
+    def open_sample(path):
+        with Image.open(path) as image:
+            image.draft("RGB",(128,128))
+            image=ImageOps.exif_transpose(image).convert("RGB")
+            ratio=image.width/image.height
+            thumb=image.resize((96,96),Image.Resampling.BILINEAR)
+            return ratio,thumb
+    ra,ia=open_sample(image_a);rb,ib=open_sample(image_b)
+    if abs(ra-rb)>0.012:return None
+    stat=ImageStat.Stat(ImageChops.difference(ia,ib))
+    mae=sum(stat.mean)/3
+    return round(mae,4) if mae<=threshold else None
+
+
+def cross_caption_visual_candidates(db_path, media_root, studio="Wicked", limit=12):
+    """Reuses existing dHash/aHash SSOT, then strictly compares decoded pixels.
+
+    A candidate is the SAME render, not proof of the same package/license.
+    No writes, no other index, no background scan.
+    """
+    from functools import lru_cache
+    studio=str(studio or "").strip()
+    if not studio or len(studio)>120 or studio.casefold()=="geral + 50k":
+        raise ValueError("Selecione um estúdio específico")
+    try:limit=int(limit)
+    except (TypeError,ValueError) as exc:raise ValueError("Limite inválido") from exc
+    if limit not in (12,24,48):raise ValueError("Limite inválido")
+    media_root=Path(media_root).resolve()
+    with smart.db_open(db_path,readonly=True) as db:
+        rows=db.execute("""SELECT f.message_id,f.dhash,f.ahash,f.width,f.height,
+            g.group_key,g.title,g.universe,g.variant,g.revision,
+            a.sha256,a.source_relative
+            FROM visual_fingerprints f
+            JOIN assets a USING(message_id)
+            JOIN model_group_members m USING(message_id)
+            JOIN model_groups g USING(group_key)
+            WHERE g.studio=? AND f.method='dhash-ahash-v1'
+              AND f.source_sha=a.sha256 AND f.dhash IS NOT NULL
+              ORDER BY f.message_id""",(studio,)).fetchall()
+        if len(rows)>1800:
+            raise ValueError("Estúdio excede limite de comparação de um lote")
+        data=[dict(r) for r in rows]
+        for item in data:
+            item["d"]=int(item["dhash"],16)
+            item["a"]=int(item["ahash"],16)
+        possible=[]
+        for i,a in enumerate(data):
+            for b in data[i+1:]:
+                if a['group_key']==b['group_key']:continue
+                if (smart.normalize(a['title']),smart.normalize(a['universe']))==(
+                    smart.normalize(b['title']),smart.normalize(b['universe'])):continue
+                if abs(a['width']/a['height']-b['width']/b['height'])>0.02:continue
+                d=(a['d']^b['d']).bit_count();h=(a['a']^b['a']).bit_count()
+                if d<=7 and h<=8:possible.append((d+h,a,b))
+        possible.sort(key=lambda x:(x[0],x[1]['message_id'],x[2]['message_id']))
+        if len(possible)>240:
+            possible=possible[:240]
+        confirmed=[]
+        for _,a,b in possible:
+            paths=[]
+            for row in (a,b):
+                f=(media_root/row["source_relative"]).resolve()
+                if (not f.is_relative_to(media_root) or not f.is_file()
+                        or f.stat().st_size>30*1024*1024):
+                    paths=[];break
+                paths.append(f)
+            if len(paths)!=2:continue
+            try:score=_visual_same_render(*paths)
+            except (OSError,ValueError):continue
+            if score is None:continue
+            confirmed.append({
+                "studio":studio,"group_a":a['group_key'],"group_b":b['group_key'],
+                "message_a":a["message_id"],"message_b":b["message_id"],
+                "title_a":a["title"],"title_b":b["title"],
+                "universe_a":a["universe"],"universe_b":b["universe"],
+                "variant_a":a["variant"],"variant_b":b["variant"],
+                "revision_a":a["revision"],"revision_b":b["revision"],
+                "pixel_mae":score,"same_render":True,
+                "same_stl_or_license":False,"automatic_merge":False})
+        confirmed.sort(key=lambda x:(x['pixel_mae'],x['message_a'],x['message_b']))
+        return {"studio":studio,"fingerprints_compared":len(data),
+            "approximate_pairs_examined":len(possible),
+            "total":len(confirmed),"items":confirmed[:limit],
+            "read_only":True,"automatic_merge":False,
+            "warning":"Imagem praticamente igual NÃO prova pacote STL ou direitos; revisar cada legenda."}
+
+def correct_cross_caption(db_path, media_root, *, target_key, reference_key,
+                          target_rev, reference_rev, target_mid, reference_mid, note):
+    """Correct one wrong caption by physical proof of almost identical renders."""
+    import name_curadoria as naming
+    if (not all(isinstance(k,str) and re.fullmatch("[0-9a-f]{24}",k)
+                for k in (target_key,reference_key)) or target_key==reference_key):
+        raise ValueError("Selecione duas galerias válidas")
+    if (any(type(x) is not int or x<0 for x in (target_rev,reference_rev))
+            or any(type(x) is not int or x<=0 for x in (target_mid,reference_mid))):
+        raise ValueError("IDs e revisões CAS obrigatórios")
+    note=str(note or "").strip()
+    if not 60<=len(note)<=600:
+        raise ValueError("Descreva erro de legenda e evidência visual (60+ caracteres)")
+    root=Path(media_root).resolve()
+    stamp=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db);naming.setup(db)
+        db.execute('BEGIN IMMEDIATE')
+        target=db.execute("SELECT * FROM model_groups WHERE group_key=?",(target_key,)).fetchone()
+        ref=db.execute("SELECT * FROM model_groups WHERE group_key=?",(reference_key,)).fetchone()
+        if not target or not ref:raise ValueError("Galeria ausente; recarregue")
+        if (target['revision'],ref['revision'])!=(target_rev,reference_rev):
+            raise RuntimeError("Revisão concorrente")
+        if target['studio']!=ref['studio'] or target['studio'].casefold()=='geral + 50k':
+            raise ValueError("Estúdios incompatíveis")
+        if (target['state']=='confirmado' or ref['state']=='confirmado'
+                or not ref['title'] or not ref['universe']):
+            raise ValueError("Estado editorial incompatível")
+        if (target['title'],target['universe'])==(ref['title'],ref['universe']):
+            raise ValueError("Nenhuma legenda divergente")
+        for key in (target_key,reference_key):
+            if not db.execute("SELECT 1 FROM curation_events WHERE group_key=? AND event_type='visual_gallery_audited'",(key,)).fetchone():
+                raise ValueError("Falta auditoria visual prévia")
+        if db.execute("SELECT COUNT(*) FROM model_group_members WHERE group_key=?",(target_key,)).fetchone()[0]!=1:
+            raise ValueError("Grupo de várias fotos exige auditoria específica")
+        imgs=[]
+        for key,mid in ((target_key,target_mid),(reference_key,reference_mid)):
+            row=db.execute("""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
+                p.title,p.universe,p.variant,p.status,p.revision AS image_revision,p.notes
+                FROM model_group_members m JOIN assets a USING(message_id)
+                JOIN name_proposals p USING(message_id)
+                WHERE m.group_key=? AND a.message_id=?""",(key,mid)).fetchone()
+            if not row or row['original_topic']!=target['studio']:
+                raise ValueError("Mensagem não pertence à galeria")
+            imgs.append(row)
+        t,r=imgs
+        if (t['title'],t['universe'],t['variant'])!=(target['title'],target['universe'],target['variant']):
+            raise ValueError("Metadados alvo divergentes")
+        if (r['title'],r['universe'])!=(ref['title'],ref['universe']):
+            raise ValueError("Metadados de referência divergentes")
+        if t['status']=='confirmado':raise ValueError("Nome já confirmado, requer outra revisão")
+        photos=[]
+        for row in imgs:
+            path=(root/row['source_relative']).resolve()
+            if not path.is_relative_to(root) or not path.is_file() or path.stat().st_size>30*1024*1024:
+                raise ValueError("Original ausente ou externo")
+            with path.open('rb') as stream:
+                digest=hashlib.file_digest(stream,'sha256').hexdigest()
+            if digest!=row['sha256']:raise ValueError("SHA-256 físico divergente")
+            photos.append(path)
+        pixel_mae=_visual_same_render(*photos,threshold=1.5)
+        if pixel_mae is None:raise ValueError("Não é o mesmo render")
+
+        filename=naming.proposed_name(
+            {'title':ref['title'],'variant':target['variant']},
+            target_mid,t['source_relative'])
+        updated=db.execute("""UPDATE name_proposals SET title=?,universe=?,
+            filename=?,status='revisar',confidence=0.0,
+            notes=?,revision=revision+1,modified_at=?
+            WHERE message_id=? AND revision=?""",
+            (ref['title'],ref['universe'],filename,
+             (str(t['notes'] or '')+'\n'+note).strip()[:1000],
+             stamp,target_mid,t['image_revision']))
+        if updated.rowcount!=1:raise RuntimeError("Foto alterada concorrentemente")
+        changed=db.execute("""UPDATE model_groups SET title=?,universe=?,
+            state='revisar',revision=revision+1,updated_at=?
+            WHERE group_key=? AND revision=?""",
+            (ref['title'],ref['universe'],stamp,target_key,target_rev))
+        if changed.rowcount!=1:raise RuntimeError("Galeria alterada concorrentemente")
+        detail={'target_group_key':target_key,'reference_group_key':reference_key,
+            'target_message_id':target_mid,'reference_message_id':reference_mid,
+            'sha256':[t['sha256'],r['sha256']],'pixel_mae':pixel_mae,
+            'before':{'title':target['title'],'universe':target['universe']},
+            'after':{'title':ref['title'],'universe':ref['universe']},
+            'variant_kept':target['variant'],'visual_evidence':note,
+            'identity_confirmed':False,'publication_approved':False,'packages_merged':False}
+        evidence=json.dumps(detail,ensure_ascii=False,sort_keys=True)
+        db.execute("""INSERT INTO name_proposal_events(message_id,event_type,evidence,occurred_at)
+            VALUES(?,'visual_cross_caption_correction',?,?)""",(target_mid,evidence,stamp))
+        for key,other in ((target_key,reference_key),(reference_key,target_key)):
+            db.execute("""INSERT INTO curation_events(group_key,event_type,detail,occurred_at)
+                VALUES(?,'gallery_same_sculpture_variant_link',?,?)""",
+                (key,json.dumps({**detail,'other_key':other},
+                                ensure_ascii=False,sort_keys=True),stamp))
+        db.commit()
+        return {'target_group_key':target_key,'reference_group_key':reference_key,
+            'corrected_message_id':target_mid,'title':ref['title'],
+            'universe':ref['universe'],'variant_kept':target['variant'],
+            'pixel_mae':pixel_mae,'status':'revisar','target_revision':target_rev+1,
+            'groups_merged':False,'rights_changed':False}
+
+
+def related_sculpture_galleries(db_path, group_key):
+    """Display editorial links between gallery variants without merging packages."""
+    with smart.db_open(db_path,readonly=True) as db:
+        events=db.execute("""SELECT detail FROM curation_events
+            WHERE group_key=? AND event_type='gallery_same_sculpture_variant_link'
+            ORDER BY event_id DESC LIMIT 20""",(group_key,)).fetchall()
+        seen=set();items=[]
+        for ev in events:
+            try:key=json.loads(ev['detail'])['other_key']
+            except (ValueError,KeyError,TypeError):continue
+            if key in seen:continue
+            row=db.execute("""SELECT g.group_key,g.title,g.universe,g.variant,g.state,
+                COUNT(m.message_id) photos, MIN(m.message_id) preview_id
+                FROM model_groups g JOIN model_group_members m USING(group_key)
+                WHERE g.group_key=? GROUP BY g.group_key""",(key,)).fetchone()
+            if row:
+                seen.add(key);items.append(dict(row))
+        return items

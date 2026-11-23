@@ -393,9 +393,74 @@
     finally{mergeBusy=false;mergeLoad.disabled=false;mergeMore.disabled=false;}
   }
   mergeLoad.addEventListener("click",()=>loadMergeCandidates(true));
+  const crossLoad=el("studioMissionCrossCaptionLoad");
+  const crossResults=el("studioMissionCrossCaptionResults");
+  let crossBusy=false;
+  async function loadCrossCaptions(){
+    if(crossBusy||mission.value!=="grouping")return;
+    crossBusy=true;crossLoad.disabled=true;crossResults.replaceChildren();
+    try{
+      const q=new URLSearchParams({studio:studio.value,limit:"12"});
+      const result=await get("/api/gallery-visual-cross-caption?"+q);
+      mergeStatus.textContent=result.total+" pares de renders quase idênticos com legendas diferentes. Nenhuma fusão automática.";
+      for(const item of result.items){
+        const card=node("article",undefined,"studio-evidence-row");
+        card.append(node("strong",item.title_a+" · "+item.universe_a+
+          " / "+item.variant_a+" ↔ "+item.title_b+" · "+item.universe_b+
+          " / "+item.variant_b));
+        card.append(node("small","Diferença média de pixels: "+item.pixel_mae+
+          ". Imagem igual não confirma licença ou pacote STL."));
+        const previews=node("div",undefined,"studio-merge-previews");
+        for(const mid of [item.message_a,item.message_b]){
+          const img=node("img");img.loading="lazy";img.alt="Original Telegram #"+mid;
+          img.src="/thumb/"+mid+"?w=320";previews.append(img);
+        }
+        card.append(previews);
+        const note=node("textarea");note.rows=3;note.maxLength=600;
+        note.placeholder="Explique qual legenda está errada, qual referência é correta e que o render é o mesmo (mínimo 60 caracteres)";
+        card.append(note);
+        for(const side of ["a","b"]){
+          const from=side==="a"?"b":"a";
+          const button=node("button","Corrigir "+side.toUpperCase()+" com "+from.toUpperCase()+" (preservar variantes)");
+          button.type="button";
+          button.addEventListener("click",async()=>{
+            if(note.value.trim().length<60){
+              mergeStatus.textContent="Justificativa específica deve ter pelo menos 60 caracteres.";
+              return;
+            }
+            button.disabled=true;
+            try{
+              const a=item;const fixA=side==="a";
+              await post("/api/correct-gallery-caption",{
+                target_key:fixA?a.group_a:a.group_b,
+                reference_key:fixA?a.group_b:a.group_a,
+                target_rev:fixA?a.revision_a:a.revision_b,
+                reference_rev:fixA?a.revision_b:a.revision_a,
+                target_mid:fixA?a.message_a:a.message_b,
+                reference_mid:fixA?a.message_b:a.message_a,
+                note:note.value.trim()
+              });
+              mergeStatus.textContent="Legenda corrigida com evidência física. Versões vinculadas; nome continua em revisão.";
+              crossBusy=false;await loadCrossCaptions();
+            }catch(err){
+              button.disabled=false;
+              mergeStatus.textContent="Correção bloqueada: "+err.message;
+            }
+          });
+          card.append(button);
+        }
+        crossResults.append(card);
+      }
+      if(!result.items.length)crossResults.append(node("p",
+        "Nenhuma imagem quase idêntica com legenda diferente encontrada na cobertura atual."));
+    }catch(err){mergeStatus.textContent="Erro na comparação visual: "+err.message;}
+    finally{crossBusy=false;crossLoad.disabled=false;}
+  }
+  crossLoad.addEventListener("click",loadCrossCaptions);
+
   mergeMore.addEventListener("click",()=>loadMergeCandidates(false));
   studio.addEventListener("change",()=>{
-    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;
+    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;crossResults.replaceChildren();
     mergeStatus.textContent="Consulte para comparar este estúdio.";
   });
   mission.addEventListener("change",()=>{

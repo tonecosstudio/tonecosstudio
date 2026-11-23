@@ -46,6 +46,24 @@ dois botões explícitos com nota obrigatória: fusão física verificada
 e manutenção separada. Nenhuma decisão é automática.
 
 
+## Impressões visuais já existentes — legendas inconsistentes
+
+GET /api/gallery-visual-cross-caption reutiliza visual_fingerprints
+dhash-ahash-v1, que JA existe no mesmo SQLite. Compara galerias do
+mesmo estúdio com título ou franquia divergentes; pré-filtra por
+distância Hamming e proporção, depois compara pixels físicos decodificados.
+Somente renders praticamente idênticos (MAE menor ou igual a 1,5)
+são candidatos de revisão humana. Não implica mesmo pacote STL.
+
+POST /api/correct-gallery-caption exige revisão humana específica,
+CAS das duas galerias, SHA-256 físico de ambos os originais e nota
+editorial com no mínimo 60 caracteres. Corrige título/franquia de UMA
+galeria de foto única cujo render replica a referência. Preserva
+variantes, IDs, mídia e direitos. Nome/grupo ficam em estado revisar,
+não confirmados. Eventos existentes registram correção e relação
+visual entre as galerias; GET /api/model mostra as versões relacionadas.
+Nenhum banco, daemon, mecanismo de atualização ou índice duplicado.
+
 ## Reunir fotos da MESMA estatueta entre galerias revisadas
 
 O host canonico expoe gallery.merge_reviewed em
