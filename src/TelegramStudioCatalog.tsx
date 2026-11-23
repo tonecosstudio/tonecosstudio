@@ -502,7 +502,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               <div className="max-w-[670px]">
                 <p className="mb-6 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.23em] text-[#c7ab7c] sm:text-xs">
                   <span className="h-px w-8 bg-[#c7ab7c]" />
-                  Biblioteca visual de modelos
+                  {embedded ? "CURADORIA TELEGRAM" : "Biblioteca visual de modelos"}
                 </p>
                 <h1
                   id="catalog-hero-heading"
@@ -513,13 +513,13 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                 >
                   Modelos 3D{" "}
                   <span className="block italic text-[#ccb18a]">
-                    organizados.
+                    {embedded ? "em revisão." : "organizados."}
                   </span>
                 </h1>
                 <p className="mt-7 max-w-xl text-base leading-8 text-[#b9b9ae] sm:text-lg">
-                  Navegue por modelos, personagens, variantes e galerias de
-                  imagens. Use a pesquisa e os filtros para encontrar cada
-                  escultura; as tags editoriais ficam nas coleções dos estúdios.
+                  {embedded
+                    ? "Explore os modelos recebidos dos estúdios pelo Telegram. Nomes e classificações podem ser provisórios; esta vitrine não comprova revisão concluída nem autorização comercial."
+                    : "Navegue por modelos, personagens, variantes e galerias de imagens. Use a pesquisa e os filtros para encontrar cada escultura; as tags editoriais ficam nas coleções dos estúdios."}
                 </p>
                 <div className="mt-9 flex flex-wrap gap-3">
                   <a
@@ -545,7 +545,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                         : "—"}
                     </span>
                     <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[#9ba297]">
-                      Modelos no acervo
+                      {embedded ? "Referências em organização" : "Modelos no acervo"}
                     </span>
                   </div>
                 </div>
@@ -1202,7 +1202,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             autorização de reprodução.
           </p>
           <span className="rounded-full border border-[#807052] px-3 py-1 text-[10px] uppercase tracking-widest text-[#e2c79c]">
-            Vitrine visual
+            {embedded ? "Em revisão" : "Vitrine visual"}
           </span>
         </aside>
       </ContentContainer>
