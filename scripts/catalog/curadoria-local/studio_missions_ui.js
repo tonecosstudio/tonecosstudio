@@ -317,6 +317,70 @@
           img.src="/thumb/"+mid+"?w=256";views.append(img);
         }
         card.append(views);
+        // Expand on demand: compare EVERY available photo of both galleries
+        // inside the existing host. No JPEG board, second database or writes.
+        const compareButton=node("button","Comparar todas as fotos lado a lado");
+        compareButton.type="button";
+        compareButton.setAttribute("aria-expanded","false");
+        const comparison=node("section",undefined,"studio-pair-comparison");
+        comparison.hidden=true;
+        comparison.setAttribute("aria-label","Comparação visual das duas galerias");
+        let comparisonReady=false;
+        compareButton.addEventListener("click",async()=>{
+          if(!comparison.hidden){
+            comparison.hidden=true;
+            card.classList.remove("studio-pair-expanded");
+            compareButton.setAttribute("aria-expanded","false");
+            compareButton.textContent="Comparar todas as fotos lado a lado";
+            return;
+          }
+          comparison.hidden=false;
+          card.classList.add("studio-pair-expanded");
+          compareButton.setAttribute("aria-expanded","true");
+          compareButton.textContent="Fechar comparação lado a lado";
+          if(comparisonReady)return;
+          comparison.replaceChildren(node("p","Carregando apenas as fotografias deste par...","sub"));
+          compareButton.disabled=true;
+          try{
+            const groups=await Promise.all([
+              get("/api/model/"+item.group_a),get("/api/model/"+item.group_b)
+            ]);
+            if(groups[0].revision!==item.revision_a ||
+               groups[1].revision!==item.revision_b){
+              throw Error("Uma galeria foi revisada; atualize a fila antes de decidir.");
+            }
+            const columns=node("div",undefined,"studio-pair-columns");
+            groups.forEach((group,i)=>{
+              const col=node("section",undefined,"studio-pair-column");
+              col.append(node("strong","Galeria "+(i===0?"A":"B")+" · "+
+                group.images.length+" foto(s) · "+(group.variant||"sem variante")));
+              const photos=node("div",undefined,"studio-pair-images");
+              for(const photo of group.images){
+                const link=node("a");
+                link.href="/media/"+photo.message_id;
+                link.target="_blank";link.rel="noopener noreferrer";
+                link.title="Abrir original Telegram #"+photo.message_id;
+                const img=node("img");
+                img.loading="lazy";img.decoding="async";
+                img.alt="Vista da galeria "+(i===0?"A":"B")+", foto #"+photo.message_id;
+                img.src="/thumb/"+photo.message_id+"?w=480";
+                link.append(img,node("small","#"+photo.message_id));
+                photos.append(link);
+              }
+              if(!group.images.length)photos.append(node("p","Galeria sem fotos.","sub"));
+              col.append(photos);
+              columns.append(col);
+            });
+            comparison.replaceChildren(
+              node("p","Compare pose, base, proporções e acessórios; título igual não prova a mesma escultura. Nenhuma alteração é feita nesta comparação.","sub"),
+              columns
+            );
+            comparisonReady=true;
+          }catch(err){
+            comparison.replaceChildren(node("p","Comparação indisponível: "+err.message,"sub"));
+          }finally{compareButton.disabled=false;}
+        });
+        card.append(compareButton,comparison);
         for(const [key,count,index] of [[item.group_a,item.photos_a,"A"],
                                          [item.group_b,item.photos_b,"B"]]){
           const open=node("button","Inspecionar galeria "+index+
@@ -413,7 +477,7 @@
         const previews=node("div",undefined,"studio-merge-previews");
         for(const mid of [item.message_a,item.message_b]){
           const img=node("img");img.loading="lazy";img.alt="Original Telegram #"+mid;
-          img.src="/thumb/"+mid+"?w=320";previews.append(img);
+          img.src="/thumb/"+mid+"?w=480";previews.append(img);
         }
         card.append(previews);
         const note=node("textarea");note.rows=3;note.maxLength=600;
