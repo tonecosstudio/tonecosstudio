@@ -64,6 +64,9 @@ def setup(db):
        modified_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_name_proposals_status ON name_proposals(status);
+    -- Prioritizes one studio without scanning every proposal in the catalog.
+    CREATE INDEX IF NOT EXISTS idx_name_proposals_studio_status
+      ON name_proposals(studio,status);
     CREATE INDEX IF NOT EXISTS idx_name_proposals_title ON name_proposals(title);
     CREATE TABLE IF NOT EXISTS name_proposal_events(
        event_id INTEGER PRIMARY KEY AUTOINCREMENT,

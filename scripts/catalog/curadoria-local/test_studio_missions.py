@@ -73,6 +73,27 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual(x["studios"][1]["names_confirmed"],2)
         self.assertEqual(x["missions"],["grouping","naming"])
 
+    def test_studio_scoped_indexes_are_used(self):
+        # The canonical setup must accelerate studio-scoped review without
+        # changing identities, gallery links or commercial rights.
+        import smart_curadoria as smart
+        import name_curadoria as naming
+        # Build the real schema in memory; the image fixture intentionally
+        # defines a minimal historical audit table without every live column.
+        with sqlite3.connect(":memory:") as db:
+            smart.setup(db)
+            naming.setup(db)
+            names_plan=list(db.execute(
+                "EXPLAIN QUERY PLAN SELECT status,COUNT(*) FROM name_proposals "
+                "WHERE studio=? GROUP BY status", ("A Studio",)))
+            groups_plan=list(db.execute(
+                "EXPLAIN QUERY PLAN SELECT COUNT(*) FROM model_groups "
+                "WHERE studio=?", ("A Studio",)))
+        self.assertTrue(any("idx_name_proposals_studio_status" in row[3]
+                            for row in names_plan), names_plan)
+        self.assertTrue(any("idx_model_groups_studio_state" in row[3]
+                            for row in groups_plan), groups_plan)
+
     def test_two_missions_same_pages(self):
         a=missions.board_page(self.path,"A Studio","grouping")
         b=missions.board_page(self.path,"A Studio","naming")
