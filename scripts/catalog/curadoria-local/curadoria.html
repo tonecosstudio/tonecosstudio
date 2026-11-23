@@ -71,6 +71,9 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 .studio-mission-meta strong{font-size:12px;overflow-wrap:anywhere}
 .studio-mission-meta span,.studio-mission-meta small{font-size:11px;color:#bdbac0;overflow-wrap:anywhere}
 .studio-mission-meta button{font-size:11px;padding:6px}
+#studioMissionMergePanel{margin-top:16px;border:1px solid #484a50;background:#1c1e23;border-radius:10px;padding:14px}
+.studio-merge-previews{display:flex;gap:8px}
+.studio-merge-previews img{width:49%;height:130px;object-fit:contain;background:#111217;border-radius:5px}
 #studioMissionEvidencePanel{margin-top:16px;border:1px solid #484a50;background:#1c1e23;border-radius:10px;padding:14px}
 #studioMissionEvidencePanel .buttons{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
 .studio-evidence-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:8px;max-height:370px;overflow:auto}
@@ -116,6 +119,14 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <button type="button" id="studioMissionPrepare" disabled>Preparar galeria · 0 fotos selecionadas</button>
 <div id="studioMissionBoard" aria-live="polite"></div>
 <div class="mission-pages"><button id="studioMissionPrev" type="button">Anterior</button><span id="studioMissionPage">Prancha</span><button id="studioMissionNext" type="button">Próxima</button></div>
+<section id="studioMissionMergePanel" class="sync-panel" aria-label="Possíveis fotos da mesma estatueta entre galerias">
+<h3>Mesma estatueta? Comparar duas galerias</h3>
+<p class="sub">Candidatos com título, franquia e variante semelhantes, publicados próximos no Telegram. Somente a inspeção física da base, pose e detalhes pode confirmar. Nenhuma fusão é automática.</p>
+<div class="buttons"><button type="button" id="studioMissionMergeLoad">Comparar galerias</button></div>
+<p id="studioMissionMergeStatus" role="status" class="sub">Consulta disponível na missão de agrupamento.</p>
+<div id="studioMissionMergeResults" class="studio-evidence-list"></div>
+<button id="studioMissionMergeMore" type="button" hidden>Mais candidatos</button>
+</section>
 <section id="studioMissionEvidencePanel" class="sync-panel" aria-label="Fila de evidências verificáveis">
 <strong>Fila de evidências — mesmas missões, sem outra base</strong>
 <p class="sub">Álbuns com fotos fisicamente distintas e republicações SHA idênticas são pistas independentes. A fila só consulta o SQLite; nenhum caso é automaticamente agrupado, nomeado ou publicado.</p>

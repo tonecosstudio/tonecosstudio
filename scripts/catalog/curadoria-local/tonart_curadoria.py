@@ -390,6 +390,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
+                    {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
+                    {"id":"gallery.reject_pair","method":"POST","path":"/api/reject-gallery-pair","effect":"write","touches":"audit_events_only"},
                     {"id":"gallery.propose_names","method":"POST","path":"/api/propagate-gallery-name","effect":"write"},
                     {"id":"models.review","method":"POST","path":"/api/review-model","effect":"write"},
                     {"id":"images.review_name","method":"POST","path":"/api/review-name","effect":"write"},
@@ -577,6 +579,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(catalog_sync.compare(DB_PATH))
             if route.path=="/api/catalog-sync-summary":
                 return self.respond(catalog_sync.compare_summary(DB_PATH))
+            if route.path=="/api/gallery-merge-candidates":
+                p=parse_qs(route.query)
+                return self.respond(gallery_ops.cross_gallery_candidates(
+                    DB_PATH,studio=p.get("studio",[""])[0],
+                    page=p.get("page",["1"])[0],limit=p.get("limit",["24"])[0],
+                    max_gap=p.get("max_gap",["120"])[0]))
             if route.path=="/api/gallery-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery_ops.candidates(DB_PATH,
@@ -659,6 +667,11 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("ID de galeria invalido")
                 return self.respond(naming.propagate_reviewed_gallery_names(
                     DB_PATH,limit=40,group_key=key))
+            if self.path=="/api/reject-gallery-pair":
+                return self.respond(gallery_ops.reject_pair(
+                    DB_PATH,group_a=obj.get("group_a"),group_b=obj.get("group_b"),
+                    revision_a=obj.get("revision_a"),revision_b=obj.get("revision_b"),
+                    note=obj.get("note","")))
             if self.path=="/api/merge-reviewed-galleries":
                 return self.respond(gallery_ops.merge_reviewed(
                     DB_PATH,target=obj.get("target"),source=obj.get("source"),

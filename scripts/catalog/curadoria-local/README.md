@@ -31,6 +31,21 @@ identidade no Supabase, outra fila ou serviços; toda confirmação de nome
 continua pelo cliente canônico de lote, com SHA físico e URL oficial do modelo.
 Paginação 12/24/48; refazer consulta após uma alteração de nome.
 
+A fila read-only GET /api/gallery-merge-candidates?studio=Wicked&limit=12
+e a secao "Mesma estatueta? Comparar duas galerias" na UI mostram pares
+com titulo, franquia e variante compativeis e mensagens proximas. Isso
+**apenas prioriza inspeção de geometria**, nao indica que seja realmente
+a mesma estatueta; so o endpoint de merge com prova fisica altera grupos.
+A fila nao escreve no SQLite, nao cria novas tabelas nem duplica SSOT.
+Decisões humanas "não é a mesma escultura" são registradas no evento
+gallery_pair_distinct_sculptures pelo endpoint canônico
+POST /api/reject-gallery-pair, com nota visual e CAS de AMBAS as fichas.
+A fila ignora estes pares apenas enquanto as revisões permanecerem iguais;
+se uma galeria mudar, o par volta para inspeção. A interface oferece
+dois botões explícitos com nota obrigatória: fusão física verificada
+e manutenção separada. Nenhuma decisão é automática.
+
+
 ## Reunir fotos da MESMA estatueta entre galerias revisadas
 
 O host canonico expoe gallery.merge_reviewed em

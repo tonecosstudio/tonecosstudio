@@ -220,3 +220,95 @@ def merge_reviewed(db_path,*,target,source,target_rev,source_rev,proofs,note,med
         return {'group_key':target,'source_key':source,'moved':moved.rowcount,
             'total_images':len(expected),'revision':target_rev+1,'state':'revisar',
             'names_changed':False,'rights_changed':False}
+
+def cross_gallery_candidates(db_path, studio, page=1, limit=24, max_gap=120):
+    """Read-only shortlist, NEVER a similarity assertion or an auto-merge."""
+    from collections import defaultdict
+    from itertools import combinations
+    studio=str(studio or "").strip()
+    if not studio or len(studio)>120 or studio.casefold()=="geral + 50k":
+        raise ValueError("Coleção específica obrigatória")
+    try:
+        page=int(page);limit=int(limit);max_gap=int(max_gap)
+    except (ValueError,TypeError) as exc:raise ValueError("Paginação inválida") from exc
+    if not 1<=page<=10000 or limit not in (12,24,48) or not 1<=max_gap<=500:
+        raise ValueError("Limite ou distância inválida")
+    with smart.db_open(db_path,readonly=True) as db:
+        data=db.execute("""SELECT g.group_key,g.studio,g.title,g.universe,
+            g.variant,g.state,g.revision,MIN(m.message_id) first_id,
+            COUNT(m.message_id) photo_count
+            FROM model_groups g JOIN model_group_members m USING(group_key)
+            WHERE g.studio=? GROUP BY g.group_key ORDER BY first_id""",(studio,)).fetchall()
+        buckets=defaultdict(list)
+        for item in data:
+            if item['state']=='confirmado':continue
+            key=tuple(smart.normalize(item[f]) for f in ('studio','title','universe','variant'))
+            buckets[key].append(item)
+        rejected={}
+        for event in db.execute("SELECT group_key,detail FROM curation_events WHERE event_type='gallery_pair_distinct_sculptures'"):
+            try:
+                info=json.loads(event['detail'])
+                rejected[(event['group_key'],info['other'])]=(info['revision_self'],info['revision_other'])
+            except (ValueError,KeyError,TypeError):continue
+        pairs=[]
+        for rows in buckets.values():
+            for a,b in combinations(rows,2):
+                gap=abs(a['first_id']-b['first_id'])
+                if gap>max_gap:continue
+                left,right=sorted((a['group_key'],b['group_key']))
+                revisions={a['group_key']:a['revision'],b['group_key']:b['revision']}
+                if rejected.get((left,right))==(revisions[left],revisions[right]):
+                    continue
+                pairs.append({
+                    'studio':studio,'title':a['title'],
+                    'universe':a['universe'],'variant':a['variant'],
+                    'group_a':a['group_key'],'group_b':b['group_key'],
+                    'first_a':a['first_id'],'first_b':b['first_id'],
+                    'photos_a':a['photo_count'],'photos_b':b['photo_count'],
+                    'revision_a':a['revision'],'revision_b':b['revision'],
+                    'message_gap':gap,'reason':'same_label_nearby_posts_only',
+                    'automatic_merge':False,'requires_visual_comparison':True})
+        pairs.sort(key=lambda r:(r['message_gap'],r['title'].casefold(),r['first_a'],r['first_b']))
+        start=(page-1)*limit
+        return {'studio':studio,'total':len(pairs),'page':page,'limit':limit,
+            'has_more':start+limit<len(pairs),
+            'items':pairs[start:start+limit],
+            'read_only':True,'automatic_merge':False,
+            'warning':'Mesmo título ou data próxima não prova mesma estatueta; comparar base, pose, peças e fotos originais.'}
+
+def reject_pair(db_path,*,group_a,group_b,revision_a,revision_b,note):
+    """Remember a human-reviewed negative comparison; no model rows changed."""
+    if (not all(isinstance(k,str) and re.fullmatch("[0-9a-f]{24}",k) for k in (group_a,group_b))
+            or group_a==group_b):raise ValueError("Duas galerias válidas obrigatórias")
+    if type(revision_a) is not int or type(revision_b) is not int or min(revision_a,revision_b)<0:
+        raise ValueError("Revisões CAS obrigatórias")
+    note=str(note or "").strip()
+    if not 45<=len(note)<=500:raise ValueError("Descreva qual geometria/pose/base é diferente")
+    ordered=sorted([group_a,group_b])
+    revisions={group_a:revision_a,group_b:revision_b}
+    a,b=ordered
+    stamp=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        rows=[db.execute("SELECT studio,title,universe,variant,state,revision FROM model_groups WHERE group_key=?",(key,)).fetchone() for key in ordered]
+        if not all(rows):raise ValueError("Galeria inexistente ou já reunida")
+        if any(x['revision']!=revisions[key] for x,key in zip(rows,ordered)):
+            raise RuntimeError("Revisão concorrente, recarregue a comparação")
+        for field in ('studio','title','universe','variant'):
+            if smart.normalize(rows[0][field])!=smart.normalize(rows[1][field]):
+                raise ValueError("Os grupos já têm metadados diferentes")
+        previous=db.execute("SELECT detail FROM curation_events WHERE group_key=? AND event_type='gallery_pair_distinct_sculptures' ORDER BY event_id DESC",(a,)).fetchall()
+        for record in previous:
+            try:
+                x=json.loads(record['detail'])
+                if (x['other'],x['revision_self'],x['revision_other'])==(b,revisions[a],revisions[b]):
+                    return {'recorded':False,'already_reviewed':True,'group_a':a,'group_b':b}
+            except (KeyError,TypeError,ValueError):continue
+        detail=json.dumps({'other':b,'revision_self':revisions[a],
+            'revision_other':revisions[b],'visual_evidence':note,
+            'names_changed':False,'rights_changed':False},
+            ensure_ascii=False,sort_keys=True)
+        db.execute("INSERT INTO curation_events(group_key,event_type,detail,occurred_at) VALUES(?,'gallery_pair_distinct_sculptures',?,?)",(a,detail,stamp))
+        db.commit()
+        return {'recorded':True,'already_reviewed':False,'group_a':a,'group_b':b}

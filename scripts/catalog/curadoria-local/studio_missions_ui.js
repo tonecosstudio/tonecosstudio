@@ -289,6 +289,119 @@
     evidenceMore.hidden=true;
     evidenceStatus.textContent="Escolha consultar para atualizar a fila.";
   });
+  // Candidate discovery for Mission 1. Never mutate an audited gallery here.
+  const mergePanel=el("studioMissionMergePanel");
+  const mergeLoad=el("studioMissionMergeLoad");
+  const mergeMore=el("studioMissionMergeMore");
+  const mergeResults=el("studioMissionMergeResults");
+  const mergeStatus=el("studioMissionMergeStatus");
+  let mergePage=1,mergeBusy=false;
+  async function loadMergeCandidates(reset=true){
+    if(mergeBusy||mission.value!=="grouping")return;
+    if(reset){mergePage=1;mergeResults.replaceChildren();}
+    mergeBusy=true;mergeLoad.disabled=true;mergeMore.disabled=true;
+    mergeStatus.textContent="Comparando metadados e proximidade no SQLite...";
+    try{
+      const q=new URLSearchParams({studio:studio.value,page:String(mergePage),
+        limit:"12",max_gap:"120"});
+      const result=await get("/api/gallery-merge-candidates?"+q);
+      for(const item of result.items){
+        const card=node("article",undefined,"studio-evidence-row");
+        card.append(node("strong",item.title+" · "+(item.variant||"sem variante")));
+        card.append(node("small","Postagens separadas por "+item.message_gap+
+          " IDs. Comparar base, pose, rosto e acessórios antes de unir."));
+        const views=node("div",undefined,"studio-merge-previews");
+        for(const mid of [item.first_a,item.first_b]){
+          const img=node("img");
+          img.loading="lazy";img.alt="Telegram #"+mid;
+          img.src="/thumb/"+mid+"?w=256";views.append(img);
+        }
+        card.append(views);
+        for(const [key,count,index] of [[item.group_a,item.photos_a,"A"],
+                                         [item.group_b,item.photos_b,"B"]]){
+          const open=node("button","Inspecionar galeria "+index+
+            " · "+count+" foto(s)");
+          open.type="button";
+          open.addEventListener("click",async()=>{
+            try{
+              if(typeof setView!=="function"||typeof openModel!=="function"){
+                throw Error("Editor de modelos indisponível");
+              }
+              setView("models");await openModel(key);
+            }catch(err){mergeStatus.textContent=err.message;}
+          });
+          card.append(open);
+        }
+        const noteField=node("textarea");
+        noteField.rows=3;noteField.maxLength=500;
+        noteField.placeholder="Descreva as diferenças (ou coincidências) físicas de pose, base e acessórios; mínimo 45 caracteres";
+        card.append(noteField);
+        const mergeButton=node("button","Unir: é a mesma escultura");
+        const differentButton=node("button","Manter separadas: esculturas diferentes");
+        for(const btn of [mergeButton,differentButton])btn.type="button";
+        async function reviewPair(merge){
+          const note=noteField.value.trim();
+          if(note.length<45){
+            mergeStatus.textContent="Descreva em pelo menos 45 caracteres quais detalhes físicos comprovam a decisão.";
+            return;
+          }
+          if(typeof post!=="function"){
+            mergeStatus.textContent="Gravação canônica indisponível.";
+            return;
+          }
+          mergeButton.disabled=true;differentButton.disabled=true;
+          try{
+            if(merge){
+              const [a,b]=await Promise.all([
+                get("/api/model/"+item.group_a),get("/api/model/"+item.group_b)
+              ]);
+              const proofs=[...a.images,...b.images].map(v=>({
+                message_id:v.message_id,sha256:v.sha256
+              }));
+              if(a.revision!==item.revision_a||b.revision!==item.revision_b){
+                throw Error("Uma galeria mudou. Recarregue as evidências.");
+              }
+              await post("/api/merge-reviewed-galleries",{
+                target:item.group_a,source:item.group_b,
+                target_rev:item.revision_a,source_rev:item.revision_b,
+                proofs,note
+              });
+            }else{
+              await post("/api/reject-gallery-pair",{
+                group_a:item.group_a,group_b:item.group_b,
+                revision_a:item.revision_a,revision_b:item.revision_b,note
+              });
+            }
+            await loadMergeCandidates(true);
+            mergeStatus.textContent=merge?"Fusão auditada. Nomes e direitos não mudaram.":
+              "Diferença registrada. O par não será sugerido novamente sem mudança de revisão.";
+          }catch(err){
+            mergeButton.disabled=false;differentButton.disabled=false;
+            mergeStatus.textContent="Não foi gravado: "+err.message;
+          }
+        }
+        mergeButton.addEventListener("click",()=>reviewPair(true));
+        differentButton.addEventListener("click",()=>reviewPair(false));
+        card.append(mergeButton,differentButton);
+        mergeResults.append(card);
+      }
+      mergeMore.hidden=!result.has_more;
+      mergeStatus.textContent=result.total+" pares candidatos em "+studio.value+
+        ". Título igual NÃO significa escultura igual. Consulta sem gravação.";
+      mergePage++;
+    }catch(err){mergeStatus.textContent="Erro: "+err.message;}
+    finally{mergeBusy=false;mergeLoad.disabled=false;mergeMore.disabled=false;}
+  }
+  mergeLoad.addEventListener("click",()=>loadMergeCandidates(true));
+  mergeMore.addEventListener("click",()=>loadMergeCandidates(false));
+  studio.addEventListener("change",()=>{
+    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;
+    mergeStatus.textContent="Consulte para comparar este estúdio.";
+  });
+  mission.addEventListener("change",()=>{
+    mergePanel.hidden=mission.value!=="grouping";
+  });
+  mergePanel.hidden=mission.value!=="grouping";
   get("/api/studio-missions").then(data=>{
     evidenceStatus.textContent=(data.album_review_candidates||0)+
       " álbuns distintos identificados. Consulte a fila para ver provas.";
