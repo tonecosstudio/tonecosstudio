@@ -875,7 +875,13 @@ def main():
                 next_identity_at=max(next_identity_at,time.monotonic()+60)
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
-    with ThreadingHTTPServer((HOST,PORT),Handler) as srv:
+    # A live 12-model contact board may request many lazy thumbnails at once.
+    # Keep the same single host/writer; just avoid dropping loopback connections
+    # due to the default five-connection socket listen backlog.
+    class CuradoriaHTTPServer(ThreadingHTTPServer):
+        request_queue_size=64
+
+    with CuradoriaHTTPServer((HOST,PORT),Handler) as srv:
         # Bind before starting any SQLite synchronization: /health and the UI
         # remain reachable even if the downloader is busy or a scan stalls.
         if not manual_only:
