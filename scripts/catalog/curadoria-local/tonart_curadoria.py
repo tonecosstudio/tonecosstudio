@@ -388,7 +388,8 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"studio.review_candidates","method":"GET","path":"/api/studio-missions/candidates","effect":"read","kinds":["albums","reposts"],"cursor":True,"max_limit":48,"automatic_merge":False},
                     {"id":"studio.identity_candidates","method":"GET","path":"/api/studio-missions/identities","effect":"read","pagination":True,"max_limit":48,"automatic_naming":False},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
-                    {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500,"min_images":1,"singleton_requires":"confirmed_name_https_official_source_physical_sha_and_revision"},
+                    {"id":"gallery.singletons_review_queue","method":"GET","path":"/api/gallery-singleton-candidates","effect":"read","scope":"studio","automatic_approval":False},
+                    {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500,"min_images":1,"singleton_requires":"physical_sha_and_revision","review_only_mode":"embedded_render_title_65char_visual_review","automatic_approval":False},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
@@ -600,6 +601,11 @@ class Handler(BaseHTTPRequestHandler):
                     DB_PATH,studio=p.get("studio",[""])[0],
                     page=p.get("page",["1"])[0],limit=p.get("limit",["24"])[0],
                     max_gap=p.get("max_gap",["120"])[0]))
+            if route.path=="/api/gallery-singleton-candidates":
+                q=parse_qs(route.query)
+                return self.respond(gallery.singleton_candidates(
+                    DB_PATH,studio=q.get("studio",[""])[0],
+                    page=q.get("page",["1"])[0],limit=q.get("limit",["24"])[0]))
             if route.path=="/api/gallery-candidates":
                 p=parse_qs(route.query)
                 return self.respond(gallery_ops.candidates(DB_PATH,
@@ -738,7 +744,8 @@ class Handler(BaseHTTPRequestHandler):
                     obj.get("message_ids",[]),obj.get("topic",""),
                     obj.get("note",""),source_root=SOURCE,
                     expected_sha256=obj.get("sha256"),
-                    expected_revision=obj.get("revision")))
+                    expected_revision=obj.get("revision"),
+                    editorial_only=obj.get("review_only",False)))
             if self.path=="/api/review-model":
                 return self.respond(smart.review_model(DB_PATH,
                    obj.get("group_key",""),obj.get("revision",-1),

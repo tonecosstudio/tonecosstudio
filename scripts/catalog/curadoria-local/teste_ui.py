@@ -464,3 +464,10 @@ assert 'id="studioMissionFingerprintCoverage"' in html
 assert '/api/scan-studio-fingerprints' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert '/api/visual-fingerprint-coverage?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
 assert 'visual.fingerprints.scan_studio' in (root/"tonart_curadoria.py").read_text(encoding='utf8')
+
+assert 'id="studioMissionSingletonPanel"' in html
+assert 'id="studioMissionSingletonLoad"' in html
+assert 'id="studioMissionSingletonResults"' in html
+assert '/api/gallery-singleton-candidates?' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert 'review_only:true' in (root/"studio_missions_ui.js").read_text(encoding='utf8')
+assert 'gallery.singletons_review_queue' in (root/"tonart_curadoria.py").read_text(encoding='utf8')

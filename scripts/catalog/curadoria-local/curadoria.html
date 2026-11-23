@@ -131,6 +131,14 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <p id="studioMissionFingerprintCoverage" class="sub" role="status">Consulte a cobertura antes de processar novas imagens. Não confirma personagens.</p>
 <button id="studioMissionMergeMore" type="button" hidden>Mais candidatos</button>
 </section>
+<section id="studioMissionSingletonPanel" class="sync-panel" aria-label="Fotografias sem galeria em revisão">
+<h3>Fotografias ainda sem galeria</h3>
+<p class="sub">Missão 1: uma única fotografia pode ganhar ficha em revisão, com original físico verificado e justificativa humana. O título impresso na imagem continua provisório. Isso não confirma personagem, franquia, pacote STL, direitos ou publicação; outras vistas podem ser reunidas depois.</p>
+<button type="button" id="studioMissionSingletonLoad">Conferir fotos sem galeria</button>
+<p id="studioMissionSingletonStatus" class="sub" role="status">Selecione o estúdio e consulte as fotografias disponíveis.</p>
+<div id="studioMissionSingletonResults" class="studio-evidence-list"></div>
+<button type="button" id="studioMissionSingletonMore" hidden>Mais fotografias avulsas</button>
+</section>
 <section id="studioMissionEvidencePanel" class="sync-panel" aria-label="Fila de evidências verificáveis">
 <strong>Fila de evidências — mesmas missões, sem outra base</strong>
 <p class="sub">Álbuns com fotos fisicamente distintas e republicações SHA idênticas são pistas independentes. A fila só consulta o SQLite; nenhum caso é automaticamente agrupado, nomeado ou publicado.</p>

@@ -496,16 +496,91 @@
   });
 
 
+  // One-image editorial galleries are NOT name confirmations.
+  const singletonPanel=el("studioMissionSingletonPanel");
+  const singletonLoad=el("studioMissionSingletonLoad");
+  const singletonMore=el("studioMissionSingletonMore");
+  const singletonResults=el("studioMissionSingletonResults");
+  const singletonStatus=el("studioMissionSingletonStatus");
+  let singletonPage=1,singletonBusy=false;
+  async function loadSingletons(reset=true){
+    if(singletonBusy||mission.value!=="grouping")return;
+    singletonBusy=true;singletonLoad.disabled=true;singletonMore.disabled=true;
+    const current=studio.value;
+    if(reset){singletonPage=1;singletonResults.replaceChildren();}
+    singletonStatus.textContent="Consultando fotos sem galeria no SQLite...";
+    try{
+      const params=new URLSearchParams({studio:current,
+        page:String(singletonPage),limit:"12"});
+      const data=await get("/api/gallery-singleton-candidates?"+params);
+      if(studio.value!==current)return;
+      for(const item of data.items){
+        const card=node("article",undefined,"studio-evidence-row");
+        card.append(node("strong","#"+item.message_id+" · "+item.title+
+          (item.variant?" · "+item.variant:"")));
+        card.append(node("small","Nome "+item.status+
+          " · prova de título impresso no render; não aprovado comercialmente."));
+        const anchor=node("a");anchor.href="/media/"+item.message_id;
+        anchor.target="_blank";anchor.rel="noopener noreferrer";
+        const img=node("img");img.loading="lazy";
+        img.alt="Original Telegram #"+item.message_id;
+        img.src="/thumb/"+item.message_id+"?w=480";
+        img.style.cssText="width:100%;max-height:260px;object-fit:contain;background:#0c0d0f";
+        anchor.append(img);card.append(anchor);
+        const note=node("textarea");note.rows=3;note.maxLength=600;
+        note.placeholder="Descreva o que está visível, identidade ainda provisória e por que esta fotografia deve ter ficha de revisão própria (65+ caracteres).";
+        card.append(note);
+        const save=node("button","Criar galeria em revisão (sem confirmar nome)");
+        save.type="button";
+        save.addEventListener("click",async()=>{
+          if(note.value.trim().length<65){
+            singletonStatus.textContent="Revise a imagem e escreva uma justificativa de 65 caracteres ou mais.";
+            return;
+          }
+          save.disabled=true;
+          try{
+            const outcome=await post("/api/create-gallery",{
+              message_ids:[item.message_id],topic:current,
+              note:note.value.trim(),sha256:item.sha256,
+              revision:item.revision,review_only:true
+            });
+            if(!outcome.singleton||outcome.names_changed||outcome.rights_changed){
+              throw Error("Host retornou um contrato de galeria inesperado");
+            }
+            await loadSingletons(true);
+            singletonStatus.textContent="Galeria editorial registrada. Nome e direitos continuam pendentes.";
+            await load();
+          }catch(error){
+            singletonStatus.textContent="Não foi gravado: "+error.message;
+          }finally{save.disabled=false;}
+        });
+        card.append(save);
+        singletonResults.append(card);
+      }
+      singletonMore.hidden=!data.has_more;
+      singletonStatus.textContent=data.total+
+        " fotos sem galeria elegíveis à revisão por render neste estúdio. Nenhuma aprovação automática.";
+      singletonPage++;
+      if(!data.items.length&&reset){
+        singletonResults.append(node("p","Nenhuma foto pendente nesta fila."));}
+    }catch(error){
+      singletonStatus.textContent="Falha ao listar fotografias: "+error.message;
+    }finally{singletonBusy=false;singletonLoad.disabled=false;singletonMore.disabled=false;}
+  }
+  singletonLoad.addEventListener("click",()=>loadSingletons(true));
+  singletonMore.addEventListener("click",()=>loadSingletons(false));
   mergeMore.addEventListener("click",()=>loadMergeCandidates(false));
   studio.addEventListener("change",()=>{
-    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;crossResults.replaceChildren();fingerprintStatus.textContent="Consulte a cobertura visual deste estúdio.";loadFingerprintCoverage();
+    mergeResults.replaceChildren();mergePage=1;mergeMore.hidden=true;crossResults.replaceChildren();singletonResults.replaceChildren();singletonPage=1;singletonMore.hidden=true;fingerprintStatus.textContent="Consulte a cobertura visual deste estúdio.";loadFingerprintCoverage();
     mergeStatus.textContent="Consulte para comparar este estúdio.";
   });
   mission.addEventListener("change",()=>{
     mergePanel.hidden=mission.value!=="grouping";
+    singletonPanel.hidden=mission.value!=="grouping";
   loadFingerprintCoverage();
   });
   mergePanel.hidden=mission.value!=="grouping";
+    singletonPanel.hidden=mission.value!=="grouping";
   get("/api/studio-missions").then(data=>{
     evidenceStatus.textContent=(data.album_review_candidates||0)+
       " álbuns distintos identificados. Consulte a fila para ver provas.";
