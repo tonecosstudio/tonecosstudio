@@ -148,7 +148,7 @@ def render_sheet(items,studio,page,source_root):
     output.close()
     return buf.getvalue(),errors
 
-def generate_all(path,source_root,output_root,studios=None,max_studios=0):
+def generate_all(path,source_root,output_root,studios=None,max_studios=0,write_index=True):
     idx=studio_index(path)
     selected=[s for s in idx["studios"] if studios is None or s["studio"] in studios]
     if studios and len(selected)!=len(set(studios)):
@@ -198,8 +198,72 @@ def generate_all(path,source_root,output_root,studios=None,max_studios=0):
             "sheets":sum(x["pages"] for x in summary),
             "preview_errors":sum(x["preview_errors"] for x in summary),
             "missions":["grouping","naming"],"source_read_only":True}
-    tmp=root/"index.json.tmp";tmp.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",
-                                          encoding="utf-8")
+    # Partial/smoke runs never overwrite the authoritative *completion* index.
+    if write_index and studios is None and not max_studios:
+        return finalize_index(path, root)
+    return result
+
+def shard_for_studio(studio, count):
+    """Stable ownership even if another studio is later added."""
+    if not 1 <= count <= 8:
+        raise ValueError("Quantidade de shards fora do limite")
+    return int(hashlib.sha256(studio.encode("utf-8")).hexdigest()[:12],16) % count
+
+def finalize_index(path, output_root):
+    """Fail-closed complete index, only when every JPEG and SHA is present."""
+    expected=studio_index(path)
+    root=Path(output_root).resolve()
+    records=[]
+    for spec in expected["studios"]:
+        folder=root/_slug(spec["studio"])
+        manifest=folder/"manifest.json"
+        complete=False
+        completed_pages=0
+        errors=0
+        reason=""
+        try:
+            m=json.loads(manifest.read_text(encoding="utf-8"))
+            if m.get("schema")!=SCHEMA or m.get("studio")!=spec["studio"]:
+                raise ValueError("Manifesto de outro estúdio/schema")
+            if m.get("pages")!=spec["pages"] or m.get("images")!=spec["images"]:
+                raise ValueError("Inventário mudou; regenerar recorte")
+            sheets=m.get("sheets",[])
+            if len(sheets)!=spec["pages"]:
+                raise ValueError("Pranchas incompletas")
+            for i,sheet in enumerate(sheets,1):
+                if sheet.get("page")!=i or sheet.get("file")!=f"prancha-{i:03}.jpg":
+                    raise ValueError("Página ou nome divergente")
+                photo=folder/sheet["file"]
+                if not photo.is_file() or hashlib.sha256(photo.read_bytes()).hexdigest()!=sheet.get("sha256"):
+                    raise ValueError("JPEG ausente ou alterado")
+                completed_pages+=1
+                errors+=len(sheet.get("errors",[]))
+            complete=True
+        except (OSError,ValueError,KeyError,TypeError) as exc:
+            reason=str(exc)[:140]
+        records.append({"studio":spec["studio"],"images":spec["images"],
+                        "pages":spec["pages"],"validated_pages":completed_pages,
+                        "complete":complete,"preview_errors":errors,
+                        "blocker":reason})
+    done=sum(x["complete"] for x in records)
+    pages=sum(x["validated_pages"] for x in records)
+    errors=sum(x["preview_errors"] for x in records)
+    all_done=done==expected["studio_count"]
+    state=("complete" if errors==0 else "complete_with_preview_errors") if all_done else "incomplete"
+    result={
+        "schema":SCHEMA,"state":state,"generation_complete":all_done and errors==0,
+        "studio_count":done,"expected_studios":expected["studio_count"],
+        "sheets":pages,"expected_sheets":expected["sheets"],
+        "images":sum(x["images"] for x in records if x["complete"]),
+        "expected_images":expected["images"],
+        "preview_errors":errors,"missions":["grouping","naming"],
+        "source_read_only":True,"curation_automatically_approved":False,
+        "studios":records,
+        "verified_at":datetime.now(timezone.utc).isoformat(),
+    }
+    root.mkdir(parents=True,exist_ok=True)
+    tmp=root/"index.json.tmp"
+    tmp.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     os.replace(tmp,root/"index.json")
     return result
 
@@ -210,8 +274,24 @@ def main():
     parser.add_argument("--out",required=True,type=Path)
     parser.add_argument("--studio",action="append")
     parser.add_argument("--max-studios",type=int,default=0)
+    parser.add_argument("--shards",type=int,default=1)
+    parser.add_argument("--shard-index",type=int,default=0)
+    parser.add_argument("--finalize-only",action="store_true")
     a=parser.parse_args()
     if a.max_studios<0:parser.error("Limite negativo")
-    print(json.dumps(generate_all(a.sqlite,a.media_root,a.out,a.studio,a.max_studios),
-                     ensure_ascii=False))
+    if not 1<=a.shards<=8 or not 0<=a.shard_index<a.shards:
+        parser.error("Shard fora dos limites")
+    if a.finalize_only:
+        result=finalize_index(a.sqlite,a.out)
+    elif a.shards>1:
+        if a.studio or a.max_studios:parser.error("Shard não aceita filtro de estúdio")
+        names=[x["studio"] for x in studio_index(a.sqlite)["studios"]
+               if shard_for_studio(x["studio"],a.shards)==a.shard_index]
+        result=generate_all(a.sqlite,a.media_root,a.out,names,write_index=False)
+        result.update(shards=a.shards,shard_index=a.shard_index)
+    else:
+        result=generate_all(a.sqlite,a.media_root,a.out,a.studio,a.max_studios)
+    print(json.dumps(result,ensure_ascii=False))
+    if a.finalize_only and not result["generation_complete"]:
+        raise SystemExit(2)
 if __name__=="__main__":main()
