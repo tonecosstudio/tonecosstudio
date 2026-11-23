@@ -53,6 +53,12 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     groups=m.list_models(dbpath)
     assert groups["total"]==2,groups
     assert len(groups["items"])==2
+    # GET detail must never call schema setup or acquire a writer connection.
+    from unittest.mock import patch
+    with patch.object(m,"setup",side_effect=AssertionError("GET attempted schema DDL")):
+        detail=m.model_detail(dbpath,groups["items"][0]["group_key"])
+        assert detail["group_key"]==groups["items"][0]["group_key"]
+        assert detail["images"] and all("message_id" in row for row in detail["images"])
     model_wall=m.list_models(dbpath,page=1,limit=96,previews=4)
     assert model_wall["total"]==2 and model_wall["previews"]==4
     assert len(model_wall["items"])==2
