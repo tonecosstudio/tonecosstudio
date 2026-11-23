@@ -9,12 +9,14 @@ import { ArcadeFooterView } from "@/components/arcade/ArcadeFooterView";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import PublicCatalogContact from "@/pages/PublicCatalogContact";
+import CatalogEntryPage, { CatalogSectionNavigation } from "@/pages/CatalogEntryPage";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
 const Home = lazy(() => import("@/pages/LandingPage"));
 const Universe = lazy(() => import("@/pages/CatalogArcade"));
 const Models = lazy(() => import("@/pages/CatalogModelsArcade"));
+const TelegramCatalog = lazy(() => import("@/TelegramStudioCatalog"));
 const Details = lazy(() => import("@/pages/catalog/CanonicalModelDetails"));
 const About = lazy(() => import("@/pages/AboutArcade"));
 const Privacy = lazy(() => import("@/pages/PrivacyArcadeView").then(m => ({ default: m.PrivacyArcadeView })));
@@ -85,6 +87,10 @@ export function CatalogMvpShell({
                       : <Home />
                   } />
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
+                  <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
+                  <Route path={PUBLIC_ROUTES.catalogHistorical} element={<><CatalogSectionNavigation active="historical" /><Models /></>} />
+                  <Route path={PUBLIC_ROUTES.catalogReview} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
+                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />
