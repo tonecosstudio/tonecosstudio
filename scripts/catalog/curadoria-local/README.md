@@ -46,6 +46,22 @@ dois botões explícitos com nota obrigatória: fusão física verificada
 e manutenção separada. Nenhuma decisão é automática.
 
 
+## Foto Telegram avulsa que reutiliza a MESMA imagem de outra variante
+
+A capacidade MCP gallery.relate_orphan_variant usa o MESMO host em
+POST /api/relate-orphan-variant. Só pode ser usada quando uma foto ainda
+sem galeria e uma foto de galeria visualmente auditada têm SHA-256
+original idêntico e título/franquia compatíveis, mas variantes
+de impressão explicitamente diferentes (Pre-Supported vs Unsupported).
+Exige CAS da proposta avulsa e da galeria de referência, nota
+editorial e verificação SHA física de ambas. Cria uma galeria
+singular de VARIANTE (estado revisar), com ID determinístico e
+eventos de auditoria canônicos, e relaciona ambas no próprio
+curation_events (sem tabela nova). O app mostra as variantes
+relacionadas. NUNCA junta os pacotes ou originais fisicamente
+distintos, não aprova publicação. Repetir retorna o mesmo grupo
+sem nova gravação. Não aplicar a imagens meramente parecidas.
+
 ## Cobertura incremental das impressões visuais por estúdio
 
 GET /api/visual-fingerprint-coverage?studio=Wicked retorna total,
