@@ -482,6 +482,11 @@ async function openModel(key){
   el("modelReviewTitle").textContent=g.title;
   el("modelReviewMeta").textContent=g.studio+(g.universe?" · "+g.universe:"")+(g.variant?" · "+g.variant:"")+" · "+g.state+" · "+uniquePhotos.size+" fotos únicas / "+g.images.length+" mensagens";
   el("modelReviewState").value=g.state==="confirmado"?"confirmado":"revisar";
+  el("modelBatchTitle").value=g.title||"";
+  el("modelBatchUniverse").value=g.universe||"";
+  el("modelBatchSource").value="";
+  el("modelBatchNotes").value="";
+  el("modelBatchStatus").textContent="A identidade é independente da aprovação comercial. Confira a fonte e todas as vistas.";
   el("modelOfficialUrl").value="";
   el("modelReviewNotes").value="";
   const imgs=el("modelReviewImages");imgs.replaceChildren();
@@ -520,6 +525,45 @@ async function openModel(key){
   return g;
  }catch(e){notify(e.message);return null;}
 }
+let modelBatchBusy=false;
+el("modelBatchIdentitySave").onclick=async()=>{
+  if(modelBatchBusy||!chosenGroup)return;
+  const key=chosenGroup.group_key;
+  const title=el("modelBatchTitle").value.trim();
+  const universe=el("modelBatchUniverse").value.trim();
+  const url=el("modelBatchSource").value.trim();
+  const note=el("modelBatchNotes").value.trim();
+  const status=el("modelBatchStatus");
+  if(!title||!universe||note.length<65){
+    status.textContent="Título, franquia e justificativa visual de 65 caracteres são obrigatórios.";return;
+  }
+  try{
+    const parsed=new URL(url);
+    if(parsed.protocol!=="https:"||!parsed.hostname)throw Error("Fonte HTTPS obrigatória");
+  }catch(error){status.textContent="Informe uma publicação HTTPS válida do próprio escultor.";return;}
+  modelBatchBusy=true;el("modelBatchIdentitySave").disabled=true;
+  status.textContent="Conferindo todos os SHA físicos e as revisões da galeria...";
+  try{
+    const proof=await api("/api/gallery-identity-proof?"+new URLSearchParams({group_key:key}));
+    if(!proof.audited||proof.member_count<1){
+      throw Error("Galeria ainda sem auditoria visual suficiente");
+    }
+    if(chosenGroup?.group_key!==key||proof.group.revision!==chosenGroup.revision){
+      throw Error("Galeria mudou: recarregue antes de confirmar");
+    }
+    const response=await post("/api/confirm-gallery-identity",{
+      group_key:key,group_revision:proof.group.revision,proofs:proof.proofs,
+      title,universe,official_url:url,note
+    });
+    if(!response.identity_confirmed||response.rights_changed||response.images_moved){
+      throw Error("Contrato de verificação editorial inesperado");
+    }
+    status.textContent=response.confirmed+" fotografias confirmadas editorialmente; sem aprovar direitos ou publicação.";
+    notify("Identidade de "+response.confirmed+" vistas confirmada com fonte auditada.");
+    await openModel(key);await refreshModels();
+  }catch(error){status.textContent="Não foi confirmado: "+error.message;}
+  finally{modelBatchBusy=false;el("modelBatchIdentitySave").disabled=false;}
+};
 el("saveModelReview").onclick=async()=>{
  if(!chosenGroup)return;
  const state=el("modelReviewState").value,official_url=el("modelOfficialUrl").value.trim();

@@ -63,6 +63,23 @@ ou publicação de modelos. Para SHA igual já agrupado e variante
 diferente, usar a operação específica de vínculo de variante acima.
 O fluxo anterior para duas ou mais fotos permanece idêntico.
 
+## Confirmação editorial atômica para uma galeria inteira
+
+GET /api/gallery-identity-proof devolve grupo e provas individuais
+SHA-256 + revisões de TODAS as fotos no SQLite único.
+POST /api/confirm-gallery-identity exige auditoria visual histórica,
+publicação HTTPS do próprio criador verificada editorialmente, descrição
+de 65–700 caracteres, CAS da galeria e de cada proposta, integridade
+física de TODOS os originais e variante igual entre as vistas.
+Atualiza título e universo coerentemente em model_groups e
+name_proposals, confirma identidade SOMENTE das imagens dessa galeria
+e registra eventos e origem. Tudo é uma transação única, fail-closed.
+Se foto pertença a outra variante com SHA idêntico, impede confirmação
+em lote até revisão específica. Não confirma modelo comercialmente,
+não muda estado da galeria, não publica arquivos, não altera media,
+STL ou direitos. O editor de modelos inclui formulário para executar
+a operação pela mesma API do OrdaX MCP; nada é confirmado em silêncio.
+
 ## Galeria provisória de foto única — agrupamento sem confirmar nome
 
 POST /api/create-gallery (capacidade gallery.create) admite review_only=true

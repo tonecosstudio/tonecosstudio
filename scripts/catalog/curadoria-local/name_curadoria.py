@@ -255,6 +255,170 @@ def review_name(db_path,mid,revision,title,studio,universe,variant,status,offici
         db.commit()
     return {"ok":True,"revision":int(revision)+1,"filename":new_name,"status":status}
 
+def gallery_identity_proof(db_path,group_key):
+    """Read the exact member list and all revisions needed for an atomic review."""
+    key=str(group_key or "").strip()
+    if not re.fullmatch("[0-9a-f]{24}",key):
+        raise ValueError("ID de galeria inválido")
+    with smart.db_open(db_path,readonly=True) as db:
+        group=db.execute("""SELECT group_key,studio,title,universe,variant,state,revision
+            FROM model_groups WHERE group_key=?""",(key,)).fetchone()
+        if group is None:raise ValueError("Galeria não encontrada")
+        members=db.execute("""SELECT a.message_id,a.sha256,a.source_relative,
+            p.title,p.universe,p.variant,p.status,p.revision AS name_revision
+            FROM model_group_members m JOIN assets a USING(message_id)
+            JOIN name_proposals p USING(message_id)
+            WHERE m.group_key=? ORDER BY a.message_id""",(key,)).fetchall()
+        audited=bool(db.execute("""SELECT 1 FROM curation_events WHERE group_key=?
+            AND event_type='visual_gallery_audited' LIMIT 1""",(key,)).fetchone())
+    return {"group":dict(group),"audited":audited,
+            "member_count":len(members),"members":[dict(m) for m in members],
+            "proofs":[{"message_id":m["message_id"],"sha256":m["sha256"],
+                       "revision":m["name_revision"]} for m in members],
+            "read_only":True,"automatic_confirmation":False}
+
+
+def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
+                             proofs,title,universe,official_url,note):
+    """Atomically normalize ALL gallery labels and verify only editorial identity.
+
+    Every physical original, proposal CAS and source URL is required.
+    Rights, gallery state, variant and publication are never promoted.
+    """
+    key=str(group_key or "").strip()
+    if not re.fullmatch("[0-9a-f]{24}",key):
+        raise ValueError("ID de galeria inválido")
+    if type(group_revision) is not int or group_revision<0:
+        raise ValueError("Revisão de galeria obrigatória")
+    if not isinstance(proofs,list) or not 1<=len(proofs)<=48:
+        raise ValueError("Inclua a prova de todas as fotos, máximo 48")
+    seen=set();proof_map={}
+    for item in proofs:
+        if not isinstance(item,dict):raise ValueError("Prova inválida")
+        mid=item.get("message_id");sha=item.get("sha256");rev=item.get("revision")
+        if (type(mid) is not int or mid<=0 or mid in seen or
+            type(rev) is not int or rev<0 or not isinstance(sha,str) or
+            not re.fullmatch("[0-9a-f]{64}",sha)):
+            raise ValueError("Mensagem, SHA-256 e revisão obrigatórios")
+        seen.add(mid);proof_map[mid]=(sha,rev)
+    title=str(title or "").strip()
+    universe=str(universe or "").strip()
+    if not title or not universe or len(title)>170 or len(universe)>120:
+        raise ValueError("Nome e franquia específicos obrigatórios")
+    official_url=str(official_url or "").strip()
+    parsed=urlparse(official_url)
+    if (parsed.scheme!="https" or not parsed.netloc or parsed.username or
+        parsed.password or len(official_url)>850):
+        raise ValueError("É obrigatória a publicação HTTPS do próprio criador")
+    note=str(note or "").strip()
+    if not 65<=len(note)<=700:
+        raise ValueError("Prova editorial de 65 a 700 caracteres obrigatória")
+    root=Path(media_root).resolve()
+    now=smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db);setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        g=db.execute("""SELECT * FROM model_groups WHERE group_key=?""",(key,)).fetchone()
+        if not g:raise ValueError("Galeria não encontrada")
+        if g["state"]=="confirmado" or g["studio"].casefold()=="geral + 50k":
+            raise ValueError("Galeria comercial/coleção geral não aceita revisão de nome em lote")
+        if not db.execute("""SELECT 1 FROM curation_events WHERE group_key=?
+            AND event_type='visual_gallery_audited' LIMIT 1""",(key,)).fetchone():
+            raise ValueError("Falta auditoria de esculturas na galeria")
+        members=db.execute("""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
+            p.studio,p.title,p.universe,p.variant,p.status,p.revision AS name_revision,
+            p.notes,p.official_url
+            FROM model_group_members m JOIN assets a USING(message_id)
+            JOIN name_proposals p USING(message_id)
+            WHERE m.group_key=? ORDER BY a.message_id""",(key,)).fetchall()
+        if len(members)!=len(proofs) or {r["message_id"] for r in members}!=seen:
+            raise ValueError("Prova deve cobrir TODAS as fotos atuais da galeria")
+        if g["revision"]!=group_revision:
+            raise RuntimeError("Galeria alterada: recarregue as evidências")
+        if any(r["status"]=="confirmado" for r in members):
+            raise ValueError("Grupo parcialmente confirmado: revisar fotos individualmente")
+        for r in members:
+            mid=r["message_id"]
+            if proof_map[mid]!=(r["sha256"],r["name_revision"]):
+                raise RuntimeError("Prova SHA/revisão da foto divergiu")
+            if r["studio"]!=g["studio"] or r["original_topic"]!=g["studio"]:
+                raise ValueError("Origem da fotografia diferente do estúdio")
+            if smart.normalize(r["variant"])!=smart.normalize(g["variant"]):
+                raise ValueError("Variantes divergentes dentro da galeria")
+            if smart.normalize(r["title"])!=smart.normalize(g["title"]):
+                raise ValueError("Título legado divergente; revisar galeria antes da confirmação")
+            if smart.normalize(r["universe"])!=smart.normalize(g["universe"]):
+                raise ValueError("Franquia legada divergente; revisar galeria antes da confirmação")
+            other=db.execute("""SELECT g.group_key,g.variant FROM assets a
+                JOIN model_group_members m USING(message_id)
+                JOIN model_groups g USING(group_key)
+                WHERE a.sha256=? AND g.group_key!=? AND g.studio=?
+                  AND g.variant!=? LIMIT 1""",
+                  (r["sha256"],key,g["studio"],g["variant"])).fetchone()
+            if other:
+                raise ValueError("Render reutilizado em outra variante: resolver conflito antes de confirmar")
+            path=(root/r["source_relative"]).resolve()
+            if (not path.is_relative_to(root) or not path.is_file()
+                or path.stat().st_size>30*1024*1024):
+                raise ValueError("Original ausente ou externo")
+            with path.open("rb") as file:
+                actual=hashlib.file_digest(file,"sha256").hexdigest()
+            if actual!=r["sha256"]:
+                raise ValueError("SHA-256 físico divergente da fotografia")
+
+        updated=db.execute("""UPDATE model_groups SET title=?,universe=?,
+            revision=revision+1,updated_at=?
+            WHERE group_key=? AND revision=? AND state!='confirmado'""",
+            (title,universe,now,key,group_revision))
+        if updated.rowcount!=1:
+            raise RuntimeError("Revisão concorrente da galeria")
+        for r in members:
+            filename=proposed_name({"title":title,"variant":r["variant"]},
+                                   r["message_id"],r["source_relative"])
+            previous_note=str(r["notes"] or "").strip()
+            normalized_note=(previous_note+"\n"+note).strip()[:1000]
+            changed=db.execute("""UPDATE name_proposals
+                SET title=?,universe=?,filename=?,status='confirmado',
+                    confidence=1.0,official_url=?,notes=?,
+                    revision=revision+1,modified_at=?
+                WHERE message_id=? AND revision=? AND status IN ('provavel','revisar')""",
+                (title,universe,filename,official_url,normalized_note,
+                 now,r["message_id"],r["name_revision"]))
+            if changed.rowcount!=1:
+                raise RuntimeError("Revisão concorrente da fotografia")
+            evidence=json.dumps({"gallery":key,"message_id":r["message_id"],
+                "old_title":r["title"],"new_title":title,
+                "old_universe":r["universe"],"new_universe":universe,
+                "variant_preserved":r["variant"],"official_url":official_url,
+                "physical_sha256":r["sha256"],"note":note,
+                "identity_only":True,"rights_approved":False},
+                ensure_ascii=False,sort_keys=True)
+            db.execute("""INSERT INTO name_proposal_events
+                (message_id,event_type,evidence,occurred_at)
+                VALUES(?,'gallery_official_identity_review',?,?)""",
+                (r["message_id"],evidence,now))
+        detail=json.dumps({"group_key":key,"studio":g["studio"],
+            "member_ids":[r["message_id"] for r in members],
+            "original_sha256":[r["sha256"] for r in members],
+            "old_title":g["title"],"new_title":title,
+            "old_universe":g["universe"],"new_universe":universe,
+            "variant_preserved":g["variant"],"group_state_preserved":g["state"],
+            "official_url":official_url,"note":note,
+            "rights_approved":False,"commercial_published":False,
+            "media_modified":False},ensure_ascii=False,sort_keys=True)
+        db.execute("""INSERT INTO curation_events
+            (group_key,event_type,detail,occurred_at)
+            VALUES(?,'gallery_identity_verified_editorial',?,?)""",
+            (key,detail,now))
+        db.commit()
+        return {"group_key":key,"confirmed":len(members),
+                "group_revision":group_revision+1,"title":title,
+                "universe":universe,"variant":g["variant"],
+                "group_state":g["state"],"identity_confirmed":True,
+                "rights_changed":False,"originals_modified":False,
+                "images_moved":False}
+
+
 def export_manifest(db_path,destination):
     """Lista nomes sugeridos, caminhos de origem e evidência; não gera hardlinks."""
     output=Path(destination)
