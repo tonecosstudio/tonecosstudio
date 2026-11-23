@@ -21,6 +21,13 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
     first = thumbs.thumbnail(path, original_sha, 256)
     again = thumbs.thumbnail(path, original_sha, 256)
     assert first == again
+    # Hot previews must not resolve Windows reparse points a second time.
+    # The host checks the physical media path before calling this module.
+    from unittest.mock import patch
+    with patch.object(Path,"resolve",side_effect=AssertionError(
+        "thumbnail cache key used filesystem realpath")):
+        assert thumbs.etag(path,original_sha,256)==etag0
+        assert thumbs.thumbnail(path,original_sha,256)==first
     assert first[:4] == b"RIFF" and first[8:12] == b"WEBP"
     with Image.open(BytesIO(first)) as img:
         assert img.format == "WEBP"
