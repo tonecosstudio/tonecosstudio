@@ -59,6 +59,20 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 .sync-row button{text-align:left;flex:1}
 .sync-list{max-height:330px;overflow:auto;display:grid;gap:6px;margin:10px 0}
 @media(max-width:650px){.board-dialog{max-width:100vw;width:100vw;max-height:100vh}.board-body{grid-template-columns:1fr}}
+
+#studioMissionsPanel{margin:12px 0 20px;border-color:#614e3a}
+#studioMissionsPanel h2{margin-bottom:7px}
+#studioMissionsPanel .mission-controls{display:grid;grid-template-columns:minmax(180px,2fr) minmax(175px,1fr) auto;gap:8px;align-items:end;margin:12px 0}
+#studioMissionsPanel .mission-controls label{margin:0}
+#studioMissionBoard{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;max-height:665px;overflow-y:auto;align-items:start}
+.studio-mission-tile{border:1px solid #414149;border-radius:10px;background:#202127;overflow:hidden;min-width:0}
+.studio-mission-tile img{width:100%;height:180px;object-fit:contain;background:#101115;display:block}
+.studio-mission-meta{display:flex;flex-direction:column;gap:5px;padding:9px;min-width:0}
+.studio-mission-meta strong{font-size:12px;overflow-wrap:anywhere}
+.studio-mission-meta span,.studio-mission-meta small{font-size:11px;color:#bdbac0;overflow-wrap:anywhere}
+.studio-mission-meta button{font-size:11px;padding:6px}
+#studioMissionsPanel .mission-pages{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:13px 0 0}
+@media(max-width:850px){#studioMissionsPanel .mission-controls{grid-template-columns:1fr}#studioMissionBoard{max-height:540px}}
 </style></head>
 <body>
 <header><div><div class="logo">TONART STUDIO</div><h1>Curadoria Visual</h1><div class="sub">Telegram é a origem preferencial · Revisão antes de publicar</div></div>
@@ -67,6 +81,18 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <aside class="left"><h2>Estúdios e tópicos</h2><div id="topics" class="list"></div></aside>
 <section class="center"><div class="toolbar"><input id="search" placeholder="Buscar personagem, modelo, legenda, ID..." autocomplete="off"><select id="statusFilter"><option value="">Todos os status</option><option value="pendente">Pendente</option><option value="revisar">Revisar</option><option value="provavel">Nome provável</option><option value="confirmado">Nome confirmado</option><option value="aprovado">Aprovado</option><option value="descartado">Descartado</option></select></div>
 <div class="buttons" style="margin-bottom:14px"><button class="primary" id="namesMode">1. Nomes propostos</button><button id="modelsMode">2. Galerias de modelos</button><button id="imagesMode">Imagens originais</button><button id="queueMode">Fila de revisão</button></div>
+<section id="studioMissionsPanel" class="sync-panel" aria-label="Duas missões de curadoria por estúdio">
+<h2>Missões visuais por estúdio</h2>
+<p class="sub">Pranchas paginadas de todas as fotos dos 92 estúdios. Mesma evidência física para duas missões: galeria e identidade. Revisão e publicação continuam separadas.</p>
+<div class="mission-controls">
+<label for="studioMissionStudio">Estúdio<select id="studioMissionStudio" aria-label="Selecionar estúdio"></select></label>
+<label for="studioMissionKind">Missão<select id="studioMissionKind"><option value="grouping">1. Mesma escultura / galeria</option><option value="naming">2. Nome / personagem / franquia</option></select></label>
+<button type="button" id="studioMissionRefresh">Recarregar estado atual</button>
+</div>
+<p id="studioMissionStatus" class="sub" role="status">Carregando estúdios...</p>
+<div id="studioMissionBoard" aria-live="polite"></div>
+<div class="mission-pages"><button id="studioMissionPrev" type="button">Anterior</button><span id="studioMissionPage">Prancha</span><button id="studioMissionNext" type="button">Próxima</button></div>
+</section>
 <label style="display:flex;align-items:center;gap:8px;margin:0 0 12px"><input type="checkbox" id="multiplePhotosOnly" style="width:auto"> Apenas galerias com varias fotos</label><label id="unnamedFilter" hidden style="margin:0 0 12px;display:flex;align-items:center;gap:8px"><input id="onlyUnnamedModels" type="checkbox" style="width:auto"> Exibir apenas galerias sem nome</label><div id="queueFilters" class="sync-panel" hidden><strong>Fila priorizada da curadoria</strong><p class="sub">Ordenada por risco de identificação, independente de publicação. O tópico Geral + 50k permanece fora deste fluxo.</p><div class="buttons"><label for="queueKind">Prioridade <select id="queueKind"><option value="attention">Todas as pendências</option><option value="unlabeled">Sem nome</option><option value="legacy_groups">Auditar galerias antigas</option><option value="legacy_album">Fotos em grupos antigos</option><option value="manual_review">Revisar nome</option><option value="missing_source">Fonte oficial pendente</option><option value="confirmed">Nome confirmado</option><option value="all">Todas, inclusive concluídas</option></select></label><label id="queueVariantLabel" for="queueVariant">Variante <select id="queueVariant"><option value="all">Todas as variantes</option><option value="with">Com variante</option><option value="without">Sem variante</option></select></label></div><div id="legacyAuditFilters" class="buttons" hidden><label for="legacyAuditState">Histórico <select id="legacyAuditState"><option value="new" selected>Aguardando primeira revisão</option><option value="attention">Exigem investigação adicional</option><option value="pending">Todas pendentes (inclui investigação)</option><option value="audited">Já auditadas</option><option value="all">Todas</option></select></label><label for="legacyAuditRisk">Atenção <select id="legacyAuditRisk"><option value="all">Todas as galerias</option><option value="variants">Nomes ou variantes divergentes</option><option value="albums">Vários álbuns misturados</option><option value="large">Galerias grandes (8+ fotos)</option></select></label></div><div id="legacyWallControls" class="buttons" hidden>
 <label for="legacyWallPageSize">Galerias por lote
 <select id="legacyWallPageSize"><option value="24">24 galerias</option><option value="48" selected>48 galerias</option><option value="96">96 galerias</option></select></label>
@@ -152,4 +178,4 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <label for="boardSize">Fotos por página
 <select id="boardSize"><option value="24">24</option><option value="48" selected>48</option><option value="96">96</option></select></label>
 <button id="boardNext" type="button">Próxima</button></nav></dialog>
-<script src="/curadoria.js" defer></script><script src="/gallery_ui.js" defer></script></body></html>
+<script src="/curadoria.js" defer></script><script src="/gallery_ui.js" defer></script><script src="/studio_missions_ui.js" defer></script></body></html>
