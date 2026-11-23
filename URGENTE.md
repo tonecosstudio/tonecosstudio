@@ -1,3 +1,13 @@
+## CHECKPOINT — 22/11/2026 — Site TONART tags v2 PUBLICADO e verificado
+
+- **Resultado da produção confirmado:** `https://catalogo.tonartstudio.com.br`, Vercel `tonart-catalogo-publico` (projeto `prj_6uaHlw05JQIxn8z9ocFH9MarES3p`, equipe `jogo-brasils-projects`), deployment `dpl_7K4tMhfgsSnYi7PGKAx8kVRMMHAz` **READY** da `main` `156d8ccb3027539a3a2ec6065a07bc45a6936532` (PR #94). O alias de produção foi conferido no deployment.
+- **Falha real anterior corrigida:** antes, contrato v2 HTTP 404 e filtro `franchise` HTTP 400; após, `/catalog-ui-contract.json` 200 `telegram-facets-v2`; listagem 200; `franchise=marvel` 200 (238 modelos); `franchise=one-piece&character=Ace` 200 (2 resultados). Smoke canônico `node scripts/vercel/verify-public-tags-live.mjs` **exit 0/ready=true**. Evidência não confidencial em `docs/evidence/catalog-site-tags-v2-prod-20261122.json`.
+- **Projeto principal não alterado:** `https://tonartstudio.com.br` 200, ETag `4ae01a2f2f473ea9c810db6780ffbb10` inalterada nas comparações. Sem mudanças D1, Worker, Supabase, R2, imagens, direitos, identidade comercial ou M5; sem publicar 952 personagens privados como tags aprovadas. Frontend somente mostra personagem confirmado em ficha não provisória; rascunhos de franquia identificados como revisão.
+- **Rollback disponível:** deployment anterior `dpl_E5We2HgA9uCcesemzERg9DuUPzr6` no MESMO projeto, commit `bdfd255aa94e4950210ed0923d216e1cf7b2fb93`; restaurar somente em regressão real, nunca manipular projeto comercial `tonart-studio-public`.
+- **Retomada SEM recomeçar:** tarefa `TONART — concluir MVP` atualizada, somente os **92 estúdios Telegram/4.433 grupos**. Arquivos derivados privados de fila em `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/telegram-studios-first-20261122/`; RinArtPoke 156 grupos (150 matches nominais, três formas regionais PokeAPI + três Pokébolas). **Zero estúdios concluídos/zero links visuais comprovados** neste checkpoint. Depois da validação de site v2 já resolvida, voltar à revisão de modelos por prancha/host, com prova real; catálogo antigo pausado.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — site TONART tags v2 e continuidade de estúdios
 
 - **Foco atual:** corrigir/deploy do catálogo `catalogo.tonartstudio.com.br` ANTES de avançar a curadoria; depois retomar a fila privada de 92 estúdios/4.433 grupos do Telegram pela missão horária existente. Catálogo antigo permanece fora do escopo até encerrar os estúdios.
