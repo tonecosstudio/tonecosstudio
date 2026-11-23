@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sqlite3
+import time
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -187,6 +188,31 @@ def render_sheet(items,studio,page,source_root):
     output.close()
     return buf.getvalue(),errors
 
+def _atomic_replace(src, dst):
+    """Bounded Windows sharing-violation retry; never swallow write failures."""
+    waits=(0.0,0.1,0.25,0.5,1.0,2.0)
+    for attempt, wait in enumerate(waits):
+        if wait:time.sleep(wait)
+        try:
+            os.replace(src,dst)
+            return
+        except PermissionError as exc:
+            # Error 5 can mean a temporary file handle held without
+            # FILE_SHARE_DELETE; 32 is ERROR_SHARING_VIOLATION. Exhaust the
+            # bounded attempts and propagate the *actual* error.
+            if (os.name!="nt" or getattr(exc,"winerror",None) not in (5,32)
+                    or attempt==len(waits)-1):
+                raise
+
+
+def _write_json_atomic(path, payload):
+    """Write a disposable sidecar and only then atomically publish JSON."""
+    temp=path.with_name(path.name+".tmp")
+    temp.write_text(json.dumps(payload,ensure_ascii=False,indent=2)+"\n",
+                    encoding="utf-8")
+    _atomic_replace(temp,path)
+
+
 def generate_all(path,source_root,output_root,studios=None,max_studios=0,write_index=True):
     idx=studio_index(path)
     selected=[s for s in idx["studios"] if studios is None or s["studio"] in studios]
@@ -198,9 +224,21 @@ def generate_all(path,source_root,output_root,studios=None,max_studios=0,write_i
     for studio in selected:
         folder=root/_slug(studio["studio"]);folder.mkdir(parents=True,exist_ok=True)
         mf=folder/"manifest.json"
-        try:
-            previous={x["page"]:x for x in json.loads(mf.read_text(encoding="utf-8"))["sheets"]}
-        except (OSError,ValueError,KeyError):previous={}
+        # Never replace the last fully committed manifest with a prefix.
+        # Resume checkpoints are disposable and do not grant "complete".
+        progress=folder/"manifest.progress.json"
+        previous={}
+        for candidate in (mf,progress):
+            try:
+                doc=json.loads(candidate.read_text(encoding="utf-8"))
+                if (doc.get("schema")!=SCHEMA or doc.get("studio")!=studio["studio"]
+                    or doc.get("images")!=studio["images"]
+                    or doc.get("pages")!=studio["pages"]):
+                    continue
+                previous.update({x["page"]:x for x in doc.get("sheets",[])
+                                 if isinstance(x,dict) and isinstance(x.get("page"),int)})
+            except (OSError,ValueError,KeyError,TypeError):
+                continue
         pages=[]
         for number in range(1,studio["pages"]+1):
             board=board_page(path,studio["studio"],page=number,include_paths=True)
@@ -216,7 +254,7 @@ def generate_all(path,source_root,output_root,studios=None,max_studios=0,write_i
                 entry=old
             else:
                 jpeg,errors=render_sheet(items,studio["studio"],number,source_root)
-                temp=dest.with_suffix(".jpg.tmp");temp.write_bytes(jpeg);os.replace(temp,dest)
+                temp=dest.with_suffix(".jpg.tmp");temp.write_bytes(jpeg);_atomic_replace(temp,dest)
                 entry={"page":number,"file":dest.name,"images":len(items),
                        "fingerprint":fingerprint,
                        "sha256":hashlib.sha256(jpeg).hexdigest(),"errors":errors}
@@ -227,9 +265,17 @@ def generate_all(path,source_root,output_root,studios=None,max_studios=0,write_i
                       "images":studio["images"],"pages":studio["pages"],
                       "updated_at":datetime.now(timezone.utc).isoformat(),
                       "sheets":pages}
-            tmp=mf.with_suffix(".json.tmp")
-            tmp.write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-            os.replace(tmp,mf)
+            _write_json_atomic(progress,manifest)
+        if len(pages)!=studio["pages"]:
+            raise RuntimeError("Não publicar manifesto de estúdio incompleto")
+        # A transient failure here leaves the old manifest intact, and the
+        # full progress sidecar permits an idempotent retry on the next run.
+        _write_json_atomic(mf,manifest)
+        try:
+            progress.unlink(missing_ok=True)
+        except PermissionError:
+            # Not a source of truth, safe to discard at next successful run.
+            pass
         summary.append({"studio":studio["studio"],"images":studio["images"],
                         "pages":len(pages),"preview_errors":sum(len(p["errors"]) for p in pages)})
     result={"schema":SCHEMA,"studios":summary,"studio_count":len(summary),
@@ -312,9 +358,7 @@ def finalize_index(path, output_root):
         "verified_at":datetime.now(timezone.utc).isoformat(),
     }
     root.mkdir(parents=True,exist_ok=True)
-    tmp=root/"index.json.tmp"
-    tmp.write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-    os.replace(tmp,root/"index.json")
+    _write_json_atomic(root/"index.json",result)
     return result
 
 def main():
