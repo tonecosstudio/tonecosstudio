@@ -197,7 +197,7 @@ export default function LandingPage() {
           {/* CTAs */}
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-6">
             <Link
-              to={PUBLIC_ROUTES.catalogModels}
+              to={PUBLIC_ROUTES.catalogHub}
               className="group inline-flex w-full max-w-[20rem] items-center justify-center gap-2 bg-[hsl(var(--gold-accent))] text-[hsl(0,0%,5%)] hover:brightness-110 font-mono uppercase tracking-[0.08em] text-xs h-14 px-3 shadow-[0_0_30px_hsl(var(--gold-accent)/0.2)] hover:shadow-[0_0_50px_hsl(var(--gold-accent)/0.4)] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))] sm:w-auto sm:max-w-none sm:gap-3 sm:px-10 sm:text-sm sm:tracking-[0.15em]"
             >
               <Crosshair
