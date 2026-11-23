@@ -40,6 +40,19 @@ describe("TONART shared public/mobile navigation", () => {
     expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("keeps mobile navigation links stacked instead of inline", () => {
+    renderNavigation("/catalogo/em-revisao", "/universo");
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+    const mobileMenu = document.getElementById("tonart-mobile-navigation");
+    expect(mobileMenu).not.toBeNull();
+    const links = [...(mobileMenu?.querySelectorAll("a") ?? [])];
+    expect(links).toHaveLength(7);
+    for (const link of links) {
+      expect(link.classList.contains("flex")).toBe(true);
+      expect(link.classList.contains("inline-flex")).toBe(false);
+    }
+  });
+
   it.each(["checking", "disabled"] as const)(
     "hides registration while Auth status is %s",
     (status) => {
