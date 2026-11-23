@@ -31,6 +31,20 @@ identidade no Supabase, outra fila ou serviços; toda confirmação de nome
 continua pelo cliente canônico de lote, com SHA físico e URL oficial do modelo.
 Paginação 12/24/48; refazer consulta após uma alteração de nome.
 
+## Reunir fotos da MESMA estatueta entre galerias revisadas
+
+O host canonico expoe gallery.merge_reviewed em
+POST /api/merge-reviewed-galleries. A fusao nao usa nome/personagem como
+prova automatica. Exige justificativa visual de 45 a 500 caracteres,
+revisao CAS de AMBAS as galerias, SHA-256 fisico de TODAS as mensagens
+e auditoria visual anterior. Somente mesma escultura, variante e origem.
+O movimento de membros, evidencias e eventos ocorre em uma transacao
+SQLite, ate 48 fotos. A galeria de origem registra alias historico no
+proprio curation_events e o link antigo /api/model/{key} e resolvido.
+A original permanece intocada. O novo grupo fica revisar; nomes,
+franquias, licencas e publicacao NAO sao aprovados. Esculturas de poses
+diferentes, armas e pecas de kits nao podem ser fundidas so pelo titulo.
+
 ## Lotes de nomes por galeria revisada (OrdaX MCP + Curadoria Host)
 
 O cliente canônico EXISTENTE review_verified_names_batch.py também aceita
