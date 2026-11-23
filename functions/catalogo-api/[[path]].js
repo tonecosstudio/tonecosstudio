@@ -20,9 +20,17 @@ const PUBLIC_LIST_ROUTES = new Set([
 // Preserve only public API/media semantics. Never forward session, site-policy
 // or navigation headers from the upstream Worker.
 const SAFE_UPSTREAM_RESPONSE_HEADERS = [
-  "content-type", "content-length", "content-encoding", "content-language",
-  "content-range", "accept-ranges", "etag", "last-modified",
-  "cache-control", "vary", "access-control-allow-origin",
+  "content-type",
+  "content-length",
+  "content-encoding",
+  "content-language",
+  "content-range",
+  "accept-ranges",
+  "etag",
+  "last-modified",
+  "cache-control",
+  "vary",
+  "access-control-allow-origin",
   "cross-origin-resource-policy",
 ];
 
@@ -35,11 +43,15 @@ function isSafeMediaPath(path) {
       !segment ||
       segment.length > 256 ||
       !/^(?:[a-zA-Z0-9._~-]|%[0-9a-fA-F]{2})+$/.test(segment)
-    ) return false;
+    )
+      return false;
     try {
       const decoded = decodeURIComponent(segment);
-      return decoded !== "." && decoded !== ".." &&
-        !/[\\/\x00-\x1f\x7f%:?#]/.test(decoded);
+      return (
+        decoded !== "." &&
+        decoded !== ".." &&
+        !/[\\/\x00-\x1f\x7f%:?#]/.test(decoded)
+      );
     } catch {
       return false;
     }
@@ -63,13 +75,19 @@ function matchesRequestedMediaRange(range, contentRange) {
   const match = /^bytes (\d{1,15})-(\d{1,15})\/(\d{1,15})$/i.exec(contentRange);
   if (!match) return false;
   const [start, end, total] = match.slice(1).map(Number);
-  if (!Number.isSafeInteger(total) || total <= 0 || start > end || end >= total) return false;
+  if (!Number.isSafeInteger(total) || total <= 0 || start > end || end >= total)
+    return false;
   const suffix = /^bytes=-(\d{1,15})$/i.exec(range);
-  if (suffix) return start === Math.max(0, total - Number(suffix[1])) && end === total - 1;
+  if (suffix)
+    return (
+      start === Math.max(0, total - Number(suffix[1])) && end === total - 1
+    );
   const absolute = /^bytes=(\d{1,15})-(\d{0,15})$/i.exec(range);
   if (!absolute) return false;
-  return start === Number(absolute[1]) &&
-    end === (absolute[2] ? Math.min(Number(absolute[2]), total - 1) : total - 1);
+  return (
+    start === Number(absolute[1]) &&
+    end === (absolute[2] ? Math.min(Number(absolute[2]), total - 1) : total - 1)
+  );
 }
 
 // Some previously deployed Workers incorrectly mark a complete R2 object
@@ -81,15 +99,23 @@ function isCompleteMediaRange(contentRange) {
   if (!match) return false;
   const end = Number(match[1]);
   const total = Number(match[2]);
-  return Number.isSafeInteger(end) && Number.isSafeInteger(total) &&
-    total > 0 && end === total - 1;
+  return (
+    Number.isSafeInteger(end) &&
+    Number.isSafeInteger(total) &&
+    total > 0 &&
+    end === total - 1
+  );
 }
 
 function isPublicCatalogRoute(path) {
-  return PUBLIC_LIST_ROUTES.has(path) ||
+  return (
+    PUBLIC_LIST_ROUTES.has(path) ||
     /^api\/models\/[a-z0-9][a-z0-9-]{0,239}(?:\/images)?$/.test(path) ||
-    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(path) ||
-    isSafeMediaPath(path);
+    /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(
+      path,
+    ) ||
+    isSafeMediaPath(path)
+  );
 }
 
 // Budget guard on public D1-backed routes. Extra/duplicate query arguments
@@ -100,55 +126,112 @@ function isBoundedPublicQuery(route, searchParams) {
   // Media keys are immutable; irrelevant query arguments merely fragment
   // CDN caches and can cause new R2 reads with no change in image content.
   if (route.startsWith("media/")) return searchParams.size === 0;
-  const routeKeys = route === "api/telegram-studios"
-    ? ["studio", "q", "category", "provisional", "offset", "limit"]
-    : route === "api/telegram-studios/studios" || /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(route)
-      ? []
-    : route === "api/catalog"
-    ? ["category", "franchise", "folder", "q", "material", "collection", "minHeight", "maxHeight", "limit", "cursor"]
-    : route === "api/franchises"
-      ? ["category", "q", "limit"]
-      : route === "api/folders"
-        ? ["category", "franchise", "parent"]
-        : route === "api/recent"
-          ? ["limit"]
-          : route === "api/categories" || /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
-            ? []
-            : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(route)
-              ? ["limit", "cursor", "v"]
-              : null;
+  const routeKeys =
+    route === "api/telegram-studios"
+      ? [
+          "studio",
+          "q",
+          "category",
+          "franchise",
+          "character",
+          "provisional",
+          "offset",
+          "limit",
+        ]
+      : route === "api/telegram-studios/studios" ||
+          /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(
+            route,
+          )
+        ? []
+        : route === "api/catalog"
+          ? [
+              "category",
+              "franchise",
+              "folder",
+              "q",
+              "material",
+              "collection",
+              "minHeight",
+              "maxHeight",
+              "limit",
+              "cursor",
+            ]
+          : route === "api/franchises"
+            ? ["category", "q", "limit"]
+            : route === "api/folders"
+              ? ["category", "franchise", "parent"]
+              : route === "api/recent"
+                ? ["limit"]
+                : route === "api/categories" ||
+                    /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
+                  ? []
+                  : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(
+                        route,
+                      )
+                    ? ["limit", "cursor", "v"]
+                    : null;
   if (!routeKeys) return false;
   const allowed = new Set(routeKeys);
   const seen = new Set();
   for (const [key, value] of searchParams) {
-    if (!allowed.has(key) || seen.has(key) || !value ||
-        value.length > 2048 || /[\x00-\x1f\x7f]/.test(value)) return false;
+    if (
+      !allowed.has(key) ||
+      seen.has(key) ||
+      !value ||
+      value.length > 2048 ||
+      /[\x00-\x1f\x7f]/.test(value)
+    )
+      return false;
     seen.add(key);
     if (key === "limit") {
-      const max = route === "api/recent" ? 24 : route === "api/franchises" || route === "api/telegram-studios" ? 48 : 60;
+      const max =
+        route === "api/recent"
+          ? 24
+          : route === "api/franchises" || route === "api/telegram-studios"
+            ? 48
+            : 60;
       if (!/^[1-9][0-9]?$/.test(value) || Number(value) > max) return false;
     } else if (key === "offset") {
       if (!/^(0|[1-9][0-9]{0,4})$/.test(value)) return false;
     } else if (key === "studio") {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
     } else if (key === "provisional") {
-      if (route !== "api/telegram-studios" || !/^[01]$/.test(value)) return false;
+      if (route !== "api/telegram-studios" || !/^[01]$/.test(value))
+        return false;
     } else if (key === "minHeight" || key === "maxHeight") {
       if (!/^[1-9][0-9]{0,2}$/.test(value) || Number(value) > 300) return false;
     } else if (key === "v") {
-      if (!/^[1-9][0-9]{0,14}$/.test(value) ||
-          !Number.isSafeInteger(Number(value))) return false;
+      if (
+        !/^[1-9][0-9]{0,14}$/.test(value) ||
+        !Number.isSafeInteger(Number(value))
+      )
+        return false;
     } else if (key === "cursor") {
       // Gallery cursors use padded base64 (e.g. "Ng=="); model list
       // cursors use unpadded base64url. Preserve both canonical encodings.
       if (!/^[A-Za-z0-9+/_-]{1,2048}={0,2}$/.test(value)) return false;
     } else if (key === "category" || key === "franchise") {
       if (route === "api/telegram-studios") {
-        if (value.length > 80 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) return false;
+        if (value.length > 80 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
+          return false;
       } else if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
+    } else if (key === "character") {
+      // The Worker requires exact, franchise-scoped character names. Keep
+      // the same fail-closed bounds in the first-party Pages/Vercel proxy.
+      if (
+        route !== "api/telegram-studios" ||
+        !searchParams.has("franchise") ||
+        value.length > 80 ||
+        value !== value.trim()
+      )
+        return false;
     } else if (key === "folder" || key === "parent") {
-      if (value.length > 240 || value.includes("\\") ||
-          value.split("/").some((part) => !part || part === "." || part === "..")) return false;
+      if (
+        value.length > 240 ||
+        value.includes("\\") ||
+        value.split("/").some((part) => !part || part === "." || part === "..")
+      )
+        return false;
     } else if (key === "q") {
       const length = Array.from(value.trim()).length;
       if (length < 3 || length > 120) return false;
@@ -174,8 +257,10 @@ export async function proxyCatalogRequest(request, fetcher) {
     return new Response("Bad request", { status: 400 });
   }
 
-  if (!incoming.pathname.startsWith(PREFIX) ||
-      incoming.pathname.length + incoming.search.length > 4096) {
+  if (
+    !incoming.pathname.startsWith(PREFIX) ||
+    incoming.pathname.length + incoming.search.length > 4096
+  ) {
     return new Response("Not found", { status: 404 });
   }
 
@@ -183,10 +268,13 @@ export async function proxyCatalogRequest(request, fetcher) {
   if (!isPublicCatalogRoute(route)) {
     return new Response("Not found", { status: 404 });
   }
-  if (incoming.search.length > 2048 ||
-      !isBoundedPublicQuery(route, incoming.searchParams)) {
+  if (
+    incoming.search.length > 2048 ||
+    !isBoundedPublicQuery(route, incoming.searchParams)
+  ) {
     return new Response("Invalid catalog query", {
-      status: 400, headers: { "Cache-Control": "no-store" },
+      status: 400,
+      headers: { "Cache-Control": "no-store" },
     });
   }
 
@@ -219,29 +307,47 @@ export async function proxyCatalogRequest(request, fetcher) {
     // If the upstream ignores an explicit Range, cancel the potentially full
     // object before the Vercel adapter/Pages response can buffer it. This is
     // essential for the admin's one-byte media probe and saves R2 bandwidth.
-    if (route.startsWith("media/") && headers.has("Range") && response.status === 200) {
+    if (
+      route.startsWith("media/") &&
+      headers.has("Range") &&
+      response.status === 200
+    ) {
       await response.body?.cancel().catch(() => undefined);
       return new Response("Upstream media range ignored", {
-        status: 502, headers: { "Cache-Control": "no-store" },
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
       });
     }
     // A complete R2 object from an older Worker may be incorrectly labelled
     // 206. Normalize *only* an exact 0..size-1 span when no Range was sent.
-    const completeLegacyMedia = response.status === 206 &&
-      route.startsWith("media/") && !headers.has("Range") &&
+    const completeLegacyMedia =
+      response.status === 206 &&
+      route.startsWith("media/") &&
+      !headers.has("Range") &&
       isCompleteMediaRange(response.headers.get("Content-Range"));
-    if (response.status === 206 &&
-        !completeLegacyMedia &&
-        (!route.startsWith("media/") ||
-         !matchesRequestedMediaRange(headers.get("Range"), response.headers.get("Content-Range")))) {
+    if (
+      response.status === 206 &&
+      !completeLegacyMedia &&
+      (!route.startsWith("media/") ||
+        !matchesRequestedMediaRange(
+          headers.get("Range"),
+          response.headers.get("Content-Range"),
+        ))
+    ) {
       return new Response("Invalid upstream media range", {
-        status: 502, headers: { "Cache-Control": "no-store" },
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
       });
     }
     // No arbitrary external redirect or upstream cookie is promoted to our site.
-    if (response.status >= 300 && response.status < 400 && response.status !== 304) {
+    if (
+      response.status >= 300 &&
+      response.status < 400 &&
+      response.status !== 304
+    ) {
       return new Response("Upstream redirect rejected", {
-        status: 502, headers: { "Cache-Control": "no-store" },
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
       });
     }
     const safeHeaders = new Headers();
@@ -263,11 +369,11 @@ export async function proxyCatalogRequest(request, fetcher) {
     });
   } catch {
     return new Response("Catalog unavailable", {
-      status: 502, headers: { "Cache-Control": "no-store" },
+      status: 502,
+      headers: { "Cache-Control": "no-store" },
     });
   }
 }
-
 
 // Private, authenticated administration lives behind the SAME first-party
 // Pages → CATALOG_WORKER binding; public routes retain the read-only proxy.
@@ -282,74 +388,110 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
     return new Response("Not found", { status: 404 });
   }
   const route = incoming.pathname.slice(PREFIX.length);
-  if (!PRIVATE_DRAFT_ROUTE.test(route) ||
-      incoming.pathname.length + incoming.search.length > 4096 ||
-      incoming.search.length > 2048) {
+  if (
+    !PRIVATE_DRAFT_ROUTE.test(route) ||
+    incoming.pathname.length + incoming.search.length > 4096 ||
+    incoming.search.length > 2048
+  ) {
     return new Response("Not found", { status: 404 });
   }
   const method = request.method;
   if (!["GET", "PATCH", "POST"].includes(method)) {
-    return new Response("Method not allowed", { status: 405,
-      headers: { Allow: "GET, PATCH, POST", "Cache-Control": "no-store" } });
+    return new Response("Method not allowed", {
+      status: 405,
+      headers: { Allow: "GET, PATCH, POST", "Cache-Control": "no-store" },
+    });
   }
-  const targetIsModel = /^api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}$/.test(route);
-  if ((method === "PATCH" && (incoming.search || !targetIsModel)) ||
-      (method === "POST" && (incoming.search || route !== "api/admin/telegram-drafts/import")) ||
-      (method === "GET" && route === "api/admin/telegram-drafts/import")) {
+  const targetIsModel = /^api\/admin\/telegram-drafts\/tg_[a-f0-9]{24}$/.test(
+    route,
+  );
+  if (
+    (method === "PATCH" && (incoming.search || !targetIsModel)) ||
+    (method === "POST" &&
+      (incoming.search || route !== "api/admin/telegram-drafts/import")) ||
+    (method === "GET" && route === "api/admin/telegram-drafts/import")
+  ) {
     return new Response("Not found", { status: 404 });
   }
   const authorization = request.headers.get("authorization") || "";
   if (!BEARER_TOKEN.test(authorization)) {
-    return new Response("Admin required", { status: 403,
-      headers: { "Cache-Control": "no-store" } });
+    return new Response("Admin required", {
+      status: 403,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
   const upstream = new URL("/" + route + incoming.search, CATALOG_ORIGIN);
-  const headers = new Headers({ Authorization: authorization,
-    Accept: request.headers.get("Accept") || "application/json" });
+  const headers = new Headers({
+    Authorization: authorization,
+    Accept: request.headers.get("Accept") || "application/json",
+  });
   let body;
   if (method === "PATCH" || method === "POST") {
-    if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) {
+    if (
+      !(request.headers.get("content-type") || "")
+        .toLowerCase()
+        .startsWith("application/json")
+    ) {
       return new Response("Invalid body", { status: 400 });
     }
     body = await request.text();
-    if (!body || body.length > (method === "POST" ? 20000 : 8192)) return new Response("Invalid body", { status: 400 });
+    if (!body || body.length > (method === "POST" ? 20000 : 8192))
+      return new Response("Invalid body", { status: 400 });
     headers.set("Content-Type", "application/json");
   }
   try {
     const response = await fetcher(upstream, {
-      method, headers, ...(body === undefined ? {} : { body }),
-      redirect: "manual", signal: request.signal,
+      method,
+      headers,
+      ...(body === undefined ? {} : { body }),
+      redirect: "manual",
+      signal: request.signal,
     });
     if (response.status >= 300 && response.status < 400) {
       await response.body?.cancel().catch(() => undefined);
-      return new Response("Upstream redirect rejected", { status: 502,
-        headers: { "Cache-Control": "no-store" } });
+      return new Response("Upstream redirect rejected", {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
     const type = response.headers.get("content-type") || "";
-    if (!type.startsWith("application/json") && !type.startsWith("image/webp")) {
+    if (
+      !type.startsWith("application/json") &&
+      !type.startsWith("image/webp")
+    ) {
       await response.body?.cancel().catch(() => undefined);
-      return new Response("Invalid upstream content", { status: 502,
-        headers: { "Cache-Control": "no-store" } });
+      return new Response("Invalid upstream content", {
+        status: 502,
+        headers: { "Cache-Control": "no-store" },
+      });
     }
     const safe = new Headers({
-      "Content-Type": type, "Cache-Control": "private, no-store",
-      "Vary": "Authorization",
+      "Content-Type": type,
+      "Cache-Control": "private, no-store",
+      Vary: "Authorization",
       "X-Content-Type-Options": "nosniff",
       "Content-Security-Policy": "sandbox",
       "Referrer-Policy": "no-referrer",
     });
-    return new Response(response.body, { status: response.status, headers: safe });
+    return new Response(response.body, {
+      status: response.status,
+      headers: safe,
+    });
   } catch {
-    return new Response("Private catalog unavailable", { status: 502,
-      headers: { "Cache-Control": "no-store" } });
+    return new Response("Private catalog unavailable", {
+      status: 502,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }
 
 /** Pages Functions entrypoint. */
 export function onRequest({ request, env }) {
   const pathname = new URL(request.url).pathname;
-  if (pathname === "/catalogo-api/api/admin/telegram-drafts" ||
-      pathname.startsWith("/catalogo-api/api/admin/telegram-drafts/")) {
+  if (
+    pathname === "/catalogo-api/api/admin/telegram-drafts" ||
+    pathname.startsWith("/catalogo-api/api/admin/telegram-drafts/")
+  ) {
     return proxyTelegramAdminRequest(request, (url, options) => {
       if (typeof env?.CATALOG_WORKER?.fetch !== "function") {
         throw new Error("catalog_service_binding_unavailable");
@@ -359,8 +501,10 @@ export function onRequest({ request, env }) {
   }
   // Block the same confirmed SpecialSTL keys at the server boundary.
   const incomingPath = new URL(request.url).pathname;
-  if (incomingPath.startsWith(PREFIX) &&
-      isRestrictedCatalogMediaPath(incomingPath.slice(PREFIX.length))) {
+  if (
+    incomingPath.startsWith(PREFIX) &&
+    isRestrictedCatalogMediaPath(incomingPath.slice(PREFIX.length))
+  ) {
     return new Response("Imagem em revisão", {
       status: 404,
       headers: { "Cache-Control": "no-store" },

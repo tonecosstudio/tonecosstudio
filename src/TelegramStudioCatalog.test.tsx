@@ -167,6 +167,7 @@ describe("Telegram-only public studio gallery", () => {
       ...model,
       name: "Ace",
       character: "Ace",
+      provisional: false,
       studio: "RedBushido",
       category: "Animes & Desenhos",
       categorySlug: "animes-desenhos",
@@ -218,6 +219,53 @@ describe("Telegram-only public studio gallery", () => {
     );
     expect(window.location.search).toContain("franquia=one-piece");
     expect(window.location.search).toContain("personagem=Ace");
+  });
+
+  it("never turns a provisional sculpt title into a verified character tag", async () => {
+    const draft = {
+      ...model,
+      name: "1602 Scarlet Witch Crown",
+      character: "1602 Scarlet Witch Crown",
+      franchise: "Marvel",
+      franchiseSlug: "marvel",
+      category: "Marvel & DC",
+      categorySlug: "marvel-dc",
+      variant: "",
+      provisional: true,
+    };
+    const fetcher = vi.fn(async () =>
+      Response.json({ total: 1, offset: 0, limit: 24, items: [draft] }),
+    );
+    vi.stubGlobal("fetch", fetcher);
+    render(<TelegramStudioCatalog />);
+    const open = await screen.findByRole("button", {
+      name: /abrir galeria de 1602 Scarlet Witch Crown/i,
+    });
+    const card = open.closest("article");
+    expect(card).not.toBeNull();
+    expect(
+      within(card!).queryByRole("button", { name: /Filtrar por personagem/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(card!).queryByRole("button", { name: /Filtrar por franquia/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(card!).getByLabelText("Franquia em revisão: Marvel"),
+    ).toBeInTheDocument();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por categoria Marvel & DC",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/filtros confirmados e franquias sugeridas/i),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-taxonomy-contract="telegram-facets-v2"]'),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Filtrar por personagem/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("lists studios alphabetically and opens a separate studio collection", async () => {

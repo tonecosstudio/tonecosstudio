@@ -56,7 +56,10 @@ function modelFacets(model: Model): Array<{ kind: FacetKind; label: string }> {
     model.franchiseSlug !== "franquia-a-identificar"
   )
     tags.push({ kind: "franchise", label: model.franchise });
+  // Drafts expose the product title as telegram_character; that is not a
+  // verified person. Never mint a public character tag from draft metadata.
   if (
+    !model.provisional &&
     model.character &&
     model.franchiseSlug &&
     model.franchiseSlug !== "franquia-a-identificar"
@@ -796,29 +799,50 @@ export default function TelegramStudioCatalog() {
                   Universos e personagens
                 </p>
                 <p className="mt-1 text-xs text-[#929c90]">
-                  Tags dos modelos desta página, com filtros exatos.
+                  Filtros confirmados e franquias sugeridas, com revisão
+                  claramente identificada.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div
+                  className="mt-3 flex flex-wrap gap-2"
+                  data-taxonomy-contract="telegram-facets-v2"
+                >
                   {modelTags.length > 0 ? (
-                    modelTags.map((tag) => (
-                      <button
-                        key={
-                          tag.kind +
-                          ":" +
-                          tag.model.franchiseSlug +
-                          ":" +
-                          tag.label
-                        }
-                        type="button"
-                        onClick={() => applyFacet(tag.kind, tag.model)}
-                        className="rounded-full border border-[#5c6253] bg-[#252d23] px-3 py-2 text-xs text-[#d9dfd0] hover:border-[#ccae7c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
-                      >
-                        {tag.label}
-                      </button>
-                    ))
+                    modelTags.map((tag) =>
+                      tag.model.provisional ? (
+                        <span
+                          key={
+                            tag.kind +
+                            ":" +
+                            tag.model.franchiseSlug +
+                            ":" +
+                            tag.label
+                          }
+                          aria-label={"Franquia em revisão: " + tag.label}
+                          className="rounded-full border border-dashed border-[#5c6253] bg-[#252d23] px-3 py-2 text-xs text-[#b7baab]"
+                        >
+                          {tag.label} · em revisão
+                        </span>
+                      ) : (
+                        <button
+                          key={
+                            tag.kind +
+                            ":" +
+                            tag.model.franchiseSlug +
+                            ":" +
+                            tag.label
+                          }
+                          type="button"
+                          onClick={() => applyFacet(tag.kind, tag.model)}
+                          className="rounded-full border border-[#5c6253] bg-[#252d23] px-3 py-2 text-xs text-[#d9dfd0] hover:border-[#ccae7c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
+                        >
+                          {tag.label}
+                        </button>
+                      ),
+                    )
                   ) : (
                     <p className="text-xs text-[#949c91]">
-                      As tags aparecem quando a lista de modelos é carregada.
+                      Universos e personagens aparecem quando a curadoria
+                      confirmar a classificação dos modelos.
                     </p>
                   )}
                 </div>
@@ -975,25 +999,36 @@ export default function TelegramStudioCatalog() {
                       </div>
                     </button>
                     <div className="flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4">
-                      {modelFacets(model).map((facet) => (
-                        <button
-                          type="button"
-                          key={facet.kind + ":" + tagKey(facet.label)}
-                          aria-label={
-                            "Filtrar por " +
-                            (facet.kind === "category"
-                              ? "categoria "
-                              : facet.kind === "franchise"
-                                ? "franquia "
-                                : "personagem ") +
-                            facet.label
-                          }
-                          onClick={() => applyFacet(facet.kind, model)}
-                          className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
-                        >
-                          {facet.label}
-                        </button>
-                      ))}
+                      {modelFacets(model).map((facet) =>
+                        model.provisional && facet.kind === "franchise" ? (
+                          <span
+                            key={facet.kind + ":" + tagKey(facet.label)}
+                            aria-label={"Franquia em revisão: " + facet.label}
+                            className="max-w-full truncate rounded-full border border-dashed border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#bac2b1]"
+                          >
+                            {facet.label} · em revisão
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            key={facet.kind + ":" + tagKey(facet.label)}
+                            aria-label={
+                              "Filtrar por " +
+                              (facet.kind === "category"
+                                ? "categoria "
+                                : facet.kind === "franchise"
+                                  ? "franquia "
+                                  : "personagem ") +
+                              facet.label
+                            }
+                            onClick={() => applyFacet(facet.kind, model)}
+                            className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
+                          >
+                            {facet.label}
+                            {model.provisional ? " · em revisão" : ""}
+                          </button>
+                        ),
+                      )}
                       {model.variant &&
                         tagKey(model.variant) !== tagKey(model.name) &&
                         !modelFacets(model).some(
