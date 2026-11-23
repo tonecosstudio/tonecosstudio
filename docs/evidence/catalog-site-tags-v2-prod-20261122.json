@@ -1,0 +1,42 @@
+{
+  "schema": "tonart.catalog.site-release-receipt/1",
+  "verified_at_utc": "2026-11-23T00:54:50.443228+00:00",
+  "site": "https://catalogo.tonartstudio.com.br",
+  "project_owner": "Vercel/jogo-brasils-projects/tonart-catalogo-publico",
+  "project_id": "prj_6uaHlw05JQIxn8z9ocFH9MarES3p",
+  "deployment_id": "dpl_7K4tMhfgsSnYi7PGKAx8kVRMMHAz",
+  "deployment_state": "READY",
+  "git_repository": "tonecosstudio/tonecosstudio",
+  "git_main_commit": "156d8ccb3027539a3a2ec6065a07bc45a6936532",
+  "pull_request": 94,
+  "ui_contract": "tonart.public-catalog.ui-contract/2",
+  "facet_contract": "telegram-facets-v2",
+  "smoke_before_release": {
+    "contract_http_status": 404,
+    "franchise_filter_http_status": 400,
+    "ready": false
+  },
+  "smoke_after_release": {
+    "contract_http_status": 200,
+    "list_http_status": 200,
+    "franchise_filter_http_status": 200,
+    "franchise_character_filter_http_status": 200,
+    "franchise_marvel_total": 238,
+    "franchise_one_piece_character_ace_total": 2,
+    "studios_route_http_status": 200,
+    "ready": true,
+    "smoke_exit_code": 0
+  },
+  "main_site_unchanged": {
+    "url": "https://tonartstudio.com.br/",
+    "http_status": 200,
+    "etag_before_after": "\"4ae01a2f2f473ea9c810db6780ffbb10\"",
+    "main_site_was_not_deployed": true
+  },
+  "model_data_changed": false,
+  "private_character_identities_published": false,
+  "commercial_rights_changed": false,
+  "worker_or_d1_deployment": false,
+  "rollback_candidate_id": "dpl_E5We2HgA9uCcesemzERg9DuUPzr6",
+  "next_action": "Continue exclusive Telegram/studio curation from existing private 92-studio, 4433-group queue, not old catalog; don't mark nominal candidates as visually verified."
+}
