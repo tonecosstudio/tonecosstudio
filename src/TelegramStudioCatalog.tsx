@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUpRight, Search, Images } from "lucide-react";
+import TelegramModelGallery from "./TelegramModelGallery";
 
 type Model = {
   id: string;
@@ -188,7 +189,6 @@ export default function TelegramStudioCatalog() {
   const [detailError, setDetailError] = useState("");
   const [photoIndex, setPhotoIndex] = useState(0);
   const [copyMessage, setCopyMessage] = useState("");
-  const dialogRef = useRef<HTMLDivElement>(null);
   const {
     view,
     studio,
@@ -329,64 +329,6 @@ export default function TelegramStudioCatalog() {
     return () => c.abort();
   }, [selected]);
 
-  useEffect(() => {
-    if (!selected) return;
-    const previouslyFocused = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
-    };
-  }, [selected]);
-
-  useEffect(() => {
-    if (!selected) return;
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setRoute((current) => {
-          const next = { ...current, selected: null };
-          window.history.replaceState(null, "", urlForRoute(next));
-          return next;
-        });
-      } else if (detail && detail.id === selected && detail.images.length > 1) {
-        if (event.key === "ArrowRight")
-          setPhotoIndex((index) => (index + 1) % detail.images.length);
-        if (event.key === "ArrowLeft")
-          setPhotoIndex(
-            (index) =>
-              (index + detail.images.length - 1) % detail.images.length,
-          );
-      }
-      if (event.key === "Tab" && dialogRef.current) {
-        const buttons = Array.from(
-          dialogRef.current.querySelectorAll<HTMLButtonElement>(
-            "button:not(:disabled)",
-          ),
-        );
-        if (!buttons.length) return;
-        if (
-          event.shiftKey &&
-          (document.activeElement === buttons[0] ||
-            document.activeElement === dialogRef.current)
-        ) {
-          event.preventDefault();
-          buttons[buttons.length - 1].focus();
-        } else if (
-          !event.shiftKey &&
-          document.activeElement === buttons[buttons.length - 1]
-        ) {
-          event.preventDefault();
-          buttons[0].focus();
-        }
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [selected, detail]);
-
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const term = draft.trim();
@@ -433,8 +375,6 @@ export default function TelegramStudioCatalog() {
     }
   }
 
-  const selectedImage =
-    detail?.id === selected ? detail.images[photoIndex] : undefined;
   const normalizedStudioSearch = studioSearch
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -975,7 +915,7 @@ export default function TelegramStudioCatalog() {
                       }
                       className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
                     >
-                      <div className="flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]">
+                      <div className="relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]">
                         {imageUrl(model.cover) ? (
                           <img
                             src={imageUrl(model.cover)}
@@ -986,6 +926,15 @@ export default function TelegramStudioCatalog() {
                         ) : (
                           <span className="p-3 text-center text-sm text-[#b6a496]">
                             Render em preparação
+                          </span>
+                        )}
+                        {model.imageCount > 1 && (
+                          <span className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full border border-[#ffffff4d] bg-[#111713]/90 px-2.5 py-1 text-xs text-[#f1e7d8]">
+                            <Images
+                              aria-hidden="true"
+                              className="h-3.5 w-3.5"
+                            />
+                            {model.imageCount} fotos
                           </span>
                         )}
                       </div>
@@ -1220,177 +1169,28 @@ export default function TelegramStudioCatalog() {
       </main>
 
       {selected && (
-        <div
-          ref={dialogRef}
-          tabIndex={-1}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Galeria do modelo"
-          className="fixed inset-0 z-50 overflow-y-auto bg-[#0e0b09]/98 p-4 outline-none sm:p-8"
-        >
-          <div className="mx-auto max-w-6xl">
-            <div className="flex flex-wrap justify-between gap-3">
-              <button type="button" className={classes} onClick={closeGallery}>
-                Fechar galeria <span aria-hidden="true">×</span>
-              </button>
-              <button type="button" className={classes} onClick={copyLink}>
-                Copiar link deste modelo
-              </button>
-            </div>
-            {copyMessage && (
-              <p role="status" className="mt-2 text-sm text-[#d5b895]">
-                {copyMessage}
-              </p>
-            )}
-            {detailError && (
-              <p role="alert" className="mt-10 text-[#f0b5a7]">
-                {detailError}
-              </p>
-            )}
-            {!detailError && (!detail || detail.id !== selected) && (
-              <p role="status" className="mt-10 text-[#c2b5a7]">
-                Carregando galeria…
-              </p>
-            )}
-            {detail?.id === selected && (
-              <>
-                {view === "studios" && (
-                  <p className="mt-8 text-xs font-semibold uppercase tracking-wider text-[#e3b57e]">
-                    {detail.studio}
-                  </p>
-                )}
-                <h2
-                  id="catalog-detail-title"
-                  className="mt-2 text-3xl font-semibold sm:text-4xl"
-                >
-                  {detail.name}
-                </h2>
-                <div
-                  className="mt-3 flex flex-wrap gap-2"
-                  aria-label="Classificação do modelo"
-                >
-                  {modelFacets(detail).map((facet) => (
-                    <button
-                      key={facet.kind + ":" + tagKey(facet.label)}
-                      type="button"
-                      className="rounded-full border border-[#807052] px-3 py-1 text-xs text-[#e2c79c]"
-                      onClick={() => applyFacet(facet.kind, detail)}
-                    >
-                      {facet.label}
-                    </button>
-                  ))}
-                </div>
-                {detail.variant && (
-                  <p className="mt-2 text-sm text-[#cbb7a4]">
-                    {detail.variant}
-                  </p>
-                )}
-                <p className="mt-3 text-sm text-[#bba99a]">
-                  {detail.images.length}{" "}
-                  {detail.images.length === 1 ? "imagem" : "imagens"} ·{" "}
-                  {detail.provisional
-                    ? "Identificação em curadoria"
-                    : "Identificação do acervo"}
-                </p>
-                {selectedImage && (
-                  <div className="mt-6">
-                    <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-[#211a15] sm:min-h-[490px]">
-                      {imageUrl(selectedImage.display) && (
-                        <img
-                          key={selectedImage.display}
-                          src={imageUrl(selectedImage.display)}
-                          alt={
-                            detail.name +
-                            ", imagem " +
-                            (photoIndex + 1) +
-                            " de " +
-                            detail.images.length
-                          }
-                          className="max-h-[70vh] w-full object-contain"
-                        />
-                      )}
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        className={classes}
-                        disabled={detail.images.length < 2}
-                        onClick={() =>
-                          setPhotoIndex(
-                            (index) =>
-                              (index + detail.images.length - 1) %
-                              detail.images.length,
-                          )
-                        }
-                      >
-                        Anterior foto
-                      </button>
-                      <span
-                        role="status"
-                        aria-live="polite"
-                        className="text-sm text-[#c6b3a0]"
-                      >
-                        {photoIndex + 1} / {detail.images.length}
-                      </span>
-                      <button
-                        type="button"
-                        className={classes}
-                        disabled={detail.images.length < 2}
-                        onClick={() =>
-                          setPhotoIndex(
-                            (index) => (index + 1) % detail.images.length,
-                          )
-                        }
-                      >
-                        Próxima foto
-                      </button>
-                    </div>
-                    {detail.images.length > 1 && (
-                      <div
-                        className="mt-5 flex gap-2 overflow-x-auto pb-3"
-                        aria-label="Miniaturas da galeria"
-                      >
-                        {detail.images.map((item, index) => (
-                          <button
-                            type="button"
-                            key={item.position + ":" + index}
-                            onClick={() => setPhotoIndex(index)}
-                            aria-label={"Mostrar imagem " + (index + 1)}
-                            aria-pressed={index === photoIndex}
-                            className={
-                              "h-20 w-16 shrink-0 overflow-hidden rounded border-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
-                              (index === photoIndex
-                                ? "border-[#f0bd7e]"
-                                : "border-[#524131]")
-                            }
-                          >
-                            {imageUrl(item.thumb) && (
-                              <img
-                                src={imageUrl(item.thumb)}
-                                alt=""
-                                loading="lazy"
-                                className="h-full w-full object-contain"
-                              />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!detail.images.length && (
-                  <p className="mt-6 text-sm text-[#b6a496]">
-                    Imagens em preparação.
-                  </p>
-                )}
-                <p className="mt-6 text-xs text-[#a99c8e]">
-                  Use as setas do teclado para navegar pelas imagens e Esc para
-                  fechar.
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+        <TelegramModelGallery
+          detail={detail?.id === selected ? detail : null}
+          error={detailError}
+          photoIndex={photoIndex}
+          copyMessage={copyMessage}
+          facets={detail?.id === selected ? modelFacets(detail) : []}
+          imageUrl={imageUrl}
+          onClose={closeGallery}
+          onCopy={copyLink}
+          onFacet={(kind) => {
+            if (detail?.id === selected) applyFacet(kind, detail);
+          }}
+          onStepPhoto={(direction) => {
+            if (detail?.id !== selected || detail.images.length < 2) return;
+            setPhotoIndex(
+              (index) =>
+                (index + detail.images.length + direction) %
+                detail.images.length,
+            );
+          }}
+          onSelectPhoto={setPhotoIndex}
+        />
       )}
 
       <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]">

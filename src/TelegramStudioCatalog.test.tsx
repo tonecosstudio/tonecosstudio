@@ -10,6 +10,7 @@ import TelegramStudioCatalog from "./TelegramStudioCatalog";
 
 const id = "tg_" + "a".repeat(24);
 const sha = "b".repeat(64);
+const sha2 = "c".repeat(64);
 const media = (role: string) =>
   "/api/telegram-studios/" + id + "/media/" + sha + "/" + role;
 const model = {
@@ -27,7 +28,11 @@ const detail = {
   ...model,
   images: [
     { position: 1, thumb: media("thumb"), display: media("display") },
-    { position: 2, thumb: media("thumb"), display: media("display") },
+    {
+      position: 2,
+      thumb: media("thumb").replace(sha, sha2),
+      display: media("display").replace(sha, sha2),
+    },
   ],
 };
 
@@ -75,7 +80,7 @@ describe("Telegram-only public studio gallery", () => {
     fireEvent.click(
       within(dialog).getByRole("button", { name: /próxima foto/i }),
     );
-    expect(within(dialog).getByText("2 / 2")).toBeInTheDocument();
+    expect(within(dialog).getByText("Foto 2 / 2")).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() =>
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
@@ -91,6 +96,178 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       requests.find(([uri]) => String(uri).endsWith("/" + id))?.[1]?.cache,
     ).toBe("no-store");
+  });
+
+  it("isolates the full-screen model post above the catalog and restores focus and scrolling", async () => {
+    mockCatalog();
+    const { container } = render(<TelegramStudioCatalog />);
+    const opener = await screen.findByRole("button", {
+      name: /abrir galeria de aang/i,
+    });
+    opener.focus();
+    fireEvent.click(opener);
+    const dialog = await screen.findByRole("dialog");
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+    expect(dialog.parentElement).toBe(document.body);
+    expect(dialog).toHaveAttribute(
+      "data-gallery-ui-contract",
+      "tonart-model-gallery-v2",
+    );
+    expect(dialog).toHaveStyle({ backgroundColor: "#0a0e0c" });
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(
+      within(dialog).getByRole("heading", { name: "Aang" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("3DXM", { exact: true }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Fechar galeria" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByLabelText("Miniaturas da galeria"),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Fechar galeria" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+    expect(opener).toHaveFocus();
+  });
+
+  it("navigates multiple real gallery images using arrows, thumbnails and touch gestures", async () => {
+    mockCatalog();
+    render(<TelegramStudioCatalog />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /abrir galeria de aang/i }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByRole("img", { name: "Aang, imagem 1 de 2" }),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Mostrar imagem 1" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Mostrar imagem 2" }),
+    );
+    expect(within(dialog).getByText("Foto 2 / 2")).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("img", { name: "Aang, imagem 2 de 2" }),
+    ).toHaveAttribute(
+      "src",
+      "/catalogo-api" + media("display").replace(sha, sha2),
+    );
+    expect(
+      within(dialog).getByRole("button", { name: "Mostrar imagem 2" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.keyDown(document, { key: "ArrowRight" });
+    expect(within(dialog).getByText("Foto 1 / 2")).toBeInTheDocument();
+    const stage = within(dialog).getByRole("region", {
+      name: "Fotos do modelo Aang",
+    });
+    const imageStage = stage.querySelector("div");
+    expect(imageStage).not.toBeNull();
+    fireEvent.touchStart(imageStage!, { changedTouches: [{ clientX: 280 }] });
+    fireEvent.touchEnd(imageStage!, { changedTouches: [{ clientX: 80 }] });
+    expect(within(dialog).getByText("Foto 2 / 2")).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "ArrowLeft" });
+    expect(within(dialog).getByText("Foto 1 / 2")).toBeInTheDocument();
+  });
+
+  it("does not show empty gallery navigation for one image and handles media failure", async () => {
+    const single = { ...model, imageCount: 1 };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        const path = String(input);
+        if (path.endsWith("/" + id))
+          return Response.json({
+            ...single,
+            images: [
+              { position: 1, thumb: media("thumb"), display: media("display") },
+            ],
+          });
+        return Response.json({
+          total: 1,
+          offset: 0,
+          limit: 24,
+          items: [single],
+        });
+      }),
+    );
+    render(<TelegramStudioCatalog />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /abrir galeria de aang/i }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    const img = await within(dialog).findByRole("img", {
+      name: "Aang, imagem 1 de 1",
+    });
+    expect(
+      within(dialog).queryByRole("button", { name: "Próxima foto" }),
+    ).toBeNull();
+    expect(
+      within(dialog).queryByRole("button", { name: "Anterior foto" }),
+    ).toBeNull();
+    expect(within(dialog).queryByLabelText("Miniaturas da galeria")).toBeNull();
+    fireEvent.error(img);
+    expect(
+      within(dialog).getByText("Não foi possível carregar esta imagem."),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("Foto 1 / 1")).toBeInTheDocument();
+  });
+
+  it("opens a model deep link without losing the selected category after closing", async () => {
+    window.history.replaceState(null, "", "/?categoria=anime&modelo=" + id);
+    mockCatalog();
+    render(<TelegramStudioCatalog />);
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByRole("heading", { name: "Aang" }),
+    ).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Fechar galeria" }),
+    );
+    expect(window.location.search).toContain("categoria=anime");
+    expect(window.location.search).not.toContain("modelo=");
+  });
+
+  it("never makes a provisional franchise a verified clickable filter inside the gallery", async () => {
+    const provisional = {
+      ...model,
+      franchise: "Pokémon",
+      franchiseSlug: "pokemon",
+      category: "Animes & Desenhos",
+      categorySlug: "animes-desenhos",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        if (String(input).endsWith("/" + id))
+          return Response.json({ ...provisional, images: detail.images });
+        return Response.json({
+          total: 1,
+          offset: 0,
+          limit: 24,
+          items: [provisional],
+        });
+      }),
+    );
+    render(<TelegramStudioCatalog />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /abrir galeria de aang/i }),
+    );
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      await within(dialog).findByText("Pokémon · em revisão"),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: "Pokémon" }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("button", { name: "Animes & Desenhos" }),
+    ).toBeInTheDocument();
   });
 
   it("rejects short search terms locally and passes a valid term to the canonical API", async () => {
