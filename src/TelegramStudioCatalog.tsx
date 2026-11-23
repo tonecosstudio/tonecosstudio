@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUpRight, Search, Images } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
+import { PUBLIC_ROUTES } from "@/config/routes";
 
 type Model = {
   id: string;
@@ -33,6 +34,10 @@ type Route = {
 };
 
 const API = "/catalogo-api/api/telegram-studios";
+function isEmbeddedCatalogRoute(pathname: string): boolean {
+  return pathname === PUBLIC_ROUTES.catalogReview ||
+    pathname === PUBLIC_ROUTES.catalogReviewStudios;
+}
 const PAGE_SIZE = 24;
 const MODEL_ID = /^tg_[a-f0-9]{24}$/;
 type FacetKind = "category" | "franchise" | "character";
@@ -101,7 +106,8 @@ function readRoute(): Route {
     };
   const params = new URLSearchParams(window.location.search);
   const view =
-    window.location.pathname === "/estudios" || params.has("studio")
+    (window.location.pathname === "/estudios" ||
+      window.location.pathname === PUBLIC_ROUTES.catalogReviewStudios) || params.has("studio")
       ? "studios"
       : "models";
   const studio =
@@ -146,7 +152,10 @@ function readRoute(): Route {
 function urlForRoute(route: Route): string {
   const url = new URL(window.location.href);
   const params = new URLSearchParams();
-  url.pathname = route.view === "studios" ? "/estudios" : "/";
+  const embedded = isEmbeddedCatalogRoute(window.location.pathname);
+  url.pathname = route.view === "studios"
+    ? (embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios")
+    : (embedded ? PUBLIC_ROUTES.catalogReview : "/");
   if (route.view === "studios" && route.studio)
     params.set("studio", route.studio);
   if (route.category) params.set("categoria", route.category);
@@ -174,7 +183,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export default function TelegramStudioCatalog() {
+export default function TelegramStudioCatalog({ embedded = false }: { embedded?: boolean }) {
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
   const [studios, setStudios] = useState<Studio[]>([]);
@@ -428,18 +437,21 @@ export default function TelegramStudioCatalog() {
   ).slice(0, 12);
   const lastPage = page ? Math.ceil(page.total / PAGE_SIZE) : 0;
 
+  const ContentContainer = embedded ? "div" : "main";
   return (
-    <div className="min-h-screen bg-[#0e120f] text-[#f4eee4] selection:bg-[#c7ac80] selection:text-[#10140e]">
+    <div className={embedded
+      ? "min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,96%)] selection:bg-[hsl(var(--gold-accent))] selection:text-black"
+      : "min-h-screen bg-[#0e120f] text-[#f4eee4] selection:bg-[#c7ac80] selection:text-[#10140e]"}>
       <a
         href={view === "studios" && !studio ? "#estudios" : "#colecao"}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:bg-[#dfbd8d] focus:p-3 focus:text-[#11140e]"
       >
         Ir para o conteúdo
       </a>
-      <header className="sticky top-0 z-30 border-b border-[#ffffff16] bg-[#0e120f]/95 backdrop-blur-xl">
+      {!embedded && <header className="sticky top-0 z-30 border-b border-[#ffffff16] bg-[#0e120f]/95 backdrop-blur-xl">
         <div className="mx-auto flex min-h-[78px] max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
           <a
-            href="/"
+            href={embedded ? PUBLIC_ROUTES.catalogReview : "/"}
             aria-label="TONART — início do catálogo"
             className="flex items-center gap-3 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
           >
@@ -460,14 +472,14 @@ export default function TelegramStudioCatalog() {
             className="flex items-center gap-4 text-xs text-[#d7d0be] sm:gap-8 sm:text-sm"
           >
             <a
-              href="/"
+              href={embedded ? PUBLIC_ROUTES.catalogReview : "/"}
               aria-current={view === "models" ? "page" : undefined}
               className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
             >
               Modelos
             </a>
             <a
-              href="/estudios"
+              href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
               aria-current={view === "studios" ? "page" : undefined}
               className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
             >
@@ -475,8 +487,8 @@ export default function TelegramStudioCatalog() {
             </a>
           </nav>
         </div>
-      </header>
-      <main className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
+      </header>}
+      <ContentContainer className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
         {view === "models" && (
           <section
             aria-labelledby="catalog-hero-heading"
@@ -494,7 +506,10 @@ export default function TelegramStudioCatalog() {
                 </p>
                 <h1
                   id="catalog-hero-heading"
-                  className="font-serif text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[-0.045em]"
+                  className={embedded
+                    ? "font-bold uppercase text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[0.02em]"
+                    : "font-serif text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[-0.045em]"}
+                  style={embedded ? { fontFamily: "\"Bebas Neue\", Impact, sans-serif" } : undefined}
                 >
                   Modelos 3D{" "}
                   <span className="block italic text-[#ccb18a]">
@@ -515,7 +530,7 @@ export default function TelegramStudioCatalog() {
                     <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                   </a>
                   <a
-                    href="/estudios"
+                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
                     className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#776c52] px-5 text-sm text-[#eee0c9] hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
                   >
                     Coleções por estúdio{" "}
@@ -595,7 +610,7 @@ export default function TelegramStudioCatalog() {
               <div>
                 {studio && (
                   <a
-                    href="/estudios"
+                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
                     className="mb-4 inline-flex items-center gap-2 text-sm text-[#d8b88d] hover:underline"
                   >
                     ← Todos os estúdios
@@ -1190,7 +1205,7 @@ export default function TelegramStudioCatalog() {
             Vitrine visual
           </span>
         </aside>
-      </main>
+      </ContentContainer>
 
       {selected && (
         <TelegramModelGallery
@@ -1224,7 +1239,7 @@ export default function TelegramStudioCatalog() {
         />
       )}
 
-      <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]">
+      {!embedded && <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]">
         <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8 lg:px-12">
           <div>
             <p className="font-semibold tracking-[0.22em]">TONART</p>
@@ -1236,7 +1251,7 @@ export default function TelegramStudioCatalog() {
             Acervo visual · Conteúdo em curadoria
           </span>
         </div>
-      </footer>
+      </footer>}
     </div>
   );
 }
