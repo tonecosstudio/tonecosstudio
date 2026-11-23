@@ -70,7 +70,10 @@ def _key(path: Path, sha256: str, width: int) -> tuple:
         with path.open("rb") as media:
             if media.read(6) not in (b"GIF87a",b"GIF89a"):
                 _reject_source("GIF original inválido")
-    return (str(path.resolve()), str(sha256), file_info.st_mtime_ns,
+    # Host media paths are already validated/canonical by safe_source_path().
+    # Cache keys need metadata, not another Windows realpath I/O per ETag
+    # and another per thumbnail request. Keep stat for freshness.
+    return (str(path.absolute()), str(sha256), file_info.st_mtime_ns,
             file_info.st_size, int(width))
 
 
