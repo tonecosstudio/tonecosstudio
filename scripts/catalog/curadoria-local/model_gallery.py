@@ -7,12 +7,22 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from pathlib import Path
 import smart_curadoria as smart
 
-def register_visual_gallery(db_path,message_ids,topic,note=""):
-    """Agrupa apenas imagens da mesma escultura INSPECIONADAS visualmente."""
-    if not isinstance(message_ids,(list,tuple)) or not 2<=len(message_ids)<=500:
-        raise ValueError("Galeria exige de 2 a 500 imagens por lote; novas fotos podem ser adicionadas à mesma ficha")
+def register_visual_gallery(db_path,message_ids,topic,note="",*,
+                            source_root=None,expected_sha256=None,expected_revision=None):
+    """Group reviewed multi-angles OR one officially identified unique photograph."""
+    if not isinstance(message_ids,(list,tuple)) or not 1<=len(message_ids)<=500:
+        raise ValueError("Selecione de 1 a 500 imagens")
+    singleton=len(message_ids)==1
+    note=str(note or "").strip()
+    if singleton:
+        if (source_root is None or not isinstance(expected_sha256,str)
+            or not re.fullmatch("[0-9a-f]{64}",expected_sha256)
+            or type(expected_revision) is not int or expected_revision<0
+            or not 65<=len(note)<=600):
+            raise ValueError("Foto única exige fonte, SHA, revisão e justificativa de 65 a 600 caracteres")
     ids=[int(x) for x in message_ids]
     if len(set(ids))!=len(ids) or min(ids)<=0:raise ValueError("IDs repetidos ou inválidos")
     ids.sort()
@@ -24,8 +34,9 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
     with smart.db_open(db_path) as db:
         smart.setup(db)
         db.execute("BEGIN IMMEDIATE")
-        rows=db.execute("""SELECT a.message_id,a.original_topic,
-            p.studio,p.title,p.universe,p.variant,
+        rows=db.execute("""SELECT a.message_id,a.original_topic,a.source_relative,a.sha256,
+            p.studio,p.title,p.universe,p.variant,p.status AS name_status,
+            p.official_url,p.revision AS name_revision,
             m.group_key AS previous_key,m.match_reason,g.state AS group_state,
             EXISTS(SELECT 1 FROM curation_events ev
               WHERE ev.group_key=m.group_key
@@ -41,6 +52,41 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
                for r in rows if (r["title"] or "").strip()}
         if len(names)>1:
             raise ValueError("Identidades ou variantes discordantes: não unir")
+        if singleton:
+            item=rows[0]
+            existing=db.execute("SELECT state FROM model_groups WHERE group_key=?",(group_key,)).fetchone()
+            if item["previous_key"]==group_key and existing:
+                previous=db.execute("""SELECT 1 FROM curation_events WHERE group_key=?
+                    AND event_type='visual_singleton_reviewed' LIMIT 1""",(group_key,)).fetchone()
+                if previous:
+                    return {"group_key":group_key,"image_count":1,
+                        "title":item["title"],"studio":item["studio"],
+                        "state":existing["state"],"created":False,"replayed":True}
+            if item["previous_key"] is not None or existing:
+                raise ValueError("A foto já pertence a uma galeria")
+            if item["name_revision"]!=expected_revision:
+                raise RuntimeError("Nome alterado: recarregue a revisão")
+            if (item["name_status"]!="confirmado" or not item["title"] or
+                not item["studio"] or item["studio"]!=topic or not item["official_url"]
+                or not item["official_url"].startswith("https://")):
+                raise ValueError("Foto única exige nome confirmado com fonte oficial HTTPS")
+            if item["sha256"]!=expected_sha256:
+                raise ValueError("Prova SHA da foto divergiu do catálogo")
+            source_root=Path(source_root).resolve()
+            photo=(source_root/item["source_relative"]).resolve()
+            if (not photo.is_relative_to(source_root) or not photo.is_file()
+                or photo.stat().st_size>30*1024*1024):
+                raise ValueError("Original físico ausente ou externo")
+            with photo.open("rb") as handle:
+                digest=hashlib.file_digest(handle,"sha256").hexdigest()
+            if digest!=item["sha256"]:
+                raise ValueError("Original divergiu do SHA-256 físico")
+            duplicate=db.execute("""SELECT m.message_id FROM model_group_members m
+                JOIN assets a USING(message_id)
+                WHERE a.sha256=? AND a.message_id!=? LIMIT 1""",
+                (item["sha256"],item["message_id"])).fetchone()
+            if duplicate:
+                raise ValueError("Mesmo render já agrupado; revisar variantes em vez de duplicar a escultura")
         for r in rows:
             if r["previous_key"]!=group_key and (
                 r["match_reason"] in ("reviewed_angles","reviewed_split")
@@ -57,20 +103,21 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
             raise ValueError("Galeria confirmada exige revisão explícita")
         db.execute("""INSERT INTO model_groups(
            group_key,studio,title,universe,variant,state,confidence,created_at,updated_at)
-           VALUES(?,?,?,?,?,'revisar',0.90,?,?)
+           VALUES(?,?,?,?,?,'revisar',?,?,?)
            ON CONFLICT(group_key) DO UPDATE SET
            studio=excluded.studio,title=excluded.title,
            universe=excluded.universe,variant=excluded.variant,
            updated_at=excluded.updated_at
            WHERE model_groups.state!='confirmado'""",
-           (group_key,studio,title,universe,variant,stamp,stamp))
+           (group_key,studio,title,universe,variant,0.0 if singleton else 0.90,stamp,stamp))
         for mid in ids:
             db.execute("""INSERT INTO model_group_members
                 (message_id,group_key,match_reason,updated_at)
-                VALUES(?,?,'reviewed_angles',?)
+                VALUES(?,?,?,?)
                 ON CONFLICT(message_id) DO UPDATE SET
                 group_key=excluded.group_key,match_reason=excluded.match_reason,
-                updated_at=excluded.updated_at""",(mid,group_key,stamp))
+                updated_at=excluded.updated_at""",
+                (mid,group_key,"reviewed_single_original" if singleton else "reviewed_angles",stamp))
             db.execute("""INSERT OR IGNORE INTO model_group_evidence
                  (group_key,source_url,source_type,description,recorded_at)
                  VALUES(?,?,?,?,?)""",
@@ -79,10 +126,27 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
                    "Mesmo produto em ângulos diferentes; identidade e licença ainda não confirmadas")[:500],
                   stamp))
         if not old:
-            db.execute("""INSERT INTO curation_events
-                (group_key,event_type,detail,occurred_at)
-                VALUES(?,'reviewed_angles',?,?)""",
-                (group_key,"IDs "+",".join(map(str,ids)),stamp))
+            if singleton:
+                detail=json.dumps({"message_id":ids[0],"sha256":item["sha256"],
+                    "name_status":"confirmado","identity_url":item["official_url"],
+                    "visual_review":note,"original_preserved":True,
+                    "gallery_state":"revisar","rights_approved":False,
+                    "publication_approved":False},ensure_ascii=False,sort_keys=True)
+                for event_type in ("visual_singleton_reviewed","visual_gallery_audited"):
+                    db.execute("""INSERT INTO curation_events
+                        (group_key,event_type,detail,occurred_at) VALUES(?,?,?,?)""",
+                        (group_key,event_type,detail,stamp))
+                db.execute("""INSERT OR IGNORE INTO model_group_evidence
+                    (group_key,source_url,source_type,description,recorded_at)
+                    VALUES(?,?,'official_identity_only',?,?)""",
+                    (group_key,item["official_url"],
+                     "Confirma somente identidade editorial; não licença ou direito de publicação",
+                     stamp))
+            else:
+                db.execute("""INSERT INTO curation_events
+                    (group_key,event_type,detail,occurred_at)
+                    VALUES(?,'reviewed_angles',?,?)""",
+                    (group_key,"IDs "+",".join(map(str,ids)),stamp))
         db.execute("""DELETE FROM model_group_evidence WHERE group_key IN (
             SELECT g.group_key FROM model_groups g WHERE g.state='provavel'
               AND NOT EXISTS(SELECT 1 FROM model_group_members m WHERE m.group_key=g.group_key))""")
@@ -91,7 +155,9 @@ def register_visual_gallery(db_path,message_ids,topic,note=""):
               WHERE m.group_key=model_groups.group_key)""")
         db.commit()
     return {"group_key":group_key,"image_count":len(ids),"title":title,
-            "studio":studio,"state":"revisar","created":old is None}
+            "studio":studio,"state":"revisar","created":old is None,
+            "singleton":singleton,"names_changed":False,
+            "rights_changed":False,"originals_modified":False}
 
 def list_album_candidates(db_path,topic="",limit=60,page=1):
     """Álbuns com ao menos duas fotos livres, inclusive álbuns parciais.

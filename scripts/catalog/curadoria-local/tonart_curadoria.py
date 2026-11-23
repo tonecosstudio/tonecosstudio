@@ -388,7 +388,7 @@ class Handler(BaseHTTPRequestHandler):
                     {"id":"studio.review_candidates","method":"GET","path":"/api/studio-missions/candidates","effect":"read","kinds":["albums","reposts"],"cursor":True,"max_limit":48,"automatic_merge":False},
                     {"id":"studio.identity_candidates","method":"GET","path":"/api/studio-missions/identities","effect":"read","pagination":True,"max_limit":48,"automatic_naming":False},
                     {"id":"gallery.candidates","method":"GET","path":"/api/gallery-candidates","effect":"read","pagination":True},
-                    {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500},
+                    {"id":"gallery.create","method":"POST","path":"/api/create-gallery","effect":"write","batch_max":500,"min_images":1,"singleton_requires":"confirmed_name_https_official_source_physical_sha_and_revision"},
                     {"id":"gallery.append","method":"POST","path":"/api/append-gallery","effect":"write","batch_max":500},
                     {"id":"gallery.merge_reviewed","method":"POST","path":"/api/merge-reviewed-galleries","effect":"write","batch_max":48,"atomic":True},
                     {"id":"gallery.cross_gallery_candidates","method":"GET","path":"/api/gallery-merge-candidates","effect":"read","max_limit":48,"automatic_merge":False},
@@ -736,7 +736,9 @@ class Handler(BaseHTTPRequestHandler):
             if self.path=="/api/create-gallery":
                 return self.respond(gallery.register_visual_gallery(DB_PATH,
                     obj.get("message_ids",[]),obj.get("topic",""),
-                    obj.get("note","")))
+                    obj.get("note",""),source_root=SOURCE,
+                    expected_sha256=obj.get("sha256"),
+                    expected_revision=obj.get("revision")))
             if self.path=="/api/review-model":
                 return self.respond(smart.review_model(DB_PATH,
                    obj.get("group_key",""),obj.get("revision",-1),
