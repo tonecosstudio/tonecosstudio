@@ -57,7 +57,7 @@
         meta.append(node("span",item.universe||"Franquia pendente"));
         const subtitle=mission.value==="grouping"?
            (item.group_key?"Grupo "+item.group_key.slice(0,8)+" · "+item.group_state:
-            "SEM GRUPO: comparar esculturas"):
+            "Foto avulsa (pode ser um modelo de foto única)"):
            "Nome: "+item.status+" · "+(item.variant||"sem variante");
         meta.append(node("small",subtitle));
         const action=node("button",mission.value==="grouping"&&item.group_key?
@@ -138,7 +138,9 @@
   get("/api/studio-missions").then(data=>{
     studio.replaceChildren();
     for(const item of data.studios){
-      const opt=node("option",item.studio+" · "+item.images+" fotos · "+item.pages+" pranchas");
+      const opt=node("option",item.studio+" · "+item.images+" fotos · "+item.pages+" pranchas"+
+        (item.collection_type==="topic_without_groups"?" · origem não classificada":"")+
+        (item.album_review_candidates?" · "+item.album_review_candidates+" álbuns para comparar":""));
       opt.value=item.studio;studio.append(opt);
     }
     if(data.studios.length){
