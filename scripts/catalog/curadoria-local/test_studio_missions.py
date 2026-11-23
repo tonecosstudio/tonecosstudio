@@ -130,6 +130,20 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertEqual(invalid["state"],"incomplete")
         self.assertFalse(invalid["generation_complete"])
 
+    def test_finalizer_rejects_stale_editorial_state_without_file_corruption(self):
+        output=self.root/"freshness"
+        result=missions.generate_all(self.path,self.media,output)
+        self.assertTrue(result["generation_complete"])
+        db=sqlite3.connect(self.path)
+        db.execute("UPDATE name_proposals SET title='Renamed under another mission',revision=revision+1 WHERE message_id=1")
+        db.commit();db.close()
+        stale=missions.finalize_index(self.path,output)
+        self.assertEqual(stale["state"],"incomplete")
+        self.assertFalse(stale["generation_complete"])
+        self.assertTrue(any("Estado editorial mudou" in x["blocker"] for x in stale["studios"]))
+        corrected=missions.generate_all(self.path,self.media,output)
+        self.assertTrue(corrected["generation_complete"])
+
     def test_path_traversal_blocked(self):
         self.assertRaises(ValueError,missions._source,self.media,"../../private.txt")
         self.assertTrue(missions._source(self.media,"msg_1.jpg").is_file())

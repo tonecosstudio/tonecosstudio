@@ -236,6 +236,17 @@ def finalize_index(path, output_root):
                 photo=folder/sheet["file"]
                 if not photo.is_file() or hashlib.sha256(photo.read_bytes()).hexdigest()!=sheet.get("sha256"):
                     raise ValueError("JPEG ausente ou alterado")
+                # The JPEG's own checksum is not sufficient. Another
+                # Curadoria mission can revise a name/group while sharded
+                # rendering is running. Reject stale snapshots against
+                # the CURRENT read-only SQLite record before publishing GO.
+                live=board_page(path,spec["studio"],page=i,limit=SIZE)
+                current=hashlib.sha256(json.dumps([
+                    (r["message_id"],r["sha256"],r["group_key"],r["group_revision"],
+                     r["status"],r["revision"],r["title"]) for r in live["items"]
+                ],ensure_ascii=False).encode()).hexdigest()
+                if sheet.get("fingerprint")!=current:
+                    raise ValueError("Estado editorial mudou; regerar prancha")
                 completed_pages+=1
                 errors+=len(sheet.get("errors",[]))
             complete=True
