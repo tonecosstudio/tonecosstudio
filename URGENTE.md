@@ -1,3 +1,31 @@
+## CHECKPOINT CANÔNICO ATUAL — WICKED — 23/11/2026 — 493 galerias, 166 nomes confirmados
+
+**PRECEDÊNCIA E SSOT:** Este é o estado mais recente de **agrupamento visual** de Wicked. As contagens anteriores de 500 galerias no histórico abaixo correspondem ao estado ANTES das fusões; não recriar nem reinterpretar os grupos antigos. Aplicações físicas via **OrdaX MCP** no `DESKTOP-4UFL03B`, dentro do **mesmo host TONART Curadoria** (`127.0.0.1:8769`) e SQLite, com a `main` como autoridade de código. PR [#124](https://github.com/tonecosstudio/tonecosstudio/pull/124) integrada (commit `900d3c34d61292587efe9a063bf00fdfe5958538`), fusão atômica auditada; PR [#125](https://github.com/tonecosstudio/tonecosstudio/pull/125) integrada (commit `2a03439027693bfad61e067c8cec6f7be6559c6b`), fila visual/decisão negativa no app e no MCP. Host reiniciado e GET `/api/capabilities`, `/api/gallery-merge-candidates?studio=Wicked&limit=12`, UI e health reais aprovados.
+
+**Estatísticas físicas verificadas pós-aplicação:** Wicked = **820 fotografias**, **810 vinculadas** a **493 galerias** (**482 em estado provavel / 11 revisar**), **10 fotos avulsas**. Missão de NOME permanece independente: **166 confirmado / 641 provavel / 13 revisar**. **7 fusões reais** de galerias já auditadas (1 Harry Potter + 6 nesta execução), nenhum original perdido, todos os links de galeria de origem resolvem à galeria canônica por eventos históricos, sem duplicar serviço, tabela de alias, imagem, mídia, status editorial ou licença. O grupo resultante retorna a `revisar`; isso não desfaz nome confirmado e NÃO permite publicação comercial.
+
+**Sete reuniões de vistas da MESMA estatueta (não sete novos modelos):**
+
+- Harry Potter, busto 315 mm: `#14108` + `#14112/#14113` = 3 fotos em `f031ada36752ed1069922cf0` (anterior `c4a908c4dec64c13ba4585dc`).
+- Spider-Man 2099: `#14028` + `#14040/#14041/#14042` = 4 fotos em `074122f18eaebd0e370dcc59`.
+- Voldemort busto 320 mm: `#14106` + `#14119/#14120` = 3 fotos em `2a0e4d20d1e78402a0395184`.
+- Spider-Woman Full Size: `#14034` + `#14049/#14050/#14051` = 4 fotos em `32f808f6b053905c6466f996`.
+- Tigerzord Full Size: `#13621` + `#13640–#13643` = 5 fotos em `b4e18fea43adbfcd0d642650`.
+- Kang Full Size: `#14744–#14746` + `#14806–#14808` = 6 fotos em `69bf90496e2c83acb901d8c9`.
+- Magik Full Size (título legado `Magic`): `#14751–#14753` + `#14826–#14828` = 6 fotos em `98594da751f14bc947d3e19f`.
+
+Cada fusão exigiu **auditorias visuais históricas em ambas**, comparação do mesmo corpo/pose/base/acessórios, mesma variante, revision-CAS das duas fichas, integridade física SHA-256 de **cada original**, transação SQLite única, recibo e GET do link antigo. Não classificar bustos/armas como perspectivas de escultura completa.
+
+**28 comparações negativas reais** foram registradas com `gallery_pair_distinct_sculptures`, com justificativa visual e revisão das duas galerias; a fila deixa de repetir o par até que uma das revisões mude. Casos incluem acessórios Deadpool separados da estátua, duas poses de Loki/Spider-Man/Black Widow, veículo/prop Star Trek e peças diferentes de Robocop (torso sem braços versus busto armado). Mesmo título não é evidência de mesma estatueta.
+
+**Fila final da heurística por mesmo nome/variante e proximidade:** 37 candidatos iniciais → 7 fusões de galerias (Harry Potter havia sido reunido antes da fila nova) e 28 comparações negativas → **apenas 3 pares pendentes de evidência**: Angela (`#13903/#13912`), Alien Warrior (`#13929/#13939`) e Magik busto (`#14759/#14817`, conjuntos de 2+3 fotos). NÃO forçar esses três; podem representar variações de montagem, renders promocionais ou esculturas distintas. Inspecionar imagem original e anúncio/arquivos da escultora antes de decidir. A busca de pares é **fila conservadora**, NÃO detecção exaustiva de esculturas iguais com títulos diferentes.
+
+**Prova de integridade após o lote:** regeneradas somente as pranchas **Wicked 13, 15, 16, 22, 23 e 24**, reutilizadas **29/35**; acervo global `state=complete, generation_complete=true, 113 coleções, 8.647 imagens, 430/430 pranchas, preview_errors=0`. `PRAGMA quick_check(1)=ok`; host health `ok=true`; `studio-missions-boards/index.json` SHA-256 `76625d42bf6cfe6f64b27ae38f5cf605755c81f3f3bf0db58b55e193d170f66b`. Direitos comerciais, R2, publicações e site TONART **não alterados** nesta missão.
+
+**PRÓXIMAS AÇÕES NA MESMA AUTOMAÇÃO EXISTENTE:** manter a missão 1 separada da missão 2. Primeiro decidir (somente com prova) os três pares acima, depois prospectar fotos iguais em outros grupos mesmo com título/variant diferente, sempre sem fusão pelo nome ou imagem semelhante apenas. Para nomes faltantes continuar os lançamentos oficiais em lotes, reaproveitando as **166 fotos confirmadas** e auditadas, sem refazer trabalho. Sempre usar host canônico e operações de revisão, sem writers SQL novos, sem tarefas automáticas duplicadas, sem alterações de outros chats.
+
+---
+
 ## WICKED — 23/11/2026 — 166 nomes confirmados em 10 galerias adicionais
 
 **ESTE É O ESTADO EDITORIAL WICKED MAIS RECENTE, SUBSTITUI APENAS OS NÚMEROS WICKED DOS CHECKPOINTS ANTERIORES; não desconsiderar outros estúdios.** Execução física pelo OrdaX MCP no DESKTOP-4UFL03B, no **host Curadoria canônico/SQLite único**, acrescentou **30 confirmações de foto em 10 galerias de modelos**, passando **136 → 166 nomes confirmados, 671 → 641 prováveis, 13 ainda revisar (820 fotografias)**. Zero direitos/licenças/tags comerciais alterados; nenhum merge de grupos. As 500 galerias de Wicked continuam com auditoria visual histórica (496 em provavel, 4 em revisar); NÃO confundir status do grupo com o nome editorial confirmado.
