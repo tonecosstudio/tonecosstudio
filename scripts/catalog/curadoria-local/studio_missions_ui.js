@@ -11,6 +11,81 @@
   const label=el("studioMissionPage");
   const fmt=new Intl.NumberFormat("pt-BR");
   const studioMetrics=new Map();
+
+  // Live contact boards are model-centered, not 24 unrelated photo tiles.
+  // Existing SQLite and thumbnail endpoints remain the only sources.
+  const livePanel=el("studioMissionLiveGalleries");
+  const liveCards=el("studioMissionGalleryResults");
+  const liveStatus=el("studioMissionGalleryStatus");
+  const livePageLabel=el("studioMissionGalleryPage");
+  const livePrev=el("studioMissionGalleryPrev");
+  const liveNext=el("studioMissionGalleryNext");
+  let livePage=1,livePages=0,liveSerial=0;
+  async function loadLiveGalleries(reset=false){
+    const seq=++liveSerial;
+    if(reset)livePage=1;
+    const isGrouping=mission.value==="grouping";
+    livePanel.hidden=!isGrouping;
+    if(!isGrouping)return;
+    const current=studio.value;
+    livePrev.disabled=true;liveNext.disabled=true;
+    liveStatus.textContent="Carregando esculturas diretamente do host...";
+    try{
+      const params=new URLSearchParams({studio:current,
+        page:String(livePage),limit:"12"});
+      const response=await get("/api/studio-missions/galleries?"+params);
+      if(seq!==liveSerial||current!==studio.value||mission.value!=="grouping")return;
+      livePages=response.pages;
+      liveCards.replaceChildren();
+      for(const group of response.items){
+        const card=node("article",undefined,"studio-gallery-card");
+        card.append(node("strong",(group.title||"Escultura sem nome")+
+          (group.variant?" · "+group.variant:"")));
+        card.append(node("small",(group.universe||"Franquia pendente")+
+          " · "+group.photos+" foto(s), "+group.unique_photos+
+          " vista(s) distintas · galeria "+group.state));
+        const pictures=node("div",undefined,"studio-gallery-pictures");
+        for(const id of group.preview_ids){
+          const a=node("a");
+          a.href="/media/"+id;a.target="_blank";a.rel="noopener noreferrer";
+          a.title="Abrir a fotografia original #"+id;
+          const img=node("img");
+          img.src="/thumb/"+id+"?w=256";
+          img.loading="lazy";img.decoding="async";
+          img.alt="Fotografia #"+id+" da escultura "+(group.title||"sem nome");
+          a.append(img);pictures.append(a);
+        }
+        card.append(pictures);
+        const open=node("button","Abrir galeria para revisão");
+        open.type="button";
+        open.addEventListener("click",async()=>{
+          try{
+            if(typeof setView!=="function"||typeof openModel!=="function")
+              throw Error("Editor canônico indisponível");
+            setView("models");
+            await openModel(group.group_key);
+          }catch(err){liveStatus.textContent="Não foi possível abrir: "+err.message;}
+        });
+        card.append(open);liveCards.append(card);
+      }
+      livePageLabel.textContent="Página "+response.page+" de "+(response.pages||0);
+      liveStatus.textContent=response.total+" galerias · "+current+
+        " · prévias carregadas sob demanda (somente leitura).";
+      if(!response.items.length)liveCards.append(node("p","Nenhuma galeria nesta página."));
+      livePrev.disabled=livePage<=1;
+      liveNext.disabled=livePage>=livePages;
+    }catch(err){
+      if(seq===liveSerial){
+        liveCards.replaceChildren();
+        liveStatus.textContent="Falha ao carregar esculturas: "+err.message;
+      }
+    }
+  }
+  livePrev.addEventListener("click",()=>{if(livePage>1){livePage--;loadLiveGalleries();}});
+  liveNext.addEventListener("click",()=>{if(livePage<livePages){livePage++;loadLiveGalleries();}});
+  studio.addEventListener("change",()=>loadLiveGalleries(true));
+  mission.addEventListener("change",()=>loadLiveGalleries(true));
+
   let page=1,pages=0,busy=false,serial=0;
   function updateSelection(){
     prepare.hidden=mission.value!=="grouping";
@@ -661,8 +736,11 @@
       opt.value=item.studio;studio.append(opt);
     }
     if(data.studios.length){
-      studio.value=data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
+      const requested=new URLSearchParams(window.location.search).get("studio");
+      studio.value=data.studios.some(x=>x.studio===requested)?requested:
+        data.studios.some(x=>x.studio==="RinArtPoke")?"RinArtPoke":data.studios[0].studio;
       load();
+      loadLiveGalleries(true);
     }else status.textContent="Não há estúdios canônicos cadastrados.";
   }).catch(err=>status.textContent="Missões indisponíveis: "+err.message);
 })();

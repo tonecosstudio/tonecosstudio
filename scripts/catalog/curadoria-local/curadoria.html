@@ -65,6 +65,15 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 #studioMissionsPanel .mission-controls{display:grid;grid-template-columns:minmax(180px,2fr) minmax(175px,1fr) auto;gap:8px;align-items:end;margin:12px 0}
 #studioMissionsPanel .mission-controls label{margin:0}
 #studioMissionBoard{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;max-height:665px;overflow-y:auto;align-items:start}
+
+.studio-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:11px;max-height:750px;overflow-y:auto;align-items:start}
+.studio-gallery-card{display:flex;flex-direction:column;gap:8px;min-width:0;padding:11px;border:1px solid #414149;border-radius:10px;background:#202127}
+.studio-gallery-card strong{font-size:13px;overflow-wrap:anywhere}
+.studio-gallery-card small{color:#bbb8b1;overflow-wrap:anywhere}
+.studio-gallery-pictures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.studio-gallery-pictures a{display:block;min-width:0;border-radius:6px;overflow:hidden;background:#101115}
+.studio-gallery-pictures img{display:block;width:100%;height:134px;object-fit:contain;background:#101115}
+@media(max-width:650px){.studio-gallery-grid{grid-template-columns:1fr;max-height:550px}}
 .studio-mission-tile{border:1px solid #414149;border-radius:10px;background:#202127;overflow:hidden;min-width:0}
 .studio-mission-tile img{width:100%;height:180px;object-fit:contain;background:#101115;display:block}
 .studio-mission-meta{display:flex;flex-direction:column;gap:5px;padding:9px;min-width:0}
@@ -128,6 +137,18 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <button type="button" id="studioMissionPrepare" disabled>Preparar galeria · 0 fotos selecionadas</button>
 <div id="studioMissionBoard" aria-live="polite"></div>
 <div class="mission-pages"><button id="studioMissionPrev" type="button">Anterior</button><span id="studioMissionPage">Prancha</span><button id="studioMissionNext" type="button">Próxima</button></div>
+
+<section id="studioMissionLiveGalleries" class="sync-panel" aria-label="Pranchas dinâmicas por escultura">
+<h3>Pranchas vivas de esculturas — sem JPG</h3>
+<p class="sub">Uma ficha por galeria, com até quatro fotografias distintas pelo SHA físico. Abra as imagens originais ou o editor da galeria existente. Esta visualização não confirma nomes, fusões ou direitos.</p>
+<p id="studioMissionGalleryStatus" role="status" class="sub">Selecione um estúdio para carregar as galerias.</p>
+<div id="studioMissionGalleryResults" class="studio-gallery-grid" aria-live="polite"></div>
+<nav class="mission-pages" aria-label="Paginação das galerias">
+<button type="button" id="studioMissionGalleryPrev" disabled>Galerias anteriores</button>
+<span id="studioMissionGalleryPage">—</span>
+<button type="button" id="studioMissionGalleryNext" disabled>Próximas galerias</button>
+</nav>
+</section>
 <section id="studioMissionMergePanel" class="sync-panel" aria-label="Possíveis fotos da mesma estatueta entre galerias">
 <h3>Mesma estatueta? Comparar duas galerias</h3>
 <p class="sub">Candidatos com título, franquia e variante semelhantes, publicados próximos no Telegram. Somente a inspeção física da base, pose e detalhes pode confirmar. Nenhuma fusão é automática.</p>

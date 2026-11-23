@@ -159,6 +159,66 @@ def board_page(path,studio,mission="grouping",page=1,limit=SIZE,include_paths=Fa
 
 
 
+
+def gallery_board(path,studio,page=1,limit=12):
+    """Live, read-only contact pages by sculpture, never generated JPEGs.
+
+    One card = one existing model_group. Multiple physical views stay attached
+    to that group; shared SHA bytes appear only once in the preview strip.
+    """
+    if not isinstance(studio,str) or not studio or studio==EXCLUDED or len(studio)>120:
+        raise ValueError("Estúdio inválido")
+    try:
+        page=int(page);limit=int(limit)
+    except (TypeError,ValueError) as exc:
+        raise ValueError("Paginação inválida") from exc
+    if not 1<=page<=10000 or limit not in (12,24):
+        raise ValueError("Paginação fora dos limites")
+    with db_open(path) as db:
+        if not db.execute("""SELECT 1 FROM name_proposals WHERE studio=? LIMIT 1""",
+                          (studio,)).fetchone():
+            raise ValueError("Estúdio não encontrado")
+        total=db.execute("""SELECT COUNT(DISTINCT g.group_key)
+            FROM model_groups g JOIN model_group_members m USING(group_key)
+            JOIN assets a USING(message_id)
+            WHERE g.studio=? AND a.original_topic<>?""",
+            (studio,EXCLUDED)).fetchone()[0]
+        groups=[dict(r) for r in db.execute("""SELECT g.group_key,g.studio,g.title,
+                g.universe,g.variant,g.state,g.revision,COUNT(m.message_id) photos
+            FROM model_groups g JOIN model_group_members m USING(group_key)
+            JOIN assets a USING(message_id)
+            WHERE g.studio=? AND a.original_topic<>?
+            GROUP BY g.group_key
+            ORDER BY g.title COLLATE NOCASE,g.variant COLLATE NOCASE,g.group_key
+            LIMIT ? OFFSET ?""",
+            (studio,EXCLUDED,limit,(page-1)*limit))]
+        if groups:
+            group_ids=[r["group_key"] for r in groups]
+            placeholders=",".join("?" for _ in group_ids)
+            pictures=db.execute("""SELECT m.group_key,a.message_id,a.sha256
+                FROM model_group_members m JOIN assets a USING(message_id)
+                WHERE m.group_key IN ("""+placeholders+""")
+                  AND a.original_topic<>?
+                ORDER BY m.group_key,a.message_id""",
+                group_ids+[EXCLUDED]).fetchall()
+            by_key={key:[] for key in group_ids}
+            unique={key:set() for key in group_ids}
+            for photo in pictures:
+                key=photo["group_key"]
+                fingerprint=photo["sha256"] or "message:"+str(photo["message_id"])
+                if fingerprint in unique[key]:
+                    continue
+                unique[key].add(fingerprint)
+                if len(by_key[key])<4:
+                    by_key[key].append(photo["message_id"])
+            for group in groups:
+                key=group["group_key"]
+                group["preview_ids"]=by_key[key]
+                group["unique_photos"]=len(unique[key])
+    return dict(schema=SCHEMA,studio=studio,page=page,limit=limit,
+                total=total,pages=(total+limit-1)//limit,items=groups,
+                read_only=True,automatic_decisions=False)
+
 def identity_candidates(path,studio,cursor=0,limit=24,query=""):
     """Read-only candidate names, not character identity approvals.
 

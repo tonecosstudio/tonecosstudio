@@ -94,6 +94,23 @@ class StudioMissionsTests(unittest.TestCase):
         self.assertTrue(any("idx_model_groups_studio_state" in row[3]
                             for row in groups_plan), groups_plan)
 
+    def test_live_gallery_pages_are_read_only_and_keep_variants(self):
+        gallery=missions.gallery_board(self.path,"A Studio")
+        self.assertTrue(gallery["read_only"])
+        self.assertFalse(gallery["automatic_decisions"])
+        self.assertEqual(gallery["total"],1)
+        self.assertEqual(gallery["pages"],1)
+        self.assertEqual(gallery["items"][0]["photos"],2)
+        self.assertEqual(len(gallery["items"][0]["preview_ids"]),2)
+        self.assertEqual(gallery["items"][0]["state"],"revisar")
+        self.assertNotIn("source_relative",gallery["items"][0])
+        self.assertEqual(missions.gallery_board(self.path,"B Studio")["total"],1)
+        self.assertEqual(missions.gallery_board(self.path,"A Studio",page=2)["items"],[])
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"Geral + 50k")
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"Invented")
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"A Studio",page=0)
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"A Studio",limit=96)
+
     def test_two_missions_same_pages(self):
         a=missions.board_page(self.path,"A Studio","grouping")
         b=missions.board_page(self.path,"A Studio","naming")
