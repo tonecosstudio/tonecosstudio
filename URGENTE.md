@@ -1,3 +1,14 @@
+## CHECKPOINT — 22/11/2026 — PRIORIDADE TELEGRAM/ESTÚDIOS; catálogo antigo depois
+
+- **Mandato atual:** concluir primeiro **os 92 estúdios Telegram (4.433 grupos)**, personagens, franquias, nomes, formas, acessórios, tags e exceções, pois são os modelos em uso. Congelar na curadoria a fila do catálogo antigo até o encerramento comprovado dos estúdios; não alterar R2/host de outros owners.
+- **OrdaX MCP executado:** processo `545a3709-302b-4a31-bf1a-de46a2a74fbc` exit 0. **4.433/4.433 grupos classificados exclusivamente do SQLite Telegram read-only**: 1.855 propostas nominais exatas, 1.934 sem identidade, 412 sem metadados, 145 em estado de revisão, 87 universo incerto. **0 estúdios efetivamente fechados, 0 modelos vinculados/renomeados/etiquetados.** Não confundir proposta com associação comprovada.
+- **RinArtPoke como primeiro estúdio:** processo `de19ad3a-b653-4b54-a022-9fccf899869f` exit 0; **156 grupos**, 150 nomes de personagens exatos; os seis restantes foram classificados em **3 Pokébolas/acessórios** e **3 formas regionais** de espécies já cadastradas (Typhlosion Hisui, Growlithe Hisui e Raichu Alola), com URLs/IDs/SHA PokeAPI; processo `7400ac48-1223-49df-9a67-d9600bdd80d1` exit 0. Resta validar visualmente e aplicar nomes/tags/vínculos com o owner legítimo para fechar.
+- **Scripts novos na main após PR:** `scripts/catalog/build-telegram-studio-closure-queue.py` e `scripts/catalog/review-telegram-regional-forms.py`, testes correspondentes. Reusam SSOT real 952 personagens/61 franquias e a classificação existente, nenhum segundo cadastro/SSOT.
+- **Fila privada:** `C:/Users/ordax/Documents/TONART-Telegram-Import/reconciliacao-taxonomia-20261122/telegram-studios-first-20261122/`, 92 estúdios no CSV de prioridade, 4.433 grupos no CSV completo e `studio-RinArtPoke/` com 156 grupos e 6 exceções contextualizadas. Não publicar dados privados.
+- **Próximos estúdios:** finalizar RinArtPoke com prova visual e owner do catálogo; Poke Crisis Miniatures (33/37 nomes), Ydeval (406/469), MPPrints (264/328). Sem GO M5, migration D1 0029 e publicação de modelos/tags seguem bloqueadas. O objetivo NÃO é só cadastrar personagens, é fechar os grupos Studio por Studio e só depois tratar os antigos.
+
+---
+
 ## CHECKPOINT — 22/11/2026 — primeiro lote de associação privada e nomes: 2.791 propostas, zero publicações
 
 - **SSOT real confirmada:** Supabase privado tem 952 identidades/61 franquias; `catalog_curation_model_profiles=0`, `catalog_curation_model_tags=0`, duas tags editoriais genéricas (`Terror`, `Antagonista`). Essa tabela não suporta `character_identity_id` sem `identity_verified=true`; NÃO inventar confirmação por simples nome. D1 Worker/site M5 seguem bloqueados.
