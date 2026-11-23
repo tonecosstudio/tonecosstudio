@@ -19,6 +19,8 @@ const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.catalogHub, label: "CATÁLOGOS" },
+  { to: PUBLIC_ROUTES.catalogHistorical, label: "ORIGINAIS" },
+  { to: PUBLIC_ROUTES.catalogReview, label: "EM REVISÃO" },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
 ];
@@ -74,7 +76,7 @@ export function ArcadeNavView({
   }, [mobileOpen]);
 
   const isActive = (path: string) => {
-    if (path === PUBLIC_ROUTES.home) {
+    if (path === PUBLIC_ROUTES.home || path === PUBLIC_ROUTES.catalogHub) {
       return location.pathname === path;
     }
 
@@ -106,7 +108,7 @@ export function ArcadeNavView({
           {BRAND_SHORT_NAME}
         </Link>
 
-        <div className="hidden items-center gap-5 lg:flex">
+        <div className="hidden items-center gap-4 lg:flex xl:gap-5">
           {navLinks.map((link) => (
             <Link
               key={link.to}
@@ -203,7 +205,11 @@ export function ArcadeNavView({
             to={link.to}
             onClick={() => setMobileOpen(false)}
             aria-current={isActive(link.to) ? "page" : undefined}
-            className={`flex min-h-11 items-center ${linkClass(link.to)}`}
+            className={`flex min-h-11 items-center ${
+              (link.to === PUBLIC_ROUTES.catalogHistorical || link.to === PUBLIC_ROUTES.catalogReview)
+                ? "border-l border-[hsl(var(--gold-accent)/0.45)] pl-4 "
+                : ""
+            }${linkClass(link.to)}`}
           >
             {link.label}
           </Link>
