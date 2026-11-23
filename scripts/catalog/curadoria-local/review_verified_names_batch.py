@@ -52,15 +52,9 @@ def atomic_json(path: pathlib.Path, item: dict) -> None:
             time.sleep(0.06 * (2 ** attempt))
 
 
-def load_plan(path: pathlib.Path) -> list[dict]:
-    if not path.is_file():
-        raise ValueError("private visual review plan is missing")
-    rows = []
+def validate_plan_rows(rows: list[dict]) -> list[dict]:
     ids = set()
-    for lineno, line in enumerate(path.read_text("utf8").splitlines(), 1):
-        if not line.strip():
-            continue
-        row = json.loads(line)
+    for lineno, row in enumerate(rows, 1):
         if not isinstance(row, dict) or set(row) != PLAN_KEYS:
             raise ValueError(f"plan row {lineno}: exact proof fields required")
         mid = row["message_id"]
@@ -82,10 +76,112 @@ def load_plan(path: pathlib.Path) -> list[dict]:
             raise ValueError("an external HTTPS official-name source is required")
         if len(row["visual_evidence_note"]) > 500:
             raise ValueError("visual review evidence note too long")
-        rows.append(row)
     if not 1 <= len(rows) <= 96:
         raise ValueError("proof batch must contain 1..96 images")
     return rows
+
+
+def load_plan(path: pathlib.Path) -> list[dict]:
+    if not path.is_file():
+        raise ValueError("private visual review plan is missing")
+    rows = [json.loads(line) for line in path.read_text("utf8").splitlines()
+            if line.strip()]
+    return validate_plan_rows(rows)
+
+
+GROUP_PROOF_KEYS = frozenset({
+    "group_key", "studio", "title", "universe",
+    "official_url", "visual_evidence_note",
+})
+
+
+def load_gallery_proofs(path: pathlib.Path) -> list[dict]:
+    """One editorial attestation per whole, previously audited gallery."""
+    if not path.is_file():
+        raise ValueError("private gallery proof plan is missing")
+    proofs = [json.loads(line) for line in path.read_text("utf8").splitlines()
+              if line.strip()]
+    if not 1 <= len(proofs) <= 24:
+        raise ValueError("gallery proof plan must have 1..24 groups")
+    seen = set()
+    for item in proofs:
+        if (not isinstance(item, dict)
+                or set(item) != GROUP_PROOF_KEYS
+                or not all(isinstance(v, str) and v.strip()
+                           for v in item.values())
+                or not re.fullmatch("[0-9a-f]{24}", item["group_key"])
+                or item["group_key"] in seen):
+            raise ValueError("duplicate or malformed gallery attestation")
+        seen.add(item["group_key"])
+        url = urllib.parse.urlparse(item["official_url"])
+        if (url.scheme != "https" or not url.hostname or url.username
+                or url.password or url.hostname in ("localhost","127.0.0.1")
+                or len(item["visual_evidence_note"]) > 400):
+            raise ValueError("gallery attestation requires precise HTTPS official evidence")
+    return proofs
+
+
+def expand_gallery_proofs(db: sqlite3.Connection, proofs: list[dict]) -> list[dict]:
+    """Expand editor-reviewed galleries to photo-level SHA proofs without writing.
+
+    This DOES NOT infer that galleries sharing a character are identical.
+    Every gallery must already have a visual audit event, and the provided
+    official creator URL must be from its registered studio provider.
+    """
+    import name_curadoria as names
+    prepared = []
+    for proof in proofs:
+        key = proof["group_key"]
+        group = db.execute(
+            "SELECT group_key,studio,title,universe,variant,state,revision "
+            "FROM model_groups WHERE group_key=?", (key,)
+        ).fetchone()
+        if (not group or group["studio"] != proof["studio"]
+                or group["title"] != proof["title"]
+                or group["universe"] != proof["universe"]
+                or group["state"] not in ("provavel","revisar")):
+            raise ValueError(f"gallery {key}: editorial source does not match group")
+        audit = db.execute(
+            "SELECT 1 FROM curation_events WHERE group_key=? "
+            "AND event_type='visual_gallery_audited' LIMIT 1", (key,)
+        ).fetchone()
+        if not audit:
+            raise ValueError(f"gallery {key}: full visual audit is missing")
+        official_domains = {
+            urllib.parse.urlparse(x["url"]).hostname.lower().removeprefix("www.")
+            for x in names.official_sources(proof["studio"])
+        }
+        url = urllib.parse.urlparse(proof["official_url"])
+        domain = url.hostname.lower().removeprefix("www.")
+        if domain not in official_domains:
+            raise ValueError(f"gallery {key}: not an official studio provider")
+        members = db.execute(
+            """SELECT p.message_id,p.studio,p.title,p.universe,p.variant,
+                      p.status,p.revision,a.sha256,a.source_relative,a.original_topic
+               FROM model_group_members m
+               JOIN name_proposals p ON p.message_id=m.message_id
+               JOIN assets a ON a.message_id=m.message_id
+               WHERE m.group_key=? ORDER BY p.message_id""", (key,)
+        ).fetchall()
+        if not 2 <= len(members) <= 96:
+            raise ValueError(f"gallery {key}: multifoto size invalid")
+        for row in members:
+            if (row["studio"] != group["studio"]
+                    or row["title"] != group["title"]
+                    or row["universe"] != group["universe"]
+                    or row["variant"] != group["variant"]
+                    or row["original_topic"] != group["studio"]):
+                raise ValueError(f"gallery {key}: individual variant/title conflict")
+            prepared.append({
+                "message_id": row["message_id"],
+                "studio": row["studio"],
+                "title": row["title"],
+                "universe": row["universe"],
+                "source_sha256": row["sha256"],
+                "official_url": proof["official_url"],
+                "visual_evidence_note": proof["visual_evidence_note"],
+            })
+    return validate_plan_rows(prepared)
 
 
 def host_json(path: str, *, payload: dict | None = None, token: str = "") -> dict:
@@ -148,9 +244,25 @@ def preflight(
     *,
     live_model=host_json,
 ) -> list[dict]:
-    """Preflight ALL items before first write, using source media bytes."""
+    """Preflight all photos, variant boundaries, audit and live gallery *before* POST.
+
+    A multifoto group must appear in its entirety with one consistent
+    creator-specific source; one HTTP GET validates each group, not each image.
+    Existing single-photo proof plans retain their previous contracts.
+    """
     media_root = media_root.resolve()
     result = []
+    plan_members = {}
+    plan_sources = {}
+    for item in plan:
+        group = db.execute(
+            "SELECT m.group_key FROM model_group_members m WHERE m.message_id=?",
+            (item["message_id"],),
+        ).fetchone()
+        if group:
+            plan_members.setdefault(group["group_key"], set()).add(item["message_id"])
+            plan_sources.setdefault(group["group_key"], set()).add(item["official_url"])
+    cache = {}
     for row in plan:
         mid = row["message_id"]
         proposal = db.execute(
@@ -171,11 +283,44 @@ def preflight(
                 or group["studio"] != row["studio"]
                 or group["title"] != row["title"]):
             raise ValueError(f"image {mid}: source identity mismatch")
-        if db.execute(
-            "SELECT COUNT(*) FROM model_group_members WHERE group_key=?",
-            (group["group_key"],),
-        ).fetchone()[0] != 1:
-            raise ValueError(f"image {mid}: multi-image gallery requires separate review")
+        key = group["group_key"]
+        if key not in cache:
+            members = [r[0] for r in db.execute(
+                "SELECT message_id FROM model_group_members WHERE group_key=? "
+                "ORDER BY message_id", (key,)
+            )]
+            if not members:
+                raise ValueError(f"gallery {key}: no members")
+            if len(members) > 1:
+                if set(members) != plan_members.get(key, set()):
+                    raise ValueError(f"gallery {key}: full multifoto proof required")
+                if len(plan_sources.get(key, set())) != 1:
+                    raise ValueError(f"gallery {key}: conflicting official sources")
+                if not db.execute(
+                    "SELECT 1 FROM curation_events WHERE group_key=? "
+                    "AND event_type='visual_gallery_audited' LIMIT 1", (key,)
+                ).fetchone():
+                    raise ValueError(f"gallery {key}: visual audit missing")
+                others = db.execute(
+                    """SELECT p.studio,p.title,p.universe,p.variant,a.original_topic
+                    FROM model_group_members m JOIN name_proposals p USING(message_id)
+                    JOIN assets a USING(message_id) WHERE m.group_key=?""", (key,)
+                ).fetchall()
+                if any(
+                    x["studio"] != group["studio"]
+                    or x["title"] != group["title"]
+                    or x["universe"] != group["universe"]
+                    or x["variant"] != group["variant"]
+                    or x["original_topic"] != group["studio"]
+                    for x in others
+                ):
+                    raise ValueError(f"gallery {key}: mixed sculpture/variant")
+            snapshot = live_model("/api/model/" + key)
+            if (snapshot.get("title") != group["title"]
+                    or snapshot.get("revision") != group["revision"]
+                    or sorted(x.get("message_id") for x in snapshot.get("images", [])) != members):
+                raise ValueError(f"gallery {key}: live host/gallery mismatch")
+            cache[key] = (members, snapshot)
         photo = (media_root / asset["source_relative"]).resolve()
         if (not photo.is_relative_to(media_root) or not photo.is_file()
                 or photo.name != f"msg_{mid}.jpg"):
@@ -193,14 +338,9 @@ def preflight(
             or group["state"] != "provavel" or group["revision"] != 0
         ):
             raise ValueError(f"image {mid}: changed source/revision requires review")
-        snapshot = live_model("/api/model/" + group["group_key"])
-        if (snapshot.get("title") != row["title"]
-                or snapshot.get("revision") != group["revision"]
-                or [x.get("message_id") for x in snapshot.get("images", [])] != [mid]):
-            raise ValueError(f"image {mid}: live host/gallery mismatch")
         result.append({
             **row,
-            "group_key": group["group_key"],
+            "group_key": key,
             "variant": proposal["variant"] or "",
             "name_revision": proposal["revision"],
             "group_revision": group["revision"],
@@ -297,11 +437,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--sqlite", required=True, type=pathlib.Path)
     parser.add_argument("--media-root", required=True, type=pathlib.Path)
-    parser.add_argument("--plan", required=True, type=pathlib.Path)
+    proof_source = parser.add_mutually_exclusive_group(required=True)
+    proof_source.add_argument("--plan", type=pathlib.Path,
+        help="Existing, individually reviewed photo SHA JSONL")
+    proof_source.add_argument("--gallery-proofs", type=pathlib.Path,
+        help="Editor-checked full gallery sources, expanded to photo SHA proofs")
     parser.add_argument("--report", required=True, type=pathlib.Path)
     parser.add_argument("--apply", action="store_true")
     args = parser.parse_args()
-    rows = load_plan(args.plan)
+    with connect_sqlite(args.sqlite) as db:
+        rows = (expand_gallery_proofs(db, load_gallery_proofs(args.gallery_proofs))
+                if args.gallery_proofs else load_plan(args.plan))
+    source_path = args.gallery_proofs or args.plan
     caps = host_json("/api/capabilities")
     if not any(
         item.get("path") == "/api/review-name"
@@ -313,7 +460,7 @@ def main() -> int:
         verified = preflight(db, rows, args.media_root)
         print(f"PREFLIGHT_OK {len(verified)} images; apply={args.apply}",flush=True)
         result = execute(
-            db, verified, sha256_file(args.plan), args.report,
+            db, verified, sha256_file(source_path), args.report,
             apply=args.apply
         )
         print(json.dumps({
