@@ -112,8 +112,75 @@
       gallery.replaceChildren();status.textContent="Falha: "+err.message;
     }finally{if(seq===serial)lock(false)}
   }
-  studio.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load()});
-  mission.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load()});
+  // The naming mission has a READ-ONLY entity-level index, separate from
+  // sculpture grouping. Matching text is never accepted as verified identity.
+  const identityPanel=el("studioMissionIdentityPanel");
+  const identitySearch=el("studioMissionIdentitySearch");
+  const identityLoad=el("studioMissionIdentityLoad");
+  const identityMore=el("studioMissionIdentityMore");
+  const identityResults=el("studioMissionIdentityResults");
+  const identityStatus=el("studioMissionIdentityStatus");
+  let identityCursor=0,identityBusy=false,identitySerial=0;
+  async function loadIdentities(reset=true){
+    const seq=++identitySerial;
+    identityPanel.hidden=mission.value!=="naming";
+    if(mission.value!=="naming")return;
+    if(reset){
+      identityCursor=0;
+      identityResults.replaceChildren();
+    }
+    identityBusy=true;
+    identityLoad.disabled=true;
+    identityMore.disabled=true;
+    identityStatus.textContent="Consolidando títulos do SQLite, sem alterar nomes...";
+    try{
+      const params=new URLSearchParams({
+        studio:studio.value,cursor:String(identityCursor),limit:"24",
+        q:identitySearch.value.trim()
+      });
+      const data=await get("/api/studio-missions/identities?"+params);
+      if(seq!==identitySerial)return;
+      for(const item of data.items){
+        const card=node("article",undefined,"studio-evidence-row");
+        card.append(node("strong",item.title+" · "+(item.universe||"Franquia não informada")));
+        card.append(node("small",fmt.format(item.galleries)+" galerias distintas · "+
+          fmt.format(item.photos)+" fotos · "+fmt.format(item.confirmed)+" nomes confirmados"));
+        if(item.flags.length){
+          card.append(node("small","Atenção: "+item.flags.join(", ")+
+            ". Confirmar se é personagem, acessório ou conjunto."));
+        }
+        const action=node("button","Ver fotografia e galeria");
+        action.type="button";
+        action.addEventListener("click",()=>{
+          page=Math.max(1,item.page_hint);
+          mission.value="naming";
+          selected.clear();
+          load();
+          el("studioMissionsPanel").scrollIntoView({behavior:"smooth",block:"start"});
+        });
+        card.append(action);
+        identityResults.append(card);
+      }
+      identityCursor=data.next_cursor===null?identityCursor:data.next_cursor;
+      identityMore.hidden=data.next_cursor===null;
+      identityStatus.textContent=fmt.format(data.total)+
+        " títulos candidatos distintos (não equivalem a personagens confirmados). "+
+        "Verificar fonte do estúdio uma vez por personagem e variantes compatíveis.";
+    }catch(err){
+      if(seq===identitySerial)identityStatus.textContent="Falha na consulta de nomes: "+err.message;
+    }finally{
+      if(seq===identitySerial){
+        identityBusy=false;identityLoad.disabled=false;identityMore.disabled=false;
+      }
+    }
+  }
+  identityLoad.addEventListener("click",()=>loadIdentities(true));
+  identityMore.addEventListener("click",()=>{if(!identityBusy)loadIdentities(false)});
+  identitySearch.addEventListener("keydown",event=>{
+    if(event.key==="Enter"){event.preventDefault();loadIdentities(true)}
+  });
+  studio.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load();loadIdentities(true)});
+  mission.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load();loadIdentities(true)});
   prepare.addEventListener("click",()=>{
     if(busy||mission.value!=="grouping"||selected.size<2)return;
     const photos=[...selected.values()];
@@ -139,7 +206,7 @@
   });
   prev.addEventListener("click",()=>{if(!busy&&page>1){page--;load()}});
   next.addEventListener("click",()=>{if(!busy&&page<pages){page++;load()}});
-  el("studioMissionRefresh").addEventListener("click",load);
+  el("studioMissionRefresh").addEventListener("click",()=>{load();loadIdentities(true)});
   // Two distinct and explicitly requested evidence queues backed by the
   // same SQLite. A SHA match is a candidate, never a write/approval.
   const evidenceKind=el("studioMissionEvidenceKind");

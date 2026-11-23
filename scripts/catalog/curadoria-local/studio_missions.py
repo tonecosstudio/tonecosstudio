@@ -158,6 +158,76 @@ def board_page(path,studio,mission="grouping",page=1,limit=SIZE,include_paths=Fa
         items=items,read_only=True,automatic_decisions=False)
 
 
+
+def identity_candidates(path,studio,cursor=0,limit=24,query=""):
+    """Read-only candidate names, not character identity approvals.
+
+    Gallery IDs remain separate per sculpt and variant. Here one text label
+    is counted ONCE across photo proposals, without assuming equal titles
+    identify the same official character, source or commercial model.
+    """
+    if not isinstance(studio,str) or not studio or studio==EXCLUDED or len(studio)>120:
+        raise ValueError("Estúdio inválido")
+    if not isinstance(query,str) or len(query)>80:
+        raise ValueError("Pesquisa inválida")
+    try:cursor=int(cursor);limit=int(limit)
+    except (TypeError,ValueError) as exc:raise ValueError("Paginação inválida") from exc
+    if cursor<0 or cursor>10000 or limit not in (12,24,48):
+        raise ValueError("Paginação fora do limite")
+    with db_open(path) as db:
+        params=[studio,EXCLUDED]
+        clause=""
+        if query.strip():
+            clause=" AND (n.title LIKE ? OR n.universe LIKE ?)"
+            pattern="%"+query.strip().replace("%","\\%").replace("_","\\_")+"%"
+            clause=clause.replace(" LIKE ?"," LIKE ? ESCAPE '\\'")
+            params.extend((pattern,pattern))
+        sql="""SELECT n.title,n.universe,COUNT(*) photos,
+              SUM(n.status='confirmado') confirmed,
+              SUM(n.status='revisar') name_review,
+              COUNT(DISTINCT gm.group_key) galleries,
+              SUM(gm.group_key IS NULL) ungrouped,
+              COUNT(DISTINCT CASE WHEN n.status='confirmado'
+                    THEN NULLIF(n.official_url,'') END) confirmed_sources,
+              MIN(n.message_id) first_id
+            FROM name_proposals n JOIN assets a USING(message_id)
+            LEFT JOIN model_group_members gm USING(message_id)
+            WHERE n.studio=? AND a.original_topic<>?
+            AND TRIM(n.title)!=''""" + clause + """
+            GROUP BY LOWER(TRIM(n.title)),LOWER(TRIM(n.universe))
+            ORDER BY (COUNT(*)-SUM(n.status='confirmado')) DESC,
+                     galleries DESC,LOWER(n.title),LOWER(n.universe)"""
+        rows=db.execute(sql+" LIMIT ? OFFSET ?",params+[limit+1,cursor]).fetchall()
+        total=db.execute("SELECT COUNT(*) FROM ("+sql+")",params).fetchone()[0]
+        items=[]
+        for r in rows[:limit]:
+            # An ordinary title is not automatically a canonical character.
+            title=r["title"].casefold()
+            flags=[]
+            if any(w in title for w in (" pack"," gun"," handgun"," sword"," weapon"," prop"," swag"," accessory")):
+                flags.append("possible_accessory_or_pack")
+            if any(w in title for w in (" & "," and "," vs "," versus "," / ")):
+                flags.append("possible_multiple_characters")
+            if any(w in title for w in (" poster"," bust"," wall"," diorama"," sculpture")):
+                flags.append("title_contains_model_type")
+            rank=db.execute("""SELECT COUNT(*) FROM name_proposals n
+                JOIN assets a USING(message_id)
+                WHERE n.studio=? AND a.original_topic<>? AND n.message_id<?""",
+                (studio,EXCLUDED,r["first_id"])).fetchone()[0]
+            items.append({"title":r["title"],"universe":r["universe"],
+                "photos":r["photos"],"confirmed":r["confirmed"],
+                "review":r["name_review"],"unconfirmed":r["photos"]-r["confirmed"],
+                "galleries":r["galleries"],"ungrouped":r["ungrouped"],
+                "confirmed_sources":r["confirmed_sources"],
+                "first_id":r["first_id"],"page_hint":rank//SIZE+1,
+                "flags":flags,"is_canonical_character":False,
+                "auto_confirmed":False})
+    return {"schema":SCHEMA,"studio":studio,"query":query,"cursor":cursor,
+        "limit":limit,"total":total,"next_cursor":cursor+limit if len(rows)>limit else None,
+        "items":items,"read_only":True,"auto_merge":False,
+        "auto_confirm":False,"note":"Título candidato não é identidade oficial ou licença."}
+
+
 def review_candidates(path,kind="albums",studio="",cursor=0,limit=24):
     """One bounded, read-only evidence queue; never merge or rename by query.
 

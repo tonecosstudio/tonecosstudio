@@ -232,6 +232,29 @@ class StudioMissionsTests(unittest.TestCase):
         verified=missions.finalize_index(self.path,output)
         self.assertTrue(verified["generation_complete"])
 
+    def test_names_collapsed_by_label_not_sculpture_or_photo(self):
+        before=hashlib.sha256(self.path.read_bytes()).hexdigest()
+        index=missions.identity_candidates(self.path,"A Studio",limit=12)
+        self.assertEqual(index["total"],26)
+        self.assertEqual(len(index["items"]),12)
+        self.assertTrue(index["read_only"])
+        self.assertFalse(index["auto_confirm"])
+        self.assertFalse(index["auto_merge"])
+        self.assertTrue(all(x["is_canonical_character"] is False for x in index["items"]))
+        remaining=missions.identity_candidates(self.path,"A Studio",cursor=12,limit=24)
+        self.assertEqual(len(remaining["items"]),14)
+        self.assertIsNone(remaining["next_cursor"])
+        filtered=missions.identity_candidates(self.path,"A Studio",query="Foo 1")
+        self.assertGreaterEqual(filtered["total"],1)
+        self.assertTrue(all("Foo 1" in x["title"] for x in filtered["items"]))
+        self.assertEqual(hashlib.sha256(self.path.read_bytes()).hexdigest(),before)
+        with self.assertRaises(ValueError):
+            missions.identity_candidates(self.path,"Geral + 50k")
+        with self.assertRaises(ValueError):
+            missions.identity_candidates(self.path,"A Studio",cursor=-1)
+        with self.assertRaises(ValueError):
+            missions.identity_candidates(self.path,"A Studio",limit=96)
+
     def test_two_bounded_readonly_evidence_queues(self):
         initial=self.path.read_bytes()
         album=missions.review_candidates(self.path,kind="albums")

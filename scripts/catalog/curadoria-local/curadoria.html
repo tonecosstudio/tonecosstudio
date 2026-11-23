@@ -100,6 +100,18 @@ small{color:var(--muted)}.sep{height:1px;background:var(--line);margin:18px 0}
 <button type="button" id="studioMissionRefresh">Recarregar estado atual</button>
 </div>
 <p id="studioMissionStatus" class="sub" role="status">Carregando estúdios...</p>
+<section id="studioMissionIdentityPanel" class="sync-panel" hidden aria-label="Nomes candidatos consolidados">
+<strong>Missão 2 — nomes candidatos, sem repetir por fotografia</strong>
+<p class="sub">Um título pode representar várias esculturas do mesmo personagem. Não são identidades oficiais: acessórios, dioramas e nomes semelhantes exigem classificação própria. As galerias e variantes permanecem independentes.</p>
+<div class="buttons">
+<label for="studioMissionIdentitySearch">Buscar nome ou franquia
+<input id="studioMissionIdentitySearch" placeholder="Ex.: Gamora, Marvel"></label>
+<button type="button" id="studioMissionIdentityLoad">Consultar nomes</button>
+</div>
+<p id="studioMissionIdentityStatus" role="status" class="sub">Selecione a missão de nomes.</p>
+<div id="studioMissionIdentityResults" class="studio-evidence-list"></div>
+<button type="button" id="studioMissionIdentityMore" hidden>Mais nomes candidatos</button>
+</section>
 <p class="sub">Abra a imagem original e compare vistas, bases e variantes. Para fotos sem grupo, selecione duas ou mais e prepare uma galeria: nenhuma associação é salva automaticamente.</p>
 <button type="button" id="studioMissionPrepare" disabled>Preparar galeria · 0 fotos selecionadas</button>
 <div id="studioMissionBoard" aria-live="polite"></div>

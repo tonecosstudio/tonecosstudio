@@ -17,6 +17,20 @@
 **Regras obrigatórias:** mesmos nomes e álbuns não bastam para fundir esculturas. Misturas de autoria e versões exigem evidência específica. Nome confirmado não autoriza direitos, venda, publicação de tags, M5, Worker, D1, R2, Supabase nem Site. O SQLite e seus eventos são a SSOT; JPEGs e manifestos são descartáveis. Os testes test_studio_missions.py validam paginação, duas missões, modo somente leitura, proibição do Geral, caminhos seguros, retomada, SHA e invalidação após alteração editorial.
 
 
+## Duas missões independentes por estúdio, sem repetir nomes por foto
+
+A missão 1 mantém cada escultura e variante em sua galeria original; a missão
+2 usa GET /api/studio-missions/identities?studio=Wicked&cursor=0&limit=24
+para agrupar SOMENTE propostas textuais iguais de nome+franquia, mostrando
+quantas fotos, galerias e evidências editoriais existem. O painel visual
+**Nomes candidatos** foi incluído na missão 2 e permite navegar às pranchas.
+Título textual não significa identidade canônica, personagem único, modelo
+idêntico ou liberação comercial; acessórios, dioramas e pacotes recebem alerta
+de classificação. O índice é somente leitura e não cria nova tabela,
+identidade no Supabase, outra fila ou serviços; toda confirmação de nome
+continua pelo cliente canônico de lote, com SHA físico e URL oficial do modelo.
+Paginação 12/24/48; refazer consulta após uma alteração de nome.
+
 ## Lotes de nomes por galeria revisada (OrdaX MCP + Curadoria Host)
 
 O cliente canônico EXISTENTE review_verified_names_batch.py também aceita
