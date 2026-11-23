@@ -49,7 +49,10 @@ def db_open(path, readonly=False):
         # for every canonical writer instead of rejoining every asset on GET.
         db.execute("PRAGMA foreign_keys=ON")
         db.execute("PRAGMA busy_timeout=15000")
-        db.execute("PRAGMA journal_mode=WAL")
+        # WAL is a database-wide setting. Repeating a WAL mode assignment on
+        # every writer open can contend with active readers on Windows.
+        if db.execute("PRAGMA journal_mode").fetchone()[0].lower() != "wal":
+            db.execute("PRAGMA journal_mode=WAL")
     return db
 
 def setup(db):
