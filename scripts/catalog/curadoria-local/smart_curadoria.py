@@ -59,6 +59,9 @@ def setup(db):
       universe TEXT NOT NULL DEFAULT '', variant TEXT NOT NULL DEFAULT '',
       state TEXT NOT NULL DEFAULT 'provavel', confidence REAL NOT NULL DEFAULT 0,
       revision INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+    -- Shared by the visual mission board and per-studio gallery counts.
+    CREATE INDEX IF NOT EXISTS idx_model_groups_studio_state
+      ON model_groups(studio,state);
     CREATE TABLE IF NOT EXISTS model_group_members(
       message_id INTEGER PRIMARY KEY REFERENCES assets(message_id),
       group_key TEXT NOT NULL REFERENCES model_groups(group_key),
