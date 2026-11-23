@@ -17,6 +17,23 @@
 **Regras obrigatórias:** mesmos nomes e álbuns não bastam para fundir esculturas. Misturas de autoria e versões exigem evidência específica. Nome confirmado não autoriza direitos, venda, publicação de tags, M5, Worker, D1, R2, Supabase nem Site. O SQLite e seus eventos são a SSOT; JPEGs e manifestos são descartáveis. Os testes test_studio_missions.py validam paginação, duas missões, modo somente leitura, proibição do Geral, caminhos seguros, retomada, SHA e invalidação após alteração editorial.
 
 
+## Lotes de nomes por galeria revisada (OrdaX MCP + Curadoria Host)
+
+O cliente canônico EXISTENTE review_verified_names_batch.py também aceita
+--gallery-proofs como alternativa ao modo --plan por foto. O arquivo
+privado JSONL precisa de UMA linha de evidência editorial para cada galeria:
+{"group_key":"24hex","studio":"Wicked","title":"Black Cat","universe":"Marvel","official_url":"https://www.patreon.com/posts/...","visual_evidence_note":"Todas as fotos originais conferidas..."}.
+**Não é autoconfirmador nem ferramenta paralela:** expande a galeria em provas
+SHA individuais consultando SQLite SSOT somente leitura; exige evento
+visual_gallery_audited, título/estúdio/franquia/variante consistentes,
+origem única, TODAS as mensagens e URL de domínio oficial do estúdio.
+Reconfere cada arquivo físico SHA-256, revision CAS e o snapshot do host
+com UM GET por galeria, não por foto. O mesmo --report registra progresso;
+--apply envia pelo /api/review-name canônico (escrita CAS por foto), e
+retomada só pula confirmadas com a mesma fonte. Limites 24 galerias/96 fotos.
+Falha fechada se faltar prova ou variante; identidade editorial não concede
+direitos, tags ou publicação. Nenhum outro banco, fila ou serviço.
+
 ## Histórico de auditorias não equivale a confirmação de nomes
 
 O índice de estúdios registra groups_with_visual_audit_event como número

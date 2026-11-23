@@ -31,25 +31,28 @@ class NameBatchTests(unittest.TestCase):
         con.executescript("""
           CREATE TABLE model_groups (
              group_key TEXT PRIMARY KEY, title TEXT,studio TEXT,
-             state TEXT,revision INTEGER
+             state TEXT,revision INTEGER,universe TEXT DEFAULT '',variant TEXT DEFAULT ''
           );
           CREATE TABLE model_group_members (group_key TEXT, message_id INTEGER);
           CREATE TABLE assets(
-             message_id INTEGER PRIMARY KEY, sha256 TEXT,source_relative TEXT
+             message_id INTEGER PRIMARY KEY, sha256 TEXT,source_relative TEXT,original_topic TEXT
           );
           CREATE TABLE name_proposals(
              message_id INTEGER PRIMARY KEY,title TEXT,studio TEXT,
              universe TEXT,variant TEXT,status TEXT,revision INTEGER,
              official_url TEXT
           );
+          CREATE TABLE curation_events(
+             event_id INTEGER PRIMARY KEY,group_key TEXT,event_type TEXT
+          );
         """)
         self.key = "a" * 24
-        con.execute("INSERT INTO model_groups VALUES(?,?,?,?,?)",
-                    (self.key, "Pikachu", "Studio", "provavel", 0))
+        con.execute("INSERT INTO model_groups(group_key,title,studio,state,revision,universe,variant) VALUES(?,?,?,?,?,?,?)",
+                    (self.key, "Pikachu", "Studio", "provavel", 0, "Pokémon", ""))
         con.execute("INSERT INTO model_group_members VALUES(?,?)",
                     (self.key, 1234))
-        con.execute("INSERT INTO assets VALUES(?,?,?)",
-                    (1234, self.sha, "Studio/msg_1234.jpg"))
+        con.execute("INSERT INTO assets VALUES(?,?,?,?)",
+                    (1234, self.sha, "Studio/msg_1234.jpg","Studio"))
         con.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?)",
                     (1234,"Pikachu","Studio","Pokémon","","provavel",0,""))
         con.commit()
@@ -62,6 +65,113 @@ class NameBatchTests(unittest.TestCase):
         }
         self.plan = self.path / "plan.jsonl"
         self.plan.write_text(json.dumps(self.record) + "\n", encoding="utf8")
+
+    def setup_multifoto(self):
+        conn=sqlite3.connect(self.sqlite)
+        conn.execute("INSERT INTO curation_events(group_key,event_type) VALUES(?,?)",
+                     (self.key,"visual_gallery_audited"))
+        for mid in (1235,1236):
+            p=self.media/"Studio"/f"msg_{mid}.jpg"
+            p.write_bytes(f"physical-media-{mid}".encode("ascii"))
+            conn.execute("INSERT INTO model_group_members VALUES(?,?)",(self.key,mid))
+            conn.execute("INSERT INTO assets VALUES(?,?,?,?)",
+                         (mid,cli.sha256_file(p),f"Studio/msg_{mid}.jpg","Studio"))
+            conn.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?)",
+                         (mid,"Pikachu","Studio","Pokémon","","provavel",0,""))
+        conn.commit()
+        conn.close()
+        official=self.record["official_url"]
+        self.gallery_proof={
+            "group_key":self.key,"studio":"Studio","title":"Pikachu",
+            "universe":"Pokémon","official_url":official,
+            "visual_evidence_note":"Galeria completa verificada visualmente; escultura e variante únicas"
+        }
+        return self.gallery_proof
+
+    def test_multifoto_expands_one_gallery_into_three_physical_proofs(self):
+        proof=self.setup_multifoto()
+        path=self.path/"gallery-proof.jsonl"
+        path.write_text(json.dumps(proof)+"\n",encoding="utf8")
+        with cli.connect_sqlite(self.sqlite) as db:
+            with patch("name_curadoria.official_sources",
+                       return_value=[{"url":"https://www.pokemon.com/creator",
+                                      "studio":"Studio"}]):
+                rows=cli.expand_gallery_proofs(db,cli.load_gallery_proofs(path))
+            self.assertEqual([r["message_id"] for r in rows],[1234,1235,1236])
+            calls=[]
+            def live(url):
+                calls.append(url)
+                return {"title":"Pikachu","revision":0,
+                        "images":[{"message_id":x} for x in (1234,1235,1236)]}
+            verified=cli.preflight(db,rows,self.media,live_model=live)
+            self.assertEqual(len(verified),3)
+            self.assertEqual(len(calls),1,"one host GET per gallery")
+            with self.assertRaisesRegex(ValueError,"full multifoto"):
+                cli.preflight(db,rows[:-1],self.media,live_model=live)
+            rows[1]["official_url"]="https://some.other/source"
+            with self.assertRaisesRegex(ValueError,"conflicting official"):
+                cli.preflight(db,rows,self.media,live_model=live)
+
+    def test_gallery_batch_rejects_unreviewed_or_mismatched_version(self):
+        proof=self.setup_multifoto()
+        with cli.connect_sqlite(self.sqlite) as db:
+            with patch("name_curadoria.official_sources",
+                       return_value=[{"url":"https://www.pokemon.com/creator","studio":"Studio"}]):
+                rows=cli.expand_gallery_proofs(db,[proof])
+                self.assertEqual(len(rows),3)
+        conn=sqlite3.connect(self.sqlite)
+        conn.execute("DELETE FROM curation_events")
+        conn.commit();conn.close()
+        with cli.connect_sqlite(self.sqlite) as db:
+            with patch("name_curadoria.official_sources",
+                       return_value=[{"url":"https://www.pokemon.com/creator","studio":"Studio"}]):
+                with self.assertRaisesRegex(ValueError,"full visual audit"):
+                    cli.expand_gallery_proofs(db,[proof])
+        conn=sqlite3.connect(self.sqlite)
+        conn.execute("INSERT INTO curation_events(group_key,event_type) VALUES(?,?)",
+                     (self.key,"visual_gallery_audited"))
+        conn.execute("UPDATE name_proposals SET variant='Pre-Supported' WHERE message_id=1235")
+        conn.commit();conn.close()
+        with cli.connect_sqlite(self.sqlite) as db:
+            with patch("name_curadoria.official_sources",
+                       return_value=[{"url":"https://www.pokemon.com/creator","studio":"Studio"}]):
+                with self.assertRaisesRegex(ValueError,"variant/title conflict"):
+                    cli.expand_gallery_proofs(db,[proof])
+
+    def test_multifoto_batch_write_and_safe_resume(self):
+        proof=self.setup_multifoto()
+        writes=[]
+        with cli.connect_sqlite(self.sqlite) as db:
+            with patch("name_curadoria.official_sources",
+                       return_value=[{"url":"https://www.pokemon.com/creator","studio":"Studio"}]):
+                rows=cli.expand_gallery_proofs(db,[proof])
+            def snapshot(_):
+                return {"title":"Pikachu","revision":0,
+                        "images":[{"message_id":x} for x in (1234,1235,1236)]}
+            verified=cli.preflight(db,rows,self.media,live_model=snapshot)
+            def send(_,*,payload,token):
+                assert token=="secret"
+                from contextlib import closing
+                with closing(sqlite3.connect(self.sqlite)) as w:
+                    with w:
+                        updated=w.execute("""UPDATE name_proposals SET
+                           status='confirmado',revision=revision+1,official_url=?
+                           WHERE message_id=? AND revision=?""",
+                          (payload["official_url"],payload["message_id"],payload["revision"]))
+                        assert updated.rowcount==1
+                writes.append(payload["message_id"])
+                return {"ok":True,"revision":payload["revision"]+1}
+            done=cli.execute(db,verified,"a"*64,self.path/"multi-apply.json",
+                             apply=True,send=send,token_reader=lambda:"secret")
+            self.assertEqual(done["applied"],3)
+            self.assertEqual(writes,[1234,1235,1236])
+            verified=cli.preflight(db,rows,self.media,live_model=snapshot)
+            resumed=cli.execute(db,verified,"a"*64,self.path/"multi-resume.json",
+                                apply=True,send=lambda *a,**kw:self.fail("reposted"),
+                                token_reader=lambda:self.fail("unneeded token"))
+            self.assertEqual(resumed["already_confirmed"],3)
+            self.assertEqual(resumed["applied"],0)
+            self.assertFalse(resumed["publication_rights_changed"])
 
     def test_windows_audit_replace_lock_retries_only_the_file_write(self):
         destination=self.path/"audit-locked.json"
@@ -112,7 +222,9 @@ class NameBatchTests(unittest.TestCase):
         with cli.connect_sqlite(self.sqlite) as db:
             with self.assertRaisesRegex(ValueError,"SHA-256"):
                 cli.preflight(db,[self.record],self.media,
-                    live_model=lambda _: {})
+                    live_model=lambda _: {
+                      "title":"Pikachu","revision":0,
+                      "images":[{"message_id":1234}]})
 
     def test_dry_run_does_not_open_write_token_or_mutate_sqlite(self):
         with cli.connect_sqlite(self.sqlite) as db:
