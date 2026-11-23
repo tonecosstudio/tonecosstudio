@@ -6,9 +6,16 @@
   const gallery=el("studioMissionBoard"), status=el("studioMissionStatus");
   if(!studio||!mission||!gallery)return;
   const prev=el("studioMissionPrev"),next=el("studioMissionNext");
+  const prepare=el("studioMissionPrepare");
+  const selected=new Map();
   const label=el("studioMissionPage");
   const fmt=new Intl.NumberFormat("pt-BR");
   let page=1,pages=0,busy=false,serial=0;
+  function updateSelection(){
+    prepare.hidden=mission.value!=="grouping";
+    prepare.disabled=selected.size<2;
+    prepare.textContent="Preparar galeria · "+selected.size+" foto(s) selecionada(s)";
+  }
   async function get(url){
     const res=await fetch(url,{cache:"no-store"}),body=await res.json();
     if(!res.ok)throw Error(body.error||"Falha ao consultar host");
@@ -40,6 +47,11 @@
         const img=node("img");img.loading="lazy";
         img.alt="Foto Telegram "+item.message_id;
         img.src=item.thumbnail_url;
+        const original=node("a");
+        original.href=item.original_url;
+        original.target="_blank";original.rel="noopener noreferrer";
+        original.title="Abrir imagem original para comparação";
+        original.append(img);
         const meta=node("div",undefined,"studio-mission-meta");
         meta.append(node("strong","#"+item.message_id+" · "+(item.title||"(sem nome)")));
         meta.append(node("span",item.universe||"Franquia pendente"));
@@ -62,19 +74,64 @@
             }
           }catch(err){status.textContent=err.message}
         });
-        meta.append(action);tile.append(img,meta);gallery.append(tile);
+        meta.append(action);
+        if(mission.value==="grouping"&&!item.group_key){
+          const choice=node("label",undefined,"studio-mission-choice");
+          const cb=node("input");cb.type="checkbox";
+          cb.checked=selected.has(item.message_id);
+          cb.addEventListener("change",()=>{
+            if(cb.checked){
+              const sources=new Set([...selected.values()].map(x=>x.original_topic));
+              if(sources.size&& !sources.has(item.original_topic)){
+                cb.checked=false;
+                status.textContent="Selecione somente fotos do mesmo tópico de origem. O álbum não prova mesma escultura.";
+                return;
+              }
+              selected.set(item.message_id,{message_id:item.message_id,
+                            original_topic:item.original_topic});
+            }else selected.delete(item.message_id);
+            updateSelection();
+          });
+          choice.append(cb,node("span","Selecionar para possível galeria"));
+          meta.append(choice);
+        }
+        tile.append(original,meta);gallery.append(tile);
       }
       label.textContent="Prancha "+data.page+" de "+(data.pages||0);
       status.textContent=fmt.format(data.total)+" fotos · "+studio.value+
         (mission.value==="grouping"?" · Missão 1: agrupar apenas esculturas comprovadas.":
          " · Missão 2: verificar nome/personagem/franquia e fonte oficial.");
+      updateSelection();
       if(!data.items.length)gallery.append(node("p","Nenhuma foto nesta página."));
     }catch(err){
       gallery.replaceChildren();status.textContent="Falha: "+err.message;
     }finally{if(seq===serial)lock(false)}
   }
-  studio.addEventListener("change",()=>{page=1;load()});
-  mission.addEventListener("change",()=>{page=1;load()});
+  studio.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load()});
+  mission.addEventListener("change",()=>{selected.clear();page=1;updateSelection();load()});
+  prepare.addEventListener("click",()=>{
+    if(busy||mission.value!=="grouping"||selected.size<2)return;
+    const photos=[...selected.values()];
+    const topics=new Set(photos.map(x=>x.original_topic));
+    if(topics.size!==1){
+      status.textContent="Não misturar tópicos. Refaça a seleção com origem única.";
+      return;
+    }
+    // This is *preparation only*. The canonical gallery form does the actual
+    // visual-attested POST; no new write endpoint or automatic grouping.
+    if(typeof selectTopic!=="function"||typeof setView!=="function"){
+      status.textContent="Editor de galeria não está disponível nesta versão do host.";
+      return;
+    }
+    selectTopic(photos[0].original_topic);
+    setView("models");
+    const input=el("galleryIds");
+    input.value=photos.map(x=>x.message_id).join(", ");
+    const editor=el("galleryCreate");
+    editor.hidden=false;
+    editor.scrollIntoView({behavior:"smooth",block:"start"});
+    status.textContent="IDs encaminhados ao editor canônico. Compare as fotos originais antes de SALVAR; seleção não cria grupo.";
+  });
   prev.addEventListener("click",()=>{if(!busy&&page>1){page--;load()}});
   next.addEventListener("click",()=>{if(!busy&&page<pages){page++;load()}});
   el("studioMissionRefresh").addEventListener("click",load);
