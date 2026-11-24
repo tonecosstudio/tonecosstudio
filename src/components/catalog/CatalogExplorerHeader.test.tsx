@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "./CatalogExplorerHeader";
+import { CatalogCategoryBadge, CatalogCardIdentity, orderCatalogCategories } from "./CatalogTaxonomy";
 
 function renderHeader(kind: "historical" | "review") {
   const handlers = {
@@ -85,6 +86,35 @@ describe("TONART shared catalog discovery structure", () => {
     expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/estudios");
     expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/");
     expect(within(tabs).queryByRole("link", { name: "Originais" })).not.toBeInTheDocument();
+  });
+
+  it("orders the same category tags consistently across both sources", () => {
+    const categories = [
+      { id: "marvel", label: "Marvel & DC" },
+      { id: "games", label: "Games" },
+      { id: "anime", label: "Animes & Desenhos" },
+      { id: "filmes", label: "Filmes & Séries" },
+      { id: "custom", label: "Outros" },
+    ];
+    const snapshot = categories.map((item) => item.id);
+    expect(orderCatalogCategories(categories).map((item) => item.id)).toEqual([
+      "anime", "games", "filmes", "marvel", "custom",
+    ]);
+    expect(categories.map((item) => item.id)).toEqual(snapshot);
+  });
+
+  it("uses a single category badge and card text hierarchy for both catalogs", () => {
+    render(
+      <div className="relative">
+        <CatalogCategoryBadge label="Games" />
+        <CatalogCardIdentity name="Modelo teste" franchise="NieR" />
+        <CatalogCardIdentity name="Referência Telegram" franchise="Pokémon" franchiseProvisional />
+      </div>,
+    );
+    expect(screen.getByText("Games")).toHaveClass("absolute", "rounded-full");
+    expect(screen.getByRole("heading", { name: "Modelo teste" })).toHaveClass("uppercase");
+    expect(screen.getByText("NieR")).toBeInTheDocument();
+    expect(screen.getByLabelText("Franquia em revisão: Pokémon")).toHaveTextContent("Pokémon · em revisão");
   });
 
   it("provides real list and grid actions", () => {
