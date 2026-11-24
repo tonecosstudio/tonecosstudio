@@ -188,6 +188,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
   const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
+  const [filtersOpen, setFiltersOpen] = useState(() => Boolean(route.franchise || route.character || route.provisional));
   const [studios, setStudios] = useState<Studio[]>([]);
   const [studioSearch, setStudioSearch] = useState("");
   const [studiosError, setStudiosError] = useState("");
@@ -490,7 +491,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           </nav>
         </div>
       </header>}
-      <ContentContainer className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
+      <ContentContainer className="mx-auto w-full max-w-[1600px] px-4 pb-24 sm:px-6 xl:px-8">
         {(view === "models" || Boolean(studio)) && (
           <CatalogExplorerHeader
             kind="review"
@@ -507,9 +508,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             categories={modelCategories.map((item) => ({ id: item.slug, label: item.name }))}
             category={category}
             onCategoryChange={(next) => navigate({ ...route, category: next, offset: 0, selected: null })}
-            onFiltersClick={() => document.getElementById("telegram-catalog-filters")?.scrollIntoView?.({ behavior: "smooth", block: "start" })}
+            onFiltersClick={() => setFiltersOpen((open) => !open)}
             filterCount={[category, franchise, character, provisional].filter(Boolean).length}
-            filtersExpanded={true}
+            filtersExpanded={filtersOpen}
             filtersControlId="telegram-catalog-filters"
             totalLabel={page ? page.total.toLocaleString("pt-BR") + " referências" : undefined}
             coverUrl={imageUrl(page?.items[0]?.cover)}
@@ -520,34 +521,19 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           <section
             id="colecao"
             aria-label="Buscar modelos"
-            className="scroll-mt-28 pt-12 sm:pt-16"
+            className="scroll-mt-28 pt-2 sm:pt-3"
           >
-            <div className="mb-7 flex flex-wrap items-end justify-between gap-5">
-              <div>
-                {studio && (
-                  <a
-                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
-                    className="mb-4 inline-flex items-center gap-2 text-sm text-[#d8b88d] hover:underline"
-                  >
-                    ← Todos os estúdios
-                  </a>
-                )}
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#c7ab7c]">
-                  {studio ? "Coleção do estúdio" : "Explore o acervo"}
-                </p>
-                <h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">
-                  {studio || "Consulte os modelos."}
-                </h2>
+            {studio ? (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <a href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"} className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline">
+                  ← Todos os estúdios
+                </a>
+                <p className="text-sm text-[hsl(0,0%,70%)]">Coleção do estúdio: <strong className="text-white">{studio}</strong></p>
               </div>
-              <p className="max-w-sm text-sm leading-6 text-[#aeb1a5]">
-                {studio
-                  ? "Modelos e variantes vinculados a este estúdio, com galerias e paginação."
-                  : "Busque modelos, personagens e variantes com tags da curadoria."}
-              </p>
-            </div>
+            ) : null}
             {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div id="telegram-catalog-filters" className={embedded ? "mt-5 grid scroll-mt-24 gap-5 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-5 lg:grid-cols-3" : "mt-5 grid scroll-mt-24 gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-3"}>
+            <div id="telegram-catalog-filters" className={filtersOpen ? "mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 lg:grid-cols-3" : "hidden"}>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Categorias
@@ -705,7 +691,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </p>
             )}
 
-            <div className="mt-12 flex flex-wrap items-end justify-between gap-3 border-b border-[#ffffff20] pb-5">
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3">
               <div>
                 <h2 className="font-serif text-2xl sm:text-3xl">
                   {studio ? "Modelos de " + studio : "Galeria de modelos"}
