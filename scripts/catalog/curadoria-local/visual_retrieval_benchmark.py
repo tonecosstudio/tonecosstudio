@@ -3,6 +3,7 @@
 
 Existing confirmed galleries are proxy labels, not independent ground truth.
 No model downloads, editorial writes, new database, server or automatic approval.
+Optional --embedding-cache writes only derived vectors to the existing SQLite.
 """
 from __future__ import annotations
 
@@ -218,10 +219,11 @@ def image_vectors(model, inputs, model_type):
     return torch.nn.functional.normalize(features, dim=1)
 
 
-def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
+def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24, use_cache=False):
     import torch
     from PIL import Image, ImageOps
     import transformers
+    from PIL import __version__ as pillow_version
     from transformers import AutoImageProcessor, AutoModel
     if not 0 <= review_limit <= 100:
         raise ValueError("review limit must be 0..100")
@@ -238,7 +240,7 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     sample_sha = sample_digest(rows)
     model_sha = model_digest(model_dir)
     processor = AutoImageProcessor.from_pretrained(
-        str(model_dir), local_files_only=True, trust_remote_code=False)
+        str(model_dir), local_files_only=True, trust_remote_code=False, use_fast=False)
     model = AutoModel.from_pretrained(str(model_dir), local_files_only=True,
                                       trust_remote_code=False, use_safetensors=True)
     model_type = model.config.model_type
@@ -247,6 +249,16 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
+    cache = None
+    if use_cache:
+        import inspect
+        from visual_embedding_cache import EmbeddingCache, namespace
+        adapter_sha = hashlib.sha256(inspect.getsource(image_vectors).encode()).hexdigest()
+        space = namespace(model_sha, model_type, {"torch": str(torch.__version__),
+                          "transformers": transformers.__version__, "pillow": pillow_version},
+                          device, adapter_sha)
+        dim = model.config.hidden_size if model_type == "dinov2" else model.config.vision_config.hidden_size
+        cache = EmbeddingCache(db_path, space, dim)
     hashes, embeddings = [], []
     start = time.perf_counter()
     hash_seconds = embedding_seconds = 0.0
@@ -262,10 +274,18 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
             hash_seconds += time.perf_counter() - tick
             images.append(image)
         tick = time.perf_counter()
-        inputs = processor(images=images, return_tensors="pt")
-        with torch.inference_mode():
-            vectors = image_vectors(model, {k: v.to(device) for k, v in inputs.items()}, model_type)
-        embeddings.append(vectors.cpu())
+        batch_rows = rows[offset:offset + batch_size]
+        vectors = [cache.get(row["sha256"]) if cache else None for row in batch_rows]
+        missing = [i for i, vector in enumerate(vectors) if vector is None]
+        if missing:
+            inputs = processor(images=[images[i] for i in missing], return_tensors="pt")
+            with torch.inference_mode():
+                fresh = image_vectors(model, {k: v.to(device) for k, v in inputs.items()}, model_type).cpu()
+            for i, vector in zip(missing, fresh):
+                vectors[i] = vector.tolist()
+            if cache:
+                cache.put_batch([(batch_rows[i]["sha256"], vectors[i]) for i in missing])
+        embeddings.append(torch.tensor(vectors, dtype=torch.float32))
         embedding_seconds += time.perf_counter() - tick
     matrix = torch.cat(embeddings)
     if not torch.isfinite(matrix).all() or (matrix.norm(dim=1) < .99).any():
@@ -299,6 +319,8 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
                 hash_extraction_seconds=round(hash_seconds, 6),
                 embedding_extraction_seconds=round(embedding_seconds, 6),
                 similarity_matrix_seconds=round(similarity_seconds, 6),
+                embedding_cache=dict(enabled=bool(cache), hits=cache.hits if cache else 0,
+                    misses=cache.misses if cache else len(rows), writes=cache.writes if cache else 0),
                 results=results, cross_gallery_review=review)
 
 
@@ -481,6 +503,7 @@ def main():
     parser.add_argument("--media-root", type=Path)
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--studio", default="Wicked")
+    parser.add_argument("--embedding-cache", action="store_true", help="Opt-in derived cache table in existing catalog; warm timings are not cold benchmark timings")
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--review-limit", type=int, default=24)
     args = parser.parse_args()
@@ -496,7 +519,7 @@ def main():
     if not all((args.sqlite, args.media_root, args.model_dir)):
         parser.error("--sqlite, --media-root and --model-dir are required")
     print(json.dumps(run(args.sqlite, args.media_root, args.model_dir,
-                         args.studio, args.batch_size, args.review_limit), ensure_ascii=False, allow_nan=False))
+                         args.studio, args.batch_size, args.review_limit, args.embedding_cache), ensure_ascii=False, allow_nan=False))
 
 
 if __name__ == "__main__":
