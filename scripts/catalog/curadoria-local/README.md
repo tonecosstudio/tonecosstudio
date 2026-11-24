@@ -1,5 +1,21 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Separar esculturas distintas em galeria já auditada — Wicked
+
+O `POST /api/split-audited-variant` corrige uma galeria *já auditada* de **exatamente duas fotos** que na verdade são variantes/esculturas diferentes (ex.: uma imagem de Busto e outra de Full Size). Não modifica o endpoint legado nem cria outro banco/serviço. Corpo: `group_key`, `revision`, `selected_message_id`, `proofs` (todos os dois `message_id`/`sha256`/`revision`), `corrected_variant`, `official_url` individual `https://3dwicked.gumroad.com/l/...` e `note` com descrição de ambas as esculturas.
+
+A operação é **fail-closed**: somente Wicked em estado não confirmado, auditoria prévia, dois membros com metadados consistentes, duas provas CAS/SHA, originais físicos de até 30 MiB íntegros, ausência de SHA em outra galeria, variantes diferentes e justificativa visual longa. Uma única transação move o membro selecionado para nova galeria revisável, atualiza a proposta de nome/variante somente da foto movida, mantém a outra foto com a variante original, marca `curation_seen` para impedir regressão por reingestão e registra auditorias antes/depois sem apagar eventos anteriores. As novas galerias continuam **não confirmadas** até o POST canônico `/api/confirm-gallery-identity`; nada publica ou aprova direitos comerciais.
+
+Teste `teste_post_audit_variant_split.py`: E2E com SQLite e fotos sintéticos, CAS, SHA físico, fonte oficial, idempotência por falha de CAS, auditoria e confirmação posterior das duas galerias. Nunca usar para mover qualquer mídia confirmada, reescrever acervo original ou misturar variantes de impressão.
+
+## Correção de variante na confirmação editorial do host
+
+O `POST /api/confirm-gallery-identity` suporta o campo **opcional** `corrected_variant`, além de `group_key`, `group_revision`, `proofs`, `title`, `universe`, `official_url` e `note`. Na missão Wicked, esse campo corrige uma variante equivocada (ex.: Spock cadastrado como Busto, mas a imagem oficial prova Full Size) **na mesma transação** que confirma a identidade de todas as fotografias da galeria.
+
+Regras: o host requer auditoria visual prévia, fonte HTTPS individual `https://3dwicked.gumroad.com/l/...`, revisão CAS, SHA-256 e revisão de **todos** os originais da galeria, mesmo título/franquia/variante anteriores em todos os membros e ausência de identidade já confirmada ou mídia duplicada conflitante. A variante corrigida modifica simultaneamente `model_groups.variant`, `name_proposals.variant` e os nomes de arquivo propostos; registra evento `gallery_variant_corrected_editorial`. Continua sem mudar estado da galeria, direitos, licença, mídia original, STL, R2, site ou publicação. Omissão de `corrected_variant` preserva integralmente a variante anterior e o contrato original do endpoint.
+
+Teste isolado: `teste_name_curadoria.py` comprova variante corrigida, idempotência por CAS, rejeição de origem incorreta, auditoria e contrato antigo.
+
 ## Cache WebP persistente, sem pranchas JPG — 23/11/2026
 
 A rota única `/thumb/{message_id}?w=256|480|960` continua sob o mesmo host. Após abrir e verificar o original físico, a prévia convertida é reutilizada da RAM ou, entre reinicializações, do diretório derivado `curadoria-local/preview-webp-cache`. O cache guarda **apenas previews WebP** indexados por SHA-256 do contrato de origem (inclui caminho, SHA da mídia, mtime, tamanho e largura), sem nomes, originais, links comerciais, pranchas JPG, nova base ou outro processo. **Até 2048 slots de 64 KiB por prévia** (limite físico aproximado de 128 MiB + 32 B por entrada), colisão rejeitada por SHA completo, escrita temporária e troca atômica. Saída maior não persiste e continua na RAM. Erro de disco não impede o preview — a renderização original continua como fallback. O cache pode ser apagado sem perda de dados editoriais ou originais.

@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
 import { catalogTagKey, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
 import { canonicalTagsForModel, type CatalogTag, type CatalogTagKind } from "@/types/catalog-tags";
@@ -830,6 +831,12 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                         />
                       </div>
                     </button>
+                    <CatalogImageDownload
+                      src={imageUrl(model.cover)?.replace(/\/thumb$/, "/display")}
+                      name={model.name}
+                      id={model.id}
+                      className="mx-3 mt-2"
+                    />
                     <CatalogCardTagRow
                       label={"Filtros de " + model.name}
                       groups={tagGroups}

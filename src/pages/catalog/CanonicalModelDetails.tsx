@@ -12,6 +12,7 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import { catalogModelDisplayName, catalogTagLabel, CatalogFilterTag, visibleCatalogTags } from "@/components/catalog/CatalogTaxonomy";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
@@ -683,7 +684,13 @@ export default function CanonicalModelDetails() {
                       momento.
                     </p>
                   ) : null}
-                  <ArcadeCard className="flex min-h-[clamp(16rem,52svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">
+                  <CatalogImageDownload
+                    src={activeImageUrl}
+                    name={model.name}
+                    id={model.id + "-" + (activeImage?.id ?? "capa")}
+                    className="mb-3"
+                  />
+                  <ArcadeCard className="flex min-h-[clamp(18rem,58svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">
                     <CanonicalCatalogImage
                       src={activeImageUrl}
                       fallbackSrc={activeImageFallbackUrl}

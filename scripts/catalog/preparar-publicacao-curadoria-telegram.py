@@ -557,8 +557,9 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
             held["incomplete_or_unsupported_gallery"] += 1
             continue
         old = (one["model"] or "").strip()
-        if not re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old):
-            held["already_named_or_manually_edited"] += 1
+        placeholder = bool(re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old))
+        if not old:
+            held["invalid_d1_title"] += 1
             continue
         if (one["telegram_revision"] != "0" or one["telegram_review_status"] != "pending"
                 or one["telegram_name_provisional"] != "1"
@@ -593,6 +594,22 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
             held["variant_conflict"] += 1
             continue
         name = next(iter(titles))
+        if not placeholder:
+            if name == old:
+                held["already_aligned"] += 1
+                continue
+            # A named provisional D1 card may be corrected only when the
+            # complete current local group has a confirmed, coherent identity.
+            # A proposed name never overwrites an existing named card.
+            if (not group or group != one["telegram_group_key"]
+                    or any(r["name_status"] != "confirmado"
+                           or r["model_group_state"] not in {"confirmado", "provavel"}
+                           or r["group_studio"] != one["studio"]
+                           or r["group_title"] != name
+                           or r["group_image_count"] != len(images)
+                           for r in matched)):
+                held["named_card_requires_confirmed_complete_identity"] += 1
+                continue
         proof = sorted((mid, images[i]["sha256"].lower()) for i, mid in enumerate(mid_ids))
         operation_id = hashlib.sha256(json.dumps(
             [model_id, 0, old, name, proof], ensure_ascii=False,
@@ -739,20 +756,24 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
                 not studio_member_of_topic(x["studio"], topic)) for x in members):
             reject(group_id, members, "studio_identity_conflict")
             continue
-        if (not label or len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)
-                or any(x["name_status"] not in {"confirmado", "provavel"} for x in members)
-                or any(x["review_status"] in {"rejeitado", "descartado"} for x in members)):
-            reject(group_id, members, "name_pending_or_rejected")
+        if any(x["review_status"] in {"rejeitado", "descartado"} for x in members):
+            reject(group_id, members, "rejected_media")
             continue
+        provisional_label = (not label or any(x["name_status"] not in
+                             {"confirmado", "provavel"} for x in members))
+        if label and (len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)):
+            provisional_label = True
+        if provisional_label:
+            label = f"Modelo sem nome #{min(mids)}"
         if (len({key(x["title"]) for x in members}) != 1 or
                 len({key(x["variant"]) for x in members}) != 1 or
                 len({key(x["universe"]) for x in members}) != 1):
             reject(group_id, members, "gallery_metadata_conflict")
             continue
         if not group_id.startswith("single:"):
-            if any(x["model_group_state"] != "provavel" or
+            if any(x["model_group_state"] not in {"provavel", "confirmado"} or
                    x["group_studio"] not in {topic, credited_studio} or
-                   key(x["group_title"]) != key(label) or
+                   (not provisional_label and key(x["group_title"]) != key(label)) or
                    int(x["group_image_count"] or 0) != len(members) for x in members):
                 reject(group_id, members, "group_needs_review")
                 continue
@@ -769,6 +790,9 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             continue
         seen_ids.add(model_id)
         variant, universe = str(head["variant"] or "").strip(), str(head["universe"] or "").strip()
+        if provisional_label:
+            # An unidentified title must not assert unverified thematic metadata.
+            variant, universe = "", ""
         if len(variant) > 160 or len(universe) > 160:
             reject(group_id, members, "metadata_too_long")
             continue
@@ -781,6 +805,8 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         franchise_id = pending_franchise_id if fallback else next(iter(ids))
         if fallback:
             reasons["pending_franchise"] += 1
+        if provisional_label:
+            reasons["pending_name"] += 1
         media = sorted(zip(mids, digests))
         import_manifest = {
             "originId": "2370335738", "studio": credited_studio, "groupKey": group_id,
@@ -806,6 +832,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         "groups_examined": len(groups), "existing_d1_models": len(known),
         "franchises_in_d1": len(franchise_ids), "candidate_imports": len(candidates),
         "pending_franchise_candidates": reasons["pending_franchise"],
+        "pending_name_candidates": reasons["pending_name"],
         "held": len(held), "reasons": dict(sorted(reasons.items())),
         "external_writes": False, "public_visibility_authorized": False,
         "r2_presence_verified": False,

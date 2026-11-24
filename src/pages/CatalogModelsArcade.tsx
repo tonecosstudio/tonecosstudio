@@ -8,6 +8,7 @@ import {
   Bookmark,
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
 import { catalogModelDisplayName, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
 import type { CatalogTag } from "@/types/catalog-tags";
@@ -809,6 +810,12 @@ export default function CatalogModelsArcade() {
                             <CatalogCardIdentity name={displayName} />
                           </div>
                         </Link>
+                        <CatalogImageDownload
+                          src={gateway.mediaUrl(model.coverStorageKey)}
+                          name={model.name}
+                          id={model.id}
+                          className="mx-3 mb-2"
+                        />
                         <CatalogCardTagRow
                           label={"Filtros de " + model.name}
                           groups={tagGroups}
