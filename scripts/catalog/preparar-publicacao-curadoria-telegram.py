@@ -557,8 +557,9 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
             held["incomplete_or_unsupported_gallery"] += 1
             continue
         old = (one["model"] or "").strip()
-        if not re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old):
-            held["already_named_or_manually_edited"] += 1
+        placeholder = bool(re.fullmatch(r"Modelo sem nome #[1-9][0-9]*", old))
+        if not old:
+            held["invalid_d1_title"] += 1
             continue
         if (one["telegram_revision"] != "0" or one["telegram_review_status"] != "pending"
                 or one["telegram_name_provisional"] != "1"
@@ -593,6 +594,22 @@ def plan_existing_telegram_name_updates(db: Path, inventory: Path) -> tuple[list
             held["variant_conflict"] += 1
             continue
         name = next(iter(titles))
+        if not placeholder:
+            if name == old:
+                held["already_aligned"] += 1
+                continue
+            # A named provisional D1 card may be corrected only when the
+            # complete current local group has a confirmed, coherent identity.
+            # A proposed name never overwrites an existing named card.
+            if (not group or group != one["telegram_group_key"]
+                    or any(r["name_status"] != "confirmado"
+                           or r["model_group_state"] not in {"confirmado", "provavel"}
+                           or r["group_studio"] != one["studio"]
+                           or r["group_title"] != name
+                           or r["group_image_count"] != len(images)
+                           for r in matched)):
+                held["named_card_requires_confirmed_complete_identity"] += 1
+                continue
         proof = sorted((mid, images[i]["sha256"].lower()) for i, mid in enumerate(mid_ids))
         operation_id = hashlib.sha256(json.dumps(
             [model_id, 0, old, name, proof], ensure_ascii=False,
