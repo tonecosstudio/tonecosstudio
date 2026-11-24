@@ -58,7 +58,7 @@ function CatalogGridSkeleton() {
             key={index}
             className="overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
           >
-            <div className="aspect-[2/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
+            <div className="aspect-[4/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
             <div className="space-y-3 p-3 md:p-4">
               <div className="h-4 w-4/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
               <div className="h-3 w-2/3 animate-pulse bg-[hsl(0,0%,11%)] motion-reduce:animate-none" />
@@ -79,12 +79,15 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
+    <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
         imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
       />
+      {model.category && model.categorySlug !== "curadoria-pendente" && (
+        <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full border border-[hsl(var(--gold-accent)/0.55)] bg-[hsl(0,0%,5%)/0.88] px-2.5 py-1 font-mono text-[10px] font-semibold text-[hsl(var(--gold-accent))]">{model.category}</span>
+      )}
     </div>
   );
 }
