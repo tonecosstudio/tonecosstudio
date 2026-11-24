@@ -26,7 +26,11 @@ export function catalogDownloadFilename(
       .replace(/[^a-zA-Z0-9_-]+/g, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 100);
-  return [safe(name) || "modelo", safe(id) || "imagem"].join("-") + "." + extensions[mime];
+  return (
+    [safe(name) || "modelo", safe(id) || "imagem"].join("-") +
+    "." +
+    extensions[mime]
+  );
 }
 
 export function catalogDownloadUrl(
@@ -41,11 +45,15 @@ export function catalogDownloadUrl(
       url.password ||
       url.search ||
       url.hash
-    ) return null;
+    )
+      return null;
     if (
       !url.pathname.startsWith("/catalogo-api/media/") &&
-      !/^\/catalogo-api\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/(thumb|display)$/.test(url.pathname)
-    ) return null;
+      !/^\/catalogo-api\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/(thumb|display)$/.test(
+        url.pathname,
+      )
+    )
+      return null;
     return url.href;
   } catch {
     return null;
@@ -82,7 +90,10 @@ export function CatalogImageDownload({
         .split(";")[0]
         .trim()
         .toLowerCase();
-      if (!response.ok || !Object.prototype.hasOwnProperty.call(extensions, mime)) {
+      if (
+        !response.ok ||
+        !Object.prototype.hasOwnProperty.call(extensions, mime)
+      ) {
         throw new Error("invalid_media");
       }
       const blob = await response.blob();
