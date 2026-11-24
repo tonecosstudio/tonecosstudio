@@ -11,6 +11,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
@@ -848,6 +849,7 @@ export default function CatalogModelsArcade() {
                             </p>
                           </div>
                         </Link>
+                        <CatalogImageDownload src={gateway.mediaUrl(model.coverStorageKey)} name={model.name} id={model.id} className="mx-3 mb-2" />
                         <button
                           type="button"
                           onClick={() => toggleSelected(model)}
