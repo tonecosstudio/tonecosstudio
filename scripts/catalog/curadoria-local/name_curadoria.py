@@ -282,11 +282,12 @@ def gallery_identity_proof(db_path,group_key):
 
 
 def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
-                             proofs,title,universe,official_url,note):
+                             proofs,title,universe,official_url,note,corrected_variant=None):
     """Atomically normalize ALL gallery labels and verify only editorial identity.
 
     Every physical original, proposal CAS and source URL is required.
-    Rights, gallery state, variant and publication are never promoted.
+    Rights, gallery state and publication are never promoted. A corrected
+    printing variant is allowed only on explicit Wicked official-image proof.
     """
     key=str(group_key or "").strip()
     if not re.fullmatch("[0-9a-f]{24}",key):
@@ -316,6 +317,10 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
     note=str(note or "").strip()
     if not 65<=len(note)<=700:
         raise ValueError("Prova editorial de 65 a 700 caracteres obrigatória")
+    requested_variant = (None if corrected_variant is None
+                         else str(corrected_variant).strip())
+    if requested_variant is not None and not 1 <= len(requested_variant) <= 120:
+        raise ValueError("Variante corrigida obrigatória (máximo 120 caracteres)")
     root=Path(media_root).resolve()
     now=smart.utc()
     with smart.db_open(db_path) as db:
@@ -323,6 +328,14 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
         db.execute("BEGIN IMMEDIATE")
         g=db.execute("""SELECT * FROM model_groups WHERE group_key=?""",(key,)).fetchone()
         if not g:raise ValueError("Galeria não encontrada")
+        final_variant = g["variant"] if requested_variant is None else requested_variant
+        if requested_variant is not None:
+            if smart.normalize(g["variant"]) == smart.normalize(final_variant):
+                raise ValueError("Variante original e corrigida precisam diferir")
+            if (g["studio"] != "Wicked" or
+                parsed.hostname != "3dwicked.gumroad.com" or
+                not parsed.path.startswith("/l/")):
+                raise ValueError("Correção de variante Wicked exige produto oficial")
         if g["state"]=="confirmado" or g["studio"].casefold()=="geral + 50k":
             raise ValueError("Galeria comercial/coleção geral não aceita revisão de nome em lote")
         if not db.execute("""SELECT 1 FROM curation_events WHERE group_key=?
@@ -357,7 +370,7 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
                 JOIN model_groups g USING(group_key)
                 WHERE a.sha256=? AND g.group_key!=? AND g.studio=?
                   AND g.variant!=? LIMIT 1""",
-                  (r["sha256"],key,g["studio"],g["variant"])).fetchone()
+                  (r["sha256"],key,g["studio"],final_variant)).fetchone()
             if other:
                 raise ValueError("Render reutilizado em outra variante: resolver conflito antes de confirmar")
             path=(root/r["source_relative"]).resolve()
@@ -369,30 +382,32 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
             if actual!=r["sha256"]:
                 raise ValueError("SHA-256 físico divergente da fotografia")
 
-        updated=db.execute("""UPDATE model_groups SET title=?,universe=?,
+        updated=db.execute("""UPDATE model_groups SET title=?,universe=?,variant=?,
             revision=revision+1,updated_at=?
             WHERE group_key=? AND revision=? AND state!='confirmado'""",
-            (title,universe,now,key,group_revision))
+            (title,universe,final_variant,now,key,group_revision))
         if updated.rowcount!=1:
             raise RuntimeError("Revisão concorrente da galeria")
         for r in members:
-            filename=proposed_name({"title":title,"variant":r["variant"]},
+            filename=proposed_name({"title":title,"variant":final_variant},
                                    r["message_id"],r["source_relative"])
             previous_note=str(r["notes"] or "").strip()
             normalized_note=(previous_note+"\n"+note).strip()[:1000]
             changed=db.execute("""UPDATE name_proposals
-                SET title=?,universe=?,filename=?,status='confirmado',
+                SET title=?,universe=?,variant=?,filename=?,status='confirmado',
                     confidence=1.0,official_url=?,notes=?,
                     revision=revision+1,modified_at=?
                 WHERE message_id=? AND revision=? AND status IN ('provavel','revisar')""",
-                (title,universe,filename,official_url,normalized_note,
+                (title,universe,final_variant,filename,official_url,normalized_note,
                  now,r["message_id"],r["name_revision"]))
             if changed.rowcount!=1:
                 raise RuntimeError("Revisão concorrente da fotografia")
             evidence=json.dumps({"gallery":key,"message_id":r["message_id"],
                 "old_title":r["title"],"new_title":title,
                 "old_universe":r["universe"],"new_universe":universe,
-                "variant_preserved":r["variant"],"official_url":official_url,
+                "old_variant":r["variant"],"new_variant":final_variant,
+                "variant_corrected":requested_variant is not None,
+                "official_url":official_url,
                 "physical_sha256":r["sha256"],"note":note,
                 "identity_only":True,"rights_approved":False},
                 ensure_ascii=False,sort_keys=True)
@@ -405,7 +420,9 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
             "original_sha256":[r["sha256"] for r in members],
             "old_title":g["title"],"new_title":title,
             "old_universe":g["universe"],"new_universe":universe,
-            "variant_preserved":g["variant"],"group_state_preserved":g["state"],
+            "old_variant":g["variant"],"new_variant":final_variant,
+            "variant_corrected":requested_variant is not None,
+            "group_state_preserved":g["state"],
             "official_url":official_url,"note":note,
             "rights_approved":False,"commercial_published":False,
             "media_modified":False},ensure_ascii=False,sort_keys=True)
@@ -413,10 +430,16 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
             (group_key,event_type,detail,occurred_at)
             VALUES(?,'gallery_identity_verified_editorial',?,?)""",
             (key,detail,now))
+        if requested_variant is not None:
+            db.execute("""INSERT INTO curation_events
+                (group_key,event_type,detail,occurred_at)
+                VALUES(?,'gallery_variant_corrected_editorial',?,?)""",
+                (key,detail,now))
         db.commit()
         return {"group_key":key,"confirmed":len(members),
                 "group_revision":group_revision+1,"title":title,
-                "universe":universe,"variant":g["variant"],
+                "universe":universe,"variant":final_variant,
+                "variant_changed":requested_variant is not None,
                 "group_state":g["state"],"identity_confirmed":True,
                 "rights_changed":False,"originals_modified":False,
                 "images_moved":False}
