@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from functools import lru_cache
 from urllib.parse import parse_qs, urlparse
 import importlib
 
@@ -117,10 +118,16 @@ def initialize():
         db.execute("""CREATE INDEX IF NOT EXISTS idx_assets_hash ON assets(sha256)""")
     return token
 
+@lru_cache(maxsize=1)
+def _source_root_resolved():
+    # Root is trusted and fixed for this host. If its reparse target changes
+    # while running, a previously resolved root makes new paths fail closed.
+    return SOURCE.resolve()
+
 def safe_source_path(relative):
     if not isinstance(relative,str):return None
     path=(SOURCE/relative).resolve()
-    if SOURCE.resolve() not in path.parents:return None
+    if _source_root_resolved() not in path.parents:return None
     if path.suffix.lower() not in (".jpg",".jpeg",".png",".gif",".webp",".bmp",".tif",".tiff",".heif",".heic",".avif"):return None
     return path
 
@@ -457,6 +464,15 @@ class Handler(BaseHTTPRequestHandler):
                         limit=p.get("limit",["24"])[0]))
                 except ValueError as exc:
                     return self.respond({"error":str(exc)},400)
+            if route.path=="/api/studio-missions/galleries":
+                p=parse_qs(route.query)
+                try:
+                    return self.respond(studio_missions.gallery_board(
+                        DB_PATH,studio=p.get("studio",[""])[0],
+                        page=p.get("page",["1"])[0],
+                        limit=p.get("limit",["12"])[0]))
+                except ValueError as exc:
+                    return self.respond({"error":str(exc)},400)
             if route.path=="/api/studio-missions/board":
                 p=parse_qs(route.query)
                 try:
@@ -504,7 +520,10 @@ class Handler(BaseHTTPRequestHandler):
                             b"",304,ctype="image/webp",
                             cache_control=cache_control,etag=fingerprint,
                         )
-                    payload=thumbs.thumbnail(path,row["sha256"],width)
+                    payload=thumbs.thumbnail(
+                        path,row["sha256"],width,
+                        disk_cache=APP_DIR/"preview-webp-cache",
+                    )
                 except thumbs.ThumbnailUnavailable as exc:
                     return self.respond({"error":str(exc)},503)
                 return self.respond(
@@ -866,7 +885,13 @@ def main():
                 next_identity_at=max(next_identity_at,time.monotonic()+60)
                 print("Curadoria incremental:",type(exc).__name__,str(exc)[:250],flush=True)
             time.sleep(8)
-    with ThreadingHTTPServer((HOST,PORT),Handler) as srv:
+    # A live 12-model contact board may request many lazy thumbnails at once.
+    # Keep the same single host/writer; just avoid dropping loopback connections
+    # due to the default five-connection socket listen backlog.
+    class CuradoriaHTTPServer(ThreadingHTTPServer):
+        request_queue_size=64
+
+    with CuradoriaHTTPServer((HOST,PORT),Handler) as srv:
         # Bind before starting any SQLite synchronization: /health and the UI
         # remain reachable even if the downloader is busy or a scan stalls.
         if not manual_only:

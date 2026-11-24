@@ -153,6 +153,11 @@ describe("Tonecos canonical model discovery UI", () => {
     await renderCatalog("/modelos?category=originais&franchise=autoral");
     expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toBeInTheDocument();
     expect(calls.some(({ url }) => url.pathname.endsWith("/api/catalog"))).toBe(true);
+    const card = screen.getByRole("link", { name: "Ver detalhes de Escultura original" }).closest("article");
+    expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
+    expect(within(card!).getByText("TCS-001")).toBeInTheDocument();
+    expect(within(card!).getByText("2 fotos")).toBeInTheDocument();
+    expect(within(card!).getByText("Ver detalhes")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Imagens em preparação" })).not.toBeInTheDocument();
   });
 
@@ -226,7 +231,7 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(calls.some((url) => !url.searchParams.has("q"))).toBe(true);
   });
 
-  it("shows six columns on wide screens and gives an obvious next-page action", async () => {
+  it("shows three columns on wide screens and gives an obvious next-page action", async () => {
 
     const { calls } = setupFetch();
     await renderCatalog();
@@ -235,8 +240,8 @@ describe("Tonecos canonical model discovery UI", () => {
     });
     expect(screen.getByRole("banner")).toHaveAttribute("data-compact", "true");
     const grid = first.closest(".grid");
-    expect(grid).toHaveClass("2xl:grid-cols-6");
-    expect(grid).toHaveClass("xl:grid-cols-5");
+    expect(grid).toHaveClass("lg:grid-cols-3");
+    expect(grid).toHaveClass("sm:grid-cols-2");
     expect(grid).toHaveClass("grid-cols-2");
     expect(calls[0].url.searchParams.get("limit")).toBe("36");
     expect(screen.getByText(/Há mais modelos/)).toBeInTheDocument();
@@ -317,7 +322,13 @@ describe("Tonecos canonical model discovery UI", () => {
     const toggle = screen.getByRole("button", { name: /Filtros/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveAttribute("aria-controls", "catalog-advanced-filters");
+    const panel = document.getElementById("catalog-advanced-filters");
+    expect(panel).toHaveClass("hidden");
+    expect(panel).not.toHaveClass("md:grid");
+    expect(panel?.parentElement).toHaveClass("border-0");
     fireEvent.click(toggle);
+    expect(panel).toHaveClass("grid");
+    expect(panel?.parentElement).not.toHaveClass("border-0");
 
     fireEvent.change(screen.getByRole("textbox", { name: "Pesquisar modelos" }), {
       target: { value: "escultura" },

@@ -1,5 +1,15 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Cache WebP persistente, sem pranchas JPG — 23/11/2026
+
+A rota única `/thumb/{message_id}?w=256|480|960` continua sob o mesmo host. Após abrir e verificar o original físico, a prévia convertida é reutilizada da RAM ou, entre reinicializações, do diretório derivado `curadoria-local/preview-webp-cache`. O cache guarda **apenas previews WebP** indexados por SHA-256 do contrato de origem (inclui caminho, SHA da mídia, mtime, tamanho e largura), sem nomes, originais, links comerciais, pranchas JPG, nova base ou outro processo. **Até 2048 slots de 64 KiB por prévia** (limite físico aproximado de 128 MiB + 32 B por entrada), colisão rejeitada por SHA completo, escrita temporária e troca atômica. Saída maior não persiste e continua na RAM. Erro de disco não impede o preview — a renderização original continua como fallback. O cache pode ser apagado sem perda de dados editoriais ou originais.
+
+Testes sintéticos validam reuso após limpeza da RAM, rejeição de corrupção, invalidação por mtime, WebP/ETag/304, GIF limitado e não modificação do original. *Ganho operacional precisa ser medido no host real, não inferido apenas dos testes.*
+
+## Pranchas vivas de esculturas no MESMO host — 23/11/2026
+
+**Visão editorial por modelo, não por JPEG:** GET /api/studio-missions/galleries?studio=Wicked&page=1&limit=12 oferece páginas com uma ficha por grupo canônico, quatro vistas distintas por SHA, contagem física e acesso aos mesmos editores e originais. Só lê SQLite mode=ro/query_only; jamais cria galeria, confirma nome, funde escultura ou altera direitos. O painel de missões agrega estes cards por estúdio; use http://127.0.0.1:8769/?studio=Wicked no computador do host para abrir diretamente Wicked. As pranchas JPG históricas podem ser exportadas manualmente, mas não são necessárias no fluxo principal. Porta e banco são os existentes; backlog de conexões do MESMO servidor ampliado para 64 para suportar miniaturas sob demanda, sem processo extra.
+
 ## Missões visuais em escala por estúdio — 23/11/2026
 
 **Gargalo corrigido:** não escalar por revisões pontuais de poucos modelos. O mesmo TONART Curadoria Host passa a mostrar pranchas paginadas por estúdio, permitindo duas missões com a MESMA foto e os MESMOS IDs: (1) decidir quais fotografias representam a mesma escultura e variantes, (2) identificar nome, personagem e franquia com fontes editoriais. A consulta visual nunca funde esculturas nem aprova nomes automaticamente.

@@ -8,6 +8,27 @@ import unittest
 from pathlib import Path
 import studio_missions as missions
 
+class ReadPathPerformanceTests(unittest.TestCase):
+    def test_readers_do_not_hit_filesystem_realpath(self):
+        # A minimal SQLite fixture avoids generating a JPG for this test.
+        from unittest.mock import patch
+        import smart_curadoria as smart
+        with tempfile.TemporaryDirectory(prefix="tonart-path-") as temp:
+            dbpath=Path(temp)/"curadoria.sqlite3"
+            # Windows needs a CLOSED sqlite3 handle before TempDirectory cleanup.
+            from contextlib import closing
+            with closing(sqlite3.connect(dbpath)) as db, db:
+                db.execute("CREATE TABLE marker(value INTEGER)")
+                db.execute("INSERT INTO marker VALUES(42)")
+            with patch.object(Path,"resolve",side_effect=AssertionError(
+                "filesystem realpath used on a hot read path")):
+                with missions.db_open(dbpath) as db:
+                    self.assertEqual(db.execute("SELECT value FROM marker").fetchone()[0],42)
+                    self.assertEqual(db.execute("PRAGMA query_only").fetchone()[0],1)
+                with smart.db_open(dbpath,readonly=True) as db:
+                    self.assertEqual(db.execute("SELECT value FROM marker").fetchone()[0],42)
+                    self.assertEqual(db.execute("PRAGMA query_only").fetchone()[0],1)
+
 class StudioMissionsTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
@@ -93,6 +114,23 @@ class StudioMissionsTests(unittest.TestCase):
                             for row in names_plan), names_plan)
         self.assertTrue(any("idx_model_groups_studio_state" in row[3]
                             for row in groups_plan), groups_plan)
+
+    def test_live_gallery_pages_are_read_only_and_keep_variants(self):
+        gallery=missions.gallery_board(self.path,"A Studio")
+        self.assertTrue(gallery["read_only"])
+        self.assertFalse(gallery["automatic_decisions"])
+        self.assertEqual(gallery["total"],1)
+        self.assertEqual(gallery["pages"],1)
+        self.assertEqual(gallery["items"][0]["photos"],2)
+        self.assertEqual(len(gallery["items"][0]["preview_ids"]),2)
+        self.assertEqual(gallery["items"][0]["state"],"revisar")
+        self.assertNotIn("source_relative",gallery["items"][0])
+        self.assertEqual(missions.gallery_board(self.path,"B Studio")["total"],1)
+        self.assertEqual(missions.gallery_board(self.path,"A Studio",page=2)["items"],[])
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"Geral + 50k")
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"Invented")
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"A Studio",page=0)
+        self.assertRaises(ValueError,missions.gallery_board,self.path,"A Studio",limit=96)
 
     def test_two_missions_same_pages(self):
         a=missions.board_page(self.path,"A Studio","grouping")

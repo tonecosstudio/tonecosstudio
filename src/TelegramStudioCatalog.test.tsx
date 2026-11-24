@@ -60,6 +60,51 @@ afterEach(() => {
 });
 
 describe("Telegram-only public studio gallery", () => {
+  it("matches the original catalog card hierarchy when embedded without duplicate category tags", async () => {
+    window.history.replaceState(null, "", "/catalogo/em-revisao");
+    const embeddedModel = {
+      ...model,
+      franchise: "Avatar",
+      franchiseSlug: "avatar",
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+      const uri = String(input);
+      if (uri.endsWith("/studios")) return Response.json({ studios: [] });
+      return Response.json({ total: 1, offset: 0, limit: 24, items: [embeddedModel] });
+    }));
+    render(<TelegramStudioCatalog embedded />);
+    const opener = await screen.findByRole("button", { name: /abrir galeria de aang/i });
+    const card = opener.closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card!).getByText("Anime")).toHaveClass("absolute", "rounded-full");
+    expect(within(card!).getByRole("heading", { name: "Aang" })).toHaveClass("uppercase");
+    expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
+    expect(within(card!).getByText("Ver galeria")).toBeInTheDocument();
+    expect(within(card!).getByText("2 imagens")).toBeInTheDocument();
+    expect(within(card!).getByText("2 fotos")).toBeInTheDocument();
+    expect(within(card!).getByLabelText("Franquia em revisão: Avatar")).toHaveTextContent("Avatar · em revisão");
+    expect(screen.queryByRole("group", { name: "Categorias dos modelos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Anime" })).toBeInTheDocument();
+  });
+
+  it("shows models immediately and keeps advanced facets collapsed until requested", async () => {
+    mockCatalog();
+    render(<TelegramStudioCatalog />);
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+    const filters = screen.getByRole("button", { name: "Filtros" });
+    const panel = document.getElementById("telegram-catalog-filters");
+    expect(panel).not.toBeNull();
+    expect(panel).toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Consulte os modelos.")).not.toBeInTheDocument();
+    fireEvent.click(filters);
+    expect(panel).not.toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(filters);
+    expect(panel).toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("shows studio collections and shares a deep link without commercial actions", async () => {
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
@@ -277,9 +322,9 @@ describe("Telegram-only public studio gallery", () => {
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
     await screen.findByText("Aang");
-    const input = screen.getByLabelText("Pesquisar");
+    const input = screen.getByRole("textbox", { name: "Pesquisar modelos" });
     fireEvent.change(input, { target: { value: "Aa" } });
-    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar modelos" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "pelo menos 3 caracteres",
     );
@@ -287,7 +332,7 @@ describe("Telegram-only public studio gallery", () => {
       fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Aa")),
     ).toBe(false);
     fireEvent.change(input, { target: { value: "Aang" } });
-    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar modelos" }));
     await waitFor(() =>
       expect(
         fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Aang")),
@@ -671,6 +716,6 @@ describe("Telegram-only public studio gallery", () => {
     expect(window.location.search).toContain("studio=3DXM");
     expect(window.location.search).toContain("q=Chibi");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Pesquisar")).toHaveValue("Chibi");
+    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("Chibi");
   });
 });
