@@ -960,7 +960,7 @@ export default function TelegramStudioCatalog() {
                         </h3>
                       </div>
                     </button>
-                    <CatalogImageDownload src={imageUrl(model.cover)} name={model.name} id={model.id} className="mx-3 mt-2" />
+                    <CatalogImageDownload src={imageUrl(model.cover)?.replace(/\/thumb$/, "/display")} name={model.name} id={model.id} className="mx-3 mt-2" />
                     <div
                       className={
                         showStudioModelTags
