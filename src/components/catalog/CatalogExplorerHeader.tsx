@@ -2,6 +2,7 @@ import { useEffect, useRef, type FormEvent } from "react";
 import { ArrowRight, Grid2X2, Layers3, Search, SlidersHorizontal, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { orderCatalogCategories } from "./CatalogTaxonomy";
 
 type CatalogKind = "historical" | "review";
 type CategoryChip = { id: string; label: string };
@@ -139,7 +140,7 @@ export function CatalogExplorerHeader({
         >
           Todos
         </button>
-        {categories.slice(0, 8).map((item) => (
+        {orderCatalogCategories(categories).slice(0, 8).map((item) => (
           <button
             type="button"
             key={item.id}
