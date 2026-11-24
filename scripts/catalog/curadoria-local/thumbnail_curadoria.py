@@ -7,6 +7,7 @@ Requires Pillow (pinned in requirements-curadoria.txt); this is not a service.
 from __future__ import annotations
 
 from collections import OrderedDict
+import os
 from io import BytesIO
 from pathlib import Path
 from threading import BoundedSemaphore, Lock
@@ -39,6 +40,16 @@ _PROCESS_MS_TOTAL = 0.0
 _PROCESS_MS_MAX = 0.0
 _ACTIVE_DECODERS = 0
 _SLOW_PREVIEWS: list[dict] = []
+# The optional derived cache is confined to the existing host's local
+# curadoria-local directory. One deterministic filename per slot; no images,
+# full paths, names or commercial metadata in the files.
+_DISK_SLOTS = 2048
+_DISK_MAX_PAYLOAD_BYTES = 64 * 1024
+_DISK_LOCK = Lock()
+_DISK_HITS = 0
+_DISK_MISSES = 0
+_DISK_WRITES = 0
+_DISK_WRITE_ERRORS = 0
 
 
 class ThumbnailUnavailable(RuntimeError):
@@ -77,6 +88,74 @@ def _key(path: Path, sha256: str, width: int) -> tuple:
             file_info.st_size, int(width))
 
 
+def _disk_slot(cache_dir: Path, key: tuple):
+    """Bounded fixed-slot WebP cache: <= 2048 * (64KiB + 32 bytes).
+
+    A full SHA256 prefix inside each slot rejects hash-bucket collisions.
+    Cache is derived-only, never an identity or original-media authority.
+    """
+    digest = hashlib.sha256(json.dumps(
+        ("webp-v2", *key), ensure_ascii=False
+    ).encode("utf-8")).digest()
+    slot = int.from_bytes(digest[:8], "big") % _DISK_SLOTS
+    return Path(cache_dir) / f"{slot:04x}.bin", digest
+
+
+def _disk_read(cache_dir: Path, key: tuple):
+    path, digest = _disk_slot(cache_dir, key)
+    try:
+        data = path.read_bytes()
+    except (OSError, ValueError):
+        return None
+    # Never expose stale, partial, wrong-source or mismatched-encoding data.
+    if (not 44 <= len(data) <= 32 + _DISK_MAX_PAYLOAD_BYTES
+            or data[:32] != digest
+            or data[32:36] != b"RIFF" or data[40:44] != b"WEBP"):
+        return None
+    return data[32:]
+
+
+def _disk_write(cache_dir: Path, key: tuple, payload: bytes):
+    if len(payload) > _DISK_MAX_PAYLOAD_BYTES:
+        return False
+    slot, digest = _disk_slot(cache_dir, key)
+    temp = slot.with_suffix(".tmp")
+    # Writers serialize only their tiny atomic file writes, never decoding.
+    with _DISK_LOCK:
+        try:
+            slot.parent.mkdir(parents=True, exist_ok=True)
+            with temp.open("wb") as stream:
+                stream.write(digest)
+                stream.write(payload)
+            os.replace(temp, slot)
+            return True
+        except OSError:
+            try:
+                temp.unlink(missing_ok=True)
+            except OSError:
+                pass
+            return False
+
+
+def _remember(key: tuple, payload: bytes):
+    global _BYTES, _EVICTIONS
+    with _LOCK:
+        previous = _CACHE.get(key)
+        if previous is not None:
+            _CACHE.move_to_end(key)
+            return previous
+        while _CACHE and (
+            len(_CACHE) >= MAX_CACHE_ITEMS or
+            _BYTES + len(payload) > MAX_CACHE_BYTES
+        ):
+            _, removed = _CACHE.popitem(last=False)
+            _BYTES -= len(removed)
+            _EVICTIONS += 1
+        _CACHE[key] = payload
+        _BYTES += len(payload)
+        return payload
+
+
 def etag(path: Path, sha256: str, width: int) -> str:
     key = _key(path, sha256, width)
     fingerprint = hashlib.sha256(json.dumps(
@@ -85,11 +164,12 @@ def etag(path: Path, sha256: str, width: int) -> str:
     return '"' + fingerprint + '"'
 
 
-def thumbnail(path: Path, sha256: str, width: int) -> bytes:
+def thumbnail(path: Path, sha256: str, width: int, *, disk_cache=None) -> bytes:
     """Render only requested images. Limit both decoder concurrency and RAM."""
     global _BYTES, _HITS, _MISSES, _EVICTIONS, _FAILURES
     global _QUEUE_WAIT_COUNT, _QUEUE_WAIT_MS_TOTAL, _QUEUE_WAIT_MS_MAX
     global _PROCESS_COUNT, _PROCESS_MS_TOTAL, _PROCESS_MS_MAX, _ACTIVE_DECODERS
+    global _DISK_HITS, _DISK_MISSES, _DISK_WRITES, _DISK_WRITE_ERRORS
     key = _key(path, sha256, width)
     with _LOCK:
         cached = _CACHE.get(key)
@@ -124,6 +204,14 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
                 _CACHE.move_to_end(key)
                 _HITS += 1
                 return cached
+        if disk_cache is not None:
+            persisted = _disk_read(Path(disk_cache), key)
+            if persisted is not None:
+                with _LOCK:
+                    _DISK_HITS += 1
+                return _remember(key, persisted)
+            with _LOCK:
+                _DISK_MISSES += 1
         try:
             from PIL import Image, ImageOps, UnidentifiedImageError
         except ImportError as exc:
@@ -167,21 +255,14 @@ def thumbnail(path: Path, sha256: str, width: int) -> bytes:
             raise ThumbnailUnavailable("Não foi possível interpretar a imagem original") from exc
         if not result or len(result) > 2 * 1024 * 1024:
             raise ThumbnailUnavailable("Miniatura maior que o limite permitido")
-        with _LOCK:
-            # Other callers may have completed the same decode in the meantime.
-            previous = _CACHE.get(key)
-            if previous is not None:
-                _CACHE.move_to_end(key)
-                return previous
-            while _CACHE and (
-                len(_CACHE) >= MAX_CACHE_ITEMS or _BYTES + len(result) > MAX_CACHE_BYTES
-            ):
-                _, removed = _CACHE.popitem(last=False)
-                _BYTES -= len(removed)
-                _EVICTIONS += 1
-            _CACHE[key] = result
-            _BYTES += len(result)
-        return result
+        if disk_cache is not None:
+            written = _disk_write(Path(disk_cache), key, result)
+            with _LOCK:
+                if written:
+                    _DISK_WRITES += 1
+                elif len(result) <= _DISK_MAX_PAYLOAD_BYTES:
+                    _DISK_WRITE_ERRORS += 1
+        return _remember(key, result)
     except ThumbnailUnavailable:
         with _LOCK:
             _FAILURES += 1
@@ -223,6 +304,11 @@ def status() -> dict[str, int]:
     with _LOCK:
         return {
             "items": len(_CACHE), "bytes": _BYTES,
+            "disk_hits": _DISK_HITS, "disk_misses": _DISK_MISSES,
+            "disk_writes": _DISK_WRITES,
+            "disk_write_errors": _DISK_WRITE_ERRORS,
+            "disk_cache_slots": _DISK_SLOTS,
+            "disk_max_entry_bytes": _DISK_MAX_PAYLOAD_BYTES,
             "hits": _HITS, "misses": _MISSES,
             "evictions": _EVICTIONS, "failures": _FAILURES,
             "max_items": MAX_CACHE_ITEMS, "max_bytes": MAX_CACHE_BYTES,
