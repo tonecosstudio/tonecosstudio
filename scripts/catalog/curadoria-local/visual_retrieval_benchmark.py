@@ -24,12 +24,21 @@ def load_rows(db_path, studio):
     with smart.db_open(db_path, readonly=True) as db:
         return [dict(r) for r in db.execute("""
             SELECT a.message_id,a.source_relative,a.sha256,m.group_key,
-                   g.variant,g.revision AS group_revision,p.status
+                   g.title,g.variant,g.revision AS group_revision,p.status
             FROM assets a JOIN name_proposals p USING(message_id)
             JOIN model_group_members m USING(message_id)
             JOIN model_groups g USING(group_key)
             WHERE a.original_topic=? AND p.studio=? AND g.studio=?
               AND p.status='confirmado'
+              AND NOT EXISTS (
+                SELECT 1 FROM model_group_members other
+                JOIN name_proposals op ON op.message_id=other.message_id
+                WHERE other.group_key=m.group_key AND op.status!='confirmado'
+              )
+              AND NOT EXISTS (
+                SELECT 1 FROM assets oa JOIN model_group_members om USING(message_id)
+                WHERE oa.sha256=a.sha256 AND om.group_key!=m.group_key
+              )
             ORDER BY a.message_id
         """, (studio, studio, studio))]
 
@@ -82,13 +91,16 @@ def evaluate(rows, scorer, k=5):
     if k < 1:
         raise ValueError("k must be positive")
     queries = hits = retrieved = relevant = correct = 0
+    singleton_queries = singleton_retrieved = variant_conflicts = 0
+    covered_queries = 0
     for i, query in enumerate(rows):
         positives = {j for j, row in enumerate(rows)
                      if j != i and row["group_key"] == query["group_key"]}
-        if not positives:
-            continue
-        queries += 1
-        relevant += len(positives)
+        if positives:
+            queries += 1
+            relevant += len(positives)
+        else:
+            singleton_queries += 1
         ranked = []
         for j, row in enumerate(rows):
             if j == i:
@@ -99,12 +111,27 @@ def evaluate(rows, scorer, k=5):
                     raise ValueError("nonfinite score")
                 ranked.append((-float(score), row["message_id"], j))
         top = [j for _, _, j in sorted(ranked)[:k]]
+        if not positives:
+            singleton_retrieved += bool(top)
+            continue
+        covered_queries += bool(top)
+        variant_conflicts += sum(
+            rows[j]["group_key"] != query["group_key"]
+            and bool(query.get("title")) and rows[j].get("title") == query["title"]
+            and bool(query.get("variant")) and bool(rows[j].get("variant"))
+            and rows[j]["variant"] != query["variant"]
+            for j in top
+        )
         n = len(set(top) & positives)
         hits += bool(n)
         retrieved += len(top)
         correct += n
     return dict(queries=queries, k=k, retrieved=retrieved,
                 hit_at_k=hits/queries if queries else None,
+                query_coverage=covered_queries/queries if queries else None,
+                singleton_queries=singleton_queries,
+                singleton_with_candidates=singleton_retrieved,
+                cross_variant_candidates=variant_conflicts,
                 micro_precision=correct/retrieved if retrieved else None,
                 micro_recall=correct/relevant if relevant else None)
 
@@ -152,7 +179,7 @@ def run(db_path, media_root, model_dir, studio, batch_size=8):
     matrix = torch.cat(embeddings)
     if not torch.isfinite(matrix).all() or (matrix.norm(dim=1) < .99).any():
         raise ValueError("invalid embeddings")
-    similarity = matrix @ matrix.T
+    similarity = (matrix @ matrix.T).numpy()
     if load_rows(db_path, studio) != raw:
         raise ValueError("catalog changed during evaluation; rerun")
     return dict(studio=studio, confirmed_rows=len(raw), unique_rows=len(rows),
@@ -170,7 +197,13 @@ def self_test():
     result = evaluate(rows, lambda i,j: 1 if rows[i]["group_key"] == rows[j]["group_key"] else 0, 1)
     assert result["queries"] == 2 and result["hit_at_k"] == 1
     assert result["micro_precision"] == 1 and result["micro_recall"] == 1
+    assert result["singleton_queries"] == 2 and result["singleton_with_candidates"] == 2
+    assert result["query_coverage"] == 1
     assert evaluate(rows, lambda i,j: None)["micro_recall"] == 0
+    assert evaluate(rows, lambda i,j: None)["singleton_with_candidates"] == 0
+    for row in rows:
+        row.update(title="same character", variant=row["group_key"])
+    assert evaluate(rows, lambda i,j: 1, 3)["cross_variant_candidates"] == 4
     assert hash_score((0,0,1),(0,0,1)) == 1
     assert hash_score((0,0,1),(0,0,2)) is None
     assert len(unique_rows(rows+[dict(message_id=5, group_key="x",sha256="0")])) == 3
