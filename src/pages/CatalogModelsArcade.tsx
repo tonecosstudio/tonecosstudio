@@ -6,8 +6,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Bookmark,
-  ChevronDown,
-  SlidersHorizontal,
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
@@ -374,11 +372,12 @@ export default function CatalogModelsArcade() {
               changeParams(draft.trim(), next, "");
             }}
             onFiltersClick={() => {
-              setLoadCategories(true);
-              setFiltersExpanded(true);
-              document.getElementById("catalog-advanced-filters")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+              if (!filtersExpanded) setLoadCategories(true);
+              setFiltersExpanded((expanded) => !expanded);
             }}
             filterCount={activeFacetCount}
+            filtersExpanded={filtersExpanded}
+            filtersControlId="catalog-advanced-filters"
             totalLabel={models.isSuccess ? `Página ${activePage.index + 1} · ${rows.length} modelos nesta página` : undefined}
             coverUrl={rows[0] && gateway ? gateway.mediaUrl(rows[0].coverStorageKey) : undefined}
             collectionHref={PUBLIC_ROUTES.catalog}
@@ -394,29 +393,7 @@ export default function CatalogModelsArcade() {
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
               {/* A pesquisa principal é compartilhada pelo cabeçalho dos dois acervos. */}
 
-              <button
-                type="button"
-                aria-expanded={filtersExpanded}
-                aria-controls="catalog-advanced-filters"
-                onClick={() => setFiltersExpanded((expanded) => !expanded)}
-                className="mt-3 inline-flex min-h-12 w-full items-center justify-between border border-[hsl(0,0%,18%)] px-4 text-left text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] md:hidden"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <SlidersHorizontal size={16} aria-hidden="true" />
-                  Filtros
-                  {activeFacetCount > 0 ? (
-                    <span className="inline-flex h-6 min-w-6 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-1 font-mono text-xs text-[hsl(var(--gold-accent))]">
-                      {activeFacetCount}
-                      <span className="sr-only"> filtros ativos</span>
-                    </span>
-                  ) : null}
-                </span>
-                <ChevronDown
-                  size={17}
-                  aria-hidden="true"
-                  className={`transition-transform motion-reduce:transition-none ${filtersExpanded ? "rotate-180" : ""}`}
-                />
-              </button>
+              {/* Toggle de filtros único no cabeçalho compartilhado. */}
 
               <div
                 id="catalog-advanced-filters"
