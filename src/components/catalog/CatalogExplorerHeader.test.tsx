@@ -173,6 +173,21 @@ describe("TONART shared catalog discovery structure", () => {
     expect(within(cards[1]).getByText("Em curadoria")).toBeInTheDocument();
   });
 
+  it("uses the same cover dimensions and multi-photo chip in both channels", () => {
+    render(
+      <div>
+        <CatalogCardMediaFrame imageCount={3}><span>original</span></CatalogCardMediaFrame>
+        <CatalogCardMediaFrame imageCount={3}><span>telegram</span></CatalogCardMediaFrame>
+      </div>,
+    );
+    const photoStages = screen.getAllByText("3 fotos");
+    expect(photoStages).toHaveLength(2);
+    const originalStage = screen.getByText("original").parentElement;
+    const reviewStage = screen.getByText("telegram").parentElement;
+    expect(originalStage).toHaveClass("aspect-[4/3]");
+    expect(originalStage?.className).toBe(reviewStage?.className);
+  });
+
   it("provides real list and grid actions", () => {
     const onChange = vi.fn();
     render(<CatalogGridListToggle view="grid" onChange={onChange} />);
