@@ -3,6 +3,19 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+## SSOT de estrutura visual para os dois acervos — 23/11/2026, PR #143
+
+**Decisão do proprietário:** usar a captura do catálogo escuro como referência de **estrutura** em **ambas** as páginas, mantendo a identidade arcade dourada, fontes, componentes e navegação oficiais de `tonartstudio.com.br`. Não copiar a paleta laranja nem criar segundo frontend de dados. Esta seção complementa os contratos editoriais abaixo, não os substitui.
+
+- **Entrada:** `/catalogo` separa os canais; `/catalogo/antigos` usa exclusivamente a API canônica `/api/catalog`; `/catalogo/em-revisao` usa a prévia pública já autorizada `/api/telegram-studios`; `/catalogo/em-revisao/estudios` permite navegar pelas coleções dos modeladores. Preservar URL, estados e autoria de cada acervo.
+- **Estrutura de ambos:** pesquisa no topo (atalho Ctrl+K), abas reais para Explorar / Coleções / alternância entre acervos, banner ilustrado por capa permitida ou gradiente neutro, total **somente se retornado** pela API/página, categorias reais da página, controle de filtros, título/listagem e alternância grade/lista. Grade usa duas colunas em telas estreitas e até três no desktop, inspirada na captura fornecida. Preservar paginação, foto original, abertura de galeria e busca com filtros reais.
+- **Dado visível não inventado:** as categorias rápidas vêm dos **itens da página atual**, não de uma suposta taxonomia completa. O filtro avançado original mantém consulta de categorias/franquias sob demanda no Worker. Telegram conserva situação `provisional`, identificação pendente e rótulos de revisão. Nome/franquia/categoria aparecem apenas quando existentes; tags do estúdio/variante ficam nas coleções de estúdio.
+- **Recursos da captura ainda sem autoridade compartilhada:** `Novos`, `Favoritos` e `Minha lista` não devem aparecer como controles funcionais falsos no Telegram. No catálogo histórico, `Minha seleção` existente permanece disponível na barra de resultados, com a política de orçamento/read-only. Só adicionar outras abas quando houver fonte e comportamento testáveis.
+- **Implementação única:** `src/components/catalog/CatalogExplorerHeader.tsx` com `CatalogExplorerHeader` e `CatalogGridListToggle`, reutilizados por `CatalogModelsArcade.tsx` e `TelegramStudioCatalog.tsx`. O catálogo Telegram standalone continua autorizado enquanto existir o projeto `tonart-catalogo-publico`; seus links de navegação não dependem de `react-router-dom` quando fora do shell do site principal. A nova estrutura NÃO altera Worker/D1/R2, Curadoria local ou autorização de imagens.
+- **Provas e release:** testes do componente compartilhado e do histórico, navegação original/mobile, busca/filtros/grade/lista, abertura de galeria em Telegram com uma e várias imagens, testes dos limites de publicação; TypeScript, lint, build real de frontend e smoke de ambos os canais **antes de integrar main ou publicar**. A prévia local de desenvolvimento usa `127.0.0.1:5175`, não é prova de Vercel. Não promover projetos nem remover rotas existentes nesta etapa sem migração validada.
+
+---
+
 ## Decisão de apresentação — Modelos versus Estúdios (22/11/2026, 23h)
 
 **Diretriz revisada após a captura do catálogo:** informações temáticas de cada modelo permanecem visíveis no acervo geral; somente **tags próprias do modelador/estúdio** pertencem às coleções de estúdios.
