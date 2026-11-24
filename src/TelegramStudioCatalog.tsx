@@ -3,6 +3,7 @@ import { ArrowUpRight, Search, Images } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
+import { CatalogCategoryBadge, CatalogCardIdentity, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
 
 type Model = {
   id: string;
@@ -415,10 +416,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       categoryMap.set(item.categorySlug, item.category);
     }
   }
-  const modelCategories = Array.from(categoryMap, ([slug, name]) => ({
-    slug,
-    name,
-  })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const modelCategories = orderCatalogCategories(
+    Array.from(categoryMap, ([id, label]) => ({ id, label })),
+  ).map(({ id, label }) => ({ slug: id, name: label }));
   const modelTags = Array.from(
     new Map(
       (page?.items ?? []).flatMap((item) =>
@@ -533,7 +533,8 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             ) : null}
             {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div id="telegram-catalog-filters" className={filtersOpen ? "mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 lg:grid-cols-3" : "hidden"}>
+            <div id="telegram-catalog-filters" className={filtersOpen ? "mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 lg:grid-cols-2" : "hidden"}>
+              {!embedded && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Categorias
@@ -580,6 +581,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                   são apresentadas como categorias oficiais.
                 </p>
               </div>
+              )}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Situação da curadoria
@@ -806,7 +808,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                     >
                       <div className={embedded ? "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[hsl(0,0%,12%)]" : "relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]"}>
                         {embedded && model.category && model.categorySlug && model.categorySlug !== "curadoria-pendente" && (
-                          <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full border border-[hsl(var(--gold-accent)/0.55)] bg-[hsl(0,0%,5%)/0.9] px-2.5 py-1 font-mono text-[10px] font-semibold text-[hsl(var(--gold-accent))]">{model.category}</span>
+                          <CatalogCategoryBadge label={model.category} />
                         )}
                         {imageUrl(model.cover) ? (
                           <img
@@ -836,17 +838,20 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                             {model.studio}
                           </p>
                         )}
-                        <h3
-                          className={
-                            showStudioModelTags
+                        {embedded ? (
+                          <CatalogCardIdentity
+                            name={model.name}
+                            franchise={model.franchiseSlug !== "franquia-a-identificar" ? model.franchise : null}
+                            franchiseProvisional={model.provisional}
+                          />
+                        ) : (
+                          <h3
+                            className={showStudioModelTags
                               ? "mt-2 line-clamp-2 font-semibold leading-5"
-                              : "line-clamp-2 font-semibold leading-5"
-                          }
-                        >
-                          {model.name}
-                        </h3>
-                        {embedded && model.franchise && model.franchiseSlug !== "franquia-a-identificar" && (
-                          <p className="mt-1 truncate text-xs text-[hsl(0,0%,66%)]">{model.franchise}</p>
+                              : "line-clamp-2 font-semibold leading-5"}
+                          >
+                            {model.name}
+                          </h3>
                         )}
                       </div>
                     </button>
