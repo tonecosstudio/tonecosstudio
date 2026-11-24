@@ -197,6 +197,12 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
                 "revision": 0,
             })
         with m.smart.db_open(proof_db) as con:
+            # Assets belongs to the downloader SSOT, not to smart.setup.
+            con.execute("""CREATE TABLE assets(
+                message_id INTEGER PRIMARY KEY,sha256 TEXT NOT NULL,
+                source_relative TEXT NOT NULL,original_topic TEXT NOT NULL,
+                source_date TEXT,source_caption TEXT,source_album TEXT,
+                indexed_at TEXT NOT NULL)""")
             m.smart.setup(con)
             m.setup(con)
             for key, name, variant in (
