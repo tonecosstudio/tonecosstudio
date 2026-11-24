@@ -317,7 +317,13 @@ describe("Tonecos canonical model discovery UI", () => {
     const toggle = screen.getByRole("button", { name: /Filtros/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(toggle).toHaveAttribute("aria-controls", "catalog-advanced-filters");
+    const panel = document.getElementById("catalog-advanced-filters");
+    expect(panel).toHaveClass("hidden");
+    expect(panel).not.toHaveClass("md:grid");
+    expect(panel?.parentElement).toHaveClass("border-0");
     fireEvent.click(toggle);
+    expect(panel).toHaveClass("grid");
+    expect(panel?.parentElement).not.toHaveClass("border-0");
 
     fireEvent.change(screen.getByRole("textbox", { name: "Pesquisar modelos" }), {
       target: { value: "escultura" },
