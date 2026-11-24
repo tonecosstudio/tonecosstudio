@@ -65,6 +65,26 @@ describe("TONART shared catalog discovery structure", () => {
     expect(within(tabs).queryByRole("button", { name: /Favoritos|Novos|Minha lista/ })).not.toBeInTheDocument();
   });
 
+  it("renders Telegram navigation without a Router in the standalone catalog", () => {
+    render(
+      <CatalogExplorerHeader
+        kind="review"
+        search=""
+        onSearchChange={() => {}}
+        onSearchSubmit={(event) => event.preventDefault()}
+        onSearchClear={() => {}}
+        categories={[]}
+        category=""
+        onCategoryChange={() => {}}
+        onFiltersClick={() => {}}
+        collectionHref="/estudios"
+      />,
+    );
+    const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
+    expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/estudios");
+    expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/catalogo/em-revisao");
+  });
+
   it("provides real list and grid actions", () => {
     const onChange = vi.fn();
     render(<CatalogGridListToggle view="grid" onChange={onChange} />);
