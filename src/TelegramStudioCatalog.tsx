@@ -533,7 +533,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             ) : null}
             {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div id="telegram-catalog-filters" className={filtersOpen ? "mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 lg:grid-cols-2" : "hidden"}>
+            <div id="telegram-catalog-filters" className={filtersOpen ? `mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 ${embedded ? "lg:grid-cols-2" : "lg:grid-cols-3"}` : "hidden"}>
               {!embedded && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
