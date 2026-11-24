@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowUpRight, Search, Images } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
 
 type Model = {
   id: string;
@@ -803,7 +803,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                       }
                       className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
                     >
-                      <div className={embedded ? "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[hsl(0,0%,12%)]" : "relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]"}>
+                      <CatalogCardMediaFrame imageCount={model.imageCount} standalone={!embedded}>
                         {embedded && model.category && model.categorySlug && model.categorySlug !== "curadoria-pendente" && (
                           <CatalogCategoryBadge label={model.category} />
                         )}
@@ -812,23 +812,16 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                             src={imageUrl(model.cover)}
                             alt=""
                             loading="lazy"
-                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"
+                            className={embedded
+                              ? "h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
+                              : "h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"}
                           />
                         ) : (
                           <span className="p-3 text-center text-sm text-[#b6a496]">
                             Render em preparação
                           </span>
                         )}
-                        {model.imageCount > 1 && (
-                          <span className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full border border-[#ffffff4d] bg-[#111713]/90 px-2.5 py-1 text-xs text-[#f1e7d8]">
-                            <Images
-                              aria-hidden="true"
-                              className="h-3.5 w-3.5"
-                            />
-                            {model.imageCount} fotos
-                          </span>
-                        )}
-                      </div>
+                      </CatalogCardMediaFrame>
                       <div className={embedded ? "space-y-1.5 p-3 md:p-4" : "px-3 pt-3 sm:px-4 sm:pt-4"}>
                         {showStudioModelTags && (
                           <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
