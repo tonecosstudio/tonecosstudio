@@ -849,7 +849,12 @@ export default function CatalogModelsArcade() {
                             </p>
                           </div>
                         </Link>
-                        <CatalogImageDownload src={gateway.mediaUrl(model.coverStorageKey)} name={model.name} id={model.id} className="mx-3 mb-2" />
+                        <CatalogImageDownload
+                          src={gateway.mediaUrl(model.coverStorageKey)}
+                          name={model.name}
+                          id={model.id}
+                          className="mx-3 mb-2"
+                        />
                         <button
                           type="button"
                           onClick={() => toggleSelected(model)}
