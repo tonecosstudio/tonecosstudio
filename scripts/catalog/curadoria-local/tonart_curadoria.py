@@ -685,6 +685,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.respond(naming.materialize_confirmed(DB_PATH,SOURCE,APP_DIR))
             if self.path=="/api/export-names":
                 return self.respond(naming.export_manifest(DB_PATH,APP_DIR/"manifesto-nomes-propostos.csv"))
+            if self.path=="/api/split-audited-variant":
+                return self.respond(gallery_ops.split_audited_variant(
+                    DB_PATH,SOURCE,group_key=obj.get("group_key"),
+                    revision=obj.get("revision"),
+                    selected_message_id=obj.get("selected_message_id"),
+                    proofs=obj.get("proofs"),
+                    corrected_variant=obj.get("corrected_variant"),
+                    official_url=obj.get("official_url"),
+                    note=obj.get("note","")))
             if self.path=="/api/split-legacy-gallery":
                 return self.respond(legacy_album_audit.split_reviewed_gallery(
                     DB_PATH,group_key=obj.get("group_key",""),
