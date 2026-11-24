@@ -122,7 +122,7 @@ export function CatalogExplorerHeader({
         </p>
         <h1 className="mt-3 text-4xl font-bold uppercase leading-none tracking-wide text-white sm:text-5xl" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>{title}</h1>
         <p className="mt-3 max-w-lg text-xs leading-6 text-[hsl(0,0%,77%)] sm:text-sm">{intro}</p>
-        {totalLabel ? <p role="status" className="mt-4 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}
+        {totalLabel ? <p className="mt-4 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}
       </header>
 
       <div className="mt-4 flex flex-wrap items-center gap-2" aria-label="Categorias do catálogo">
