@@ -29,6 +29,8 @@ Não executar no SQLite de produção pública nem no R2.
 
 Executar o mesmo comando novamente com --model-dir apontando para SigLIP2 local, mantendo o mesmo snapshot, estúdio e parâmetros; não comparar resultados de amostras diferentes. SigLIP2 nesta etapa avalia imagem-imagem, não atribui nomes por texto.
 
+A saída inclui `sample_sha256`, `model_sha256`, versões PyTorch/Transformers e batch size. Comparar DINOv2 e SigLIP2 somente se `sample_sha256` for idêntico; registrar também dispositivo e parâmetros. Os hashes dos pesos e configs são recalculados antes/depois para invalidar uma execução com arquivos modificados. O hash identifica o conteúdo, não certifica a origem ou qualidade dos pesos.
+
 Estado experimental: ainda sem benchmark físico no acervo Wicked.
 A prova sintética de seleção isolada não mede o DINOv2.
 
