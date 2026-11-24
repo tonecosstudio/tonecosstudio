@@ -277,9 +277,9 @@ describe("Telegram-only public studio gallery", () => {
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
     await screen.findByText("Aang");
-    const input = screen.getByLabelText("Pesquisar");
+    const input = screen.getByRole("textbox", { name: "Pesquisar modelos" });
     fireEvent.change(input, { target: { value: "Aa" } });
-    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar modelos" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "pelo menos 3 caracteres",
     );
@@ -287,7 +287,7 @@ describe("Telegram-only public studio gallery", () => {
       fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Aa")),
     ).toBe(false);
     fireEvent.change(input, { target: { value: "Aang" } });
-    fireEvent.click(screen.getByRole("button", { name: "Pesquisar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar modelos" }));
     await waitFor(() =>
       expect(
         fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Aang")),
@@ -671,6 +671,6 @@ describe("Telegram-only public studio gallery", () => {
     expect(window.location.search).toContain("studio=3DXM");
     expect(window.location.search).toContain("q=Chibi");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Pesquisar")).toHaveValue("Chibi");
+    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("Chibi");
   });
 });
