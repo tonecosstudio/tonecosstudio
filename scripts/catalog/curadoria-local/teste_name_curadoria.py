@@ -178,4 +178,111 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
     with closing(sqlite3.connect(db)) as cn:
         row=cn.execute("SELECT title,variant,status FROM name_proposals WHERE message_id=204").fetchone()
     assert row==("Varian Wrynn","","provavel"),row
+    # Regressao do contrato de variante de galeria: identidade e variante
+    # mudam juntas, sob provas fisicas e CAS, nunca alterando direitos.
+    with tempfile.TemporaryDirectory(prefix="tonart-variant-proof-") as proof_dir:
+        proof_root = Path(proof_dir)
+        proof_db = proof_root / "proof.sqlite3"
+        gkey = "f" * 24
+        gkey2 = "e" * 24
+        now = m.smart.utc()
+        proofs = []
+        for mid in (801, 802, 803):
+            content = ("original-sintetico-%d" % mid).encode()
+            (proof_root / ("msg_%d.jpg" % mid)).write_bytes(content)
+            proofs.append({
+                "message_id": mid,
+                "sha256": hashlib.sha256(content).hexdigest(),
+                "revision": 0,
+            })
+        with m.smart.db_open(proof_db) as con:
+            m.smart.setup(con)
+            m.setup(con)
+            for key, name, variant in (
+                (gkey, "Spock", "Busto"),
+                (gkey2, "Voldemort", "Busto"),
+            ):
+                con.execute("""INSERT INTO model_groups
+                   (group_key,studio,title,universe,variant,state,
+                    confidence,revision,created_at,updated_at)
+                   VALUES (?,'Wicked',?,'Ficcao',?,'provavel',0,0,?,?)""",
+                    (key, name, variant, now, now))
+                con.execute("""INSERT INTO curation_events
+                   (group_key,event_type,detail,occurred_at)
+                   VALUES (?,'visual_gallery_audited','{}',?)""",(key,now))
+            for mid, key, name in (
+                (801,gkey,"Spock"),(802,gkey,"Spock"),
+                (803,gkey2,"Voldemort"),
+            ):
+                content=(proof_root / ("msg_%d.jpg" % mid)).read_bytes()
+                digest=hashlib.sha256(content).hexdigest()
+                relative="msg_%d.jpg" % mid
+                con.execute("""INSERT INTO assets
+                    (message_id,sha256,source_relative,original_topic,indexed_at)
+                    VALUES(?,?,?,'Wicked',?)""",(mid,digest,relative,now))
+                con.execute("""INSERT INTO model_group_members
+                    (message_id,group_key,match_reason,updated_at)
+                    VALUES(?,?,'telegram_caption',?)""",(mid,key,now))
+                con.execute("""INSERT INTO name_proposals
+                    (message_id,studio,title,universe,variant,filename,
+                     status,confidence,source_fingerprint,revision,modified_at)
+                    VALUES(?,'Wicked',?,'Ficcao','Busto',?,
+                     'provavel',0.82,?,0,?)""",
+                    (mid,name,m.proposed_name({"title":name,"variant":"Busto"},mid,relative),
+                     "synthetic-%d" % mid,now))
+            con.commit()
+        note = ("Produto visual oficial de Wicked mostra Spock Full Size "
+                "com corpo inteiro e mesma pose, rosto, mao erguida, roupa "
+                "e base dos arquivos ficticios usados no teste de contrato; "
+                "a mudanca nao autoriza licenca nem publicacao.")
+        def variant_call(**extra):
+            return m.confirm_reviewed_gallery(
+                proof_db,proof_root,group_key=gkey,group_revision=0,
+                proofs=proofs[:2],title="Spock",universe="Ficcao",
+                official_url="https://3dwicked.gumroad.com/l/SpockS",
+                note=note,**extra)
+        for invalid in ("", "Busto"):
+            try:
+                variant_call(corrected_variant=invalid)
+                assert False,"Variante vazia/inalterada deveria ser rejeitada"
+            except ValueError:
+                pass
+        try:
+            m.confirm_reviewed_gallery(proof_db,proof_root,
+                group_key=gkey,group_revision=0,proofs=proofs[:2],
+                title="Spock",universe="Ficcao",
+                official_url="https://another-shop.example/l/SpockS",
+                note=note,corrected_variant="Full Size")
+            assert False,"Origem não oficial rejeitada para variante"
+        except ValueError:
+            pass
+        assert variant_call(corrected_variant="Full Size")["confirmed"]==2
+        with m.smart.db_open(proof_db,readonly=True) as con:
+            assert con.execute("SELECT variant FROM model_groups WHERE group_key=?",
+                (gkey,)).fetchone()[0]=="Full Size"
+            rows=con.execute("""SELECT variant,status,filename FROM name_proposals
+                WHERE message_id IN(801,802) ORDER BY message_id""").fetchall()
+            assert all(v["variant"]=="Full Size" and v["status"]=="confirmado"
+                and "-full-size-" in v["filename"] for v in rows)
+            events=con.execute("""SELECT event_type,detail FROM curation_events
+               WHERE group_key=? AND event_type='gallery_variant_corrected_editorial'""",
+               (gkey,)).fetchall()
+            assert len(events)==1 and json.loads(events[0]["detail"])["variant_corrected"]
+        try:
+            variant_call(corrected_variant="Full Size")
+            assert False,"Reenvio CAS desatualizado nao pode reexecutar"
+        except RuntimeError:
+            pass
+        # Sem corrected_variant, o contrato anterior continua preservando
+        # a variante. Isto protege os demais studios e automacoes antigas.
+        traditional=m.confirm_reviewed_gallery(
+            proof_db,proof_root,group_key=gkey2,group_revision=0,
+            proofs=proofs[2:],title="Voldemort",universe="Ficcao",
+            official_url="https://3dwicked.gumroad.com/l/VoldemortB",
+            note=note)
+        assert traditional["variant"]=="Busto" and not traditional["variant_changed"]
+        assert (proof_root/"msg_801.jpg").read_bytes()==b"original-sintetico-801"
+        assert (proof_root/"msg_802.jpg").read_bytes()==b"original-sintetico-802"
+        print("VARIANTE ATOMICA E2E APROVADA: CAS, SHA, auditoria, direitos e legado")
+
     print("NOMEAÇÃO E2E APROVADA: propostas, álbum, nomes únicos, aprovação com fonte, conflito, retomada, CSV e originais intactos")
