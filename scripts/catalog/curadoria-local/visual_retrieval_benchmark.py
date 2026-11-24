@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import heapq
 import io
 import json
 import math
@@ -143,23 +144,23 @@ def review_pairs(rows, scorer, limit=24, threshold=None):
         raise ValueError("review limit must be 0..100")
     if not limit:
         return []
-    pairs = []
-    for i, a in enumerate(rows):
-        for j in range(i+1, len(rows)):
-            b = rows[j]
-            if a["group_key"] == b["group_key"]:
-                continue
-            score = scorer(i, j)
-            if score is None:
-                continue
-            score = float(score)
-            if not math.isfinite(score):
-                raise ValueError("nonfinite score")
-            if threshold is not None and score < threshold:
-                continue
-            pairs.append((-score, a["message_id"], b["message_id"], i, j))
+    def candidates():
+        for i, a in enumerate(rows):
+            for j in range(i+1, len(rows)):
+                b = rows[j]
+                if a["group_key"] == b["group_key"]:
+                    continue
+                score = scorer(i, j)
+                if score is None:
+                    continue
+                score = float(score)
+                if not math.isfinite(score):
+                    raise ValueError("nonfinite score")
+                if threshold is not None and score < threshold:
+                    continue
+                yield (-score, a["message_id"], b["message_id"], i, j)
     result = []
-    for neg, _, _, i, j in sorted(pairs)[:limit]:
+    for neg, _, _, i, j in heapq.nsmallest(limit, candidates()):
         a, b = rows[i], rows[j]
         result.append(dict(score=-neg,
             message_ids=[a["message_id"], b["message_id"]],
