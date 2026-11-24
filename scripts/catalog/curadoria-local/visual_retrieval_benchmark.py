@@ -397,10 +397,86 @@ def self_test_adapter():
     print("VISUAL_ADAPTER_SYNTHETIC_9_OF_9_PASS")
 
 
+def self_test_sqlite():
+    """Exercise actual SQLite queries and PNG bytes; no trained weights."""
+    import sqlite3
+    import tempfile
+    from PIL import Image, ImageDraw, ImageOps
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td) / "media"
+        root.mkdir()
+        db_path = Path(td) / "fixture.sqlite3"
+
+        def png(n):
+            image = Image.new("RGB", (96, 96), "white")
+            ImageDraw.Draw(image).rectangle((10+n, 15, 45+n, 75), fill="black")
+            buffer = io.BytesIO()
+            image.save(buffer, format="PNG")
+            return buffer.getvalue()
+
+        db = sqlite3.connect(db_path)
+        try:
+            db.executescript("""
+                CREATE TABLE assets(message_id INTEGER PRIMARY KEY,
+                    source_relative TEXT, sha256 TEXT, original_topic TEXT);
+                CREATE TABLE name_proposals(message_id INTEGER PRIMARY KEY,
+                    studio TEXT, status TEXT);
+                CREATE TABLE model_groups(group_key TEXT PRIMARY KEY,
+                    studio TEXT, title TEXT, variant TEXT, revision INTEGER);
+                CREATE TABLE model_group_members(message_id INTEGER PRIMARY KEY,
+                    group_key TEXT);
+            """)
+            for group in ("a", "b", "partial", "missing", "conflict_a", "conflict_b", "other"):
+                db.execute("INSERT INTO model_groups VALUES(?,?,?,?,?)",
+                           (group, "Other" if group == "other" else "Wicked",
+                            group, "bust", 0))
+            spec = [(1,"a","confirmado",1), (2,"a","confirmado",2),
+                    (3,"a","confirmado",1), (4,"b","confirmado",4),
+                    (5,"partial","confirmado",5), (6,"partial","provavel",6),
+                    (7,"missing","confirmado",7), (8,"missing",None,8),
+                    (9,"conflict_a","confirmado",9), (10,"conflict_b","confirmado",9),
+                    (11,"other","confirmado",11)]
+            for mid, group, status, n in spec:
+                data = png(n)
+                name = f"{mid}.png"
+                (root/name).write_bytes(data)
+                studio = "Other" if group == "other" else "Wicked"
+                db.execute("INSERT INTO assets VALUES(?,?,?,?)",
+                           (mid, name, hashlib.sha256(data).hexdigest(), studio))
+                db.execute("INSERT INTO model_group_members VALUES(?,?)", (mid, group))
+                if status is not None:
+                    db.execute("INSERT INTO name_proposals VALUES(?,?,?)", (mid, studio, status))
+            db.commit()
+        finally:
+            db.close()
+        before = hashlib.sha256(db_path.read_bytes()).hexdigest()
+        rows = load_rows(db_path, "Wicked")
+        assert [row["message_id"] for row in rows] == [1,2,3,4]
+        rows = unique_rows(rows)
+        assert [row["message_id"] for row in rows] == [1,2,4]
+        vectors = []
+        for row in rows:
+            with Image.open(io.BytesIO(verified_bytes(root, row))) as image:
+                vectors.append(hash_features(ImageOps.exif_transpose(image).convert("RGB")))
+        assert hash_score(vectors[0], vectors[0]) == 1
+        for row in (dict(rows[0], source_relative="../fixture.sqlite3"),
+                    dict(rows[0], source_relative="missing.png"),
+                    dict(rows[0], sha256="0"*64)):
+            try:
+                verified_bytes(root, row)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("unsafe or invalid original accepted")
+        assert hashlib.sha256(db_path.read_bytes()).hexdigest() == before
+    print("SYNTHETIC_SQLITE_IMAGE_FIXTURE_PASS")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--self-test-adapter", action="store_true")
+    parser.add_argument("--self-test-sqlite", action="store_true")
     parser.add_argument("--sqlite", type=Path)
     parser.add_argument("--media-root", type=Path)
     parser.add_argument("--model-dir", type=Path)
@@ -408,6 +484,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--review-limit", type=int, default=24)
     args = parser.parse_args()
+    if args.self_test_sqlite:
+        self_test_sqlite()
+        return
     if args.self_test_adapter:
         self_test_adapter()
         return
