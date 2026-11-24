@@ -3,7 +3,7 @@ import { ArrowUpRight, Search, Images } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
 
 type Model = {
   id: string;
@@ -794,10 +794,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             {!loading && page && (
               <div className={catalogView === "grid" ? "mt-7 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5" : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"}>
                 {page.items.map((model) => (
-                  <article
-                    key={model.id}
-                    className={embedded ? "group flex flex-col overflow-hidden rounded-lg border border-[hsl(var(--gold-accent)/0.20)] bg-[hsl(0,0%,8%)] transition duration-300 hover:border-[hsl(var(--gold-accent)/0.75)]" : "group flex flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a]"}
-                  >
+                  <CatalogModelCardShell key={model.id} standalone={!embedded}>
                     <button
                       type="button"
                       onClick={() => navigate({ ...route, selected: model.id })}
@@ -832,18 +829,24 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                           </span>
                         )}
                       </div>
-                      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+                      <div className={embedded ? "space-y-1.5 p-3 md:p-4" : "px-3 pt-3 sm:px-4 sm:pt-4"}>
                         {showStudioModelTags && (
                           <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
                             {model.studio}
                           </p>
                         )}
                         {embedded ? (
-                          <CatalogCardIdentity
-                            name={model.name}
-                            franchise={model.franchiseSlug !== "franquia-a-identificar" ? model.franchise : null}
-                            franchiseProvisional={model.provisional}
-                          />
+                          <>
+                            <CatalogCardIdentity
+                              name={model.name}
+                              franchise={model.franchiseSlug !== "franquia-a-identificar" ? model.franchise : null}
+                              franchiseProvisional={model.provisional}
+                            />
+                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
+                              Ver galeria
+                              <ArrowUpRight size={14} aria-hidden="true" />
+                            </p>
+                          </>
                         ) : (
                           <h3
                             className={showStudioModelTags
@@ -924,13 +927,20 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                             {model.variant}
                           </button>
                         )}
-                      <span className="ml-auto text-right text-xs text-[#b6a496]">
-                        {model.imageCount}{" "}
-                        {model.imageCount === 1 ? "imagem" : "imagens"}
-                        {model.provisional ? " · Em curadoria" : ""}
-                      </span>
+                      {embedded ? (
+                        <CatalogCardMetadata
+                          description={model.imageCount + (model.imageCount === 1 ? " imagem" : " imagens")}
+                          status={model.provisional ? "Em curadoria" : undefined}
+                        />
+                      ) : (
+                        <span className="ml-auto text-right text-xs text-[#b6a496]">
+                          {model.imageCount}{" "}
+                          {model.imageCount === 1 ? "imagem" : "imagens"}
+                          {model.provisional ? " · Em curadoria" : ""}
+                        </span>
+                      )}
                     </div>
-                  </article>
+                  </CatalogModelCardShell>
                 ))}
               </div>
             )}
