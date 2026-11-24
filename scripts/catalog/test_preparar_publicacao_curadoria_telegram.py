@@ -329,6 +329,30 @@ def test_existing_name_sync_read_only():
         assert ready[0]["admin_patch"]=={"revision":0,"name":"Selene"}
         again,_=m.plan_existing_telegram_name_updates(db,csv_path)
         assert [r["operation_id"] for r in ready]==[r["operation_id"] for r in again]
+        # Correct existing provisional names only with complete confirmed local
+        # identity and revision zero. Never replace named cards with a proposal.
+        for r in inputs[:2]:
+            r["model"]="Selene placeholder title"
+        inputs[2]["model"]="Lara old title"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        named, report=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert [r["model_id"] for r in named]==["tg_"+"a"*24], named
+        assert named[0]["admin_patch"]=={"revision":0,"name":"Selene"}
+        assert report["held"]["named_card_requires_confirmed_complete_identity"]==2
+        # Concurrent manual edit must win.
+        for r in inputs[:2]:r["telegram_revision"]="1"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        assert not m.plan_existing_telegram_name_updates(db,csv_path)[0]
+        for r in inputs[:2]:
+            r["telegram_revision"]="0";r["model"]="Selene"
+        with csv_path.open("w",encoding="utf8",newline="") as f:
+            w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
+        aligned, report=m.plan_existing_telegram_name_updates(db,csv_path)
+        assert not aligned and report["held"]["already_aligned"]==1
+        for r in inputs[:2]:r["model"]="Modelo sem nome #101"
+        inputs[2]["model"]="Modelo sem nome #103"
         inputs[2]["telegram_revision"]="1"
         with csv_path.open("w",encoding="utf8",newline="") as f:
             w=csv.DictWriter(f,fieldnames=fields);w.writeheader();w.writerows(inputs)
