@@ -637,3 +637,221 @@ def relate_orphan_variant(db_path,media_root,*,orphan_mid,orphan_revision,
             'images_added':1,'source_sha256':orphan['sha256'],
             'state':'revisar','names_approved':False,
             'rights_changed':False,'originals_modified':False,'packages_merged':False}
+
+
+def split_audited_variant(db_path, media_root, *, group_key, revision,
+                          selected_message_id, proofs, corrected_variant,
+                          official_url, note):
+    """Split ONE proven, wrong-variant photo from a prior-audited two-photo gallery.
+
+    This is not a legacy album re-audit or automatic regroup. The complete
+    current member/SHA/name-revision contract and each physical original are
+    verified before an atomic split. A dedicated audit supersedes the earlier
+    full-gallery assumption; both galleries remain editorial-only.
+    """
+    import name_curadoria as naming
+    from urllib.parse import urlparse
+
+    if not isinstance(group_key, str) or not re.fullmatch("[0-9a-f]{24}", group_key):
+        raise ValueError("Galeria invalida")
+    if type(revision) is not int or revision < 0:
+        raise ValueError("Revisao CAS obrigatoria")
+    if type(selected_message_id) is not int or selected_message_id <= 0:
+        raise ValueError("Selecione foto fisica")
+    variant = str(corrected_variant or "").strip()
+    if not 1 <= len(variant) <= 120:
+        raise ValueError("Variante revisada obrigatoria")
+    note = str(note or "").strip()
+    if not 90 <= len(note) <= 650:
+        raise ValueError("Prova visual de ambas esculturas, 90-650 caracteres")
+    official_url = str(official_url or "").strip()
+    url = urlparse(official_url)
+    if (url.scheme != "https" or url.hostname != "3dwicked.gumroad.com"
+            or not url.path.startswith("/l/") or len(official_url) > 600
+            or url.username or url.password):
+        raise ValueError("Produto oficial individual Wicked obrigatorio")
+    if (not isinstance(proofs, list) or len(proofs) != 2 or
+        any(not isinstance(p, dict) or
+            set(p) != {"message_id", "sha256", "revision"} or
+            type(p["message_id"]) is not int or
+            type(p["revision"]) is not int or p["revision"] < 0 or
+            not isinstance(p["sha256"], str) or
+            not re.fullmatch("[0-9a-f]{64}", p["sha256"]) for p in proofs)):
+        raise ValueError("Provas SHA-256 e revisao de ambas fotos obrigatorias")
+    if len({p["message_id"] for p in proofs}) != 2 or selected_message_id not in {
+        p["message_id"] for p in proofs
+    }:
+        raise ValueError("Provas duplicadas ou foto escolhida ausente")
+    proof_map = {p["message_id"]: (p["sha256"], p["revision"]) for p in proofs}
+    root = Path(media_root).resolve()
+    timestamp = smart.utc()
+    with smart.db_open(db_path) as db:
+        smart.setup(db)
+        naming.setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            source = db.execute("SELECT * FROM model_groups WHERE group_key=?",
+                                (group_key,)).fetchone()
+            if source is None:
+                raise ValueError("Galeria indisponivel")
+            if source["revision"] != revision:
+                raise RuntimeError("Galeria alterada: reabra a prancha")
+            if (source["studio"] != "Wicked" or
+                source["state"] == "confirmado"):
+                raise ValueError("Separacao restrita a Wicked nao comercial")
+            if smart.normalize(source["variant"]) == smart.normalize(variant):
+                raise ValueError("Variantes originais e corrigidas identicas")
+            audited = db.execute("""SELECT 1 FROM curation_events
+                WHERE group_key=? AND event_type='visual_gallery_audited'
+                LIMIT 1""", (group_key,)).fetchone()
+            if not audited:
+                raise ValueError("Auditoria visual anterior obrigatoria")
+            members = db.execute("""SELECT a.message_id,a.sha256,a.source_relative,
+                a.source_caption,a.source_album,a.original_topic,
+                p.title,p.universe,p.variant,p.studio,p.status,
+                p.revision AS name_revision,p.notes
+                FROM model_group_members m JOIN assets a USING(message_id)
+                JOIN name_proposals p USING(message_id)
+                WHERE m.group_key=? ORDER BY a.message_id""",
+                (group_key,)).fetchall()
+            if len(members) != 2 or set(proof_map) != {m["message_id"] for m in members}:
+                raise ValueError("Separacao somente de galeria revisada com duas fotos")
+            for m in members:
+                if proof_map[m["message_id"]] != (m["sha256"], m["name_revision"]):
+                    raise RuntimeError("Prova SHA/revisao da foto mudou")
+                if (m["original_topic"] != "Wicked" or m["studio"] != "Wicked" or
+                    m["status"] == "confirmado" or
+                    smart.normalize(m["title"]) != smart.normalize(source["title"]) or
+                    smart.normalize(m["universe"]) != smart.normalize(source["universe"]) or
+                    smart.normalize(m["variant"]) != smart.normalize(source["variant"])):
+                    raise ValueError("Nome, fonte ou situacao editorial conflitante")
+                path = (root / m["source_relative"]).resolve()
+                if (not path.is_relative_to(root) or not path.is_file() or
+                    path.stat().st_size > 30 * 1024 * 1024):
+                    raise ValueError("Original fora de escopo ou ausente")
+                with path.open("rb") as stream:
+                    if hashlib.file_digest(stream, "sha256").hexdigest() != m["sha256"]:
+                        raise ValueError("SHA fisico da foto divergente")
+            moved = next(m for m in members if m["message_id"] == selected_message_id)
+            survivor = next(m for m in members if m["message_id"] != selected_message_id)
+            if moved["sha256"] == survivor["sha256"]:
+                raise ValueError("Mesmo arquivo fisico nao pode representar variantes diferentes")
+            overlap = db.execute("""SELECT g.group_key FROM assets a
+                JOIN model_group_members mg USING(message_id)
+                JOIN model_groups g ON g.group_key=mg.group_key
+                WHERE a.sha256=? AND g.group_key!=?
+                AND g.studio='Wicked' LIMIT 1""",
+                (moved["sha256"], group_key)).fetchone()
+            if overlap:
+                raise ValueError("Mesmo SHA fisico presente em outra galeria")
+            new_key = hashlib.sha256(json.dumps(
+                ["tonart.post-audit-variant-split/1", group_key,
+                 selected_message_id, moved["sha256"]],
+                ensure_ascii=False).encode()).hexdigest()[:24]
+            if db.execute("SELECT 1 FROM model_groups WHERE group_key=?",
+                          (new_key,)).fetchone():
+                raise RuntimeError("Separacao ja aplicada: recarregue")
+            db.execute("""INSERT INTO model_groups(
+                group_key,studio,title,universe,variant,state,
+                confidence,revision,created_at,updated_at)
+                VALUES(?,?,?,?,?,'revisar',0,0,?,?)""",
+                (new_key, source["studio"], source["title"], source["universe"],
+                 variant, timestamp, timestamp))
+            changed = db.execute("""UPDATE model_groups
+                SET revision=revision+1,state='revisar',updated_at=?
+                WHERE group_key=? AND revision=?""",
+                (timestamp, group_key, revision))
+            if changed.rowcount != 1:
+                raise RuntimeError("Revisao concorrente da galeria")
+            changed = db.execute("""UPDATE model_group_members
+                SET group_key=?,match_reason='audited_distinct_variant',
+                    updated_at=? WHERE group_key=? AND message_id=?""",
+                (new_key, timestamp, group_key, selected_message_id))
+            if changed.rowcount != 1:
+                raise RuntimeError("Membro alterado concorrentemente")
+            filename = naming.proposed_name(
+                {"title": moved["title"], "variant": variant},
+                selected_message_id, moved["source_relative"])
+            updated_note = (str(moved["notes"] or "").strip() + "\n" +
+                            "Separada como variante " + variant + ": " + note).strip()[:1000]
+            changed = db.execute("""UPDATE name_proposals
+                SET variant=?,filename=?,status='revisar',confidence=0,
+                    official_url='',notes=?,revision=revision+1,modified_at=?
+                WHERE message_id=? AND revision=? AND status IN ('provavel','revisar')""",
+                (variant, filename, updated_note, timestamp,
+                 selected_message_id, moved["name_revision"]))
+            if changed.rowcount != 1:
+                raise RuntimeError("Nome original mudou concorrentemente")
+            db.execute("""UPDATE model_group_evidence SET group_key=?
+                WHERE group_key=? AND source_url=?
+                AND source_type IN ('telegram_album','telegram_caption')""",
+                (new_key, group_key, smart.SOURCE_C + str(selected_message_id)))
+            db.execute("""INSERT OR IGNORE INTO model_group_evidence
+                (group_key,source_url,source_type,description,recorded_at)
+                VALUES(?,?,'visual_review',?,?)""",
+                (new_key, official_url, note[:400], timestamp))
+            for m in members:
+                fp = hashlib.sha256(json.dumps([
+                    "group-policy-v2", m["sha256"], m["original_topic"],
+                    m["source_caption"], m["source_album"], m["source_relative"]
+                ], ensure_ascii=False).encode()).hexdigest()
+                db.execute("""INSERT INTO curation_seen
+                    (message_id,fingerprint,outcome,processed_at)
+                    VALUES(?,?,'editorial_variant_split',?)
+                    ON CONFLICT(message_id) DO UPDATE SET
+                    fingerprint=excluded.fingerprint,outcome=excluded.outcome,
+                    processed_at=excluded.processed_at""",
+                    (m["message_id"], fp, timestamp))
+            detail = json.dumps({
+                "schema": "tonart.post-audit-variant-split/1",
+                "source_group": group_key, "new_group": new_key,
+                "studio": source["studio"], "title": source["title"],
+                "universe": source["universe"],
+                "original_variant": source["variant"],
+                "new_variant": variant,
+                "before_ids": [m["message_id"] for m in members],
+                "before_sha256": [m["sha256"] for m in members],
+                "moved_id": selected_message_id,
+                "surviving_id": survivor["message_id"],
+                "official_product_url": official_url,
+                "note": note, "identity_confirmed": False,
+                "rights_approved": False, "commercial_published": False,
+                "originals_modified": False
+            }, ensure_ascii=False, sort_keys=True)
+            for key, kind in (
+                (group_key, "gallery_post_audit_variant_split_source"),
+                (new_key, "gallery_post_audit_variant_split_new")
+            ):
+                db.execute("""INSERT INTO curation_events
+                    (group_key,event_type,detail,occurred_at)
+                    VALUES(?,?,?,?)""", (key, kind, detail, timestamp))
+            for key, mid, sha in (
+                (group_key, survivor["message_id"], survivor["sha256"]),
+                (new_key, selected_message_id, moved["sha256"]),
+            ):
+                audit = json.dumps({
+                    "schema": "tonart.visual-gallery-audit-post-split/1",
+                    "classification": "single_sculpture_verified_after_split",
+                    "group_key": key, "studio": "Wicked",
+                    "member_ids": [mid], "sha256s": [sha],
+                    "prior_group": group_key, "official_product_url": official_url,
+                    "note": note, "identity_approved": False,
+                    "rights_approved": False, "publication_approved": False
+                }, ensure_ascii=False, sort_keys=True)
+                db.execute("""INSERT INTO curation_events
+                    (group_key,event_type,detail,occurred_at)
+                    VALUES(?,'visual_gallery_audited',?,?)""",
+                    (key, audit, timestamp))
+            db.commit()
+        except BaseException:
+            db.rollback()
+            raise
+    return {
+        "ok": True, "old_group": group_key, "new_group": new_key,
+        "old_revision": revision+1, "new_revision": 0,
+        "moved_id": selected_message_id,
+        "surviving_id": survivor["message_id"],
+        "new_variant": variant, "new_state": "revisar",
+        "rights_changed": False, "originals_modified": False,
+        "publication_approved": False
+    }
