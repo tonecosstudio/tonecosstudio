@@ -1,3 +1,5 @@
+import type { PropsWithChildren } from "react";
+
 /** Canonical category order and visible classification for both TONART catalog channels. */
 export type CatalogCategoryOption = { id: string; label: string };
 
@@ -80,6 +82,42 @@ export function CatalogCardIdentity({
           {franchise}{franchiseProvisional ? " · em revisão" : ""}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+
+/** Shared TONART arcade card surface. Standalone Telegram retains its approved legacy shell until cutover. */
+export function CatalogModelCardShell({
+  children,
+  selected = false,
+  standalone = false,
+}: PropsWithChildren<{ selected?: boolean; standalone?: boolean }>) {
+  return (
+    <article
+      className={standalone
+        ? "group relative flex h-full flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition-colors hover:border-[#d2b58a]"
+        : `group relative flex h-full flex-col overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] transition-colors duration-300 hover:border-[hsl(var(--gold-accent)/0.6)] ${selected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
+    >
+      {!standalone && (
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+          <span className="absolute left-0 top-0 h-4 w-4 border-l-2 border-t-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
+          <span className="absolute right-0 top-0 h-4 w-4 border-r-2 border-t-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
+          <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
+          <span className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
+        </div>
+      )}
+      {children}
+    </article>
+  );
+}
+
+/** Same bottom metadata row; each catalog supplies only facts it owns. */
+export function CatalogCardMetadata({ description, status }: { description: string; status?: string }) {
+  return (
+    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[10px] tracking-[0.04em] text-[hsl(0,0%,53%)]">
+      <span className="min-w-0 truncate">{description}</span>
+      {status ? <span className="text-[hsl(var(--gold-accent)/0.85)]">{status}</span> : null}
     </div>
   );
 }
