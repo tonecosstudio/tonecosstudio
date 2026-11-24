@@ -162,6 +162,7 @@ def run(db_path, media_root, model_dir, studio, batch_size=8):
     model.to(device)
     hashes, embeddings = [], []
     start = time.perf_counter()
+    hash_seconds = embedding_seconds = 0.0
     for offset in range(0, len(rows), batch_size):
         images = []
         for row in rows[offset:offset + batch_size]:
@@ -169,27 +170,43 @@ def run(db_path, media_root, model_dir, studio, batch_size=8):
             with Image.open(io.BytesIO(data)) as source:
                 source.seek(0)
                 image = ImageOps.exif_transpose(source).convert("RGB")
+            tick = time.perf_counter()
             hashes.append(hash_features(image))
+            hash_seconds += time.perf_counter() - tick
             images.append(image)
+        tick = time.perf_counter()
         inputs = processor(images=images, return_tensors="pt")
         with torch.inference_mode():
             result = model(**{k: v.to(device) for k, v in inputs.items()})
             vectors = torch.nn.functional.normalize(
                 result.last_hidden_state[:, 0].float(), dim=1)
         embeddings.append(vectors.cpu())
+        embedding_seconds += time.perf_counter() - tick
     matrix = torch.cat(embeddings)
     if not torch.isfinite(matrix).all() or (matrix.norm(dim=1) < .99).any():
         raise ValueError("invalid embeddings")
+    tick = time.perf_counter()
     similarity = (matrix @ matrix.T).numpy()
+    similarity_seconds = time.perf_counter() - tick
     if load_rows(db_path, studio) != raw:
         raise ValueError("catalog changed during evaluation; rerun")
-    return dict(studio=studio, confirmed_rows=len(raw), unique_rows=len(rows),
+    results = []
+    for k in (1,3,5):
+        tick = time.perf_counter()
+        baseline = evaluate(rows, lambda i,j: hash_score(hashes[i],hashes[j]), k)
+        baseline["ranking_seconds"] = round(time.perf_counter()-tick, 6)
+        tick = time.perf_counter()
+        deep = evaluate(rows, lambda i,j: similarity[i,j].item(), k)
+        deep["ranking_seconds"] = round(time.perf_counter()-tick, 6)
+        results.append(dict(k=k, hash=baseline, dinov2=deep))
+    return dict(studio=studio, eligible_confirmed_rows=len(raw), unique_rows=len(rows),
                 excluded_or_duplicate=len(raw)-len(rows), device=device,
                 elapsed_seconds=round(time.perf_counter()-start, 3),
                 proxy_labels=True, automatic_decisions=False,
-                results=[dict(k=k, hash=evaluate(rows, lambda i,j: hash_score(hashes[i],hashes[j]), k),
-                              dinov2=evaluate(rows, lambda i,j: similarity[i,j].item(), k))
-                         for k in (1,3,5)])
+                hash_extraction_seconds=round(hash_seconds, 6),
+                embedding_extraction_seconds=round(embedding_seconds, 6),
+                similarity_matrix_seconds=round(similarity_seconds, 6),
+                results=results)
 
 
 def self_test():
