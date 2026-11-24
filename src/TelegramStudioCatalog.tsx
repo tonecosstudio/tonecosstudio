@@ -495,6 +495,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           <CatalogExplorerHeader
             kind="review"
             activeTab={view === "studios" ? "collections" : "explore"}
+            standalone={!embedded}
             search={draft}
             onSearchChange={(value) => { setDraft(value); setSearchError(""); }}
             onSearchSubmit={search}
