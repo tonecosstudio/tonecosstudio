@@ -328,6 +328,32 @@ def self_test():
     assert all(not p["automatic_decision"] for p in pairs)
     assert review_pairs(rows, lambda i,j: 0.8, 3, .9) == []
     assert review_pairs(rows, lambda i,j: 0.8, 0) == []
+    import tempfile
+    assert sample_digest([dict(rows[0], variant="different"), *rows[1:]]) != digest
+    assert sample_digest([dict(rows[0], sha256="changed"), *rows[1:]]) != digest
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        def rejects():
+            try:
+                model_digest(root)
+            except ValueError:
+                return
+            raise AssertionError("incomplete model accepted")
+        rejects()
+        (root/"model.safetensors").write_bytes(b"synthetic fixture")
+        rejects()
+        (root/"config.json").write_text("{}", encoding="utf-8")
+        (root/"preprocessor_config.json").write_text("{}", encoding="utf-8")
+        proof = model_digest(root)
+        assert model_digest(root) == proof
+        (root/"model.safetensors").write_bytes(b"changed fixture")
+        assert model_digest(root) != proof
+        proof = model_digest(root)
+        (root/"preprocessor_config.json").write_text('{"size":224}', encoding="utf-8")
+        assert model_digest(root) != proof
+        proof = model_digest(root)
+        (root/"irrelevant.txt").write_text("ignored", encoding="utf-8")
+        assert model_digest(root) == proof
     print("VISUAL_RETRIEVAL_SYNTHETIC_PASS")
 
 
