@@ -45,7 +45,7 @@ export function CatalogImageDownload({ src, name, id, className = "" }: {
     try {
       const response = await fetch(url, { cache: "no-store", redirect: "error", credentials: "omit" });
       const mime = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
-      if (!response.ok || !Object.hasOwn(extensions, mime)) throw new Error("invalid_media");
+      if (!response.ok || !Object.prototype.hasOwnProperty.call(extensions, mime)) throw new Error("invalid_media");
       const blob = await response.blob();
       if (!blob.size) throw new Error("empty_media");
       const objectUrl = URL.createObjectURL(blob);
