@@ -35,7 +35,9 @@ class ManagedConnection(sqlite3.Connection):
 def db_open(path, readonly=False):
     if readonly:
         # Read endpoints must never acquire a writer lock just to open SQLite.
-        db = sqlite3.connect("file:"+Path(path).resolve().as_posix()+"?mode=ro",
+        # Realpath triggers Windows disk/reparse queries on every read.
+        # The path is owned by the host; preserve URI mode=ro/query_only.
+        db = sqlite3.connect("file:"+Path(path).absolute().as_posix()+"?mode=ro",
                              uri=True, timeout=3, factory=ManagedConnection)
     else:
         db = sqlite3.connect(str(path), timeout=15, factory=ManagedConnection)
