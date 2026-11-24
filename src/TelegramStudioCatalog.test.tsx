@@ -60,6 +60,29 @@ afterEach(() => {
 });
 
 describe("Telegram-only public studio gallery", () => {
+  it("matches the original catalog card hierarchy when embedded without duplicate category tags", async () => {
+    window.history.replaceState(null, "", "/catalogo/em-revisao");
+    const embeddedModel = {
+      ...model,
+      franchise: "Avatar",
+      franchiseSlug: "avatar",
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
+      const uri = String(input);
+      if (uri.endsWith("/studios")) return Response.json({ studios: [] });
+      return Response.json({ total: 1, offset: 0, limit: 24, items: [embeddedModel] });
+    }));
+    render(<TelegramStudioCatalog embedded />);
+    const opener = await screen.findByRole("button", { name: /abrir galeria de aang/i });
+    const card = opener.closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card!).getByText("Anime")).toHaveClass("absolute", "rounded-full");
+    expect(within(card!).getByRole("heading", { name: "Aang" })).toHaveClass("uppercase");
+    expect(within(card!).getByLabelText("Franquia em revisão: Avatar")).toHaveTextContent("Avatar · em revisão");
+    expect(screen.queryByRole("group", { name: "Categorias dos modelos" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Anime" })).toBeInTheDocument();
+  });
+
   it("shows models immediately and keeps advanced facets collapsed until requested", async () => {
     mockCatalog();
     render(<TelegramStudioCatalog />);
