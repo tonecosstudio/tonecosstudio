@@ -156,6 +156,7 @@ describe("Tonecos canonical model discovery UI", () => {
     const card = screen.getByRole("link", { name: "Ver detalhes de Escultura original" }).closest("article");
     expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
     expect(within(card!).getByText("TCS-001")).toBeInTheDocument();
+    expect(within(card!).getByText("2 fotos")).toBeInTheDocument();
     expect(within(card!).getByText("Ver detalhes")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Imagens em preparação" })).not.toBeInTheDocument();
   });
