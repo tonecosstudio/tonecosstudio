@@ -507,6 +507,8 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             onCategoryChange={(next) => navigate({ ...route, category: next, offset: 0, selected: null })}
             onFiltersClick={() => document.getElementById("telegram-catalog-filters")?.scrollIntoView?.({ behavior: "smooth", block: "start" })}
             filterCount={[category, franchise, character, provisional].filter(Boolean).length}
+            filtersExpanded={true}
+            filtersControlId="telegram-catalog-filters"
             totalLabel={page ? page.total.toLocaleString("pt-BR") + " referências" : undefined}
             coverUrl={imageUrl(page?.items[0]?.cover)}
             collectionHref={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
