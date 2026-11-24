@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from "react";
+import { Images } from "lucide-react";
 
 /** Canonical category order and visible classification for both TONART catalog channels. */
 export type CatalogCategoryOption = { id: string; label: string };
@@ -118,6 +119,30 @@ export function CatalogCardMetadata({ description, status }: { description: stri
     <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[10px] tracking-[0.04em] text-[hsl(0,0%,53%)]">
       <span className="min-w-0 truncate">{description}</span>
       {status ? <span className="text-[hsl(var(--gold-accent)/0.85)]">{status}</span> : null}
+    </div>
+  );
+}
+
+
+/** One image stage: consistent crop, inset, and multi-photo marker in both catalog channels. */
+export function CatalogCardMediaFrame({
+  children,
+  imageCount,
+  standalone = false,
+}: PropsWithChildren<{ imageCount?: number; standalone?: boolean }>) {
+  return (
+    <div
+      className={standalone
+        ? "relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]"
+        : "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]"}
+    >
+      {children}
+      {imageCount && imageCount > 1 ? (
+        <span className="absolute bottom-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(0,0%,5%)/0.9] px-2.5 py-1 font-mono text-[10px] text-[hsl(0,0%,90%)]">
+          <Images size={14} aria-hidden="true" />
+          {imageCount} fotos
+        </span>
+      ) : null}
     </div>
   );
 }
