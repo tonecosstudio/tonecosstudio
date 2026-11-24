@@ -1,3 +1,4 @@
+import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUpRight, Search, Images } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
@@ -959,6 +960,7 @@ export default function TelegramStudioCatalog() {
                         </h3>
                       </div>
                     </button>
+                    <CatalogImageDownload src={imageUrl(model.cover)} name={model.name} id={model.id} className="mx-3 mt-2" />
                     <div
                       className={
                         showStudioModelTags
