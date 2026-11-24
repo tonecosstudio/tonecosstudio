@@ -419,7 +419,7 @@ def self_test_adapter():
     print("VISUAL_ADAPTER_SYNTHETIC_9_OF_9_PASS")
 
 
-def self_test_sqlite():
+def self_test_sqlite(model_dir=None):
     """Exercise actual SQLite queries and PNG bytes; no trained weights."""
     import sqlite3
     import tempfile
@@ -491,6 +491,20 @@ def self_test_sqlite():
             else:
                 raise AssertionError("unsafe or invalid original accepted")
         assert hashlib.sha256(db_path.read_bytes()).hexdigest() == before
+        if model_dir is not None:
+            cold = run(db_path, root, model_dir, "Wicked", 2, 2, True)
+            warm = run(db_path, root, model_dir, "Wicked", 2, 2, True)
+            assert cold["embedding_cache"] == dict(enabled=True,hits=0,misses=3,writes=3)
+            assert warm["embedding_cache"] == dict(enabled=True,hits=3,misses=0,writes=0)
+            assert cold["sample_sha256"] == warm["sample_sha256"]
+            for first, second in zip(cold["results"], warm["results"]):
+                for kind in ("hash", cold["model_type"]):
+                    assert {k:v for k,v in first[kind].items() if k!="ranking_seconds"} == {k:v for k,v in second[kind].items() if k!="ranking_seconds"}
+            assert cold["cross_gallery_review"] == warm["cross_gallery_review"]
+            print("PHYSICAL_MODEL_COLD_WARM_CACHE_PASS", json.dumps({
+                "cold":cold["embedding_cache"], "warm":warm["embedding_cache"],
+                "cold_embedding_seconds":cold["embedding_extraction_seconds"],
+                "warm_embedding_seconds":warm["embedding_extraction_seconds"]}), flush=True)
     print("SYNTHETIC_SQLITE_IMAGE_FIXTURE_PASS")
 
 
@@ -508,7 +522,7 @@ def main():
     parser.add_argument("--review-limit", type=int, default=24)
     args = parser.parse_args()
     if args.self_test_sqlite:
-        self_test_sqlite()
+        self_test_sqlite(args.model_dir)
         return
     if args.self_test_adapter:
         self_test_adapter()
