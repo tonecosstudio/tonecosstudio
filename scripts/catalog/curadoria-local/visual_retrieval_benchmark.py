@@ -32,8 +32,9 @@ def load_rows(db_path, studio):
               AND p.status='confirmado'
               AND NOT EXISTS (
                 SELECT 1 FROM model_group_members other
-                JOIN name_proposals op ON op.message_id=other.message_id
-                WHERE other.group_key=m.group_key AND op.status!='confirmado'
+                LEFT JOIN name_proposals op ON op.message_id=other.message_id
+                WHERE other.group_key=m.group_key
+                  AND (op.status IS NULL OR op.status!='confirmado')
               )
               AND NOT EXISTS (
                 SELECT 1 FROM assets oa JOIN model_group_members om USING(message_id)
