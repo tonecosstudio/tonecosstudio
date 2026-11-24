@@ -103,6 +103,34 @@ describe("TONART shared catalog discovery structure", () => {
     expect(categories.map((item) => item.id)).toEqual(snapshot);
   });
 
+  it.each(["historical", "review"] as const)("renders category controls in the same order on %s", (kind) => {
+    render(
+      <MemoryRouter>
+        <CatalogExplorerHeader
+          kind={kind}
+          search=""
+          onSearchChange={() => {}}
+          onSearchSubmit={(event) => event.preventDefault()}
+          onSearchClear={() => {}}
+          categories={[
+            { id: "marvel", label: "Marvel & DC" },
+            { id: "filmes", label: "Filmes & Séries" },
+            { id: "games", label: "Games" },
+            { id: "anime", label: "Animes & Desenhos" },
+          ]}
+          category=""
+          onCategoryChange={() => {}}
+          onFiltersClick={() => {}}
+          collectionHref="/catalogo"
+        />
+      </MemoryRouter>,
+    );
+    const categories = screen.getByLabelText("Categorias do catálogo");
+    expect(within(categories).getAllByRole("button").map((button) => button.textContent?.trim())).toEqual([
+      "Todos", "Animes & Desenhos", "Games", "Filmes & Séries", "Marvel & DC", "Filtros",
+    ]);
+  });
+
   it("uses a single category badge and card text hierarchy for both catalogs", () => {
     render(
       <div className="relative">
