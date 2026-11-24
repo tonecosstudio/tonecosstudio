@@ -69,6 +69,30 @@ def unique_rows(rows):
     return list(unique.values())
 
 
+def sample_digest(rows):
+    """Identity of the ordered, deduplicated proxy-label evaluation sample."""
+    fields = ("message_id", "sha256", "group_key", "group_revision", "title", "variant")
+    payload = [[row[k] for k in fields] for row in rows]
+    return hashlib.sha256(json.dumps(payload, ensure_ascii=False,
+                                    separators=(",", ":")).encode("utf-8")).hexdigest()
+
+
+def model_digest(model_dir):
+    """Record local config/processor and safetensors provenance without loading code."""
+    paths = sorted(p for p in model_dir.iterdir() if p.is_file() and
+                   (p.name.endswith(".safetensors") or p.name.endswith(".json")))
+    if not any(p.suffix == ".safetensors" for p in paths):
+        raise ValueError("local safetensors weights required")
+    if not all((model_dir / name).is_file()
+               for name in ("config.json", "preprocessor_config.json")):
+        raise ValueError("model and processor configs required")
+    manifest = []
+    for path in paths:
+        with path.open("rb") as stream:
+            manifest.append((path.name, hashlib.file_digest(stream, "sha256").hexdigest()))
+    return hashlib.sha256(json.dumps(manifest, separators=(",", ":")).encode()).hexdigest()
+
+
 def hash_features(image):
     from PIL import Image
     gray = image.convert("L")
@@ -197,6 +221,7 @@ def image_vectors(model, inputs, model_type):
 def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     import torch
     from PIL import Image, ImageOps
+    import transformers
     from transformers import AutoImageProcessor, AutoModel
     if not 0 <= review_limit <= 100:
         raise ValueError("review limit must be 0..100")
@@ -210,6 +235,8 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     rows = unique_rows(raw)
     if not rows or len(rows) > 2000:
         raise ValueError("evaluation requires 1..2000 distinct confirmed photos")
+    sample_sha = sample_digest(rows)
+    model_sha = model_digest(model_dir)
     processor = AutoImageProcessor.from_pretrained(
         str(model_dir), local_files_only=True, trust_remote_code=False)
     model = AutoModel.from_pretrained(str(model_dir), local_files_only=True,
@@ -260,7 +287,12 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     review = review_pairs(rows, lambda i,j: similarity[i,j].item(), review_limit)
     if load_rows(db_path, studio) != raw:
         raise ValueError("catalog changed during ranking; rerun")
-    return dict(studio=studio, model_type=model_type, eligible_confirmed_rows=len(raw), unique_rows=len(rows),
+    if model_digest(model_dir) != model_sha:
+        raise ValueError("model files changed during evaluation; rerun")
+    return dict(studio=studio, model_type=model_type, sample_sha256=sample_sha,
+                model_sha256=model_sha, torch_version=str(torch.__version__),
+                transformers_version=transformers.__version__, batch_size=batch_size,
+                eligible_confirmed_rows=len(raw), unique_rows=len(rows),
                 excluded_or_duplicate=len(raw)-len(rows), device=device,
                 elapsed_seconds=round(time.perf_counter()-start, 3),
                 proxy_labels=True, automatic_decisions=False,
@@ -286,6 +318,10 @@ def self_test():
     assert hash_score((0,0,1),(0,0,1)) == 1
     assert hash_score((0,0,1),(0,0,2)) is None
     assert len(unique_rows(rows+[dict(message_id=5, group_key="x",sha256="0")])) == 3
+    digest = sample_digest(rows)
+    assert len(digest) == 64 and sample_digest(rows) == digest
+    assert sample_digest(list(reversed(rows))) != digest
+    assert sample_digest([dict(rows[0], group_revision=1), *rows[1:]]) != digest
     pairs = review_pairs(rows, lambda i,j: 0.8, 3)
     assert len(pairs) == 3 and pairs[0]["message_ids"] == [0,2]
     assert all(p["group_keys"][0] != p["group_keys"][1] for p in pairs)
