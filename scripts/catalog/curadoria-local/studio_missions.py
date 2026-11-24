@@ -24,7 +24,10 @@ class _ReadConnection(sqlite3.Connection):
             self.close()
 
 def db_open(path):
-    db=sqlite3.connect("file:"+Path(path).resolve().as_posix()+"?mode=ro",
+    # The caller supplies the canonical DB path. Avoid Windows filesystem
+    # realpath lookups for every thumbnail/board GET; the SQLite open is
+    # still mode=ro + query_only and cannot mutate the source database.
+    db=sqlite3.connect("file:"+Path(path).absolute().as_posix()+"?mode=ro",
                        uri=True,timeout=5,factory=_ReadConnection)
     db.row_factory=sqlite3.Row
     db.execute("PRAGMA query_only=ON")

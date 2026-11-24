@@ -19,6 +19,7 @@ import time
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from functools import lru_cache
 from urllib.parse import parse_qs, urlparse
 import importlib
 
@@ -117,10 +118,16 @@ def initialize():
         db.execute("""CREATE INDEX IF NOT EXISTS idx_assets_hash ON assets(sha256)""")
     return token
 
+@lru_cache(maxsize=1)
+def _source_root_resolved():
+    # Root is trusted and fixed for this host. If its reparse target changes
+    # while running, a previously resolved root makes new paths fail closed.
+    return SOURCE.resolve()
+
 def safe_source_path(relative):
     if not isinstance(relative,str):return None
     path=(SOURCE/relative).resolve()
-    if SOURCE.resolve() not in path.parents:return None
+    if _source_root_resolved() not in path.parents:return None
     if path.suffix.lower() not in (".jpg",".jpeg",".png",".gif",".webp",".bmp",".tif",".tiff",".heif",".heic",".avif"):return None
     return path
 
@@ -513,7 +520,10 @@ class Handler(BaseHTTPRequestHandler):
                             b"",304,ctype="image/webp",
                             cache_control=cache_control,etag=fingerprint,
                         )
-                    payload=thumbs.thumbnail(path,row["sha256"],width)
+                    payload=thumbs.thumbnail(
+                        path,row["sha256"],width,
+                        disk_cache=APP_DIR/"preview-webp-cache",
+                    )
                 except thumbs.ThumbnailUnavailable as exc:
                     return self.respond({"error":str(exc)},503)
                 return self.respond(
