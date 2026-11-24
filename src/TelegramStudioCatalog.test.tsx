@@ -81,6 +81,7 @@ describe("Telegram-only public studio gallery", () => {
     expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
     expect(within(card!).getByText("Ver galeria")).toBeInTheDocument();
     expect(within(card!).getByText("2 imagens")).toBeInTheDocument();
+    expect(within(card!).getByText("2 fotos")).toBeInTheDocument();
     expect(within(card!).getByLabelText("Franquia em revisão: Avatar")).toHaveTextContent("Avatar · em revisão");
     expect(screen.queryByRole("group", { name: "Categorias dos modelos" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Anime" })).toBeInTheDocument();
