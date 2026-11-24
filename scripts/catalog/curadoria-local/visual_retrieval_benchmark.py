@@ -137,10 +137,47 @@ def evaluate(rows, scorer, k=5):
                 micro_recall=correct/relevant if relevant else None)
 
 
-def run(db_path, media_root, model_dir, studio, batch_size=8):
+def review_pairs(rows, scorer, limit=24, threshold=None):
+    """Rank cross-gallery pairs once; suggestions, not verified negatives."""
+    if not 0 <= limit <= 100:
+        raise ValueError("review limit must be 0..100")
+    if not limit:
+        return []
+    pairs = []
+    for i, a in enumerate(rows):
+        for j in range(i+1, len(rows)):
+            b = rows[j]
+            if a["group_key"] == b["group_key"]:
+                continue
+            score = scorer(i, j)
+            if score is None:
+                continue
+            score = float(score)
+            if not math.isfinite(score):
+                raise ValueError("nonfinite score")
+            if threshold is not None and score < threshold:
+                continue
+            pairs.append((-score, a["message_id"], b["message_id"], i, j))
+    result = []
+    for neg, _, _, i, j in sorted(pairs)[:limit]:
+        a, b = rows[i], rows[j]
+        result.append(dict(score=-neg,
+            message_ids=[a["message_id"], b["message_id"]],
+            group_keys=[a["group_key"], b["group_key"]],
+            group_revisions=[a["group_revision"], b["group_revision"]],
+            titles=[a["title"], b["title"]],
+            variants=[a["variant"], b["variant"]],
+            source_sha256=[a["sha256"], b["sha256"]],
+            automatic_decision=False))
+    return result
+
+
+def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     import torch
     from PIL import Image, ImageOps
     from transformers import AutoImageProcessor, AutoModel
+    if not 0 <= review_limit <= 100:
+        raise ValueError("review limit must be 0..100")
     if not 1 <= batch_size <= 32:
         raise ValueError("batch_size must be 1..32")
     model_dir = Path(model_dir).resolve(strict=True)
@@ -199,6 +236,9 @@ def run(db_path, media_root, model_dir, studio, batch_size=8):
         deep = evaluate(rows, lambda i,j: similarity[i,j].item(), k)
         deep["ranking_seconds"] = round(time.perf_counter()-tick, 6)
         results.append(dict(k=k, hash=baseline, dinov2=deep))
+    review = review_pairs(rows, lambda i,j: similarity[i,j].item(), review_limit)
+    if load_rows(db_path, studio) != raw:
+        raise ValueError("catalog changed during ranking; rerun")
     return dict(studio=studio, eligible_confirmed_rows=len(raw), unique_rows=len(rows),
                 excluded_or_duplicate=len(raw)-len(rows), device=device,
                 elapsed_seconds=round(time.perf_counter()-start, 3),
@@ -206,7 +246,7 @@ def run(db_path, media_root, model_dir, studio, batch_size=8):
                 hash_extraction_seconds=round(hash_seconds, 6),
                 embedding_extraction_seconds=round(embedding_seconds, 6),
                 similarity_matrix_seconds=round(similarity_seconds, 6),
-                results=results)
+                results=results, cross_gallery_review=review)
 
 
 def self_test():
@@ -220,11 +260,17 @@ def self_test():
     assert evaluate(rows, lambda i,j: None)["micro_recall"] == 0
     assert evaluate(rows, lambda i,j: None)["singleton_with_candidates"] == 0
     for row in rows:
-        row.update(title="same character", variant=row["group_key"])
+        row.update(title="same character", variant=row["group_key"], group_revision=0)
     assert evaluate(rows, lambda i,j: 1, 3)["cross_variant_candidates"] == 4
     assert hash_score((0,0,1),(0,0,1)) == 1
     assert hash_score((0,0,1),(0,0,2)) is None
     assert len(unique_rows(rows+[dict(message_id=5, group_key="x",sha256="0")])) == 3
+    pairs = review_pairs(rows, lambda i,j: 0.8, 3)
+    assert len(pairs) == 3 and pairs[0]["message_ids"] == [0,2]
+    assert all(p["group_keys"][0] != p["group_keys"][1] for p in pairs)
+    assert all(not p["automatic_decision"] for p in pairs)
+    assert review_pairs(rows, lambda i,j: 0.8, 3, .9) == []
+    assert review_pairs(rows, lambda i,j: 0.8, 0) == []
     print("VISUAL_RETRIEVAL_SYNTHETIC_PASS")
 
 
@@ -236,6 +282,7 @@ def main():
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--studio", default="Wicked")
     parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--review-limit", type=int, default=24)
     args = parser.parse_args()
     if args.self_test:
         self_test()
@@ -243,7 +290,7 @@ def main():
     if not all((args.sqlite, args.media_root, args.model_dir)):
         parser.error("--sqlite, --media-root and --model-dir are required")
     print(json.dumps(run(args.sqlite, args.media_root, args.model_dir,
-                         args.studio, args.batch_size), ensure_ascii=False, allow_nan=False))
+                         args.studio, args.batch_size, args.review_limit), ensure_ascii=False, allow_nan=False))
 
 
 if __name__ == "__main__":
