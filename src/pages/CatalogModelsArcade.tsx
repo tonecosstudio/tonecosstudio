@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMetadata, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
@@ -77,7 +77,7 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
+    <CatalogCardMediaFrame imageCount={model.imageCount}>
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
@@ -86,7 +86,7 @@ function ModelCover({
       {model.category && model.categorySlug !== "curadoria-pendente" && (
         <CatalogCategoryBadge label={model.category} />
       )}
-    </div>
+    </CatalogCardMediaFrame>
   );
 }
 
