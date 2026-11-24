@@ -15,7 +15,9 @@ class ReadPathPerformanceTests(unittest.TestCase):
         import smart_curadoria as smart
         with tempfile.TemporaryDirectory(prefix="tonart-path-") as temp:
             dbpath=Path(temp)/"curadoria.sqlite3"
-            with sqlite3.connect(dbpath) as db:
+            # Windows needs a CLOSED sqlite3 handle before TempDirectory cleanup.
+            from contextlib import closing
+            with closing(sqlite3.connect(dbpath)) as db, db:
                 db.execute("CREATE TABLE marker(value INTEGER)")
                 db.execute("INSERT INTO marker VALUES(42)")
             with patch.object(Path,"resolve",side_effect=AssertionError(
