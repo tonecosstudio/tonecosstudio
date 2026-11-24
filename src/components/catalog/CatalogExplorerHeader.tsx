@@ -17,6 +17,8 @@ export type CatalogExplorerHeaderProps = {
   onCategoryChange: (category: string) => void;
   onFiltersClick: () => void;
   filterCount?: number;
+  filtersExpanded?: boolean;
+  filtersControlId?: string;
   totalLabel?: string;
   coverUrl?: string | null;
   collectionHref: string;
@@ -34,6 +36,8 @@ export function CatalogExplorerHeader({
   onCategoryChange,
   onFiltersClick,
   filterCount = 0,
+  filtersExpanded,
+  filtersControlId,
   totalLabel,
   coverUrl,
   collectionHref,
@@ -148,6 +152,8 @@ export function CatalogExplorerHeader({
         <button
           type="button"
           onClick={onFiltersClick}
+          aria-expanded={filtersExpanded}
+          aria-controls={filtersControlId}
           className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[hsl(var(--gold-accent)/0.4)] px-4 text-xs text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
         >
           <SlidersHorizontal size={15} aria-hidden="true" />
