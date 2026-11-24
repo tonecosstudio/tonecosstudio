@@ -328,6 +328,9 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
         db.execute("BEGIN IMMEDIATE")
         g=db.execute("""SELECT * FROM model_groups WHERE group_key=?""",(key,)).fetchone()
         if not g:raise ValueError("Galeria não encontrada")
+        # Reject stale retries before any semantic variant validation.
+        if g["revision"] != group_revision:
+            raise RuntimeError("Galeria alterada: recarregue as evidências")
         final_variant = g["variant"] if requested_variant is None else requested_variant
         if requested_variant is not None:
             if smart.normalize(g["variant"]) == smart.normalize(final_variant):
@@ -349,8 +352,6 @@ def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
             WHERE m.group_key=? ORDER BY a.message_id""",(key,)).fetchall()
         if len(members)!=len(proofs) or {r["message_id"] for r in members}!=seen:
             raise ValueError("Prova deve cobrir TODAS as fotos atuais da galeria")
-        if g["revision"]!=group_revision:
-            raise RuntimeError("Galeria alterada: recarregue as evidências")
         if any(r["status"]=="confirmado" for r in members):
             raise ValueError("Grupo parcialmente confirmado: revisar fotos individualmente")
         for r in members:
