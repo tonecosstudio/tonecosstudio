@@ -7,11 +7,10 @@ import {
   ArrowRight,
   Bookmark,
   ChevronDown,
-  Search,
   SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
@@ -20,7 +19,6 @@ import {
 import { Page } from "@/components/layouts/Page";
 import {
   ArcadeCard,
-  ArcadeHero,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
@@ -48,7 +46,7 @@ import {
 const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 const CATALOG_GRID_CLASS =
-  "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5";
+  "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4 2xl:gap-5";
 
 function CatalogGridSkeleton() {
   return (
@@ -103,6 +101,7 @@ export default function CatalogModelsArcade() {
     PUBLIC_ROUTES.quoteRequest +
     (searchParams.get("tipo") === "pre-venda" ? "?tipo=pre-venda" : "");
   const [draft, setDraft] = useState(search);
+  const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
   const [filtersExpanded, setFiltersExpanded] = useState(() =>
     Boolean(category || franchise || folder),
   );
@@ -355,11 +354,34 @@ export default function CatalogModelsArcade() {
     >
       <Sheet>
         <section className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
-          <ArcadeHero
-            badge="ACERVO TONART"
-            title="MODELOS"
-            subtitle="ENCONTRE PERSONAGENS E REFERÊNCIAS NO ACERVO."
-            compact
+          <CatalogExplorerHeader
+            kind="historical"
+            search={draft}
+            onSearchChange={setDraft}
+            onSearchSubmit={(event) => {
+              event.preventDefault();
+              changeParams(draft.trim(), category);
+            }}
+            onSearchClear={() => {
+              setDraft("");
+              changeParams("", category);
+            }}
+            categories={Array.from(new Map(rows.filter((item) => validCatalogSlug(item.categorySlug)).map((item) => [item.categorySlug, item.category] as const))).map(([id, label]) => ({ id, label }))}
+            category={category === "all" ? "" : category}
+            onCategoryChange={(next) => {
+              setFranchiseDraft("");
+              setFranchiseNeedle("");
+              changeParams(draft.trim(), next, "");
+            }}
+            onFiltersClick={() => {
+              setLoadCategories(true);
+              setFiltersExpanded(true);
+              document.getElementById("catalog-advanced-filters")?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+            }}
+            filterCount={activeFacetCount}
+            totalLabel={models.isSuccess ? `Página ${activePage.index + 1} · ${rows.length} modelos nesta página` : undefined}
+            coverUrl={rows[0] && gateway ? gateway.mediaUrl(rows[0].coverStorageKey) : undefined}
+            collectionHref={PUBLIC_ROUTES.catalog}
           />
 
           <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
@@ -370,51 +392,7 @@ export default function CatalogModelsArcade() {
               </p>
             ) : null}
             <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
-              <form
-                role="search"
-                aria-label="Buscar modelos no catálogo"
-                className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  changeParams(draft.trim(), category);
-                }}
-              >
-                <label className="relative col-start-1 row-start-1 min-w-0">
-                  <span className="sr-only">Pesquisar modelos</span>
-                  <Search
-                    aria-hidden="true"
-                    size={19}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(0,0%,56%)]"
-                  />
-                  <input
-                    type="text"
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    maxLength={80}
-                    placeholder="Buscar personagem, modelo ou código"
-                    className={`h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-12 ${draft ? "pr-12" : "pr-3"} text-sm outline-none transition-colors focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)]`}
-                  />
-                  {draft && (
-                    <button
-                      type="button"
-                      aria-label="Limpar busca"
-                      onClick={() => {
-                        setDraft("");
-                        changeParams("", category);
-                      }}
-                      className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-none hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
-                    >
-                      <X size={17} aria-hidden="true" />
-                    </button>
-                  )}
-                </label>
-                <button
-                  type="submit"
-                  className="col-start-1 row-start-2 inline-flex min-h-12 w-full items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:col-start-2 sm:row-start-1 sm:w-auto sm:px-6"
-                >
-                  Buscar modelos
-                </button>
-              </form>
+              {/* A pesquisa principal é compartilhada pelo cabeçalho dos dois acervos. */}
 
               <button
                 type="button"
@@ -694,6 +672,7 @@ export default function CatalogModelsArcade() {
                     )}
                   </nav>
                 )}
+                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
                 <SheetTrigger asChild>
                   <button
                     type="button"
@@ -797,7 +776,7 @@ export default function CatalogModelsArcade() {
                 ) : null}
               </div>
             ) : (
-              <div className={CATALOG_GRID_CLASS}>
+              <div className={catalogView === "grid" ? CATALOG_GRID_CLASS : "grid grid-cols-1 gap-3 sm:gap-4"}>
                 {rows.map((model) => {
                   const isSelected = selectedModels.some(
                     (item) => item.id === model.id,
