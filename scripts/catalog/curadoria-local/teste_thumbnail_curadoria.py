@@ -77,6 +77,50 @@ with tempfile.TemporaryDirectory(prefix="tonart-thumbs-") as root:
         pass
     print("MINIATURAS E2E APROVADAS: WebP, dimensões, cache, ETag, limites e original intacto")
 
+# Derived WebP survives host restarts without a service, DB or JPG sheet.
+# Each SHA-bound slot is bounded and rejects invalid/colliding content.
+from unittest.mock import patch
+with tempfile.TemporaryDirectory(prefix="tonart-webp-persist-") as root:
+    p=Path(root)/"synthetic.jpg"
+    Image.new("RGB",(800,600),"#b78b56").save(p,format="JPEG")
+    source_sha=hashlib.sha256(p.read_bytes()).hexdigest()
+    cache_dir=Path(root)/"preview-cache"
+    first=thumbs.thumbnail(p,source_sha,256,disk_cache=cache_dir)
+    key=thumbs._key(p,source_sha,256)
+    path,digest=thumbs._disk_slot(cache_dir,key)
+    assert len(list(cache_dir.glob("*.bin")))==1
+    assert path.read_bytes()[:32]==digest
+    assert len(path.read_bytes())<=32+thumbs._DISK_MAX_PAYLOAD_BYTES
+    assert first[:4]==b"RIFF" and first[8:12]==b"WEBP"
+    with thumbs._LOCK:
+        discarded=thumbs._CACHE.pop(key,None)
+        if discarded is not None:
+            thumbs._BYTES-=len(discarded)
+    old_hits=thumbs.status()["disk_hits"]
+    with patch("PIL.Image.open",side_effect=AssertionError("Unexpected re-decode on disk hit")):
+        second=thumbs.thumbnail(p,source_sha,256,disk_cache=cache_dir)
+    assert second==first and thumbs.status()["disk_hits"]==old_hits+1
+    # Corrupted persisted data cannot reach the browser; re-encode instead.
+    path.write_bytes(b"broken")
+    with thumbs._LOCK:
+        discarded=thumbs._CACHE.pop(key,None)
+        if discarded is not None:
+            thumbs._BYTES-=len(discarded)
+    recovered=thumbs.thumbnail(p,source_sha,256,disk_cache=cache_dir)
+    assert recovered==first
+    assert path.read_bytes()[:32]==digest
+    old_key=key
+    state=p.stat()
+    os.utime(p,ns=(state.st_atime_ns,state.st_mtime_ns+1_000_000_000))
+    changed_key=thumbs._key(p,source_sha,256)
+    assert changed_key!=old_key
+    refreshed=thumbs.thumbnail(p,source_sha,256,disk_cache=cache_dir)
+    assert refreshed[:4]==b"RIFF"
+    assert thumbs.status()["disk_misses"]>=2
+    # Even in the worst case, 2048 fixed slots bound the derived bytes.
+    assert thumbs._DISK_SLOTS==2048
+    print("WEBP_CACHE_PERSIST_REGRESSION_OK")
+
 # Large Telegram GIFs are allowed only as guarded first-frame previews.
 # A sparse synthetic file exercises the 25 MiB boundary without user media.
 with tempfile.TemporaryDirectory(prefix="tonart-gif-first-frame-") as root:
