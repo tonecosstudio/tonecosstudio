@@ -8,6 +8,7 @@ O site está em **pré-lançamento/noindex**. O modo comercial Vercel (conta e o
 
 | Documento | O que responde |
 | --- | --- |
+| [CATALOGO-PUBLICO-TELEGRAM-SSOT.md — acervo Drive e ingestão](CATALOGO-PUBLICO-TELEGRAM-SSOT.md#decisão-canônica-do-proprietário--acervo-drive-e-ingestão-telegram-24112026) | **Decisão de 24/11:** catálogo privado no Drive com WebP curados, Telegram bruto separado, integração histórica, deduplicação e DINO contínuo; sem alteração de produção |
 | [CATALOGO-PERSONAGENS-UNIVERSOS.md](CATALOGO-PERSONAGENS-UNIVERSOS.md) | **Requisito de produto e contrato SSOT Telegram + legado preparado (22/11), integração pendente:** páginas de personagens, biografias revisadas, tags, relações com estatuetas e exploração por universo, usando catálogo e curadoria existentes |
 | [TONART-COLECOES-ASSINATURAS-COINS.md](TONART-COLECOES-ASSINATURAS-COINS.md) | Estratégia comercial de planos, entregas, preços, Coins e extras; seção 4.1 delimita a curadoria editorial privada da PR #28 e os gates de integração com a PR #27 |
 | [README principal](../README.md) | Estado consolidado do MVP, Minha Conta, orçamentos, owners e pendências reais de GO |
