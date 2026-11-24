@@ -153,6 +153,10 @@ describe("Tonecos canonical model discovery UI", () => {
     await renderCatalog("/modelos?category=originais&franchise=autoral");
     expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toBeInTheDocument();
     expect(calls.some(({ url }) => url.pathname.endsWith("/api/catalog"))).toBe(true);
+    const card = screen.getByRole("link", { name: "Ver detalhes de Escultura original" }).closest("article");
+    expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
+    expect(within(card!).getByText("TCS-001")).toBeInTheDocument();
+    expect(within(card!).getByText("Ver detalhes")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Imagens em preparação" })).not.toBeInTheDocument();
   });
 
