@@ -62,8 +62,15 @@ describe("TONART shared catalog discovery structure", () => {
     const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
     expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/catalogo/em-revisao");
     expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/catalogo/em-revisao/estudios");
+    expect(screen.getAllByRole("link", { name: "Coleções" })).toHaveLength(1);
     expect(within(tabs).getByRole("link", { name: "Originais" })).toHaveAttribute("href", "/catalogo/antigos");
     expect(within(tabs).queryByRole("button", { name: /Favoritos|Novos|Minha lista/ })).not.toBeInTheDocument();
+  });
+
+  it("keeps every available category reachable, including the ninth chip", () => {
+    render(<MemoryRouter><CatalogExplorerHeader kind="historical" search="" onSearchChange={() => {}} onSearchSubmit={(event) => event.preventDefault()} onSearchClear={() => {}} categories={Array.from({ length: 10 }, (_, i) => ({ id: String(i), label: "Categoria " + i }))} category="9" onCategoryChange={() => {}} onFiltersClick={() => {}} collectionHref="/universo" /></MemoryRouter>);
+    expect(screen.getByRole("button", { name: "Categoria 9" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getAllByRole("button", { name: /Categoria \d/ })).toHaveLength(10);
   });
 
   it("renders Telegram navigation without a Router in the standalone catalog", () => {

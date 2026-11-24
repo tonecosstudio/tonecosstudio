@@ -9,14 +9,13 @@ import {
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, CatalogGridSkeleton, catalogGridClass, catalogCardLinkClass, CATALOG_CARD_BODY_CLASS, CATALOG_CARD_ACTION_CLASS, CATALOG_CARD_IMAGE_CLASS, CATALOG_RESULTS_TITLE_CLASS } from "@/components/catalog/CatalogTaxonomy";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { Page } from "@/components/layouts/Page";
-import { ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import {
   isCatalogMediaUnderReview,
@@ -41,33 +40,6 @@ import {
 
 const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
-const CATALOG_GRID_CLASS =
-  "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4 2xl:gap-5";
-
-function CatalogGridSkeleton() {
-  return (
-    <>
-      <p role="status" className="sr-only">
-        Carregando os modelos publicados…
-      </p>
-      <div aria-hidden="true" className={CATALOG_GRID_CLASS}>
-        {Array.from({ length: 6 }, (_, index) => (
-          <div
-            key={index}
-            className="overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
-          >
-            <div className="aspect-[4/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
-            <div className="space-y-3 p-3 md:p-4">
-              <div className="h-4 w-4/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
-              <div className="h-3 w-2/3 animate-pulse bg-[hsl(0,0%,11%)] motion-reduce:animate-none" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 function ModelCover({
   model,
   mediaUrl,
@@ -81,7 +53,7 @@ function ModelCover({
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
-        imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
+        imageClassName={CATALOG_CARD_IMAGE_CLASS}
       />
       {model.category && model.categorySlug !== "curadoria-pendente" && (
         <CatalogCategoryBadge label={model.category} />
@@ -384,7 +356,7 @@ export default function CatalogModelsArcade() {
             collectionHref={PUBLIC_ROUTES.catalog}
           />
 
-          <div className="relative z-10 mx-auto mt-2 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
+          <div className="relative z-10 mx-auto mt-2 w-full max-w-[1600px] px-4 sm:px-6 xl:px-8">
             {mediaUnderReview ? (
               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
                 Explore as referências disponíveis. Algumas opções podem não
@@ -609,9 +581,9 @@ export default function CatalogModelsArcade() {
 
             <div
               ref={resultsRef}
-              className="mb-4 mt-4 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
+              className="mb-4 mt-4 flex scroll-mt-24 flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3"
             >
-              <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
+              <h2 className={CATALOG_RESULTS_TITLE_CLASS}>MODELOS DO ACERVO</h2>
               <div className="flex flex-wrap items-center gap-3">
                 {models.isSuccess && (
                   <p
@@ -713,7 +685,7 @@ export default function CatalogModelsArcade() {
                   : "Utilize ao menos três caracteres na pesquisa."}
               </p>
             ) : models.isPending ? (
-              <CatalogGridSkeleton />
+              <CatalogGridSkeleton view={catalogView} label="Carregando os modelos publicados…" />
             ) : models.isError ? (
               <div
                 role="alert"
@@ -754,7 +726,7 @@ export default function CatalogModelsArcade() {
                 ) : null}
               </div>
             ) : (
-              <div className={catalogView === "grid" ? CATALOG_GRID_CLASS : "grid grid-cols-1 gap-3 sm:gap-4"}>
+              <div className={catalogGridClass(catalogView)}>
                 {rows.map((model) => {
                   const isSelected = selectedModels.some(
                     (item) => item.id === model.id,
@@ -775,15 +747,15 @@ export default function CatalogModelsArcade() {
                             catalogSiblingSlugs: pageSlugs,
                           }}
                           aria-label={"Ver detalhes de " + model.name}
-                          className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
+                          className={catalogCardLinkClass(catalogView)}
                         >
                           <ModelCover
                             model={model}
                             mediaUrl={(key) => gateway.mediaUrl(key)}
                           />
-                          <div className="space-y-1.5 p-3 md:p-4">
+                          <div className={CATALOG_CARD_BODY_CLASS}>
                             <CatalogCardIdentity name={model.name} franchise={model.franchise} />
-                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
+                            <p className={CATALOG_CARD_ACTION_CLASS}>
                               Ver detalhes
                               <ArrowRight size={14} aria-hidden="true" />
                             </p>
