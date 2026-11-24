@@ -22,6 +22,7 @@ export type CatalogExplorerHeaderProps = {
   totalLabel?: string;
   coverUrl?: string | null;
   collectionHref: string;
+  activeTab?: "explore" | "collections";
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -41,6 +42,7 @@ export function CatalogExplorerHeader({
   totalLabel,
   coverUrl,
   collectionHref,
+  activeTab = "explore",
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -59,8 +61,8 @@ export function CatalogExplorerHeader({
     ? "Explore referências recebidas pelo Telegram. Identificações podem ser provisórias; nenhuma ficha implica liberação comercial."
     : "Explore modelos do acervo original, seus universos e suas galerias.";
   const tabs = [
-    { label: "Explorar", href: review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: true },
-    { label: "Coleções", href: collectionHref, active: false },
+    { label: "Explorar", href: review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
+    { label: "Coleções", href: collectionHref, active: activeTab === "collections" },
     { label: review ? "Originais" : "Em revisão", href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false },
   ];
 
@@ -101,17 +103,14 @@ export function CatalogExplorerHeader({
       </form>
 
       <nav aria-label="Explorar catálogo" className="mt-3 flex min-w-0 gap-2 overflow-x-auto border-b border-[hsl(0,0%,22%)]">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.label}
-            to={tab.href}
-            aria-current={tab.active ? "page" : undefined}
-            className={`inline-flex min-h-12 shrink-0 items-center justify-center border-b-2 px-3 font-mono text-[11px] uppercase tracking-wide transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] ${tab.active ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]" : "border-transparent text-[hsl(0,0%,60%)] hover:text-white"}`}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+        {tabs.map((tab) => {
+          const className = `inline-flex min-h-12 shrink-0 items-center justify-center border-b-2 px-3 font-mono text-[11px] uppercase tracking-wide transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--gold-accent))] ${tab.active ? "border-[hsl(var(--gold-accent))] text-[hsl(var(--gold-accent))]" : "border-transparent text-[hsl(0,0%,60%)] hover:text-white"}`;
+          return review ? (
+            <a key={tab.label} href={tab.href} aria-current={tab.active ? "page" : undefined} className={className}>{tab.label}</a>
+          ) : (
+            <Link key={tab.label} to={tab.href} aria-current={tab.active ? "page" : undefined} className={className}>{tab.label}</Link>
+          );
+        })}      </nav>
 
       <header
         data-compact="true"
@@ -159,9 +158,15 @@ export function CatalogExplorerHeader({
           <SlidersHorizontal size={15} aria-hidden="true" />
           Filtros{filterCount ? ` (${filterCount})` : ""}
         </button>
-        <Link to={collectionHref} className="ml-auto inline-flex min-h-10 items-center gap-2 px-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline">
-          <Layers3 size={15} aria-hidden="true" /> Coleções <ArrowRight size={14} aria-hidden="true" />
-        </Link>
+        {review ? (
+          <a href={collectionHref} className="ml-auto inline-flex min-h-10 items-center gap-2 px-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline">
+            <Layers3 size={15} aria-hidden="true" /> Coleções <ArrowRight size={14} aria-hidden="true" />
+          </a>
+        ) : (
+          <Link to={collectionHref} className="ml-auto inline-flex min-h-10 items-center gap-2 px-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline">
+            <Layers3 size={15} aria-hidden="true" /> Coleções <ArrowRight size={14} aria-hidden="true" />
+          </Link>
+        )}
       </div>
     </div>
   );
