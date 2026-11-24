@@ -23,6 +23,7 @@ export type CatalogExplorerHeaderProps = {
   coverUrl?: string | null;
   collectionHref: string;
   activeTab?: "explore" | "collections";
+  standalone?: boolean;
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -43,6 +44,7 @@ export function CatalogExplorerHeader({
   coverUrl,
   collectionHref,
   activeTab = "explore",
+  standalone = false,
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -61,9 +63,9 @@ export function CatalogExplorerHeader({
     ? "Explore referências recebidas pelo Telegram. Identificações podem ser provisórias; nenhuma ficha implica liberação comercial."
     : "Explore modelos do acervo original, seus universos e suas galerias.";
   const tabs = [
-    { label: "Explorar", href: review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
+    { label: "Explorar", href: review && standalone ? "/" : review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
     { label: "Coleções", href: collectionHref, active: activeTab === "collections" },
-    { label: review ? "Originais" : "Em revisão", href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false },
+    ...(!standalone ? [{ label: review ? "Originais" : "Em revisão", href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false }] : []),
   ];
 
   return (
