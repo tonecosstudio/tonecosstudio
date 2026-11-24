@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ArrowRight, ArrowUpRight, Search, Images } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
 
 type Model = {
   id: string;
@@ -186,6 +187,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export default function TelegramStudioCatalog({ embedded = false }: { embedded?: boolean }) {
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
+  const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
   const [studios, setStudios] = useState<Studio[]>([]);
   const [studioSearch, setStudioSearch] = useState("");
   const [studiosError, setStudiosError] = useState("");
@@ -489,116 +491,26 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
         </div>
       </header>}
       <ContentContainer className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
-        {view === "models" && (
-          <section
-            aria-labelledby="catalog-hero-heading"
-            className="relative isolate overflow-hidden border-b border-[#ffffff18] py-14 sm:py-20"
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-48 -top-64 -z-10 h-[680px] w-[680px] rounded-full bg-[#927c59]/10 blur-[95px]"
-            />
-            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-              <div className="max-w-[670px]">
-                <p className="mb-6 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.23em] text-[#c7ab7c] sm:text-xs">
-                  <span className="h-px w-8 bg-[#c7ab7c]" />
-                  {embedded ? "CURADORIA TELEGRAM" : "Biblioteca visual de modelos"}
-                </p>
-                <h1
-                  id="catalog-hero-heading"
-                  className={embedded
-                    ? "font-bold uppercase text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[0.02em]"
-                    : "font-serif text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[-0.045em]"}
-                  style={embedded ? { fontFamily: "\"Bebas Neue\", Impact, sans-serif" } : undefined}
-                >
-                  Modelos 3D{" "}
-                  <span className="block italic text-[#ccb18a]">
-                    {embedded ? "em revisão." : "organizados."}
-                  </span>
-                </h1>
-                <p className="mt-7 max-w-xl text-base leading-8 text-[#b9b9ae] sm:text-lg">
-                  {embedded
-                    ? "Explore os modelos recebidos dos estúdios pelo Telegram. Nomes e classificações podem ser provisórios; esta vitrine não comprova revisão concluída nem autorização comercial."
-                    : "Navegue por modelos, personagens, variantes e galerias de imagens. Use a pesquisa e os filtros para encontrar cada escultura; as tags editoriais ficam nas coleções dos estúdios."}
-                </p>
-                <div className="mt-9 flex flex-wrap gap-3">
-                  <a
-                    href="#colecao"
-                    className="inline-flex min-h-12 items-center gap-3 rounded-lg bg-[#d2b58a] px-6 text-sm font-semibold text-[#171b13] transition hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
-                  >
-                    Explorar modelos{" "}
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                  <a
-                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#776c52] px-5 text-sm text-[#eee0c9] hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
-                  >
-                    Coleções por estúdio{" "}
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </div>
-                <div className="mt-12 flex flex-wrap gap-9 border-t border-[#ffffff1c] pt-6">
-                  <div>
-                    <span className="block font-serif text-3xl text-[#eeddbb]">
-                      {!studio && !query && !category && !provisional && page
-                        ? page.total.toLocaleString("pt-BR")
-                        : "—"}
-                    </span>
-                    <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[#9ba297]">
-                      {embedded ? "Referências em organização" : "Modelos no acervo"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div
-                aria-label="Prévia de modelos do catálogo"
-                className="relative mx-auto grid h-[330px] w-full max-w-[560px] grid-cols-[1fr_0.83fr] gap-3 sm:h-[460px] lg:h-[520px]"
-              >
-                {[0, 1, 2].map((index) => {
-                  const item = page?.items[index];
-                  return item && imageUrl(item.cover) ? (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => navigate({ ...route, selected: item.id })}
-                      aria-label={
-                        "Abrir prévia de " + item.name + ", " + item.studio
-                      }
-                      className={
-                        "group relative overflow-hidden rounded-xl border border-[#ffffff1c] bg-[#292e26] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
-                        (index === 0 ? "row-span-2" : "")
-                      }
-                    >
-                      <img
-                        src={imageUrl(item.cover)}
-                        alt=""
-                        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]"
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d110e] to-transparent"
-                      />
-                      <span className="sr-only">
-                        Abrir modelo do estúdio {item.studio}
-                      </span>
-                    </button>
-                  ) : (
-                    <div
-                      key={index}
-                      className={
-                        "rounded-xl border border-[#ffffff18] bg-gradient-to-br from-[#353a2e] to-[#181c17] " +
-                        (index === 0 ? "row-span-2" : "")
-                      }
-                    />
-                  );
-                })}
-                <span className="pointer-events-none absolute -bottom-4 -left-2 inline-flex items-center gap-2 rounded-md border border-[#7e7058] bg-[#171c16] px-4 py-3 text-[11px] text-[#e8d4b2] shadow-xl sm:-left-5">
-                  <Images aria-hidden="true" className="h-4 w-4" /> Galeria de
-                  renders digitais
-                </span>
-              </div>
-            </div>
-          </section>
+        {(view === "models" || Boolean(studio)) && (
+          <CatalogExplorerHeader
+            kind="review"
+            search={draft}
+            onSearchChange={(value) => { setDraft(value); setSearchError(""); }}
+            onSearchSubmit={search}
+            onSearchClear={() => {
+              setDraft("");
+              setSearchError("");
+              navigate({ ...route, query: "", offset: 0, selected: null });
+            }}
+            categories={modelCategories.map((item) => ({ id: item.slug, label: item.name }))}
+            category={category}
+            onCategoryChange={(next) => navigate({ ...route, category: next, offset: 0, selected: null })}
+            onFiltersClick={() => document.getElementById("telegram-catalog-filters")?.scrollIntoView?.({ behavior: "smooth", block: "start" })}
+            filterCount={[category, franchise, character, provisional].filter(Boolean).length}
+            totalLabel={page ? page.total.toLocaleString("pt-BR") + " referências" : undefined}
+            coverUrl={imageUrl(page?.items[0]?.cover)}
+            collectionHref={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
+          />
         )}
         {(view === "models" || Boolean(studio)) && (
           <section
@@ -629,42 +541,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                   : "Busque modelos, personagens e variantes com tags da curadoria."}
               </p>
             </div>
-            <form
-              onSubmit={search}
-              className="grid gap-3 rounded-xl border border-[#ffffff22] bg-[#1a2019] p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-5"
-            >
-              <div>
-                <label
-                  htmlFor="catalog-search"
-                  className="mb-2 block text-xs font-medium uppercase tracking-wider text-[#c9ac88]"
-                >
-                  Pesquisar
-                </label>
-                <input
-                  id="catalog-search"
-                  value={draft}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    setSearchError("");
-                  }}
-                  maxLength={80}
-                  placeholder="Personagem, escultura ou versão"
-                  autoComplete="off"
-                  aria-describedby={
-                    searchError ? "catalog-search-error" : undefined
-                  }
-                  className="min-h-12 w-full rounded-lg border border-[#565c50] bg-[#101610] px-4 text-[#f1e9df] outline-none placeholder:text-[#959b8f] focus:border-[#e1b784]"
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex min-h-12 items-center justify-center gap-2 self-end rounded-lg bg-[#d2b58a] px-5 font-semibold text-[#141810] hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
-              >
-                <Search aria-hidden="true" className="h-4 w-4" /> Pesquisar
-              </button>
-            </form>
+            {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div className="mt-5 grid gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-3">
+            <div id="telegram-catalog-filters" className={embedded ? "mt-5 grid scroll-mt-24 gap-5 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-5 lg:grid-cols-3" : "mt-5 grid scroll-mt-24 gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-3"}>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Categorias
@@ -843,7 +722,8 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
                 <span
                   role="status"
                   aria-live="polite"
@@ -920,11 +800,11 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </div>
             )}
             {!loading && page && (
-              <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
+              <div className={catalogView === "grid" ? "mt-7 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5" : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"}>
                 {page.items.map((model) => (
                   <article
                     key={model.id}
-                    className="group flex flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a]"
+                    className={embedded ? "group flex flex-col overflow-hidden rounded-lg border border-[hsl(var(--gold-accent)/0.20)] bg-[hsl(0,0%,8%)] transition duration-300 hover:border-[hsl(var(--gold-accent)/0.75)]" : "group flex flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a]"}
                   >
                     <button
                       type="button"
@@ -934,7 +814,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                       }
                       className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
                     >
-                      <div className="relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]">
+                      <div className={embedded ? "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[hsl(0,0%,12%)]" : "relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]"}>
                         {imageUrl(model.cover) ? (
                           <img
                             src={imageUrl(model.cover)}
@@ -972,6 +852,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                         >
                           {model.name}
                         </h3>
+                        {embedded && model.franchise && model.franchiseSlug !== "franquia-a-identificar" && (
+                          <p className="mt-1 truncate text-xs text-[hsl(0,0%,66%)]">{model.franchise}</p>
+                        )}
                       </div>
                     </button>
                     <div
