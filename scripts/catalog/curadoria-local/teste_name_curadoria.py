@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Teste isolado da nomeação; nenhum acesso à pasta real do Telegram."""
 import hashlib
+import json
 import sqlite3
 import tempfile
 from contextlib import closing
