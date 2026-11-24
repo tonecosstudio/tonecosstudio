@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "./CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "./CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "./CatalogTaxonomy";
 
 function renderHeader(kind: "historical" | "review") {
   const handlers = {
