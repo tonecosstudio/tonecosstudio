@@ -870,11 +870,11 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                           : "flex flex-wrap items-center justify-end px-3 pb-3 pt-2 sm:px-4 sm:pb-4"
                       }
                     >
-                      {modelFacets(model)
+                      {(embedded && !showStudioModelTags ? [] : modelFacets(model)
                         .filter(
                           (facet) =>
                             showStudioModelTags || facet.kind !== "character",
-                        )
+                        ))
                         .map((facet) =>
                           model.provisional && facet.kind === "franchise" ? (
                             <span
