@@ -252,7 +252,12 @@ export default function TelegramModelGallery({
                 )}
               </div>
 
-              <CatalogImageDownload src={failedMedia === selectedSrc ? null : selectedSrc} name={detail.name} id={detail.id + "-" + (photoIndex + 1)} className="mt-3" />
+              <CatalogImageDownload
+                src={failedMedia === selectedSrc ? null : selectedSrc}
+                name={detail.name}
+                id={detail.id + "-" + (photoIndex + 1)}
+                className="mt-3"
+              />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[#b9bdb2]">
                 <span
                   role="status"
