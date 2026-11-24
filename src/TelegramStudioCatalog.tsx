@@ -818,6 +818,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                       className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
                     >
                       <div className={embedded ? "relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[hsl(0,0%,12%)]" : "relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]"}>
+                        {embedded && model.category && model.categorySlug && model.categorySlug !== "curadoria-pendente" && (
+                          <span className="absolute left-2 top-2 z-10 max-w-[calc(100%-1rem)] truncate rounded-full border border-[hsl(var(--gold-accent)/0.55)] bg-[hsl(0,0%,5%)/0.9] px-2.5 py-1 font-mono text-[10px] font-semibold text-[hsl(var(--gold-accent))]">{model.category}</span>
+                        )}
                         {imageUrl(model.cover) ? (
                           <img
                             src={imageUrl(model.cover)}
