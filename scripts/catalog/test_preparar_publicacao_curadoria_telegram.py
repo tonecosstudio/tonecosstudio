@@ -519,6 +519,28 @@ def test_private_draft_plan_without_publication():
         assert unknown_summary["pending_franchise_candidates"]==1
         assert len(unknown_held)==1
         assert not pending["single:16"]["apply_executed"]
+        # Unnamed material can enter the same private catalogue with a stable
+        # placeholder and the real pending franchise; rejected media remains held.
+        with closing(sqlite3.connect(db)) as con:
+            for mid,status in [(22,"revisar"),(23,"descartado")]:
+                sha=hashlib.sha256(str(mid).encode()).hexdigest()
+                con.execute("INSERT INTO assets VALUES(?,?,?,?,?)",
+                            (mid,sha,f"Studio A/src_{mid}.jpg","Studio A","2026-11-21"))
+                con.execute("INSERT INTO annotations VALUES(?,?,?)",(mid,status,""))
+                con.execute("INSERT INTO name_proposals VALUES(?,?,?,?,?,?,?,?,?,?)",
+                            (mid,"revisar","Studio A","","","",f"{mid}.jpg","","",0))
+            con.execute("UPDATE model_groups SET state='confirmado' WHERE group_key=?",("a"*24,))
+            con.commit()
+        coverage,held,coverage_summary=m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=99)
+        coverage_map={x["import_manifest"]["groupKey"]:x for x in coverage}
+        assert coverage_map["single:22"]["import_manifest"]["name"]=="Modelo sem nome #22"
+        assert coverage_map["single:22"]["import_manifest"]["franchiseId"]==99
+        assert "single:23" not in coverage_map
+        assert "a"*24 in coverage_map
+        assert coverage_summary["pending_name_candidates"]==1
+        assert coverage_summary["reasons"]["rejected_media"]==1
+        assert not coverage_map["single:22"]["showcase_visible"]
+        assert not coverage_map["single:22"]["apply_executed"]
         try:
             m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=57)
             assert False,"wrong provisional ID must be rejected"
