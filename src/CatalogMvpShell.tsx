@@ -9,7 +9,7 @@ import { ArcadeFooterView } from "@/components/arcade/ArcadeFooterView";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import PublicCatalogContact from "@/pages/PublicCatalogContact";
-import CatalogEntryPage, { CatalogSectionNavigation } from "@/pages/CatalogEntryPage";
+import CatalogEntryPage from "@/pages/CatalogEntryPage";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
@@ -88,9 +88,9 @@ export function CatalogMvpShell({
                   } />
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
                   <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
-                  <Route path={PUBLIC_ROUTES.catalogHistorical} element={<><CatalogSectionNavigation active="historical" /><Models /></>} />
-                  <Route path={PUBLIC_ROUTES.catalogReview} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
-                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
+                  <Route path={PUBLIC_ROUTES.catalogHistorical} element={<Models />} />
+                  <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
+                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />

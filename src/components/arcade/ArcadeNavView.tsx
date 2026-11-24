@@ -19,6 +19,8 @@ const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
   { to: PUBLIC_ROUTES.catalogHub, label: "CATÁLOGOS" },
+  { to: PUBLIC_ROUTES.catalogHistorical, label: "ORIGINAIS" },
+  { to: PUBLIC_ROUTES.catalogReview, label: "EM REVISÃO" },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
 ];
@@ -84,7 +86,7 @@ export function ArcadeNavView({
   };
 
   const linkClass = (path: string) =>
-    `inline-flex min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] ${
+    `min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] ${
       isActive(path)
         ? "text-[hsl(var(--gold-accent))]"
         : "text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))]"
@@ -112,7 +114,7 @@ export function ArcadeNavView({
               key={link.to}
               to={link.to}
               aria-current={isActive(link.to) ? "page" : undefined}
-              className={linkClass(link.to)}
+              className={`inline-flex ${linkClass(link.to)}`}
             >
               {link.label}
             </Link>
@@ -123,7 +125,7 @@ export function ArcadeNavView({
                 key={link.to}
                 to={link.to}
                 aria-current={isActive(link.to) ? "page" : undefined}
-                className={linkClass(link.to)}
+                className={`inline-flex ${linkClass(link.to)}`}
               >
                 {link.label}
               </Link>

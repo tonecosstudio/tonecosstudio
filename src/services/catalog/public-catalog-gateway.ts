@@ -1,5 +1,6 @@
 import { isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
+import { canonicalTagsForModel, type CatalogTag, type CatalogTagKind } from "@/types/catalog-tags";
 
 /**
  * Read-only boundary for the canonical Tonecos catalog.
@@ -23,6 +24,7 @@ export type PublicCatalogModel = {
   imageCount: number;
   galleryVersion: number;
   coverStorageKey: string | null;
+  tags?: CatalogTag[];
 };
 
 export type PublicCatalogCategory = {
@@ -111,6 +113,8 @@ export type PublicCatalogFilters = {
   category?: string;
   franchise?: string;
   folder?: string;
+  characterId?: string;
+  attributeId?: string;
   search?: string;
   cursor?: string;
   limit?: number;
@@ -134,7 +138,39 @@ type CatalogWireModel = {
   description?: unknown;
   material?: unknown;
   height_cm?: unknown;
+  tags?: unknown;
 };
+
+const PUBLIC_TAG_KINDS = new Set<CatalogTagKind>([
+  "category",
+  "franchise",
+  "character",
+  "publisher",
+  "universe",
+  "sign",
+  "constellation",
+]);
+
+function decodeCatalogTags(value: unknown): CatalogTag[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new Error("invalid_catalog_tags");
+  return value.map((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item))
+      throw new Error("invalid_catalog_tag");
+    const tag = item as Record<string, unknown>;
+    if (typeof tag.kind !== "string" || !PUBLIC_TAG_KINDS.has(tag.kind as CatalogTagKind))
+      throw new Error("invalid_catalog_tag_kind");
+    if (tag.provisional !== undefined && typeof tag.provisional !== "boolean")
+      throw new Error("invalid_catalog_tag_status");
+    return {
+      kind: tag.kind as CatalogTagKind,
+      id: requiredText(tag.id, "tag_id"),
+      label: requiredText(tag.label, "tag_label"),
+      slug: requiredText(tag.slug, "tag_slug"),
+      ...(tag.provisional === true ? { provisional: true } : {}),
+    };
+  });
+}
 
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || !value.trim()) {
@@ -186,21 +222,31 @@ function decodeModel(value: unknown): PublicCatalogModel {
     throw new Error("invalid_catalog_model");
   }
   const row = value as CatalogWireModel;
+  const category = requiredText(row.category, "category");
+  const categorySlug = requiredText(row.category_slug, "category_slug");
+  const franchise = requiredText(row.franchise, "franchise");
+  const franchiseSlug = requiredText(row.franchise_slug, "franchise_slug");
   return {
     id: requiredText(row.id, "id"),
     slug: requiredText(row.slug, "slug"),
     code: requiredText(row.code, "code"),
     name: requiredText(row.name, "name"),
     variantName: optionalText(row.variant_name, "variant_name") ?? "",
-    category: requiredText(row.category, "category"),
-    categorySlug: requiredText(row.category_slug, "category_slug"),
-    franchise: requiredText(row.franchise, "franchise"),
-    franchiseSlug: requiredText(row.franchise_slug, "franchise_slug"),
+    category,
+    categorySlug,
+    franchise,
+    franchiseSlug,
     collection: optionalText(row.collection, "collection"),
     folderPath: optionalText(row.folder_path, "folder_path"),
     imageCount: wholeNumber(row.image_count, "image_count"),
     galleryVersion: wholeNumber(row.gallery_version, "gallery_version"),
     coverStorageKey: optionalText(row.cover_storage_key, "cover_storage_key"),
+    tags: canonicalTagsForModel(decodeCatalogTags(row.tags), {
+      category,
+      categorySlug,
+      franchise,
+      franchiseSlug,
+    }),
   };
 }
 
@@ -834,6 +880,12 @@ export function createPublicCatalogGateway(
       if (filters.folder && (!filters.category || !filters.franchise)) {
         throw new Error("catalog_folder_requires_scope");
       }
+      for (const [value, field] of [
+        [filters.characterId, "catalog_character_id_invalid"],
+        [filters.attributeId, "catalog_attribute_id_invalid"],
+      ] as const) {
+        if (value && !/^[A-Za-z0-9_-]{3,100}$/.test(value)) throw new Error(field);
+      }
       const limit = filters.limit ?? 24;
       if (!Number.isInteger(limit) || limit < 1 || limit > 60) {
         throw new Error("catalog_limit_invalid");
@@ -844,6 +896,8 @@ export function createPublicCatalogGateway(
         url.searchParams.set("category", filters.category);
       if (filters.franchise)
         url.searchParams.set("franchise", filters.franchise);
+      if (filters.characterId) url.searchParams.set("character_id", filters.characterId);
+      if (filters.attributeId) url.searchParams.set("attribute_id", filters.attributeId);
       if (filters.folder) url.searchParams.set("folder", filters.folder);
       if (query) url.searchParams.set("q", query);
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);

@@ -1,6 +1,6 @@
 {
-  "version": 9,
-  "latestMigration": "0025_telegram_showcase_private_visibility.sql",
+  "version": 13,
+  "latestMigration": "0033_seed_reviewed_dc_character_tags.sql",
   "requiredMigrations": [
     "0001_catalog.sql",
     "0002_keyset_pagination.sql",
@@ -26,14 +26,27 @@
     "0022_catalog_height_filter_index.sql",
     "0023_telegram_private_drafts.sql",
     "0024_telegram_draft_gallery_order.sql",
-    "0025_telegram_showcase_private_visibility.sql"
+    "0025_telegram_showcase_private_visibility.sql",
+    "0026_telegram_owner_authorized_preview.sql",
+    "0027_telegram_pending_franchise_taxonomy.sql",
+    "0028_telegram_showcase_listing_index.sql",
+    "0029_canonical_characters_across_sources.sql",
+    "0030_canonical_character_attributes.sql",
+    "0031_seed_reviewed_canonical_model_tags.sql",
+    "0032_seed_marvel_individual_catalog_tags.sql",
+    "0033_seed_reviewed_dc_character_tags.sql"
   ],
   "requiredObjects": {
     "tables": [
       "model_gallery_members",
       "model_image_sources",
       "model_gallery_member_approvals",
-      "quote_status_events"
+      "quote_status_events",
+      "catalog_characters",
+      "catalog_character_aliases",
+      "catalog_model_characters",
+      "catalog_attributes",
+      "catalog_character_attributes"
     ],
     "indexes": [
       "idx_models_folder_published",
@@ -46,7 +59,11 @@
       "idx_models_published_height",
       "idx_models_telegram_group_key",
       "idx_models_telegram_private_drafts",
-      "idx_models_telegram_showcase_visible"
+      "idx_models_telegram_showcase_visible",
+      "idx_models_telegram_showcase_name",
+      "idx_catalog_characters_franchise",
+      "idx_catalog_model_characters_character",
+      "idx_catalog_character_attributes_attribute"
     ],
     "triggers": [
       "trg_folder_counts_after_model_insert",
@@ -80,7 +97,14 @@
       "trg_telegram_draft_publication_requires_review",
       "trg_telegram_showcase_public_insert_requires_review",
       "trg_telegram_showcase_public_update_requires_review",
-      "trg_telegram_showcase_revoke_visibility"
+      "trg_telegram_showcase_revoke_visibility",
+      "guard_catalog_character_alias_insert",
+      "guard_catalog_character_alias_update",
+      "guard_catalog_character_slug_insert",
+      "guard_catalog_character_slug_update",
+      "guard_catalog_model_character_insert",
+      "guard_catalog_model_character_update",
+      "guard_catalog_model_franchise_update"
     ],
     "columns": {
       "catalog_folders": [

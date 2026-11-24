@@ -6,23 +6,18 @@ import {
   ArrowLeft,
   ArrowRight,
   Bookmark,
-  ChevronDown,
-  Search,
-  SlidersHorizontal,
-  X,
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
+import { catalogModelDisplayName, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
+import type { CatalogTag } from "@/types/catalog-tags";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { Page } from "@/components/layouts/Page";
-import {
-  ArcadeCard,
-  ArcadeHero,
-  ArcadeSectionTitle,
-} from "@/components/arcade/ArcadeLayout";
+import { ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import {
   isCatalogMediaUnderReview,
@@ -48,7 +43,7 @@ import {
 const PAGE_SIZE = 36;
 const API_BASE = CANONICAL_CATALOG_API_BASE;
 const CATALOG_GRID_CLASS =
-  "grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 md:gap-4 xl:grid-cols-5 2xl:grid-cols-6 2xl:gap-5";
+  "grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 md:gap-4 2xl:gap-5";
 
 function CatalogGridSkeleton() {
   return (
@@ -57,12 +52,12 @@ function CatalogGridSkeleton() {
         Carregando os modelos publicados…
       </p>
       <div aria-hidden="true" className={CATALOG_GRID_CLASS}>
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: 10 }, (_, index) => (
           <div
             key={index}
             className="overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)]"
           >
-            <div className="aspect-[2/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
+            <div className="aspect-[4/3] animate-pulse bg-gradient-to-br from-[hsl(0,0%,10%)] via-[hsl(0,0%,8%)] to-[hsl(var(--gold-accent)/0.06)] motion-reduce:animate-none" />
             <div className="space-y-3 p-3 md:p-4">
               <div className="h-4 w-4/5 animate-pulse bg-[hsl(0,0%,14%)] motion-reduce:animate-none" />
               <div className="h-3 w-2/3 animate-pulse bg-[hsl(0,0%,11%)] motion-reduce:animate-none" />
@@ -83,13 +78,13 @@ function ModelCover({
 }) {
   const url = mediaUrl(model.coverStorageKey);
   return (
-    <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
+    <CatalogCardMediaFrame imageCount={model.imageCount}>
       <CanonicalCatalogImage
         src={url}
         alt={"Imagem de referência: " + model.name}
         imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
       />
-    </div>
+    </CatalogCardMediaFrame>
   );
 }
 
@@ -99,12 +94,15 @@ export default function CatalogModelsArcade() {
   const category = searchParams.get("category")?.trim() ?? "";
   const franchise = searchParams.get("franchise")?.trim() ?? "";
   const folder = searchParams.get("folder")?.trim() ?? "";
+  const characterId = searchParams.get("character_id")?.trim() ?? "";
+  const attributeId = searchParams.get("attribute_id")?.trim() ?? "";
   const quoteRequestPath =
     PUBLIC_ROUTES.quoteRequest +
     (searchParams.get("tipo") === "pre-venda" ? "?tipo=pre-venda" : "");
   const [draft, setDraft] = useState(search);
+  const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
   const [filtersExpanded, setFiltersExpanded] = useState(() =>
-    Boolean(category || franchise || folder),
+    Boolean(category || franchise || folder || characterId || attributeId),
   );
   // Deep links already contain the selected IDs. In a public image-review
   // build, avoid extra category/franchise reads just to populate closed selects.
@@ -129,8 +127,8 @@ export default function CatalogModelsArcade() {
 
   useEffect(() => setDraft(search), [search]);
   useEffect(() => {
-    if (category || franchise || folder) setFiltersExpanded(true);
-  }, [category, franchise, folder]);
+    if (category || franchise || folder || characterId || attributeId) setFiltersExpanded(true);
+  }, [category, franchise, folder, characterId, attributeId]);
 
   const gateway = useMemo(() => {
     if (!API_BASE) return null;
@@ -141,7 +139,7 @@ export default function CatalogModelsArcade() {
     }
   }, []);
 
-  const scope = JSON.stringify([search, category, franchise, folder]);
+  const scope = JSON.stringify([search, category, franchise, folder, characterId, attributeId]);
   const activePage =
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
@@ -153,6 +151,11 @@ export default function CatalogModelsArcade() {
     Boolean(franchise && !validCatalogSlug(franchise)) ||
     Boolean(folder && !validCatalogFolder(folder));
   const invalidFolderScope = Boolean(folder && (!category || !franchise));
+  const invalidTaxonomyScope = Boolean(
+    (characterId && !/^[A-Za-z0-9_-]{3,100}$/.test(characterId)) ||
+    (attributeId && !/^[A-Za-z0-9_-]{3,100}$/.test(attributeId)) ||
+    (characterId && attributeId),
+  );
 
   const categories = useQuery({
     queryKey: ["tonecos-catalog-categories"],
@@ -196,6 +199,8 @@ export default function CatalogModelsArcade() {
           category: category || undefined,
           franchise: franchise || undefined,
           folder: folder || undefined,
+          characterId: characterId || undefined,
+          attributeId: attributeId || undefined,
           search: search || undefined,
           limit: PAGE_SIZE,
           cursor,
@@ -206,6 +211,7 @@ export default function CatalogModelsArcade() {
       gateway !== null &&
       !publicationBlocked &&
       !invalidSearch &&
+      !invalidTaxonomyScope &&
       !invalidFolderScope &&
       !invalidCatalogScope,
     retry: false,
@@ -255,12 +261,14 @@ export default function CatalogModelsArcade() {
     franchises.data?.items.find((item) => item.id === franchise)?.label ||
     franchise;
   const hasActiveFilters = Boolean(
-    search || (category && category !== "all") || franchise || folder,
+    search || (category && category !== "all") || franchise || folder || characterId || attributeId,
   );
   const activeFacetCount = [
     category && category !== "all",
     franchise,
     folder,
+    characterId,
+    attributeId,
   ].filter(Boolean).length;
 
   function clearFilters() {
@@ -272,6 +280,18 @@ export default function CatalogModelsArcade() {
 
   function toggleSelected(model: PublicCatalogModel) {
     setSelectedModels((current) => toggleCanonicalSelection(current, model));
+  }
+
+  function applyCanonicalTag(model: PublicCatalogModel, tag: CatalogTag) {
+    const params = new URLSearchParams();
+    if (tag.kind === "category") params.set("category", tag.slug);
+    else if (tag.kind === "franchise") params.set("franchise", tag.slug);
+    else {
+      params.set("category", model.categorySlug);
+      params.set("franchise", model.franchiseSlug);
+      params.set(tag.kind === "character" ? "character_id" : "attribute_id", tag.id);
+    }
+    setSearchParams(params);
   }
 
   function changeParams(
@@ -355,94 +375,52 @@ export default function CatalogModelsArcade() {
     >
       <Sheet>
         <section className="min-h-[80vh] bg-[hsl(0,0%,4%)] pb-20 text-[hsl(0,0%,94%)]">
-          <ArcadeHero
-            badge="ACERVO TONART"
-            title="MODELOS"
-            subtitle="ENCONTRE PERSONAGENS E REFERÊNCIAS NO ACERVO."
-            compact
+          <CatalogExplorerHeader
+            kind="historical"
+            search={draft}
+            onSearchChange={setDraft}
+            onSearchSubmit={(event) => {
+              event.preventDefault();
+              changeParams(draft.trim(), category);
+            }}
+            onSearchClear={() => {
+              setDraft("");
+              changeParams("", category);
+            }}
+            categories={categories.data?.map(({ id, label }) => ({ id, label })) ?? Array.from(new Map(rows.filter((item) => validCatalogSlug(item.categorySlug)).map((item) => [item.categorySlug, item.category] as const))).map(([id, label]) => ({ id, label }))}
+            category={category === "all" ? "" : category}
+            onCategoryChange={(next) => {
+              setFranchiseDraft("");
+              setFranchiseNeedle("");
+              changeParams(draft.trim(), next, "");
+            }}
+            onFiltersClick={() => {
+              if (!filtersExpanded) setLoadCategories(true);
+              setFiltersExpanded((expanded) => !expanded);
+            }}
+            filterCount={activeFacetCount}
+            filtersExpanded={filtersExpanded}
+            filtersControlId="catalog-advanced-filters"
+            totalLabel={models.isSuccess ? `Página ${activePage.index + 1} · ${rows.length} modelos nesta página` : undefined}
+            coverUrl={rows[0] && gateway ? gateway.mediaUrl(rows[0].coverStorageKey) : undefined}
+            collectionHref={PUBLIC_ROUTES.catalog}
           />
 
-          <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
+          <div className="relative z-10 mx-auto mt-2 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
             {mediaUnderReview ? (
               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
                 Explore as referências disponíveis. Algumas opções podem não
                 estar visíveis neste momento.
               </p>
             ) : null}
-            <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
-              <form
-                role="search"
-                aria-label="Buscar modelos no catálogo"
-                className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-3"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  changeParams(draft.trim(), category);
-                }}
-              >
-                <label className="relative col-start-1 row-start-1 min-w-0">
-                  <span className="sr-only">Pesquisar modelos</span>
-                  <Search
-                    aria-hidden="true"
-                    size={19}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[hsl(0,0%,56%)]"
-                  />
-                  <input
-                    type="text"
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    maxLength={80}
-                    placeholder="Buscar personagem, modelo ou código"
-                    className={`h-12 w-full rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] pl-12 ${draft ? "pr-12" : "pr-3"} text-sm outline-none transition-colors focus-visible:border-[hsl(var(--gold-accent))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--gold-accent)/0.2)]`}
-                  />
-                  {draft && (
-                    <button
-                      type="button"
-                      aria-label="Limpar busca"
-                      onClick={() => {
-                        setDraft("");
-                        changeParams("", category);
-                      }}
-                      className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-none hover:bg-[hsl(0,0%,9%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
-                    >
-                      <X size={17} aria-hidden="true" />
-                    </button>
-                  )}
-                </label>
-                <button
-                  type="submit"
-                  className="col-start-1 row-start-2 inline-flex min-h-12 w-full items-center justify-center border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-4 font-mono text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(0,0%,5%)] hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:col-start-2 sm:row-start-1 sm:w-auto sm:px-6"
-                >
-                  Buscar modelos
-                </button>
-              </form>
+            <div className={filtersExpanded || hasActiveFilters ? "border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(0,0%,6%)] p-3 sm:p-4" : "border-0 p-0"}>
+              {/* A pesquisa principal é compartilhada pelo cabeçalho dos dois acervos. */}
 
-              <button
-                type="button"
-                aria-expanded={filtersExpanded}
-                aria-controls="catalog-advanced-filters"
-                onClick={() => setFiltersExpanded((expanded) => !expanded)}
-                className="mt-3 inline-flex min-h-12 w-full items-center justify-between border border-[hsl(0,0%,18%)] px-4 text-left text-sm text-[hsl(0,0%,88%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.55)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] md:hidden"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <SlidersHorizontal size={16} aria-hidden="true" />
-                  Filtros
-                  {activeFacetCount > 0 ? (
-                    <span className="inline-flex h-6 min-w-6 items-center justify-center border border-[hsl(var(--gold-accent)/0.5)] px-1 font-mono text-xs text-[hsl(var(--gold-accent))]">
-                      {activeFacetCount}
-                      <span className="sr-only"> filtros ativos</span>
-                    </span>
-                  ) : null}
-                </span>
-                <ChevronDown
-                  size={17}
-                  aria-hidden="true"
-                  className={`transition-transform motion-reduce:transition-none ${filtersExpanded ? "rotate-180" : ""}`}
-                />
-              </button>
+              {/* Toggle de filtros único no cabeçalho compartilhado. */}
 
               <div
                 id="catalog-advanced-filters"
-                className={`${filtersExpanded ? "grid" : "hidden"} mt-3 grid-cols-1 gap-3 border-t border-[hsl(0,0%,15%)] pt-3 sm:grid-cols-2 md:grid lg:grid-cols-4`}
+                className={`${filtersExpanded ? "grid" : "hidden"} grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4`}
               >
                 <label className="min-w-0">
                   <span className="sr-only">Filtrar por categoria</span>
@@ -653,7 +631,7 @@ export default function CatalogModelsArcade() {
 
             <div
               ref={resultsRef}
-              className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
+              className="mb-4 mt-4 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
             >
               <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
               <div className="flex flex-wrap items-center gap-3">
@@ -694,6 +672,7 @@ export default function CatalogModelsArcade() {
                     )}
                   </nav>
                 )}
+                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
                 <SheetTrigger asChild>
                   <button
                     type="button"
@@ -797,16 +776,15 @@ export default function CatalogModelsArcade() {
                 ) : null}
               </div>
             ) : (
-              <div className={CATALOG_GRID_CLASS}>
+              <div className={catalogView === "grid" ? CATALOG_GRID_CLASS : "grid grid-cols-1 gap-3 sm:gap-4"}>
                 {rows.map((model) => {
-                  const isSelected = selectedModels.some(
-                    (item) => item.id === model.id,
+                  const displayName = catalogModelDisplayName(model);
+                  const tagGroups = catalogTagGroupsFromPublicTags(
+                    model.tags ?? [],
+                    (tag) => applyCanonicalTag(model, tag),
                   );
                   return (
-                    <ArcadeCard
-                      key={model.id}
-                      className={`flex h-full flex-col ${isSelected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
-                    >
+                    <CatalogModelCardShell key={model.id}>
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
@@ -820,50 +798,23 @@ export default function CatalogModelsArcade() {
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
                           }}
-                          aria-label={"Ver detalhes de " + model.name}
+                          aria-label={"Abrir modelo " + model.name}
                           className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                         >
                           <ModelCover
                             model={model}
                             mediaUrl={(key) => gateway.mediaUrl(key)}
                           />
-                          <div className="space-y-1.5 p-3 md:p-4">
-                            <p className="line-clamp-2 min-h-[2.6em] text-sm font-semibold uppercase leading-snug tracking-wide text-[hsl(0,0%,94%)]">
-                              {model.name}
-                            </p>
-                            <p className="truncate text-xs font-medium text-[hsl(0,0%,72%)]">
-                              {model.franchise}
-                            </p>
-                            {model.variantName ? (
-                              <p className="truncate text-xs text-[hsl(0,0%,56%)]">
-                                {model.variantName}
-                              </p>
-                            ) : null}
-                            <p className="font-mono text-[10px] tracking-[0.08em] text-[hsl(0,0%,48%)]">
-                              {model.code}
-                            </p>
-                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
-                              Ver detalhes
-                              <ArrowRight size={14} aria-hidden="true" />
-                            </p>
+                          <div className="p-3 pb-1 md:px-4 md:pt-4">
+                            <CatalogCardIdentity name={displayName} />
                           </div>
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => toggleSelected(model)}
-                          disabled={
-                            !isSelected &&
-                            selectedModels.length >= MAX_CANONICAL_SELECTION
-                          }
-                          aria-pressed={isSelected}
-                          className="mx-3 mb-3 flex min-h-11 w-[calc(100%-1.5rem)] items-center justify-center rounded-none border border-[hsl(0,0%,15%)] px-2 text-xs font-medium transition-colors hover:border-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {isSelected
-                            ? "Remover da seleção"
-                            : "Adicionar à seleção"}
-                        </button>
+                        <CatalogCardTagRow
+                          label={"Filtros de " + model.name}
+                          groups={tagGroups}
+                        />
                       </div>
-                    </ArcadeCard>
+                    </CatalogModelCardShell>
                   );
                 })}
               </div>
@@ -889,9 +840,11 @@ export default function CatalogModelsArcade() {
                     type="button"
                     onClick={goBack}
                     disabled={activePage.index === 0}
+                    aria-label="Página anterior"
                     className="inline-flex min-h-12 items-center gap-2 rounded-none border border-[hsl(0,0%,36%)] px-5 text-sm font-semibold text-[hsl(0,0%,90%)] hover:border-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-35"
                   >
-                    <ArrowLeft size={16} aria-hidden="true" /> Anterior
+                    <ArrowLeft size={16} aria-hidden="true" />
+                    <span className="hidden sm:inline">Anterior</span>
                   </button>
                   <span className="min-w-24 text-center font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">
                     Página {activePage.index + 1}
@@ -900,9 +853,11 @@ export default function CatalogModelsArcade() {
                     type="button"
                     onClick={goNext}
                     disabled={!canGoNext}
+                    aria-label="Próxima página"
                     className="inline-flex min-h-12 items-center gap-2 rounded-none border border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] px-5 text-sm font-bold text-[hsl(0,0%,5%)] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-35"
                   >
-                    Próxima <ArrowRight size={16} aria-hidden="true" />
+                    <span className="hidden sm:inline">Próxima</span>
+                    <ArrowRight size={16} aria-hidden="true" />
                   </button>
                 </nav>
               )}

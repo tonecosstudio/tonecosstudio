@@ -1,0 +1,4 @@
+-- Reserved migration slot. The prior local batch was unreadable (78,595 NUL bytes).
+-- Keep this migration write-free rather than infer identities from folder names.
+-- Add individually reviewed Marvel model IDs in later, explicit seed migrations.
+-- Candidate only; no production D1 writes are authorized before the M5 gate.

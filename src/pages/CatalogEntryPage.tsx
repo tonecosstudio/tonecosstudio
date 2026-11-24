@@ -3,50 +3,8 @@ import { Link } from "react-router-dom";
 import { Page } from "@/components/layouts/Page";
 import { PUBLIC_ROUTES } from "@/config/routes";
 
-type CatalogSection = "historical" | "review";
-
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]";
-
-export function CatalogSectionNavigation({
-  active,
-}: {
-  active: CatalogSection;
-}) {
-  return (
-    <nav
-      aria-label="Acervos do catálogo"
-      className="relative z-10 mx-auto max-w-[1600px] px-4 pt-6 sm:px-6 xl:px-8"
-    >
-      <Link
-        to={PUBLIC_ROUTES.catalogHub}
-        className={`inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[hsl(var(--gold-accent))] hover:underline ${FOCUS}`}
-      >
-        <ArrowRight aria-hidden="true" className="h-4 w-4 rotate-180" />
-        Catálogo TONART
-      </Link>
-      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {([
-          { id: "historical", path: PUBLIC_ROUTES.catalogHistorical, label: "Catálogo original" },
-          { id: "review", path: PUBLIC_ROUTES.catalogReview, label: "Telegram · em revisão" },
-        ] as const).map((item) => (
-          <Link
-            key={item.id}
-            to={item.path}
-            aria-current={active === item.id ? "page" : undefined}
-            className={`flex min-h-12 items-center justify-center border px-4 py-3 text-center font-mono text-[10px] uppercase tracking-[0.1em] transition-colors ${FOCUS} ${
-              active === item.id
-                ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent)/0.12)] text-[hsl(var(--gold-accent))]"
-                : "border-[hsl(var(--gold-accent)/0.18)] bg-[hsl(0,0%,7%)] text-[hsl(0,0%,75%)] hover:border-[hsl(var(--gold-accent)/0.6)] hover:text-white"
-            }`}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </div>
-    </nav>
-  );
-}
 
 export default function CatalogEntryPage() {
   return (

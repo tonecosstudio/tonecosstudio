@@ -7,6 +7,7 @@ import { catalogSchemaStatus } from './schemaContract'
 import { validatePublicCatalogQuery } from './publicQueryBudget'
 import { configuredPublicOrigins, validateTurnstile } from './turnstile'
 import { RESOLVED_MODEL_BY_SLUG_CTE, resolvePublicModelIds } from './modelAliases'
+import { loadCanonicalPublicModelTags } from './publicModelTags'
 
 type D1Statement = {
   bind(...values: unknown[]): D1Statement
@@ -341,6 +342,8 @@ async function listCatalog(request: Request, env: Env) {
   const url = new URL(request.url)
   const category = url.searchParams.get('category')?.trim() || null
   const franchise = url.searchParams.get('franchise')?.trim() || null
+  const characterId = url.searchParams.get('character_id')?.trim() || null
+  const attributeId = url.searchParams.get('attribute_id')?.trim() || null
   const folder = url.searchParams.get('folder')?.trim() || null
   const query = url.searchParams.get('q')?.trim().toLocaleLowerCase('pt-BR') || null
   const material = url.searchParams.get('material')?.trim().slice(0, 120) || null
@@ -356,6 +359,11 @@ async function listCatalog(request: Request, env: Env) {
   const maxHeight = parseHeight(maxHeightRaw)
   if (Number.isNaN(minHeight) || Number.isNaN(maxHeight) || (minHeight !== null && maxHeight !== null && minHeight > maxHeight)) {
     return json(request, env, { error: 'invalid_height_range' }, { status: 400 })
+  }
+  if ((characterId && !/^[A-Za-z0-9_-]{3,100}$/.test(characterId)) ||
+      (attributeId && !/^[A-Za-z0-9_-]{3,100}$/.test(attributeId)) ||
+      (characterId && attributeId)) {
+    return json(request, env, { error: 'invalid_taxonomy_filter' }, { status: 400 })
   }
   const limit = clamp(Number.parseInt(url.searchParams.get('limit') ?? '24', 10) || 24, 1, 60)
   const rawCursor = url.searchParams.get('cursor')
@@ -394,6 +402,27 @@ async function listCatalog(request: Request, env: Env) {
   }
   if (category) { where.push('c.slug = ?'); values.push(category) }
   if (franchise) { where.push('f.slug = ?'); values.push(franchise) }
+  if (characterId) {
+    where.push(`EXISTS (
+      SELECT 1 FROM catalog_model_characters mc
+      JOIN catalog_characters character ON character.id=mc.character_id
+      WHERE mc.model_id=m.id AND mc.character_id=?
+        AND mc.review_state='confirmed' AND character.status='confirmed'
+    )`)
+    values.push(characterId)
+  }
+  if (attributeId) {
+    where.push(`EXISTS (
+      SELECT 1 FROM catalog_model_characters mc
+      JOIN catalog_character_attributes ca ON ca.character_id=mc.character_id
+      JOIN catalog_characters character ON character.id=mc.character_id
+      JOIN catalog_attributes attribute ON attribute.id=ca.attribute_id
+      WHERE mc.model_id=m.id AND attribute.id=?
+        AND mc.review_state='confirmed' AND character.status='confirmed'
+        AND attribute.status='confirmed'
+    )`)
+    values.push(attributeId)
+  }
   if (query) { where.push('models_fts MATCH ?'); values.push(toFtsPhrase(query)) }
   if (material) { where.push('LOWER(COALESCE(m.material, \'\')) LIKE LOWER(?) ESCAPE \'\\\''); values.push(`%${material.replace(/[\\%_]/g, '\\$&')}%`) }
   if (collection) { where.push('LOWER(COALESCE(m.collection, \'\')) LIKE LOWER(?) ESCAPE \'\\\''); values.push(`%${collection.replace(/[\\%_]/g, '\\$&')}%`) }
@@ -423,9 +452,10 @@ async function listCatalog(request: Request, env: Env) {
   const result = await env.DB.prepare(sql).bind(...values).all<CatalogRow>()
   const hasMore = result.results.length > limit
   const items = hasMore ? result.results.slice(0, limit) : result.results
+  const tags = await loadCanonicalPublicModelTags(env.DB, items)
   const lastItem = items.at(-1)
   return json(request, env, {
-    items,
+    items: items.map(item => ({ ...item, tags: tags.get(item.id) ?? [] })),
     nextCursor: hasMore && lastItem ? encodeCatalogCursor(lastItem) : null,
   }, {}, 'public, max-age=30, s-maxage=120')
 }
@@ -445,7 +475,10 @@ async function listRecentCatalog(request: Request, env: Env) {
     WHERE m.published=1
     ORDER BY m.created_at DESC,m.id DESC
     LIMIT ?`).bind(limit).all<CatalogRow>()
-  return json(request, env, { items: result.results }, {}, 'public, max-age=30, s-maxage=120')
+  const tags = await loadCanonicalPublicModelTags(env.DB, result.results)
+  return json(request, env, {
+    items: result.results.map(item => ({ ...item, tags: tags.get(item.id) ?? [] })),
+  }, {}, 'public, max-age=30, s-maxage=120')
 }
 
 async function getModel(request: Request, slug: string, env: Env) {
@@ -461,10 +494,10 @@ async function getModel(request: Request, slug: string, env: Env) {
     JOIN franchises f ON f.id=m.franchise_id
     JOIN categories c ON c.id=f.category_id
     LEFT JOIN catalog_folders cf ON cf.id=m.folder_id
-    WHERE m.published=1 LIMIT 1`).bind(slug).first()
-  return model
-    ? json(request, env, model, {}, 'public, max-age=30, s-maxage=120')
-    : json(request, env, { error: 'model_not_found' }, { status: 404 })
+    WHERE m.published=1 LIMIT 1`).bind(slug).first<CatalogRow & { description: string | null; search_text: string }>()
+  if (!model) return json(request, env, { error: 'model_not_found' }, { status: 404 })
+  const tags = await loadCanonicalPublicModelTags(env.DB, [model])
+  return json(request, env, { ...model, tags: tags.get(model.id) ?? [] }, {}, 'public, max-age=30, s-maxage=120')
 }
 
 async function listImages(request: Request, slug: string, env: Env) {

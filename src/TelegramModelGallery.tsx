@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Copy, Images, X } from "lucide-react";
+import type { CatalogTag } from "@/types/catalog-tags";
 
-export type ModelGalleryFacet = {
-  kind: "category" | "franchise" | "character";
-  label: string;
-};
+export type ModelGalleryFacet = CatalogTag;
 
 export type ModelGalleryDetail = {
   id: string;
@@ -26,7 +24,7 @@ type Props = {
   imageUrl: (path: string | null | undefined) => string | undefined;
   onClose: () => void;
   onCopy: () => void;
-  onFacet: (kind: ModelGalleryFacet["kind"]) => void;
+  onFacet: (facet: ModelGalleryFacet) => void;
   onStepPhoto: (direction: -1 | 1) => void;
   onSelectPhoto: (index: number) => void;
 };
@@ -340,7 +338,7 @@ export default function TelegramModelGallery({
                   aria-label="Classificação do modelo"
                 >
                   {facets.map((facet) =>
-                    detail.provisional && facet.kind === "franchise" ? (
+                    facet.provisional ? (
                       <span
                         key={facet.kind + ":" + facet.label}
                         className="max-w-full rounded-full border border-dashed border-[#71634e] px-3 py-1.5 text-xs text-[#b6c1b4]"
@@ -351,7 +349,7 @@ export default function TelegramModelGallery({
                       <button
                         key={facet.kind + ":" + facet.label}
                         type="button"
-                        onClick={() => onFacet(facet.kind)}
+                        onClick={() => onFacet(facet)}
                         className="max-w-full rounded-full border border-[#8a7352] px-3 py-1.5 text-xs text-[#eed3aa] transition hover:bg-[#31362b] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#f1c68d]"
                       >
                         {facet.label}

@@ -5,6 +5,7 @@
  * Commercial publication flags and review decisions are never modified here.
  */
 import { orderedTelegramGallery } from './telegramGallery'
+import { loadCanonicalPublicModelTags, type CanonicalPublicTag } from './publicModelTags'
 
 type D1Statement = {
   bind(...values: unknown[]): D1Statement
@@ -99,13 +100,14 @@ function json(data: unknown, status = 200, cacheControl = 'no-store') {
     'cache-control': cacheControl, 'x-content-type-options': 'nosniff',
   } })
 }
-function normalize(m: ModelRow) {
+function normalize(m: ModelRow, tags: CanonicalPublicTag[] = []) {
   return {
-    id: m.id, name: m.name, studio: m.telegram_studio, character: m.telegram_character,
+    id: m.id, name: m.name, studio: m.telegram_studio,
     variant: m.variant_name || '', imageCount: Number(m.image_count),
     provisional: m.telegram_name_provisional === 1,
     category: m.category || '', categorySlug: m.category_slug || '',
     franchise: m.franchise || '', franchiseSlug: m.franchise_slug || '',
+    tags,
   }
 }
 export async function routeTelegramStudioShowcase(
@@ -130,15 +132,19 @@ export async function routeTelegramStudioShowcase(
       const provisional = url.searchParams.get('provisional')
       const category = url.searchParams.get('category') ?? ''
       const franchise = url.searchParams.get('franchise') ?? ''
-      const character = url.searchParams.get('character') ?? ''
+      const characterId = url.searchParams.get('character_id') ?? ''
+      const attributeId = url.searchParams.get('attribute_id') ?? ''
       const rawOffset = url.searchParams.get('offset') ?? '0'
       const rawLimit = url.searchParams.get('limit') ?? '24'
-      const allowed = new Set(['studio', 'q', 'category', 'franchise', 'character', 'provisional', 'offset', 'limit'])
+      const allowed = new Set(['studio', 'q', 'category', 'franchise', 'character_id', 'attribute_id', 'provisional', 'offset', 'limit'])
       if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
           studio.length > 120 || /\p{Cc}/u.test(studio) ||
           category.length > 80 || (category !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)) ||
           franchise.length > 80 || (franchise !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(franchise)) ||
-          character.length > 80 || /\p{Cc}/u.test(character) || (character && (!franchise || character !== character.trim())) ||
+          (characterId && !/^[A-Za-z0-9_-]{3,100}$/.test(characterId)) ||
+          (attributeId && !/^[A-Za-z0-9_-]{3,100}$/.test(attributeId)) ||
+          (characterId && attributeId) ||
+          ((characterId || attributeId) && !franchise) ||
           q.length > 80 || /\p{Cc}/u.test(q) ||
           (provisional !== null && provisional !== '0' && provisional !== '1') ||
           !/^(0|[1-9]\d{0,4})$/.test(rawOffset) ||
@@ -150,8 +156,27 @@ export async function routeTelegramStudioShowcase(
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
       if (category) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f JOIN categories c ON c.id=f.category_id WHERE c.slug=?)'); values.push(category) }
       if (franchise) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f WHERE f.slug=?)'); values.push(franchise) }
-      // Character identity is franchise-scoped; a substring never identifies a character.
-      if (character) { where.push('m.telegram_character=? COLLATE NOCASE'); values.push(character) }
+      if (characterId) {
+        where.push(`EXISTS (
+          SELECT 1 FROM catalog_model_characters mc
+          JOIN catalog_characters character ON character.id=mc.character_id
+          WHERE mc.model_id=m.id AND mc.character_id=? AND mc.review_state='confirmed'
+            AND character.status='confirmed' AND m.telegram_name_provisional=0
+        )`)
+        values.push(characterId)
+      }
+      if (attributeId) {
+        where.push(`EXISTS (
+          SELECT 1 FROM catalog_model_characters mc
+          JOIN catalog_character_attributes ca ON ca.character_id=mc.character_id
+          JOIN catalog_characters character ON character.id=mc.character_id
+          JOIN catalog_attributes attribute ON attribute.id=ca.attribute_id
+          WHERE mc.model_id=m.id AND attribute.id=? AND mc.review_state='confirmed'
+            AND character.status='confirmed' AND attribute.status='confirmed'
+            AND m.telegram_name_provisional=0
+        )`)
+        values.push(attributeId)
+      }
       if (provisional !== null) {
         where.push('m.telegram_name_provisional=' + (provisional === '1' ? '1' : '0'))
       }
@@ -182,8 +207,9 @@ export async function routeTelegramStudioShowcase(
         ' FROM page p JOIN models m ON m.id=p.id' +
         ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id')
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results
+      const tags = await loadCanonicalPublicModelTags(env.DB, rows)
       return json({ total: count?.total ?? 0, offset: Number(rawOffset), limit: Number(rawLimit),
-        items: rows.map(m => ({...normalize(m), cover: m.cover_sha && SHA.test(m.cover_sha)
+        items: rows.map(m => ({...normalize(m, tags.get(m.id) ?? []), cover: m.cover_sha && SHA.test(m.cover_sha)
           ? ROOT + '/' + m.id + '/media/' + m.cover_sha + '/thumb' : null})) }, 200, metadataCache(request))
       }, background)
     }
@@ -223,7 +249,8 @@ export async function routeTelegramStudioShowcase(
       .bind(id).all<ImageRow>()).results
     const ordered = orderedTelegramGallery(images, model.telegram_gallery_order)
       .filter(x => SHA.test(x.source_sha256))
-    return json({...normalize(model), images: ordered.map((x, position)=>({
+    const tags = await loadCanonicalPublicModelTags(env.DB, [model])
+    return json({...normalize(model, tags.get(model.id) ?? []), images: ordered.map((x, position)=>({
       position, thumb:ROOT+'/'+id+'/media/'+x.source_sha256+'/thumb',
       display:ROOT+'/'+id+'/media/'+x.source_sha256+'/display',
     })) })

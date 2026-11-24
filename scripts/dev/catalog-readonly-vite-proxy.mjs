@@ -41,7 +41,7 @@ export function catalogReadOnlyViteProxy() {
           return;
         }
 
-        void onRequest({
+        void Promise.resolve().then(() => onRequest({
           request: pagesRequest,
           env: {
             CATALOG_WORKER: {
@@ -55,7 +55,7 @@ export function catalogReadOnlyViteProxy() {
               },
             },
           },
-        }).then((result) => {
+        })).then((result) => {
           if (response.destroyed) return;
           response.statusCode = result.status;
           result.headers.forEach((value, name) => response.setHeader(name, value));

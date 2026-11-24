@@ -9,9 +9,10 @@ import {
   type KeyboardEvent,
 } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import { catalogModelDisplayName, catalogTagLabel, CatalogFilterTag, visibleCatalogTags } from "@/components/catalog/CatalogTaxonomy";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -37,6 +38,7 @@ import {
   createPublicCatalogGateway,
   validCatalogFolder,
   validCatalogSlug,
+  type PublicCatalogDetail,
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
 
@@ -178,6 +180,7 @@ export default function CanonicalModelDetails() {
   );
   const { id: slug } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const catalogReturnTo = catalogReturnPath(location.state);
   const quoteRequestPath =
     PUBLIC_ROUTES.quoteRequest +
@@ -297,6 +300,31 @@ export default function CanonicalModelDetails() {
     staleTime: 5 * 60 * 1000,
   });
   const model = modelQuery.data;
+
+  function applyModelTag(kind: "category" | "franchise", value: string) {
+    const params = new URLSearchParams();
+    if (kind === "category") params.set("category", value);
+    else params.set("franchise", value);
+    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
+  }
+
+  function applyModelCharacterTag(model: PublicCatalogDetail, characterId: string) {
+    const params = new URLSearchParams({
+      category: model.categorySlug,
+      franchise: model.franchiseSlug,
+      character_id: characterId,
+    });
+    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
+  }
+
+  function applyModelAttributeTag(model: PublicCatalogDetail, attributeId: string) {
+    const params = new URLSearchParams({
+      category: model.categorySlug,
+      franchise: model.franchiseSlug,
+      attribute_id: attributeId,
+    });
+    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
+  }
   const coverReleased = Boolean(model && isApprovedPublicCover(model));
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
@@ -475,6 +503,23 @@ export default function CanonicalModelDetails() {
     );
   }
 
+  const displayName = model ? catalogModelDisplayName(model) : "";
+  const detailTags = model
+    ? visibleCatalogTags(model.tags ?? []).map((tag) => ({
+        key: tag.kind + ":" + tag.id,
+        kind: tag.kind,
+        label: catalogTagLabel(tag.label),
+        provisional: tag.provisional,
+        onClick: () => {
+          if (tag.kind === "category" || tag.kind === "franchise")
+            applyModelTag(tag.kind, tag.slug);
+          else if (tag.kind === "character")
+            applyModelCharacterTag(model, tag.id);
+          else applyModelAttributeTag(model, tag.id);
+        },
+      }))
+    : [];
+
   // Direct links cannot bypass the public visual publication embargo.
   if (publicationBlocked) {
     return (
@@ -508,38 +553,40 @@ export default function CanonicalModelDetails() {
 
   return (
     <Page
-      title={model ? model.name + " — TONART Studio" : "Ficha do modelo"}
+      title={model ? displayName + " — TONART Studio" : "Ficha do modelo"}
       description={
         model?.description ??
         "Ficha do modelo publicado no catálogo TONART Studio."
       }
       keywords={
         model
-          ? [model.name, model.category, model.franchise, "TONART Studio"]
+          ? [displayName, model.category, model.franchise, "TONART Studio"]
           : ["TONART Studio", "modelo"]
       }
     >
       <div className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
         <div className="mx-auto max-w-7xl">
-          <Link
-            to={catalogReturnTo}
-            className="inline-flex min-h-11 items-center gap-2 rounded-none text-sm font-medium text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
-          >
-            <ArrowLeft aria-hidden="true" size={17} />
-            {catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
-              ? "Voltar à pasta"
-              : "Voltar ao catálogo"}
-          </Link>
-          {backToRelatedModel ? (
+          <nav aria-label="Navegação da ficha" className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <Link
-              to={PUBLIC_ROUTES.catalogModels + "/" + backToRelatedModel}
-              state={relatedCatalogReturnState(catalogReturnTo)}
-              className="ml-4 inline-flex min-h-11 items-center gap-2 text-sm text-[hsl(0,0%,70%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+              to={catalogReturnTo}
+              className="inline-flex min-h-11 items-center gap-2 rounded-none text-sm font-medium text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
             >
-              <ArrowLeft aria-hidden="true" size={16} />
-              Voltar ao modelo anterior
+              <ArrowLeft aria-hidden="true" size={17} />
+              {catalogReturnTo.startsWith(PUBLIC_ROUTES.catalog + "/")
+                ? "Voltar à pasta"
+                : "Voltar ao catálogo"}
             </Link>
-          ) : null}
+            {backToRelatedModel ? (
+              <Link
+                to={PUBLIC_ROUTES.catalogModels + "/" + backToRelatedModel}
+                state={relatedCatalogReturnState(catalogReturnTo)}
+                className="inline-flex min-h-11 items-center gap-2 text-sm text-[hsl(0,0%,70%)] hover:text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+              >
+                <ArrowLeft aria-hidden="true" size={16} />
+                Voltar ao modelo anterior
+              </Link>
+            ) : null}
+          </nav>
           {adjacentModels.previous || adjacentModels.next ? (
             <nav
               aria-label={
@@ -636,11 +683,11 @@ export default function CanonicalModelDetails() {
                       momento.
                     </p>
                   ) : null}
-                  <ArcadeCard className="flex min-h-[clamp(18rem,58svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">
+                  <ArcadeCard className="flex min-h-[clamp(16rem,52svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">
                     <CanonicalCatalogImage
                       src={activeImageUrl}
                       fallbackSrc={activeImageFallbackUrl}
-                      alt={"Referência visual de " + model.name}
+                      alt={"Referência visual de " + displayName}
                       imageClassName="max-h-[75vh] w-full object-contain p-4"
                       loading="eager"
                       fetchPriority="high"
@@ -733,7 +780,7 @@ export default function CanonicalModelDetails() {
                                 "Ver imagem " +
                                 (index + 1) +
                                 " de " +
-                                model.name
+                                displayName
                               }
                               aria-pressed={activeImage?.id === image.id}
                               className="aspect-square overflow-hidden rounded-none border border-[hsl(0,0%,15%)] bg-[hsl(0,0%,7%)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] aria-pressed:border-[hsl(var(--gold-accent))]"
@@ -783,16 +830,30 @@ export default function CanonicalModelDetails() {
                   <div className="space-y-6">
                     <header>
                       <ArcadeSectionTitle>FICHA DO MODELO</ArcadeSectionTitle>
-                      <p className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
-                        {model.category} · {model.franchise}
-                      </p>
                       <h1
                         ref={relatedModelTitleRef}
                         tabIndex={-1}
                         className="mt-3 break-words text-2xl font-black uppercase tracking-[0.08em] leading-tight sm:text-3xl md:text-4xl"
                       >
-                        {model.name}
+                        {displayName}
                       </h1>
+                      {detailTags.length > 0 ? (
+                        <div
+                          role="group"
+                          aria-label="Classificação do modelo"
+                          className="mt-4 flex flex-wrap gap-2"
+                        >
+                          {detailTags.map((tag) => (
+                            <CatalogFilterTag
+                              key={tag.key}
+                              kind={tag.kind}
+                              label={tag.label}
+                              provisional={tag.provisional}
+                              onClick={tag.onClick}
+                            />
+                          ))}
+                        </div>
+                      ) : null}
                       {model.variantName ? (
                         <p className="mt-2 text-base text-[hsl(0,0%,56%)]">
                           {model.variantName}
@@ -802,7 +863,7 @@ export default function CanonicalModelDetails() {
 
                     <p className="whitespace-pre-line leading-relaxed text-[hsl(0,0%,70%)]">
                       {model.description ||
-                        "Explore os detalhes desta referência digital e adicione o modelo à sua seleção para consultá-lo enquanto navega pelo acervo."}
+                        "Explore as imagens e as informações desta referência digital do acervo TONART."}
                     </p>
 
                     <dl className="grid grid-cols-1 gap-4 border-y border-[hsl(0,0%,15%)] py-5 text-sm min-[420px]:grid-cols-2">

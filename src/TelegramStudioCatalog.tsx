@@ -1,13 +1,15 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { ArrowRight, ArrowUpRight, Search, Images } from "lucide-react";
+import { ArrowUpRight, Search } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
+import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
+import { catalogTagKey, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
+import { canonicalTagsForModel, type CatalogTag, type CatalogTagKind } from "@/types/catalog-tags";
 
 type Model = {
   id: string;
   name: string;
   studio: string;
-  character?: string;
   variant: string;
   imageCount: number;
   provisional: boolean;
@@ -15,6 +17,7 @@ type Model = {
   categorySlug?: string;
   franchise?: string;
   franchiseSlug?: string;
+  tags?: CatalogTag[];
   cover: string | null;
 };
 type GalleryImage = { position: number; thumb: string; display: string };
@@ -27,6 +30,7 @@ type Route = {
   category: string;
   franchise: string;
   character: string;
+  attribute: string;
   provisional: "" | "0" | "1";
   query: string;
   offset: number;
@@ -40,43 +44,16 @@ function isEmbeddedCatalogRoute(pathname: string): boolean {
 }
 const PAGE_SIZE = 24;
 const MODEL_ID = /^tg_[a-f0-9]{24}$/;
-type FacetKind = "category" | "franchise" | "character";
+type FacetKind = CatalogTagKind;
 function tagKey(text: string) {
-  return text
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .toLocaleLowerCase("pt-BR");
+  return catalogTagKey(text);
 }
-function modelFacets(model: Model): Array<{ kind: FacetKind; label: string }> {
-  const tags: Array<{ kind: FacetKind; label: string }> = [];
-  if (
-    model.category &&
-    model.categorySlug &&
-    model.categorySlug !== "curadoria-pendente"
-  )
-    tags.push({ kind: "category", label: model.category });
-  if (
-    model.franchise &&
-    model.franchiseSlug &&
-    model.franchiseSlug !== "franquia-a-identificar"
-  )
-    tags.push({ kind: "franchise", label: model.franchise });
-  // Drafts expose the product title as telegram_character; that is not a
-  // verified person. Never mint a public character tag from draft metadata.
-  if (
-    !model.provisional &&
-    model.character &&
-    model.franchiseSlug &&
-    model.franchiseSlug !== "franquia-a-identificar"
-  )
-    tags.push({ kind: "character", label: model.character });
-  const seen = new Set<string>();
-  return tags.filter(({ label }) => {
-    const k = tagKey(label);
-    if (!k || seen.has(k)) return false;
-    seen.add(k);
-    return true;
+function modelFacets(model: Model): CatalogTag[] {
+  return canonicalTagsForModel(model.tags, {
+    category: model.category,
+    categorySlug: model.categorySlug,
+    franchise: model.franchise,
+    franchiseSlug: model.franchiseSlug,
   });
 }
 const classes =
@@ -99,6 +76,7 @@ function readRoute(): Route {
       category: "",
       franchise: "",
       character: "",
+      attribute: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -124,7 +102,13 @@ function readRoute(): Route {
       ? rawFranchise
       : "";
   const rawCharacter = (params.get("personagem") || "").trim();
-  const character = franchise && rawCharacter.length <= 80 ? rawCharacter : "";
+  const character = franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawCharacter)
+    ? rawCharacter
+    : "";
+  const rawAttribute = (params.get("atributo") || "").trim();
+  const attribute = franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawAttribute)
+    ? rawAttribute
+    : "";
   const provisionalParam = params.get("situacao");
   const provisional =
     provisionalParam === "0" || provisionalParam === "1"
@@ -142,6 +126,7 @@ function readRoute(): Route {
     category,
     franchise,
     character,
+    attribute,
     provisional,
     query,
     offset,
@@ -162,6 +147,8 @@ function urlForRoute(route: Route): string {
   if (route.franchise) params.set("franquia", route.franchise);
   if (route.franchise && route.character)
     params.set("personagem", route.character);
+  if (route.franchise && route.attribute)
+    params.set("atributo", route.attribute);
   if (route.provisional) params.set("situacao", route.provisional);
   if (route.query) params.set("q", route.query);
   if (route.offset > 0)
@@ -186,6 +173,8 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export default function TelegramStudioCatalog({ embedded = false }: { embedded?: boolean }) {
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
+  const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
+  const [filtersOpen, setFiltersOpen] = useState(() => Boolean(route.franchise || route.character || route.attribute || route.provisional));
   const [studios, setStudios] = useState<Studio[]>([]);
   const [studioSearch, setStudioSearch] = useState("");
   const [studiosError, setStudiosError] = useState("");
@@ -204,6 +193,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
     category,
     franchise,
     character,
+    attribute,
     provisional,
     query,
     offset,
@@ -214,7 +204,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
   // global Modelos feed. The API and top-level search filters remain shared.
   const showStudioModelTags = view === "studios" && Boolean(studio);
 
-  function applyFacet(kind: FacetKind, model: Model) {
+  function applyFacet(kind: FacetKind, model: Model, tag: CatalogTag) {
     const next: Route = {
       ...route,
       view: "models",
@@ -222,16 +212,21 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       category: "",
       franchise: "",
       character: "",
+      attribute: "",
       provisional: "",
       query: "",
       offset: 0,
       selected: null,
     };
-    if (kind === "category") next.category = model.categorySlug || "";
-    if (kind === "franchise") next.franchise = model.franchiseSlug || "";
+    if (kind === "category") next.category = tag.slug;
+    if (kind === "franchise") next.franchise = tag.slug;
     if (kind === "character") {
       next.franchise = model.franchiseSlug || "";
-      next.character = model.character || "";
+      next.character = tag.id;
+    }
+    if (kind === "publisher" || kind === "universe" || kind === "sign" || kind === "constellation") {
+      next.franchise = model.franchiseSlug || "";
+      next.attribute = tag.id;
     }
     setDraft("");
     navigate(next);
@@ -291,7 +286,8 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
     if (studio) params.set("studio", studio);
     if (category) params.set("category", category);
     if (franchise) params.set("franchise", franchise);
-    if (franchise && character) params.set("character", character);
+    if (franchise && character) params.set("character_id", character);
+    if (franchise && attribute) params.set("attribute_id", attribute);
     if (query) params.set("q", query);
     if (provisional) params.set("provisional", provisional);
     setLoading(true);
@@ -317,6 +313,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
     category,
     franchise,
     character,
+    attribute,
     provisional,
     query,
     offset,
@@ -354,6 +351,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       ...route,
       franchise: "",
       character: "",
+      attribute: "",
       query: term,
       offset: 0,
       selected: null,
@@ -367,6 +365,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       category: "",
       franchise: "",
       character: "",
+      attribute: "",
       provisional: "",
       query: "",
       offset: 0,
@@ -412,10 +411,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       categoryMap.set(item.categorySlug, item.category);
     }
   }
-  const modelCategories = Array.from(categoryMap, ([slug, name]) => ({
-    slug,
-    name,
-  })).sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const modelCategories = orderCatalogCategories(
+    Array.from(categoryMap, ([id, label]) => ({ id, label })),
+  ).map(({ id, label }) => ({ slug: id, name: label }));
   const modelTags = Array.from(
     new Map(
       (page?.items ?? []).flatMap((item) =>
@@ -488,183 +486,50 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           </nav>
         </div>
       </header>}
-      <ContentContainer className="mx-auto max-w-[1440px] px-5 pb-24 sm:px-8 lg:px-12">
-        {view === "models" && (
-          <section
-            aria-labelledby="catalog-hero-heading"
-            className="relative isolate overflow-hidden border-b border-[#ffffff18] py-14 sm:py-20"
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute -right-48 -top-64 -z-10 h-[680px] w-[680px] rounded-full bg-[#927c59]/10 blur-[95px]"
-            />
-            <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-              <div className="max-w-[670px]">
-                <p className="mb-6 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.23em] text-[#c7ab7c] sm:text-xs">
-                  <span className="h-px w-8 bg-[#c7ab7c]" />
-                  Biblioteca visual de modelos
-                </p>
-                <h1
-                  id="catalog-hero-heading"
-                  className={embedded
-                    ? "font-bold uppercase text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[0.02em]"
-                    : "font-serif text-[clamp(3.1rem,5.4vw,6.2rem)] leading-[1.035] tracking-[-0.045em]"}
-                  style={embedded ? { fontFamily: "\"Bebas Neue\", Impact, sans-serif" } : undefined}
-                >
-                  Modelos 3D{" "}
-                  <span className="block italic text-[#ccb18a]">
-                    organizados.
-                  </span>
-                </h1>
-                <p className="mt-7 max-w-xl text-base leading-8 text-[#b9b9ae] sm:text-lg">
-                  Navegue por modelos, personagens, variantes e galerias de
-                  imagens. Use a pesquisa e os filtros para encontrar cada
-                  escultura; as tags editoriais ficam nas coleções dos estúdios.
-                </p>
-                <div className="mt-9 flex flex-wrap gap-3">
-                  <a
-                    href="#colecao"
-                    className="inline-flex min-h-12 items-center gap-3 rounded-lg bg-[#d2b58a] px-6 text-sm font-semibold text-[#171b13] transition hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
-                  >
-                    Explorar modelos{" "}
-                    <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                  <a
-                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
-                    className="inline-flex min-h-12 items-center gap-2 rounded-lg border border-[#776c52] px-5 text-sm text-[#eee0c9] hover:border-[#d2b58a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
-                  >
-                    Coleções por estúdio{" "}
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </a>
-                </div>
-                <div className="mt-12 flex flex-wrap gap-9 border-t border-[#ffffff1c] pt-6">
-                  <div>
-                    <span className="block font-serif text-3xl text-[#eeddbb]">
-                      {!studio && !query && !category && !provisional && page
-                        ? page.total.toLocaleString("pt-BR")
-                        : "—"}
-                    </span>
-                    <span className="mt-1 block text-[10px] uppercase tracking-[0.18em] text-[#9ba297]">
-                      Modelos no acervo
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div
-                aria-label="Prévia de modelos do catálogo"
-                className="relative mx-auto grid h-[330px] w-full max-w-[560px] grid-cols-[1fr_0.83fr] gap-3 sm:h-[460px] lg:h-[520px]"
-              >
-                {[0, 1, 2].map((index) => {
-                  const item = page?.items[index];
-                  return item && imageUrl(item.cover) ? (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => navigate({ ...route, selected: item.id })}
-                      aria-label={
-                        "Abrir prévia de " + item.name + ", " + item.studio
-                      }
-                      className={
-                        "group relative overflow-hidden rounded-xl border border-[#ffffff1c] bg-[#292e26] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
-                        (index === 0 ? "row-span-2" : "")
-                      }
-                    >
-                      <img
-                        src={imageUrl(item.cover)}
-                        alt=""
-                        className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-[1.05]"
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#0d110e] to-transparent"
-                      />
-                      <span className="sr-only">
-                        Abrir modelo do estúdio {item.studio}
-                      </span>
-                    </button>
-                  ) : (
-                    <div
-                      key={index}
-                      className={
-                        "rounded-xl border border-[#ffffff18] bg-gradient-to-br from-[#353a2e] to-[#181c17] " +
-                        (index === 0 ? "row-span-2" : "")
-                      }
-                    />
-                  );
-                })}
-                <span className="pointer-events-none absolute -bottom-4 -left-2 inline-flex items-center gap-2 rounded-md border border-[#7e7058] bg-[#171c16] px-4 py-3 text-[11px] text-[#e8d4b2] shadow-xl sm:-left-5">
-                  <Images aria-hidden="true" className="h-4 w-4" /> Galeria de
-                  renders digitais
-                </span>
-              </div>
-            </div>
-          </section>
+      <ContentContainer className="mx-auto w-full max-w-[1600px] pb-24">
+        {(view === "models" || Boolean(studio)) && (
+          <CatalogExplorerHeader
+            kind="review"
+            activeTab={view === "studios" ? "collections" : "explore"}
+            standalone={!embedded}
+            search={draft}
+            onSearchChange={(value) => { setDraft(value); setSearchError(""); }}
+            onSearchSubmit={search}
+            onSearchClear={() => {
+              setDraft("");
+              setSearchError("");
+              navigate({ ...route, query: "", offset: 0, selected: null });
+            }}
+            categories={modelCategories.map((item) => ({ id: item.slug, label: item.name }))}
+            category={category}
+            onCategoryChange={(next) => navigate({ ...route, category: next, offset: 0, selected: null })}
+            onFiltersClick={() => setFiltersOpen((open) => !open)}
+            filterCount={[category, franchise, character, attribute, provisional].filter(Boolean).length}
+            filtersExpanded={filtersOpen}
+            filtersControlId="telegram-catalog-filters"
+            totalLabel={page ? page.total.toLocaleString("pt-BR") + " referências" : undefined}
+            coverUrl={imageUrl(page?.items[0]?.cover)}
+            collectionHref={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
+          />
         )}
         {(view === "models" || Boolean(studio)) && (
           <section
             id="colecao"
             aria-label="Buscar modelos"
-            className="scroll-mt-28 pt-12 sm:pt-16"
+            className="scroll-mt-28 px-4 pt-2 sm:px-6 sm:pt-3 xl:px-8"
           >
-            <div className="mb-7 flex flex-wrap items-end justify-between gap-5">
-              <div>
-                {studio && (
-                  <a
-                    href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
-                    className="mb-4 inline-flex items-center gap-2 text-sm text-[#d8b88d] hover:underline"
-                  >
-                    ← Todos os estúdios
-                  </a>
-                )}
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#c7ab7c]">
-                  {studio ? "Coleção do estúdio" : "Explore o acervo"}
-                </p>
-                <h2 className="mt-2 font-serif text-3xl tracking-tight sm:text-4xl">
-                  {studio || "Consulte os modelos."}
-                </h2>
+            {studio ? (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <a href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"} className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline">
+                  ← Todos os estúdios
+                </a>
+                <p className="text-sm text-[hsl(0,0%,70%)]">Coleção do estúdio: <strong className="text-white">{studio}</strong></p>
               </div>
-              <p className="max-w-sm text-sm leading-6 text-[#aeb1a5]">
-                {studio
-                  ? "Modelos e variantes vinculados a este estúdio, com galerias e paginação."
-                  : "Busque modelos, personagens e variantes com tags da curadoria."}
-              </p>
-            </div>
-            <form
-              onSubmit={search}
-              className="grid gap-3 rounded-xl border border-[#ffffff22] bg-[#1a2019] p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-5"
-            >
-              <div>
-                <label
-                  htmlFor="catalog-search"
-                  className="mb-2 block text-xs font-medium uppercase tracking-wider text-[#c9ac88]"
-                >
-                  Pesquisar
-                </label>
-                <input
-                  id="catalog-search"
-                  value={draft}
-                  onChange={(event) => {
-                    setDraft(event.target.value);
-                    setSearchError("");
-                  }}
-                  maxLength={80}
-                  placeholder="Personagem, escultura ou versão"
-                  autoComplete="off"
-                  aria-describedby={
-                    searchError ? "catalog-search-error" : undefined
-                  }
-                  className="min-h-12 w-full rounded-lg border border-[#565c50] bg-[#101610] px-4 text-[#f1e9df] outline-none placeholder:text-[#959b8f] focus:border-[#e1b784]"
-                />
-              </div>
-              <button
-                type="submit"
-                className="inline-flex min-h-12 items-center justify-center gap-2 self-end rounded-lg bg-[#d2b58a] px-5 font-semibold text-[#141810] hover:bg-[#efdbb7] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792]"
-              >
-                <Search aria-hidden="true" className="h-4 w-4" /> Pesquisar
-              </button>
-            </form>
+            ) : null}
+            {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div className="mt-5 grid gap-5 rounded-xl border border-[#ffffff18] bg-[#161b16] p-5 lg:grid-cols-3">
+            <div id="telegram-catalog-filters" className={filtersOpen ? `mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 ${embedded ? "lg:grid-cols-2" : "lg:grid-cols-3"}` : "hidden"}>
+              {!embedded && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Categorias
@@ -691,7 +556,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                         })
                       }
                       className={
-                        "rounded-full border px-3 py-2 text-xs transition hover:border-[#d6b484] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
+                        "min-h-11 rounded-full border px-3 py-2 text-xs transition hover:border-[#d6b484] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
                         (category === item.slug
                           ? "border-[#d6b484] bg-[#5b4931] text-[#fff1db]"
                           : "border-[#555b4e] text-[#c0c4b8]")
@@ -711,6 +576,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                   são apresentadas como categorias oficiais.
                 </p>
               </div>
+              )}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
                   Situação da curadoria
@@ -767,7 +633,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                 >
                   {modelTags.length > 0 ? (
                     modelTags.map((tag) =>
-                      tag.model.provisional ? (
+                      tag.provisional ? (
                         <span
                           key={
                             tag.kind +
@@ -791,7 +657,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                             tag.label
                           }
                           type="button"
-                          onClick={() => applyFacet(tag.kind, tag.model)}
+                          onClick={() => applyFacet(tag.kind, tag.model, tag)}
                           className="rounded-full border border-[#5c6253] bg-[#252d23] px-3 py-2 text-xs text-[#d9dfd0] hover:border-[#ccae7c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
                         >
                           {tag.label}
@@ -822,7 +688,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </p>
             )}
 
-            <div className="mt-12 flex flex-wrap items-end justify-between gap-3 border-b border-[#ffffff20] pb-5">
+            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3">
               <div>
                 <h2 className="font-serif text-2xl sm:text-3xl">
                   {studio ? "Modelos de " + studio : "Galeria de modelos"}
@@ -843,7 +709,8 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
                 <span
                   role="status"
                   aria-live="polite"
@@ -871,6 +738,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                         category: "",
                         franchise: "",
                         character: "",
+                        attribute: "",
                         provisional: "",
                         offset: 0,
                         selected: null,
@@ -901,7 +769,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             {loading && (
               <div
                 role="status"
-                className="grid grid-cols-2 gap-4 py-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+                className="grid grid-cols-2 gap-3 py-6 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 lg:gap-5"
               >
                 {Array.from({ length: 10 }, (_, i) => (
                   <div
@@ -920,12 +788,15 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </div>
             )}
             {!loading && page && (
-              <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                {page.items.map((model) => (
-                  <article
-                    key={model.id}
-                    className="group flex flex-col overflow-hidden rounded-xl border border-[#ffffff1b] bg-[#1b211c] transition duration-300 hover:-translate-y-1 hover:border-[#d2b58a]"
-                  >
+              <div className={catalogView === "grid" ? "mt-7 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 lg:gap-5" : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"}>
+                {page.items.map((model) => {
+                  const facets = modelFacets(model);
+                  const tagGroups = catalogTagGroupsFromPublicTags(
+                    facets,
+                    (tag) => applyFacet(tag.kind, model, tag),
+                  );
+                  return (
+                  <CatalogModelCardShell key={model.id}>
                     <button
                       type="button"
                       onClick={() => navigate({ ...route, selected: model.id })}
@@ -934,123 +805,38 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                       }
                       className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
                     >
-                      <div className="relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden bg-[#2b3028]">
+                      <CatalogCardMediaFrame imageCount={model.imageCount}>
                         {imageUrl(model.cover) ? (
                           <img
                             src={imageUrl(model.cover)}
                             alt=""
                             loading="lazy"
-                            className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"
+                            className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
                           />
                         ) : (
                           <span className="p-3 text-center text-sm text-[#b6a496]">
                             Render em preparação
                           </span>
                         )}
-                        {model.imageCount > 1 && (
-                          <span className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full border border-[#ffffff4d] bg-[#111713]/90 px-2.5 py-1 text-xs text-[#f1e7d8]">
-                            <Images
-                              aria-hidden="true"
-                              className="h-3.5 w-3.5"
-                            />
-                            {model.imageCount} fotos
-                          </span>
-                        )}
-                      </div>
-                      <div className="px-3 pt-3 sm:px-4 sm:pt-4">
+                      </CatalogCardMediaFrame>
+                      <div className="space-y-1.5 p-3 pb-1 md:px-4 md:pt-4">
                         {showStudioModelTags && (
                           <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
                             {model.studio}
                           </p>
                         )}
-                        <h3
-                          className={
-                            showStudioModelTags
-                              ? "mt-2 line-clamp-2 font-semibold leading-5"
-                              : "line-clamp-2 font-semibold leading-5"
-                          }
-                        >
-                          {model.name}
-                        </h3>
+                        <CatalogCardIdentity
+                          name={model.name}
+                        />
                       </div>
                     </button>
-                    <div
-                      className={
-                        showStudioModelTags
-                          ? "flex min-h-14 flex-wrap items-end gap-2 px-3 pb-3 pt-3 sm:px-4 sm:pb-4"
-                          : "flex flex-wrap items-center justify-end px-3 pb-3 pt-2 sm:px-4 sm:pb-4"
-                      }
-                    >
-                      {modelFacets(model)
-                        .filter(
-                          (facet) =>
-                            showStudioModelTags || facet.kind !== "character",
-                        )
-                        .map((facet) =>
-                          model.provisional && facet.kind === "franchise" ? (
-                            <span
-                              key={facet.kind + ":" + tagKey(facet.label)}
-                              aria-label={"Franquia em revisão: " + facet.label}
-                              className="max-w-full truncate rounded-full border border-dashed border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#bac2b1]"
-                            >
-                              {facet.label} · em revisão
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              key={facet.kind + ":" + tagKey(facet.label)}
-                              aria-label={
-                                "Filtrar por " +
-                                (facet.kind === "category"
-                                  ? "categoria "
-                                  : facet.kind === "franchise"
-                                    ? "franquia "
-                                    : "personagem ") +
-                                facet.label
-                              }
-                              onClick={() => applyFacet(facet.kind, model)}
-                              className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
-                            >
-                              {facet.label}
-                              {model.provisional ? " · em revisão" : ""}
-                            </button>
-                          ),
-                        )}
-                      {showStudioModelTags &&
-                        model.variant &&
-                        tagKey(model.variant) !== tagKey(model.name) &&
-                        !modelFacets(model).some(
-                          (facet) =>
-                            tagKey(facet.label) === tagKey(model.variant),
-                        ) && (
-                          <button
-                            type="button"
-                            aria-label={"Filtrar por tag " + model.variant}
-                            onClick={() => {
-                              const tag = model.variant.trim();
-                              setDraft(tag);
-                              navigate({
-                                ...route,
-                                franchise: "",
-                                character: "",
-                                query: tag,
-                                offset: 0,
-                                selected: null,
-                              });
-                            }}
-                            className="max-w-full truncate rounded-full border border-[#635c4a] bg-[#292d26] px-3 py-1 text-xs text-[#e6cba3] hover:border-[#d4b382] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792]"
-                          >
-                            {model.variant}
-                          </button>
-                        )}
-                      <span className="ml-auto text-right text-xs text-[#b6a496]">
-                        {model.imageCount}{" "}
-                        {model.imageCount === 1 ? "imagem" : "imagens"}
-                        {model.provisional ? " · Em curadoria" : ""}
-                      </span>
-                    </div>
-                  </article>
-                ))}
+                    <CatalogCardTagRow
+                      label={"Filtros de " + model.name}
+                      groups={tagGroups}
+                    />
+                  </CatalogModelCardShell>
+                  );
+                })}
               </div>
             )}
 
@@ -1093,7 +879,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           <section
             id="estudios"
             aria-labelledby="studios-heading"
-            className="scroll-mt-28 pt-12 sm:pt-20"
+            className="scroll-mt-28 px-4 pt-12 sm:px-6 sm:pt-20 xl:px-8"
           >
             <div className="max-w-3xl">
               <p className="text-xs font-semibold uppercase tracking-[0.23em] text-[#c7ab7c]">
@@ -1202,7 +988,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             autorização de reprodução.
           </p>
           <span className="rounded-full border border-[#807052] px-3 py-1 text-[10px] uppercase tracking-widest text-[#e2c79c]">
-            Vitrine visual
+            {embedded ? "Em revisão" : "Vitrine visual"}
           </span>
         </aside>
       </ContentContainer>
@@ -1213,19 +999,15 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           error={detailError}
           photoIndex={photoIndex}
           copyMessage={copyMessage}
-          facets={
-            detail?.id === selected
-              ? modelFacets(detail).filter(
-                  (facet) => showStudioModelTags || facet.kind !== "character",
-                )
-              : []
-          }
+          facets={detail?.id === selected
+            ? modelFacets(detail)
+            : []}
           showStudioVariant={showStudioModelTags}
           imageUrl={imageUrl}
           onClose={closeGallery}
           onCopy={copyLink}
-          onFacet={(kind) => {
-            if (detail?.id === selected) applyFacet(kind, detail);
+          onFacet={(tag) => {
+            if (detail?.id === selected) applyFacet(tag.kind, detail, tag);
           }}
           onStepPhoto={(direction) => {
             if (detail?.id !== selected || detail.images.length < 2) return;

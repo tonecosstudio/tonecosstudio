@@ -46,7 +46,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   let allowed: readonly string[]
   if (path === "/api/catalog") {
     allowed = ["category", "franchise", "folder", "q", "material",
-      "collection", "minHeight", "maxHeight", "limit", "cursor"]
+      "collection", "minHeight", "maxHeight", "character_id", "attribute_id", "limit", "cursor"]
   } else if (path === "/api/franchises") {
     allowed = ["category", "q", "limit"]
   } else if (path === "/api/folders") {
