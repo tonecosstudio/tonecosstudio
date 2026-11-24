@@ -60,6 +60,24 @@ afterEach(() => {
 });
 
 describe("Telegram-only public studio gallery", () => {
+  it("shows models immediately and keeps advanced facets collapsed until requested", async () => {
+    mockCatalog();
+    render(<TelegramStudioCatalog />);
+    expect(await screen.findByText("Aang")).toBeInTheDocument();
+    const filters = screen.getByRole("button", { name: "Filtros" });
+    const panel = document.getElementById("telegram-catalog-filters");
+    expect(panel).not.toBeNull();
+    expect(panel).toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Consulte os modelos.")).not.toBeInTheDocument();
+    fireEvent.click(filters);
+    expect(panel).not.toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(filters);
+    expect(panel).toHaveClass("hidden");
+    expect(filters).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("shows studio collections and shares a deep link without commercial actions", async () => {
     const fetcher = mockCatalog();
     render(<TelegramStudioCatalog />);
