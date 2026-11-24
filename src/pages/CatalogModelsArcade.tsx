@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
+import { CatalogCategoryBadge, CatalogCardIdentity } from "@/components/catalog/CatalogTaxonomy";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
@@ -86,7 +87,7 @@ function ModelCover({
         imageClassName="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
       />
       {model.category && model.categorySlug !== "curadoria-pendente" && (
-        <span className="absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-full border border-[hsl(var(--gold-accent)/0.55)] bg-[hsl(0,0%,5%)/0.88] px-2.5 py-1 font-mono text-[10px] font-semibold text-[hsl(var(--gold-accent))]">{model.category}</span>
+        <CatalogCategoryBadge label={model.category} />
       )}
     </div>
   );
@@ -787,12 +788,7 @@ export default function CatalogModelsArcade() {
                             mediaUrl={(key) => gateway.mediaUrl(key)}
                           />
                           <div className="space-y-1.5 p-3 md:p-4">
-                            <p className="line-clamp-2 min-h-[2.6em] text-sm font-semibold uppercase leading-snug tracking-wide text-[hsl(0,0%,94%)]">
-                              {model.name}
-                            </p>
-                            <p className="truncate text-xs font-medium text-[hsl(0,0%,72%)]">
-                              {model.franchise}
-                            </p>
+                            <CatalogCardIdentity name={model.name} franchise={model.franchise} />
                             {model.variantName ? (
                               <p className="truncate text-xs text-[hsl(0,0%,56%)]">
                                 {model.variantName}
