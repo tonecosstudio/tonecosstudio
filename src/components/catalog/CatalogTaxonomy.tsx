@@ -19,6 +19,15 @@ function normalizeCategoryLabel(value: string): string {
     .toLocaleLowerCase("pt-BR");
 }
 
+/** Visual ordering only; API labels and taxonomic identifiers remain untouched. */
+function categoryOrderKey(label: string): string {
+  const normalized = normalizeCategoryLabel(label);
+  if (normalized === "anime" || normalized === "animes e desenhos") return "animes & desenhos";
+  if (normalized === "filmes e series") return "filmes & series";
+  if (normalized === "tokusatsu") return "tokusatsu & cultura japonesa";
+  return normalized;
+}
+
 /** Stable ordering, without inventing categories absent from the current data. */
 export function orderCatalogCategories<T extends CatalogCategoryOption>(options: readonly T[]): T[] {
   const seen = new Set<string>();
@@ -29,8 +38,8 @@ export function orderCatalogCategories<T extends CatalogCategoryOption>(options:
       return true;
     })
     .sort((a, b) => {
-      const aLabel = normalizeCategoryLabel(a.label);
-      const bLabel = normalizeCategoryLabel(b.label);
+      const aLabel = categoryOrderKey(a.label);
+      const bLabel = categoryOrderKey(b.label);
       const aRank = CATEGORY_ORDER.indexOf(aLabel as (typeof CATEGORY_ORDER)[number]);
       const bRank = CATEGORY_ORDER.indexOf(bLabel as (typeof CATEGORY_ORDER)[number]);
       if (aRank >= 0 && bRank >= 0) return aRank - bRank;
