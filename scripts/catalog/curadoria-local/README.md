@@ -1,5 +1,13 @@
 # Curadoria Visual TONART — aplicativo local
 
+## Separar esculturas distintas em galeria já auditada — Wicked
+
+O `POST /api/split-audited-variant` corrige uma galeria *já auditada* de **exatamente duas fotos** que na verdade são variantes/esculturas diferentes (ex.: uma imagem de Busto e outra de Full Size). Não modifica o endpoint legado nem cria outro banco/serviço. Corpo: `group_key`, `revision`, `selected_message_id`, `proofs` (todos os dois `message_id`/`sha256`/`revision`), `corrected_variant`, `official_url` individual `https://3dwicked.gumroad.com/l/...` e `note` com descrição de ambas as esculturas.
+
+A operação é **fail-closed**: somente Wicked em estado não confirmado, auditoria prévia, dois membros com metadados consistentes, duas provas CAS/SHA, originais físicos de até 30 MiB íntegros, ausência de SHA em outra galeria, variantes diferentes e justificativa visual longa. Uma única transação move o membro selecionado para nova galeria revisável, atualiza a proposta de nome/variante somente da foto movida, mantém a outra foto com a variante original, marca `curation_seen` para impedir regressão por reingestão e registra auditorias antes/depois sem apagar eventos anteriores. As novas galerias continuam **não confirmadas** até o POST canônico `/api/confirm-gallery-identity`; nada publica ou aprova direitos comerciais.
+
+Teste `teste_post_audit_variant_split.py`: E2E com SQLite e fotos sintéticos, CAS, SHA físico, fonte oficial, idempotência por falha de CAS, auditoria e confirmação posterior das duas galerias. Nunca usar para mover qualquer mídia confirmada, reescrever acervo original ou misturar variantes de impressão.
+
 ## Correção de variante na confirmação editorial do host
 
 O `POST /api/confirm-gallery-identity` suporta o campo **opcional** `corrected_variant`, além de `group_key`, `group_revision`, `proofs`, `title`, `universe`, `official_url` e `note`. Na missão Wicked, esse campo corrige uma variante equivocada (ex.: Spock cadastrado como Busto, mas a imagem oficial prova Full Size) **na mesma transação** que confirma a identidade de todas as fotografias da galeria.
