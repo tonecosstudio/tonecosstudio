@@ -130,6 +130,9 @@
 
 ### Estrutura e reconciliação
 
+- Lote de nomenclatura humana 01 (24/11): 15 galerias e 15 mídias renomeadas no mesmo ID (Freeza 4, Vegeta 4, Trunks 2, Coringa 3, Capitão América 2). Listagens de irmãos antes da aplicação confirmaram ausência de numeração conflitante, ordem inicial determinística pelo identificador anterior; não renumerar. Verificação remota posterior confirmou 15/15 IDs, nomes de mídia, tamanhos e pastas de destino. O preflight privado `human-naming-batch-01-preflight.json` foi gravado (ação `c97a52e0-f325-4028-99ec-500f1b4dc61b`). A atualização dos recibos canônicos e conferência física dos hashes está submetida em `2daf3a9b-1b69-4c5a-8c3c-d8605ee5db6e`; consultar antes de repetir. Piloto anterior Flashman/Shazam: 6/6 recibos atualizados com SHA correto no mount, ação `bdac1b5e-5beb-4623-8897-ec8ff0458708`. Acumulado de nomenclatura: 21 galerias/21 mídias corrigidas, 38 pastas `Modelo TG` restantes na busca remota. Nenhuma nova importação, upload, exclusão, alteração de acesso ou gravação D1. Não confundir com cobertura integral. A lista técnica original de 59 pastas é o escopo deste trabalho, não inventário completo de todas as pastas históricas.
+
+
 - Piloto de nomenclatura humana: cinco galerias Flashman e uma Shazam renomeadas no mesmo ID de pasta para `Modelo 01`; seis mídias no mesmo ID passaram a `01.jpg` (cinco originais históricos) e `01.webp` (Shazam). Listagens remotas confirmam IDs, nomes e tamanhos. Não repetir. Os dois recibos privados serão atualizados por CAS após verificação do mount e SHA na ação `bdac1b5e-5beb-4623-8897-ec8ff0458708`. Busca anterior retornou 59 pastas `Modelo TG`, seis corrigidas neste piloto e 53 ainda a reconciliar. Antes de cada lote restante, listar irmãos e reservar números estáveis, preservar consumidores e atualizar recibos; jamais renomear cegamente nem inferir galeria pelo nome. Gate M5 e acesso intactos.
 
 
