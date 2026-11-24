@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline, read-only evaluation of DINOv2 against the existing perceptual hashes.
+"""Offline, read-only evaluation of DINOv2 or SigLIP2 against the existing perceptual hashes.
 
 Existing confirmed galleries are proxy labels, not independent ground truth.
 No model downloads, editorial writes, new database, server or automatic approval.
@@ -173,6 +173,27 @@ def review_pairs(rows, scorer, limit=24, threshold=None):
     return result
 
 
+def image_vectors(model, inputs, model_type):
+    """Handle Transformers 4.x tensor and 5.x pooled output contracts."""
+    import torch
+    if model_type == "dinov2":
+        features = model(**inputs).last_hidden_state[:, 0]
+    elif model_type == "siglip2":
+        features = model.get_image_features(**inputs)
+        if not isinstance(features, torch.Tensor):
+            features = features.pooler_output
+    else:
+        raise ValueError("unsupported vision model")
+    if not isinstance(features, torch.Tensor) or features.ndim != 2:
+        raise ValueError("expected a matrix of image embeddings")
+    if features.shape[0] != inputs["pixel_values"].shape[0]:
+        raise ValueError("embedding batch size mismatch")
+    features = features.float()
+    if not torch.isfinite(features).all() or (features.norm(dim=1) <= 1e-12).any():
+        raise ValueError("invalid embeddings")
+    return torch.nn.functional.normalize(features, dim=1)
+
+
 def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
     import torch
     from PIL import Image, ImageOps
@@ -193,8 +214,9 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
         str(model_dir), local_files_only=True, trust_remote_code=False)
     model = AutoModel.from_pretrained(str(model_dir), local_files_only=True,
                                       trust_remote_code=False, use_safetensors=True)
-    if model.config.model_type != "dinov2":
-        raise ValueError("expected DINOv2")
+    model_type = model.config.model_type
+    if model_type not in ("dinov2", "siglip2"):
+        raise ValueError("expected DINOv2 or SigLIP2")
     model.eval()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
@@ -215,9 +237,7 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
         tick = time.perf_counter()
         inputs = processor(images=images, return_tensors="pt")
         with torch.inference_mode():
-            result = model(**{k: v.to(device) for k, v in inputs.items()})
-            vectors = torch.nn.functional.normalize(
-                result.last_hidden_state[:, 0].float(), dim=1)
+            vectors = image_vectors(model, {k: v.to(device) for k, v in inputs.items()}, model_type)
         embeddings.append(vectors.cpu())
         embedding_seconds += time.perf_counter() - tick
     matrix = torch.cat(embeddings)
@@ -236,11 +256,11 @@ def run(db_path, media_root, model_dir, studio, batch_size=8, review_limit=24):
         tick = time.perf_counter()
         deep = evaluate(rows, lambda i,j: similarity[i,j].item(), k)
         deep["ranking_seconds"] = round(time.perf_counter()-tick, 6)
-        results.append(dict(k=k, hash=baseline, dinov2=deep))
+        results.append({"k": k, "hash": baseline, model_type: deep})
     review = review_pairs(rows, lambda i,j: similarity[i,j].item(), review_limit)
     if load_rows(db_path, studio) != raw:
         raise ValueError("catalog changed during ranking; rerun")
-    return dict(studio=studio, eligible_confirmed_rows=len(raw), unique_rows=len(rows),
+    return dict(studio=studio, model_type=model_type, eligible_confirmed_rows=len(raw), unique_rows=len(rows),
                 excluded_or_duplicate=len(raw)-len(rows), device=device,
                 elapsed_seconds=round(time.perf_counter()-start, 3),
                 proxy_labels=True, automatic_decisions=False,
