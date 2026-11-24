@@ -1,16 +1,17 @@
 # Curadoria Visual TONART — aplicativo local
 
-## Avaliação experimental de similaridade DINOv2 (somente leitura)
+## Avaliação experimental de similaridade DINOv2 e SigLIP2 (somente leitura)
 
 O CLI `visual_retrieval_benchmark.py` compara o baseline dHash/aHash com
-embeddings DINOv2, sem iniciar um host, criar banco ou modificar decisões.
+embeddings DINOv2 ou SigLIP2, sem iniciar um host, criar banco ou modificar decisões.
 Executar com Python e dependências locais Pillow, PyTorch e Transformers;
-provisionar separadamente uma revisão confiável de DINOv2 em safetensors
+provisionar separadamente uma revisão confiável de DINOv2 ou SigLIP2 em safetensors
 com config.json e preprocessor_config.json. O CLI não baixa modelos e
 não aceita código remoto.
 
 ```powershell
 python visual_retrieval_benchmark.py --self-test
+python visual_retrieval_benchmark.py --self-test-adapter
 python visual_retrieval_benchmark.py --sqlite "CAMINHO_SQLITE" --media-root "RAIZ_ORIGINAIS" --model-dir "DINO_LOCAL" --studio Wicked --batch-size 8 --review-limit 24
 ```
 
@@ -25,6 +26,8 @@ sem materializar todos os pares em memória. Os rótulos existentes são
 proxy e exigem validação independente antes de calibrar limiares.
 Não utilizar o resultado para confirmar nomes/direitos automaticamente.
 Não executar no SQLite de produção pública nem no R2.
+
+Executar o mesmo comando novamente com --model-dir apontando para SigLIP2 local, mantendo o mesmo snapshot, estúdio e parâmetros; não comparar resultados de amostras diferentes. SigLIP2 nesta etapa avalia imagem-imagem, não atribui nomes por texto.
 
 Estado experimental: ainda sem benchmark físico no acervo Wicked.
 A prova sintética de seleção isolada não mede o DINOv2.
