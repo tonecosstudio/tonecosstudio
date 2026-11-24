@@ -386,21 +386,21 @@ export default function CatalogModelsArcade() {
             collectionHref={PUBLIC_ROUTES.catalog}
           />
 
-          <div className="relative z-10 mx-auto -mt-4 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
+          <div className="relative z-10 mx-auto mt-2 w-full max-w-[1600px] px-4 md:px-6 xl:px-8">
             {mediaUnderReview ? (
               <p className="mb-4 border-l-2 border-[hsl(var(--gold-accent)/0.5)] bg-[hsl(0,0%,7%)] px-4 py-3 text-sm text-[hsl(0,0%,72%)]">
                 Explore as referências disponíveis. Algumas opções podem não
                 estar visíveis neste momento.
               </p>
             ) : null}
-            <div className="border border-[hsl(0,0%,18%)] bg-[hsl(0,0%,6%)] p-3 sm:p-4">
+            <div className={filtersExpanded || hasActiveFilters ? "border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(0,0%,6%)] p-3 sm:p-4" : "border-0 p-0"}>
               {/* A pesquisa principal é compartilhada pelo cabeçalho dos dois acervos. */}
 
               {/* Toggle de filtros único no cabeçalho compartilhado. */}
 
               <div
                 id="catalog-advanced-filters"
-                className={`${filtersExpanded ? "grid" : "hidden"} mt-3 grid-cols-1 gap-3 border-t border-[hsl(0,0%,15%)] pt-3 sm:grid-cols-2 md:grid lg:grid-cols-4`}
+                className={`${filtersExpanded ? "grid" : "hidden"} grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4`}
               >
                 <label className="min-w-0">
                   <span className="sr-only">Filtrar por categoria</span>
@@ -611,7 +611,7 @@ export default function CatalogModelsArcade() {
 
             <div
               ref={resultsRef}
-              className="mb-4 mt-6 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
+              className="mb-4 mt-4 flex scroll-mt-24 flex-wrap items-end justify-between gap-3"
             >
               <ArcadeSectionTitle>MODELOS DO ACERVO</ArcadeSectionTitle>
               <div className="flex flex-wrap items-center gap-3">
