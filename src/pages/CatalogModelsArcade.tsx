@@ -783,13 +783,13 @@ export default function CatalogModelsArcade() {
                           />
                           <div className="space-y-1.5 p-3 md:p-4">
                             <CatalogCardIdentity name={model.name} franchise={model.franchise} />
-                            <CatalogCardMetadata
-                              description={model.variantName ? model.code + " · " + model.variantName : model.code}
-                            />
                             <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
                               Ver detalhes
                               <ArrowRight size={14} aria-hidden="true" />
                             </p>
+                            <CatalogCardMetadata
+                              description={model.variantName ? model.code + " · " + model.variantName : model.code}
+                            />
                           </div>
                         </Link>
                         <button
