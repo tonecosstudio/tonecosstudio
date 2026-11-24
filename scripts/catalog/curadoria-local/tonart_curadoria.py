@@ -520,7 +520,10 @@ class Handler(BaseHTTPRequestHandler):
                             b"",304,ctype="image/webp",
                             cache_control=cache_control,etag=fingerprint,
                         )
-                    payload=thumbs.thumbnail(path,row["sha256"],width)
+                    payload=thumbs.thumbnail(
+                        path,row["sha256"],width,
+                        disk_cache=APP_DIR/"preview-webp-cache",
+                    )
                 except thumbs.ThumbnailUnavailable as exc:
                     return self.respond({"error":str(exc)},503)
                 return self.respond(
