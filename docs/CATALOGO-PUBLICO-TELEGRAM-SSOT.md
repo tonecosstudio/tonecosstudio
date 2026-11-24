@@ -3,6 +3,33 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+## Decisão canônica do proprietário — acervo Drive e ingestão Telegram (24/11/2026)
+
+**Prioridade:** concluir nomes e galerias por estúdio. Tags/variante derivadas da classificação existente (ex.: Busto, Full Size, Diorama). URL direta oficial é enriquecimento quando disponível; não bloquear curadoria por ausência de link. Não alterar UI/UX, direitos, licenças, exposição pública ou publicar por esta decisão.
+
+### Autoridades e separação física
+
+- **Origem Telegram:** manter a pasta `TONART-Telegram-Import` já existente no Google Drive, separada de `Catalogo`. Preservar originais, caminho/ID de origem, SHA-256, histórico, checkpoint e sessão/lock do downloader canônico. Novas importações reutilizam a mesma origem; deduplicar por (chat_id,message_id) e SHA-256, não baixar novamente mídia já íntegra. Nunca renomear/mover os originais durante curadoria.
+- **Acervo privado navegável:** `G:\Meu Drive\Catalogo` é o acervo principal organizado para consulta humana quando o site estiver indisponível. Reconciliar os modelos históricos existentes com o Telegram; não criar um catálogo Telegram paralelo. Novas entradas somente após identidade e galeria auditadas, variante coerente e checagem de duplicação. Usar preferencialmente o WebP display já produzido (não thumb; não recodificar sem necessidade). Manter nomes legíveis e IDs estáveis em metadados. Pendentes continuam na origem/curadoria; a pasta histórica `Novos` serve apenas para revisão de itens soltos preexistentes, não para importação automática do bruto.
+- **SSOT editorial:** SQLite vivo da Curadoria, com operações canônicas do host e revisões CAS; não criar segundo banco editorial nem escrever diretamente por SQL. D1 mantém autoridade de fichas online, R2 de mídia online, conforme gates vigentes. Drive é acervo de arquivos curados e projeção privada dos metadados, não segundo escritor de identidade. Snapshots SQLite no Drive são backups, não banco ativo. Não sincronizar arquivo SQLite aberto/WAL diretamente pelo Drive.
+- **R2:** reutilizar objetos WebP existentes e chaves estáveis; sem renomeação, upload duplicado ou publicação. A cópia privada curada no Drive é intencional para contingência, não novo catálogo/worker.
+
+### Estrutura e reconciliação
+
+Preservar a taxonomia já existente por categoria/franquia/personagem; organizar a escultura por estúdio, título e variante (ex.: `Marvel e DC/Marvel/Wolverine/Wicked — Wolverine 2024 — Busto/`). Cada escultura/variante auditada tem galeria própria. Remover gradualmente prefixos OK e contagens manuais apenas após inventário e auditoria de consumidores dependentes de caminho; preferir IDs Drive estáveis. Não reestruturar arquivos históricos cegamente, não apagar conteúdo e não inventar categorias/nomes. Resolver colisões e variantes ambíguas por curadoria.
+
+Nome do WebP determinístico e legível: `<estudio>--<modelo>--<variante>--<identificador-estavel>.webp` (sufixo Telegram pode conter message_id, com origem completa no manifesto; evitar sequência renumerável). Sanitizar nomes para Windows/Drive, preservar Unicode de apresentação nos metadados e tratar colisões sem sobrescrever. Não incorporar hashes longos no nome. Manifesto derivado por galeria/índice (não editável como fonte de identidade) mapeia ID canônico do modelo/group_key e revisão, estúdio, título, variante, franquia, ID do arquivo Drive, origem Telegram e caminho, SHA-256 do original, SHA-256 efetivo do WebP, chave R2 quando conhecida, referência oficial opcional. Conversão para WebP altera SHA; renomeação não altera bytes. Preservar todos os vínculos de origem mesmo quando uma imagem única representa vários IDs Telegram.
+
+### Protocolo de implementação e aceitação
+
+1. Inventariar Drive histórico e WebP já produzidos, com IDs, caminhos, hashes e correspondências canônicas, sem baixar novamente o bruto. Gerar plano privado read-only/dry-run com conflitos, custo e contagens. Não versionar inventário privado, hashes individuais, IDs de mensagens ou imagens no Git.
+2. Reutilizar hashes e embeddings DINOv2 existentes; comparar imagens do Drive histórico com as do Telegram. SHA igual comprova bytes iguais, não identidade de escultura; DINO/pHash sugerem candidatos, nunca confirmam sozinhos. Mesmo modelo + vista nova: complementar galeria; mesmo arquivo/vista comprovada: reutilizar, vincular origem, não copiar; outro escultor/variante/pose: distinguir. Não apagar duplicatas antigas automaticamente.
+3. Revalidar revisões e autoridade imediatamente antes de aplicar. Writer de exportação único, idempotente, com lock, checkpoint e recibo por operação; cópia somente se necessária, sem sobrescrever destino divergente, validar WebP/bytes/SHA, confirmar ID Drive e sincronização remota antes de considerar concluído. Mudança de nome move/renomeia pelo ID estável, sem recodificar. Não usar links simbólicos/hardlinks no Drive como garantia de sincronização.
+4. Testar piloto pequeno contra galeria já existente, repetição sem novas cópias, conflito e recuperação de interrupção; depois lote por estúdio, com reconciliação e auditoria. Nenhuma modificação de direitos, compartilhamento público, publicação ou M5. Se falhar Drive, manter curadoria e DINO ativos.
+5. DINOv2 deve operar continuamente por estúdio, Wicked primeiro e próximos sem novo pedido; cache único por SHA/modelo, checkpoints, sem instâncias duplicadas e sem microtarefas artificiais. A área genérica Geral +50k não é um estúdio; tratar separadamente. Remote Commander reservado ao cálculo DINO; OrdaX MCP para curadoria/host e organização local. Acompanhar processo real antes de iniciar outro. Dados e provas de curadoria concorrente devem ser preservados.
+
+**Estado desta decisão:** arquitetura autorizada e documentada; implementação integral do exportador/reconciliação e inventário histórico ainda pendentes. Não declarar catálogo unificado, sincronizado ou deduplicado até prova física e remota. Não confundir contagens históricas de nomes de pastas com inventário atual. Mantêm-se todas as restrições de produção e publicação anteriores.
+
 ## Decisão de apresentação — Modelos versus Estúdios (22/11/2026, 23h)
 
 **Diretriz revisada após a captura do catálogo:** informações temáticas de cada modelo permanecem visíveis no acervo geral; somente **tags próprias do modelador/estúdio** pertencem às coleções de estúdios.
