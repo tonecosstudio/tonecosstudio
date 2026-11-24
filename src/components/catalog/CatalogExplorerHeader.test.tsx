@@ -101,6 +101,12 @@ describe("TONART shared catalog discovery structure", () => {
       "anime", "games", "filmes", "marvel", "custom",
     ]);
     expect(categories.map((item) => item.id)).toEqual(snapshot);
+    expect(orderCatalogCategories([
+      { id: "marvel", label: "Marvel & DC" },
+      { id: "anime", label: "Anime" },
+      { id: "games", label: "Games" },
+    ]).map((item) => item.id)).toEqual(["anime", "games", "marvel"]);
+
   });
 
   it.each(["historical", "review"] as const)("renders category controls in the same order on %s", (kind) => {
