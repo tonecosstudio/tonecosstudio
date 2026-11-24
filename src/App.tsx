@@ -7,7 +7,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-route
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
-import CatalogEntryPage, { CatalogSectionNavigation } from "@/pages/CatalogEntryPage";
+import CatalogEntryPage from "@/pages/CatalogEntryPage";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -138,9 +138,9 @@ function AppContent() {
               <Route path={PUBLIC_ROUTES.home} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.landing} element={<LandingPage />} />
               <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
-              <Route path={PUBLIC_ROUTES.catalogHistorical} element={<><CatalogSectionNavigation active="historical" /><CatalogModelsArcade /></>} />
-              <Route path={PUBLIC_ROUTES.catalogReview} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
-              <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<><CatalogSectionNavigation active="review" /><TelegramCatalog embedded /></>} />
+              <Route path={PUBLIC_ROUTES.catalogHistorical} element={<CatalogModelsArcade />} />
+              <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
+              <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
               <Route path={PUBLIC_ROUTES.arcadeLab} element={<ArcadeLab />} />
               <Route
                 path={PUBLIC_ROUTES.migrateOrder}
