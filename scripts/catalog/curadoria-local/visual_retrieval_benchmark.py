@@ -295,9 +295,50 @@ def self_test():
     print("VISUAL_RETRIEVAL_SYNTHETIC_PASS")
 
 
+def self_test_adapter():
+    import torch
+    from types import SimpleNamespace
+
+    class Fake:
+        def __init__(self, result):
+            self.result = result
+
+        def get_image_features(self, **kwargs):
+            return self.result
+
+        def __call__(self, **kwargs):
+            return self.result
+
+    inputs = {"pixel_values": torch.zeros(2,3,8,8)}
+    v = torch.tensor([[3.,4.],[0.,2.]])
+    expected = torch.tensor([[.6,.8],[0.,1.]])
+    for model, kind in (
+        (Fake(SimpleNamespace(last_hidden_state=v[:,None,:])), "dinov2"),
+        (Fake(v), "siglip2"),
+        (Fake(SimpleNamespace(pooler_output=v)), "siglip2"),
+    ):
+        assert torch.allclose(image_vectors(model, inputs, kind), expected)
+    for model, kind in (
+        (Fake(torch.zeros_like(v)), "siglip2"),
+        (Fake(v*float("nan")), "siglip2"),
+        (Fake(v*float("inf")), "siglip2"),
+        (Fake(v[:,None,:]), "siglip2"),
+        (Fake(v[:1]), "siglip2"),
+        (Fake(v), "other"),
+    ):
+        try:
+            image_vectors(model, inputs, kind)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid adapter result accepted")
+    print("VISUAL_ADAPTER_SYNTHETIC_9_OF_9_PASS")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("--self-test-adapter", action="store_true")
     parser.add_argument("--sqlite", type=Path)
     parser.add_argument("--media-root", type=Path)
     parser.add_argument("--model-dir", type=Path)
@@ -305,6 +346,9 @@ def main():
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--review-limit", type=int, default=24)
     args = parser.parse_args()
+    if args.self_test_adapter:
+        self_test_adapter()
+        return
     if args.self_test:
         self_test()
         return
