@@ -151,6 +151,28 @@ describe("TONART shared catalog discovery structure", () => {
     expect(screen.getByLabelText("Franquia em revisão: Pokémon")).toHaveTextContent("Pokémon · em revisão");
   });
 
+  it("renders the same arcade card shell and compact metadata for both source types", () => {
+    render(
+      <div>
+        <CatalogModelCardShell>
+          <CatalogCardIdentity name="Original" franchise="NieR" />
+          <CatalogCardMetadata description="TS-001" />
+        </CatalogModelCardShell>
+        <CatalogModelCardShell>
+          <CatalogCardIdentity name="Telegram" franchise="Pokémon" franchiseProvisional />
+          <CatalogCardMetadata description="2 imagens" status="Em curadoria" />
+        </CatalogModelCardShell>
+      </div>,
+    );
+    const cards = screen.getAllByRole("article");
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toHaveClass("bg-[hsl(0,0%,7%)]");
+    expect(cards[1]).toHaveClass("bg-[hsl(0,0%,7%)]");
+    expect(within(cards[0]).getByText("TS-001")).toBeInTheDocument();
+    expect(within(cards[1]).getByText("2 imagens")).toBeInTheDocument();
+    expect(within(cards[1]).getByText("Em curadoria")).toBeInTheDocument();
+  });
+
   it("provides real list and grid actions", () => {
     const onChange = vi.fn();
     render(<CatalogGridListToggle view="grid" onChange={onChange} />);
