@@ -226,7 +226,7 @@ describe("Tonecos canonical model discovery UI", () => {
     expect(calls.some((url) => !url.searchParams.has("q"))).toBe(true);
   });
 
-  it("shows six columns on wide screens and gives an obvious next-page action", async () => {
+  it("shows three columns on wide screens and gives an obvious next-page action", async () => {
 
     const { calls } = setupFetch();
     await renderCatalog();
@@ -235,8 +235,8 @@ describe("Tonecos canonical model discovery UI", () => {
     });
     expect(screen.getByRole("banner")).toHaveAttribute("data-compact", "true");
     const grid = first.closest(".grid");
-    expect(grid).toHaveClass("2xl:grid-cols-6");
-    expect(grid).toHaveClass("xl:grid-cols-5");
+    expect(grid).toHaveClass("lg:grid-cols-3");
+    expect(grid).toHaveClass("sm:grid-cols-2");
     expect(grid).toHaveClass("grid-cols-2");
     expect(calls[0].url.searchParams.get("limit")).toBe("36");
     expect(screen.getByText(/Há mais modelos/)).toBeInTheDocument();
