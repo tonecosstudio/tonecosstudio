@@ -9,17 +9,14 @@ import {
 } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMetadata, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
 } from "@/services/catalog/public-catalog-selection";
 import { Page } from "@/components/layouts/Page";
-import {
-  ArcadeCard,
-  ArcadeSectionTitle,
-} from "@/components/arcade/ArcadeLayout";
+import { ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import {
   isCatalogMediaUnderReview,
@@ -763,10 +760,7 @@ export default function CatalogModelsArcade() {
                     (item) => item.id === model.id,
                   );
                   return (
-                    <ArcadeCard
-                      key={model.id}
-                      className={`flex h-full flex-col ${isSelected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
-                    >
+                    <CatalogModelCardShell key={model.id} selected={isSelected}>
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
@@ -789,14 +783,9 @@ export default function CatalogModelsArcade() {
                           />
                           <div className="space-y-1.5 p-3 md:p-4">
                             <CatalogCardIdentity name={model.name} franchise={model.franchise} />
-                            {model.variantName ? (
-                              <p className="truncate text-xs text-[hsl(0,0%,56%)]">
-                                {model.variantName}
-                              </p>
-                            ) : null}
-                            <p className="font-mono text-[10px] tracking-[0.08em] text-[hsl(0,0%,48%)]">
-                              {model.code}
-                            </p>
+                            <CatalogCardMetadata
+                              description={model.variantName ? model.code + " · " + model.variantName : model.code}
+                            />
                             <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
                               Ver detalhes
                               <ArrowRight size={14} aria-hidden="true" />
@@ -818,7 +807,7 @@ export default function CatalogModelsArcade() {
                             : "Adicionar à seleção"}
                         </button>
                       </div>
-                    </ArcadeCard>
+                    </CatalogModelCardShell>
                   );
                 })}
               </div>
