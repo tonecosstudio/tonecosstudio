@@ -69,6 +69,7 @@ describe("TONART shared catalog discovery structure", () => {
     render(
       <CatalogExplorerHeader
         kind="review"
+        standalone
         search=""
         onSearchChange={() => {}}
         onSearchSubmit={(event) => event.preventDefault()}
@@ -82,7 +83,8 @@ describe("TONART shared catalog discovery structure", () => {
     );
     const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
     expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/estudios");
-    expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/catalogo/em-revisao");
+    expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/");
+    expect(within(tabs).queryByRole("link", { name: "Originais" })).not.toBeInTheDocument();
   });
 
   it("provides real list and grid actions", () => {
