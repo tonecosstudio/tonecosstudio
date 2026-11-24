@@ -708,7 +708,8 @@ class Handler(BaseHTTPRequestHandler):
                     group_revision=obj.get("group_revision"),
                     proofs=obj.get("proofs"),title=obj.get("title"),
                     universe=obj.get("universe"),
-                    official_url=obj.get("official_url"),note=obj.get("note","")))
+                    official_url=obj.get("official_url"),note=obj.get("note",""),
+                    corrected_variant=obj.get("corrected_variant")))
             if self.path=="/api/review-name":
                 return self.respond(naming.review_name(DB_PATH,
                     obj.get("message_id",0),obj.get("revision",-1),
