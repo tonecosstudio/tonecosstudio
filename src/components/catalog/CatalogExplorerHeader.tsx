@@ -1,5 +1,5 @@
 import { useEffect, useRef, type FormEvent } from "react";
-import { ArrowRight, Grid2X2, Layers3, Search, SlidersHorizontal, X } from "lucide-react";
+import { Grid2X2, List, Search, SlidersHorizontal, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { orderCatalogCategories } from "./CatalogTaxonomy";
@@ -25,6 +25,7 @@ export type CatalogExplorerHeaderProps = {
   collectionHref: string;
   activeTab?: "explore" | "collections";
   standalone?: boolean;
+  withinContainer?: boolean;
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -46,6 +47,7 @@ export function CatalogExplorerHeader({
   collectionHref,
   activeTab = "explore",
   standalone = false,
+  withinContainer = false,
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -70,7 +72,7 @@ export function CatalogExplorerHeader({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] px-4 pt-5 sm:px-6 xl:px-8">
+    <div className={`mx-auto w-full max-w-[1600px] pt-4 ${withinContainer ? "" : "px-4 sm:px-6 xl:px-8"}`}>
       <form
         role="search"
         aria-label="Buscar modelos no catálogo"
@@ -117,7 +119,7 @@ export function CatalogExplorerHeader({
 
       <header
         data-compact="true"
-        className="relative isolate mt-5 flex min-h-[195px] flex-col justify-center overflow-hidden rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,9%)] px-6 py-9 sm:min-h-[235px] sm:px-9"
+        className="relative isolate mt-4 flex min-h-[155px] flex-col justify-center overflow-hidden rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,9%)] px-5 py-5 sm:min-h-[185px] sm:px-8"
       >
         {coverUrl ? (
           <img src={coverUrl} alt="" aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 -z-20 h-full w-full object-cover object-center opacity-30 sm:w-2/3" />
@@ -126,50 +128,44 @@ export function CatalogExplorerHeader({
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
           {review ? "ACERVO TELEGRAM · CURADORIA" : "ACERVO TONART · CATÁLOGO ORIGINAL"}
         </p>
-        <h1 className="mt-3 text-4xl font-bold uppercase leading-none tracking-wide text-white sm:text-5xl" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>{title}</h1>
+        <h1 className="mt-2 text-3xl font-bold uppercase leading-none tracking-wide text-white sm:text-5xl" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>{title}</h1>
         <p className="mt-3 max-w-lg text-xs leading-6 text-[hsl(0,0%,77%)] sm:text-sm">{intro}</p>
-        {totalLabel ? <p className="mt-4 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}
+        {totalLabel ? <p className="mt-2 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}
       </header>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2" aria-label="Categorias do catálogo">
+      <div className="mt-3 flex min-w-0 items-center gap-2" aria-label="Categorias do catálogo">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-1">
         <button
           type="button"
           aria-pressed={!category}
           onClick={() => onCategoryChange("")}
-          className={`min-h-10 rounded-full border px-4 text-xs transition-colors ${!category ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] font-semibold text-black" : "border-[hsl(0,0%,28%)] bg-[hsl(0,0%,12%)] text-white hover:border-[hsl(var(--gold-accent))]"}`}
+          className={`min-h-11 shrink-0 rounded-full border px-4 text-xs transition-colors ${!category ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] font-semibold text-black" : "border-[hsl(0,0%,28%)] bg-[hsl(0,0%,12%)] text-white hover:border-[hsl(var(--gold-accent))]"}`}
         >
           Todos
         </button>
-        {orderCatalogCategories(categories).slice(0, 8).map((item) => (
+        {orderCatalogCategories(categories).map((item) => (
           <button
             type="button"
             key={item.id}
             aria-pressed={category === item.id}
             onClick={() => onCategoryChange(category === item.id ? "" : item.id)}
-            className={`min-h-10 max-w-full truncate rounded-full border px-4 text-xs transition-colors ${category === item.id ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] font-semibold text-black" : "border-[hsl(0,0%,28%)] bg-[hsl(0,0%,12%)] text-white hover:border-[hsl(var(--gold-accent))]"}`}
+            className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-4 text-xs transition-colors ${category === item.id ? "border-[hsl(var(--gold-accent))] bg-[hsl(var(--gold-accent))] font-semibold text-black" : "border-[hsl(0,0%,28%)] bg-[hsl(0,0%,12%)] text-white hover:border-[hsl(var(--gold-accent))]"}`}
           >
             {item.label}
           </button>
         ))}
+        </div>
         <button
           type="button"
           onClick={onFiltersClick}
           aria-expanded={filtersExpanded}
           aria-controls={filtersControlId}
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-[hsl(var(--gold-accent)/0.4)] px-4 text-xs text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
+          className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[hsl(var(--gold-accent)/0.4)] px-4 text-xs text-[hsl(var(--gold-accent))] hover:bg-[hsl(var(--gold-accent)/0.08)]"
         >
           <SlidersHorizontal size={15} aria-hidden="true" />
           Filtros{filterCount ? ` (${filterCount})` : ""}
         </button>
-        {review ? (
-          <a href={collectionHref} className="ml-auto inline-flex min-h-10 items-center gap-2 px-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline">
-            <Layers3 size={15} aria-hidden="true" /> Coleções <ArrowRight size={14} aria-hidden="true" />
-          </a>
-        ) : (
-          <Link to={collectionHref} className="ml-auto inline-flex min-h-10 items-center gap-2 px-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline">
-            <Layers3 size={15} aria-hidden="true" /> Coleções <ArrowRight size={14} aria-hidden="true" />
-          </Link>
-        )}
+
       </div>
     </div>
   );
@@ -182,7 +178,7 @@ export function CatalogGridListToggle({ view, onChange }: { view: "grid" | "list
         <button key={mode} type="button" aria-label={mode === "grid" ? "Visualizar em grade" : "Visualizar em lista"} aria-pressed={view === mode}
           onClick={() => onChange(mode)}
           className={`inline-flex min-h-11 items-center gap-2 border-r border-[hsl(0,0%,22%)] px-3 text-xs last:border-r-0 ${view === mode ? "bg-[hsl(var(--gold-accent)/0.16)] text-[hsl(var(--gold-accent))]" : "text-[hsl(0,0%,63%)] hover:text-white"}`}>
-          {mode === "grid" ? <Grid2X2 size={16} aria-hidden="true" /> : <Layers3 size={16} aria-hidden="true" />}
+          {mode === "grid" ? <Grid2X2 size={16} aria-hidden="true" /> : <List size={16} aria-hidden="true" />}
           <span className="sr-only">{mode === "grid" ? "Grade" : "Lista"}</span>
         </button>
       ))}

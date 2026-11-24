@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
+import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
+import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories, CatalogGridSkeleton, catalogGridClass, catalogCardLinkClass, CATALOG_CARD_BODY_CLASS, CATALOG_CARD_ACTION_CLASS, CATALOG_CARD_IMAGE_CLASS, CATALOG_RESULTS_TITLE_CLASS } from "@/components/catalog/CatalogTaxonomy";
 
 type Model = {
   id: string;
@@ -491,12 +492,13 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           </nav>
         </div>
       </header>}
-      <ContentContainer className="mx-auto w-full max-w-[1600px] px-4 pb-24 sm:px-6 xl:px-8">
+      <ContentContainer className="mx-auto w-full max-w-[1600px] px-4 pb-20 sm:px-6 xl:px-8">
         {(view === "models" || Boolean(studio)) && (
           <CatalogExplorerHeader
             kind="review"
             activeTab={view === "studios" ? "collections" : "explore"}
             standalone={!embedded}
+            withinContainer
             search={draft}
             onSearchChange={(value) => { setDraft(value); setSearchError(""); }}
             onSearchSubmit={search}
@@ -693,9 +695,9 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </p>
             )}
 
-            <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3">
+            <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3">
               <div>
-                <h2 className="font-serif text-2xl sm:text-3xl">
+                <h2 className={embedded ? CATALOG_RESULTS_TITLE_CLASS : "font-serif text-2xl sm:text-3xl"}>
                   {studio ? "Modelos de " + studio : "Galeria de modelos"}
                 </h2>
                 {query && (
@@ -770,19 +772,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                 </button>
               </div>
             )}
-            {loading && (
-              <div
-                role="status"
-                className="grid grid-cols-2 gap-4 py-6 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              >
-                {Array.from({ length: 10 }, (_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-[3/4] animate-pulse rounded-lg bg-[#2b231c]"
-                  />
-                ))}
-              </div>
-            )}
+            {loading && <CatalogGridSkeleton view={catalogView} label="Carregando modelos…" />}
             {!loading && page?.items.length === 0 && (
               <div className="py-20 text-center">
                 <p className="text-lg">Nenhum modelo encontrado.</p>
@@ -792,7 +782,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </div>
             )}
             {!loading && page && (
-              <div className={catalogView === "grid" ? "mt-7 grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 lg:gap-5" : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"}>
+              <div className={catalogGridClass(catalogView)}>
                 {page.items.map((model) => (
                   <CatalogModelCardShell key={model.id} standalone={!embedded}>
                     <button
@@ -801,28 +791,20 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                       aria-label={
                         "Abrir galeria de " + model.name + ", " + model.studio
                       }
-                      className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
+                      className={catalogCardLinkClass(catalogView)}
                     >
                       <CatalogCardMediaFrame imageCount={model.imageCount} standalone={!embedded}>
                         {embedded && model.category && model.categorySlug && model.categorySlug !== "curadoria-pendente" && (
                           <CatalogCategoryBadge label={model.category} />
                         )}
-                        {imageUrl(model.cover) ? (
-                          <img
-                            src={imageUrl(model.cover)}
-                            alt=""
-                            loading="lazy"
-                            className={embedded
-                              ? "h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
-                              : "h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"}
-                          />
-                        ) : (
-                          <span className="p-3 text-center text-sm text-[#b6a496]">
-                            Render em preparação
-                          </span>
-                        )}
+                        <CanonicalCatalogImage
+                          src={imageUrl(model.cover)}
+                          alt=""
+                          fallbackLabel="Render em preparação"
+                          imageClassName={embedded ? CATALOG_CARD_IMAGE_CLASS : "h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.045]"}
+                        />
                       </CatalogCardMediaFrame>
-                      <div className={embedded ? "space-y-1.5 p-3 md:p-4" : "px-3 pt-3 sm:px-4 sm:pt-4"}>
+                      <div className={embedded ? CATALOG_CARD_BODY_CLASS : "px-3 pt-3 sm:px-4 sm:pt-4"}>
                         {showStudioModelTags && (
                           <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
                             {model.studio}
@@ -835,7 +817,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                               franchise={model.franchiseSlug !== "franquia-a-identificar" ? model.franchise : null}
                               franchiseProvisional={model.provisional}
                             />
-                            <p className="flex items-center justify-between gap-2 pt-1 text-xs font-semibold text-[hsl(var(--gold-accent))]">
+                            <p className={CATALOG_CARD_ACTION_CLASS}>
                               Ver galeria
                               <ArrowUpRight size={14} aria-hidden="true" />
                             </p>
