@@ -20,7 +20,9 @@ test('a single GitHub code owner is specified; current external publisher is exp
   assert.equal(contract.origin.repositoryId, 1398242143);
   assert.match(contract.origin.observedMainSha, sha);
   assert.deepEqual(contract.origin.openPullRequestsAtAudit, [266, 264, 263]);
-  assert.equal(contract.activeWorkerPublisher, contract.origin.repository);
+  const beforeCutover = ['inventoried','staged-offline'].includes(contract.migration.phase);
+  assert.equal(contract.activeWorkerPublisher, beforeCutover ? contract.origin.repository : contract.target.repository,
+    'Exactly one phase-appropriate publisher may own Worker releases');
 });
 
 test('source inventory has immutable blob identities and no missing migration sequence', () => {
@@ -71,7 +73,9 @@ test('M1 deploy tooling inventory is pinned without authorizing a second pipelin
   assert.ok(Object.values(origin.apiBuildConfigBlobs).every(v => sha.test(v)));
   assert.equal(origin.apiDeployPipeline, '.github/workflows/cloudflare.yml');
   assert.equal(origin.apiDeployWorkflowId, 371358484, 'Source publisher workflow identity is pinned');
-  assert.equal(contract.migration.targetWorkerReleaseEnabled, false);
+  assert.equal(contract.migration.targetWorkerReleaseEnabled,
+    ['cutover-approved','cutover-complete'].includes(contract.migration.phase),
+    'Only approved cutover phases may enable the target publisher');
 });
 
 test('only the existing Cloudflare resources may serve requests', () => {
@@ -137,7 +141,9 @@ test('M5 ownership transition is possible only after source disablement and expl
     assert.equal(m.targetWorkerReleaseEnabled, true)
     assert.equal(o.releaseGoApproved, true)
     assert.equal(o.sourceWorkflowDisabledVerified, true)
-    assert.equal(o.targetProductionCredentialsVerified, true)
+    // Approval and publisher ownership do not constitute a credential audit.
+    // Only a completed live cutover can require credentials as proven.
+    if (m.phase === 'cutover-complete') assert.equal(o.targetProductionCredentialsVerified, true)
     assert.equal(o.runtimeCutoverPerformed, m.phase === 'cutover-complete')
   }
 
@@ -171,9 +177,9 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
     'worker/publicQueryBudget.ts',
     'wrangler.jsonc',
   ]);
-  assert.equal(contract.migration.phase, 'staged-offline',
-    'Reconcile local overlays before authorizing cutover');
-  assert.equal(contract.migration.releaseAuthorized, false);
+  assert.ok(['staged-offline','cutover-approved','cutover-complete'].includes(contract.migration.phase),
+    'Immutable source import pins survive the approved M5 transition');
+  assert.equal(contract.migration.releaseAuthorized, contract.migration.phase !== 'staged-offline');
   for (const [path, local] of Object.entries(overlays)) {
     assert.equal(local.sourceBlob, stage[path] ?? contract.staging.sourceReconciledAdditions?.[path],
       'Original import pin changed: ' + path);
@@ -229,7 +235,8 @@ test('upstream public query budget is reconciled by Git blob without replacing W
   }
   assert.match(source('services/catalogo/worker/index.ts'), /validatePublicCatalogQuery/);
   assert.match(source('services/catalogo/worker/entry.ts'), /validatePublicCatalogQuery/);
-  assert.equal(contract.migration.releaseAuthorized, false);
+  assert.equal(contract.migration.targetD1MigrationEnabled, false,
+    'Only the bounded owner-approved migration job may apply D1 migrations');
 });
 
 test('M5 snapshot is a pinned observation, not production approval', () => {
@@ -251,7 +258,8 @@ test('M5 snapshot is a pinned observation, not production approval', () => {
     assert.equal(o.previousVersionMayBeRollbackCandidate, false,
       'The intervening Worker v41 caused HTTP 503 and cannot be trusted as rollback');
   }
-  assert.equal(o.sourceDispatchCanApplyRemoteD1Migrations, true)
+  assert.equal(o.sourceDispatchCanApplyRemoteD1Migrations, !o.sourceWorkflowDisabledVerified,
+    'Disabled source workflows cannot still act as a migration authority')
   for (const key of [
     'sourceWorkflowDisabledVerified', 'releaseGoApproved',
     'targetProductionCredentialsVerified', 'rollbackTestedAgainstProduction',

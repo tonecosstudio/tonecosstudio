@@ -158,12 +158,13 @@ const fullState = () => ({
   },
 });
 
-test("current M5 state stays BLOCKED, even with a disabled source workflow", () => {
+test("approved M5 still blocks Worker release without credentials and rollback proof", () => {
   const result = assessCutoverReadiness(original, fullState());
   assert.equal(result.ready, false);
-  assert.ok(result.blockers.includes("cutover_not_approved"));
-  assert.ok(result.blockers.includes("explicit_release_go_missing"));
   assert.ok(result.blockers.includes("target_credentials_unverified"));
+  assert.ok(result.blockers.includes("rollback_not_verified"));
+  assert.ok(!result.blockers.includes("cutover_not_approved"));
+  assert.ok(!result.blockers.includes("explicit_release_go_missing"));
 });
 
 test("an approved flag cannot override an active source workflow", () => {
