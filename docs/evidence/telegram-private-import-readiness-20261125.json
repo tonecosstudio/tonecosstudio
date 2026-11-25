@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "tonart.telegram.private-import-readiness/1",
+  "recordedOn": "2026-11-25",
+  "scope": "non-public, no import, no rights changes, no Drive publishing",
+  "sourcePlan": {
+    "location": "DESKTOP-4UFL03B / %USERPROFILE%/Documents/TONART-Telegram-Import/publicacao-staging/coverage-first-catalogwide-20261125",
+    "filename": "rascunhos_telegram_importacao_privada.jsonl",
+    "sha256": "5b40f3aeb9dd24bb5a38b1b205214346843e2e634ea8ce10c17762066fb47cc4",
+    "localReceipt": "post-m5-readiness-receipt.json",
+    "filesStayPrivate": true
+  },
+  "liveD1ReadOnly": {
+    "schemaVersion": 13,
+    "lastMigration": "0033_seed_reviewed_dc_character_tags.sql",
+    "totalModels": 6871,
+    "telegramModels": 4262,
+    "telegramImageSources": 6152,
+    "allImageSources": 8831,
+    "franchises": 257,
+    "approvedCommercialModels": 2575
+  },
+  "candidateManifestReadOnly": {
+    "count": 1701,
+    "images": 1701,
+    "uniqueModelIds": 1701,
+    "uniqueMessageIds": 1701,
+    "uniqueSourceSHA256": 1701,
+    "singletonDrafts": 1697,
+    "preservedGroups": 4,
+    "candidateStudios": 47,
+    "validatedFranchiseIds": 60,
+    "missingFranchiseIds": 0,
+    "largestPayloadBytes": 301,
+    "formatValidationErrors": 0
+  },
+  "heldForReview": {
+    "cases": 513,
+    "possibleSameStudioSculpture": 301,
+    "notAutomaticallyDuplicates": true
+  },
+  "mediaEvidence": {
+    "priorPreflight": "r2-live-preflight-summary.json",
+    "privateBucket": "tonecos-catalogo-staging",
+    "candidateImagesWithDisplayAndThumb": 1701,
+    "revalidatedInThisPass": false
+  },
+  "execution": {
+    "importedModels": 0,
+    "changedD1": false,
+    "changedR2": false,
+    "changedDrive": false,
+    "changedPublicRights": false,
+    "changedVisibility": false,
+    "enabledImporter": "services/catalogo/worker/telegramDraftImport.ts",
+    "adminAuthority": "Supabase authenticated JWT /auth/v1/user + is_tonecos_admin RPC",
+    "ordaxProject": "tonecosstudio/tonecosstudio",
+    "ordaxScopeObserved": "product_project_scope_not_found; repository-catalog-read grant missing",
+    "outcome": "PLAN_VALIDATED_BUT_NOT_APPLIED"
+  },
+  "previousM5Receipt": "docs/evidence/m5-production-cutover-20261125.json",
+  "nextStep": "Use the existing admin-protected import endpoint with a valid authorized session, recheck D1 identity/SHA, R2 HEAD and optimistic revision at import; keep drafts private; keep held cases for editorial review."
+}
