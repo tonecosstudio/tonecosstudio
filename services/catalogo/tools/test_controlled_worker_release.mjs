@@ -87,7 +87,11 @@ test('one existing workflow owns controlled release, protected by M5 and rollbac
   const workflow=readFileSync(new URL('../../../.github/workflows/quality.yml',import.meta.url),'utf8')
   assert.ok(workflow.includes('catalog-controlled-worker-release:'))
   assert.ok(workflow.includes("inputs.operation == 'worker-release'"))
-  const job=workflow.split('  catalog-controlled-worker-release:')[1]
+  const remaining=workflow.split('  catalog-controlled-worker-release:')[1]
+  assert.ok(remaining,'Existing Quality Gate must have exactly one Worker release job')
+  // Stop at the next YAML job. The same Quality Gate owns D1 migrations,
+  // but their Wrangler commands must not be attributed to Worker release.
+  const job=remaining.split(/\r?\n {2}[a-z][a-z0-9-]*:/,1)[0]
   assert.ok(job.includes('environment: production'))
   assert.ok(job.indexOf('cutover-readiness.mjs --live')<job.indexOf('wrangler versions upload'))
   assert.ok(job.includes('@0%'))
