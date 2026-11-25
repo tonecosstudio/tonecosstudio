@@ -1,3 +1,9 @@
+## CHECKPOINT — CINCO PARES DINO AUDITADOS (25/11/2026)
+
+- Processo OrdaX `3a0b83f9-7d86-4876-a140-0e5bcc2fa121` exit 0, AUDITED 10 ok, recibo `studio-review/strong-pairs-next-five-audit-receipt.json`: Hermione (#18868,18924), Comic Deadpool Mask (#11134,11254), Jack Skellington (#18988,19096), Mulher-Maravilha (#18880,18958), Robin Animated (#19304,19314). Comparação visual e SHA dos dez originais, auditoria canônica registrada, integridade ok. Não repetir auditorias.
+- D1 leitura por chaves: Hermione, Jack, Mulher-Maravilha e Robin possuem duas fichas cada, preservar ambas até reconciliação canônica. Comic Deadpool Mask: destino `2679dcbad60b925a51234dd4` tem ficha D1 e hash fonte #11134; origem `2dac301c83184e8191e871f2` #11254 não localizada por chave ou hash. Solicitação de fusão não executada (bloqueio da ferramenta); não afirmar merge. Verificar consumidores e estado vigente antes de eventual operação autorizada.
+- Wicked: seis conflitos de variantes já auditados permanecem preservados. Jason e Iron Fist/Luke Cage mostram vistas da mesma escultura; Groot não conclusivo. Nenhuma alteração editorial Wicked, Drive ou D1 nesta rodada. M5: autorização do proprietário consta no checkpoint próprio, não confundir autorização com publicação concluída.
+
 ## CHECKPOINT — WICKED: QUATRO GALERIAS ALINHADAS (25/11/2026)
 
 - PR #170 integrada em `2a9d2fdb26af46533c39246dbcac8dfe0528f1b9`; testes físicos de nomeação, alinhamento provisório, auditoria em lote/singleton, separação de variantes e diff check aprovados, processo `28cac921-f9af-4f39-be20-9055a4c24149` exit 0. Instalada no host canônico pelo processo `f1770737-cf39-4148-b3f1-ace0cfa56a1e`, health 200, recibo `visual-benchmark/wicked-provisional-alignment-receipt.json`. Johnny Storm Full Size #12955 e Busto #12978 alinhados de Storm a Johnny Storm (Human Torch), IDs e variantes preservados.
