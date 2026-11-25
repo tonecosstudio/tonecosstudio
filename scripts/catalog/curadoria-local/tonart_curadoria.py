@@ -720,6 +720,11 @@ class Handler(BaseHTTPRequestHandler):
                     universe=obj.get("universe"),
                     official_url=obj.get("official_url"),note=obj.get("note",""),
                     corrected_variant=obj.get("corrected_variant")))
+            if self.path=="/api/align-reviewed-gallery-identity":
+                return self.respond(naming.align_reviewed_gallery_identity(
+                    DB_PATH,SOURCE,group_key=obj.get("group_key"),
+                    group_revision=obj.get("group_revision"),
+                    proofs=obj.get("proofs"),note=obj.get("note")))
             if self.path=="/api/review-name":
                 return self.respond(naming.review_name(DB_PATH,
                     obj.get("message_id",0),obj.get("revision",-1),

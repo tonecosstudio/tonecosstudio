@@ -242,6 +242,46 @@ with tempfile.TemporaryDirectory(prefix="tonart-nomeacao-test-") as directory:
                 "com corpo inteiro e mesma pose, rosto, mao erguida, roupa "
                 "e base dos arquivos ficticios usados no teste de contrato; "
                 "a mudanca nao autoriza licenca nem publicacao.")
+        # Existing manual photo correction can align only the provisional gallery.
+        m.review_name(proof_db,803,0,"Tom Riddle","Wicked","Harry Potter","Busto",
+                      "revisar",notes="Manual visual review of the synthetic photograph.")
+        kwargs=dict(group_key=gkey2,group_revision=0,
+                    proofs=[{**proofs[2],"revision":1}],
+                    note="Reviewed identity from the single manually corrected photograph; no official confirmation.")
+        for override in ({"proofs":[]},{"proofs":[{**proofs[2],"revision":0}]},
+                         {"proofs":[{**proofs[2],"revision":1,"sha256":"0"*64}]}):
+            try:
+                m.align_reviewed_gallery_identity(proof_db,proof_root,**{**kwargs,**override})
+                raise AssertionError("Invalid evidence accepted")
+            except (ValueError,RuntimeError):
+                pass
+        p=proof_root/"msg_803.jpg"
+        original=p.read_bytes()
+        p.write_bytes(b"changed")
+        try:
+            m.align_reviewed_gallery_identity(proof_db,proof_root,**kwargs)
+            raise AssertionError("Changed original accepted")
+        except ValueError:
+            pass
+        p.write_bytes(original)
+        aligned=m.align_reviewed_gallery_identity(proof_db,proof_root,**kwargs)
+        assert aligned["title"]=="Tom Riddle" and not aligned["identity_confirmed"] and not aligned["rights_changed"]
+        with m.smart.db_open(proof_db,readonly=True) as con:
+            assert tuple(con.execute("SELECT title,universe,variant,state,revision FROM model_groups WHERE group_key=?",(gkey2,)).fetchone())==("Tom Riddle","Harry Potter","Busto","revisar",1)
+            assert tuple(con.execute("SELECT title,status,revision FROM name_proposals WHERE message_id=803").fetchone())==("Tom Riddle","revisar",1)
+        try:
+            m.align_reviewed_gallery_identity(proof_db,proof_root,**kwargs)
+            raise AssertionError("Stale group accepted")
+        except RuntimeError:
+            pass
+        # Restore the independent synthetic fixture for later original regression scenarios.
+        with m.smart.db_open(proof_db) as con:
+            con.execute("UPDATE model_groups SET title='Voldemort',universe='Ficcao',state='provavel',revision=0 WHERE group_key=?",(gkey2,))
+            con.execute("UPDATE name_proposals SET title='Voldemort',universe='Ficcao',status='provavel',revision=0,confidence=0.82,notes='',filename=? WHERE message_id=803",(m.proposed_name({"title":"Voldemort","variant":"Busto"},803,"msg_803.jpg"),))
+            con.execute("DELETE FROM name_proposal_events WHERE message_id=803 AND event_type='manual_revisar'")
+            con.execute("DELETE FROM curation_events WHERE group_key=? AND event_type='gallery_provisional_identity_aligned'",(gkey2,))
+            con.commit()
+        print("PROVISIONAL GALLERY ALIGNMENT PASS")
         def variant_call(**extra):
             return m.confirm_reviewed_gallery(
                 proof_db,proof_root,group_key=gkey,group_revision=0,

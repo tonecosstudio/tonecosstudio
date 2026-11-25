@@ -281,6 +281,89 @@ def gallery_identity_proof(db_path,group_key):
             "read_only":True,"automatic_confirmation":False}
 
 
+
+def align_reviewed_gallery_identity(db_path, media_root, *, group_key, group_revision,
+                                    proofs, note):
+    """Align a legacy label to unanimous manual photo reviews, not confirmation.
+
+    Keep every member, printing variant, proposal, official evidence and right.
+    No caller-selected title: the already-reviewed photos are the authority.
+    """
+    if not isinstance(group_key, str) or not re.fullmatch("[0-9a-f]{24}", group_key):
+        raise ValueError("ID de galeria invalido")
+    if type(group_revision) is not int or group_revision < 0:
+        raise ValueError("Revisao obrigatoria")
+    if not isinstance(proofs, list) or not 1 <= len(proofs) <= 48:
+        raise ValueError("Prova de todos os membros obrigatoria")
+    proof_map = {}
+    for p in proofs:
+        if not isinstance(p, dict):
+            raise ValueError("Prova invalida")
+        mid, sha, rev = p.get("message_id"), p.get("sha256"), p.get("revision")
+        if (type(mid) is not int or mid <= 0 or mid in proof_map
+                or type(rev) is not int or rev < 1
+                or not isinstance(sha, str) or not re.fullmatch("[0-9a-f]{64}", sha)):
+            raise ValueError("SHA e revisao manual obrigatorios")
+        proof_map[mid] = (sha, rev)
+    note = str(note or "").strip()
+    if not 60 <= len(note) <= 700:
+        raise ValueError("Justificativa editorial de 60 a 700 caracteres")
+    root = Path(media_root).resolve()
+    with smart.db_open(db_path) as db:
+        smart.setup(db); setup(db)
+        db.execute("BEGIN IMMEDIATE")
+        g = db.execute("SELECT * FROM model_groups WHERE group_key=?", (group_key,)).fetchone()
+        if not g or g["revision"] != group_revision:
+            raise RuntimeError("Galeria alterada ou inexistente")
+        if g["state"] not in ("revisar", "provavel") or g["studio"].casefold() == "geral + 50k":
+            raise ValueError("Galeria editorial incompativel")
+        if not db.execute("SELECT 1 FROM curation_events WHERE group_key=? AND event_type='visual_gallery_audited'", (group_key,)).fetchone():
+            raise ValueError("Auditoria visual obrigatoria")
+        rows = db.execute("""SELECT a.message_id,a.sha256,a.source_relative,a.original_topic,
+            n.studio,n.title,n.universe,n.variant,n.status,n.revision,n.notes
+            FROM model_group_members m JOIN assets a USING(message_id)
+            JOIN name_proposals n USING(message_id)
+            WHERE m.group_key=? ORDER BY a.message_id""", (group_key,)).fetchall()
+        if set(proof_map) != {r["message_id"] for r in rows}:
+            raise ValueError("Provas devem cobrir todos os membros")
+        identities = {(r["title"], r["universe"]) for r in rows}
+        if len(identities) != 1:
+            raise ValueError("Identidade das fotos divergente")
+        title, universe = next(iter(identities))
+        if not title.strip() or not universe.strip():
+            raise ValueError("Nome e franquia obrigatorios")
+        for r in rows:
+            if proof_map[r["message_id"]] != (r["sha256"], r["revision"]):
+                raise RuntimeError("Prova de foto desatualizada")
+            if (r["studio"] != g["studio"] or r["original_topic"] != g["studio"]
+                    or r["status"] != "revisar" or not r["notes"].strip()
+                    or r["variant"] != g["variant"]
+                    or not db.execute("SELECT 1 FROM name_proposal_events WHERE message_id=? AND event_type='manual_revisar'", (r["message_id"],)).fetchone()):
+                raise ValueError("Revisao manual unanime e variante preservada obrigatorias")
+            p = (root / r["source_relative"]).resolve()
+            if not p.is_relative_to(root) or not p.is_file() or p.stat().st_size > 30*1024*1024:
+                raise ValueError("Original ausente ou externo")
+            with p.open("rb") as handle:
+                if hashlib.file_digest(handle, "sha256").hexdigest() != r["sha256"]:
+                    raise ValueError("SHA fisico divergente")
+        if (g["title"], g["universe"]) == (title, universe):
+            raise ValueError("Galeria ja alinhada")
+        stamp = smart.utc()
+        changed = db.execute("""UPDATE model_groups SET title=?,universe=?,state='revisar',
+            revision=revision+1,updated_at=? WHERE group_key=? AND revision=?""",
+            (title, universe, stamp, group_key, group_revision))
+        if changed.rowcount != 1:
+            raise RuntimeError("Revisao concorrente")
+        detail = dict(before=dict(title=g["title"],universe=g["universe"]),
+            after=dict(title=title,universe=universe), variant=g["variant"],
+            proofs=proofs, note=note, identity_confirmed=False, rights_changed=False)
+        db.execute("INSERT INTO curation_events(group_key,event_type,detail,occurred_at) VALUES(?,'gallery_provisional_identity_aligned',?,?)",
+            (group_key,json.dumps(detail,ensure_ascii=False,sort_keys=True),stamp))
+        db.commit()
+        return dict(group_key=group_key,title=title,universe=universe,variant=g["variant"],
+            revision=group_revision+1,member_count=len(rows),identity_confirmed=False,
+            rights_changed=False,originals_modified=False)
+
 def confirm_reviewed_gallery(db_path,media_root,*,group_key,group_revision,
                              proofs,title,universe,official_url,note,corrected_variant=None):
     """Atomically normalize ALL gallery labels and verify only editorial identity.
