@@ -25,6 +25,7 @@ export type CatalogExplorerHeaderProps = {
   collectionHref: string;
   activeTab?: "explore" | "collections";
   standalone?: boolean;
+  unidentified?: boolean;
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -46,6 +47,7 @@ export function CatalogExplorerHeader({
   collectionHref,
   activeTab = "explore",
   standalone = false,
+  unidentified = false,
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -59,13 +61,16 @@ export function CatalogExplorerHeader({
   }, []);
 
   const review = kind === "review";
-  const title = review ? "MODELOS EM REVISÃO" : "TODOS OS MODELOS";
+  const title = review ? (unidentified ? "MODELOS A IDENTIFICAR" : "MODELOS EM REVISÃO") : "TODOS OS MODELOS";
   const intro = review
-    ? "Explore referências recebidas pelo Telegram. Identificações podem ser provisórias; nenhuma ficha implica liberação comercial."
+    ? unidentified
+      ? "Referências ainda sem nome. Ao serem identificadas, passam para Em revisão sem perder suas galerias."
+      : "Explore referências identificadas pelo Telegram. Nomes podem ser prováveis; nenhuma ficha implica liberação comercial."
     : "Explore modelos do acervo original, seus universos e suas galerias.";
   const tabs = [
-    { label: "Explorar", href: review && standalone ? "/" : review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
+    { label: "Explorar", href: review && standalone ? "/" : review ? (unidentified ? PUBLIC_ROUTES.catalogUnidentified : PUBLIC_ROUTES.catalogReview) : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
     { label: "Coleções", href: collectionHref, active: activeTab === "collections" },
+    ...(!standalone && review ? [{ label: unidentified ? "Em revisão" : "A identificar", href: unidentified ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogUnidentified, active: false }] : []),
     ...(!standalone ? [{ label: review ? "Originais" : "Em revisão", href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false }] : []),
   ];
 
@@ -131,7 +136,7 @@ export function CatalogExplorerHeader({
         {review ? (
           <p className="mt-3 inline-flex w-fit max-w-full items-center gap-2 border border-[hsl(0,0%,28%)] bg-[hsl(0,0%,7%)/0.85] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(0,0%,66%)] sm:text-[10px]">
             <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--gold-accent)/0.7)]" />
-            Em curadoria · identificação provisória
+            {unidentified ? "Em curadoria · aguardando nome" : "Em curadoria · nome provável ou confirmado"}
           </p>
         ) : null}
         {totalLabel ? <p className="mt-4 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}
