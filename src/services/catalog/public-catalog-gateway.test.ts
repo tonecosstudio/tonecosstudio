@@ -82,6 +82,49 @@ describe("canonical catalog read boundary", () => {
     });
   });
 
+  it("reads a single mixed page and retains the protected Telegram media route", async () => {
+    const id = "tg_" + "a".repeat(24);
+    const cover =
+      "/api/telegram-studios/" + id + "/media/" + "b".repeat(64) + "/thumb";
+    const io = vi.fn(async () =>
+      Response.json({
+        items: [
+          row,
+          {
+            ...row,
+            id,
+            slug: "telegram-preview",
+            cover_storage_key: null,
+            telegram_preview: { pending: true, cover },
+          },
+        ],
+        nextCursor: "mixed-cursor",
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const result = await gateway.listPage({
+      search: "Thanos",
+      globalSearch: true,
+    });
+    const [url] = io.mock.calls[0] as unknown as [string];
+    expect(new URL(url).searchParams.get("scope")).toBe("all");
+    expect(new URL(url).searchParams.get("q")).toBe("Thanos");
+    expect(result.nextCursor).toBe("mixed-cursor");
+    expect(result.items[0].telegramPreview).toBeUndefined();
+    expect(result.items[1]).toMatchObject({
+      id,
+      coverStorageKey: null,
+      telegramPreview: { pending: true, cover },
+    });
+    await expect(gateway.listPage({ globalSearch: true })).rejects.toThrow(
+      "catalog_global_search_requires_query",
+    );
+    expect(io).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects invalid search, scope, and oversized pages without making a request", async () => {
     const io = vi.fn(async () => new Response("{}"));
     const gateway = createPublicCatalogGateway(

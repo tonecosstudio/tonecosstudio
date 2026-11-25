@@ -197,7 +197,8 @@ function isBoundedPublicQuery(route, searchParams) {
     } else if (key === "studio") {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
     } else if (key === "scope") {
-      if (route !== "api/catalog" || value !== "all" || !searchParams.has("q")) return false;
+      if (route !== "api/catalog" || value !== "all" || !searchParams.has("q"))
+        return false;
     } else if (key === "provisional") {
       if (route !== "api/telegram-studios" || !/^[01]$/.test(value))
         return false;

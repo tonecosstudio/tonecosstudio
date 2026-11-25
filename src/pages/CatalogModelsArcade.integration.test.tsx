@@ -79,7 +79,25 @@ const second = {
   code: "TCS-002",
 };
 
-function setupFetch() {
+const telegramId = "tg_" + "a".repeat(24);
+const telegram = {
+  ...original,
+  id: telegramId,
+  slug: "telegram-preview",
+  name: "Thanos provisório",
+  cover_storage_key: null,
+  telegram_preview: {
+    pending: true,
+    cover:
+      "/api/telegram-studios/" +
+      telegramId +
+      "/media/" +
+      "b".repeat(64) +
+      "/thumb",
+  },
+};
+
+function setupFetch(globalItems?: Array<typeof original | typeof telegram>) {
   const calls: Array<{ url: URL; init: RequestInit }> = [];
   const fetcher = vi.fn(async (input: string, init: RequestInit) => {
     const url = new URL(input);
@@ -99,8 +117,12 @@ function setupFetch() {
     }
     if (url.pathname.endsWith("/api/catalog")) {
       return Response.json({
-        items: [url.searchParams.get("cursor") ? second : original],
-        nextCursor: url.searchParams.get("cursor") ? null : "page-two",
+        items:
+          globalItems && url.searchParams.get("scope") === "all"
+            ? globalItems
+            : [url.searchParams.get("cursor") ? second : original],
+        nextCursor:
+          globalItems || url.searchParams.get("cursor") ? null : "page-two",
       });
     }
     throw new Error("Unexpected catalog request: " + url.toString());
@@ -143,6 +165,35 @@ afterEach(() => {
 });
 
 describe("Tonecos canonical model discovery UI", () => {
+  it("finds both sources in one search and keeps provisional previews outside commercial selection", async () => {
+    const { calls } = setupFetch([original, telegram]);
+    await renderCatalog("/modelos?q=Thanos");
+    const historical = await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    const preview = await screen.findByRole("link", {
+      name: "Ver detalhes de Thanos provisório",
+    });
+    expect(historical).toHaveAttribute("href", "/modelos/escultura-original");
+    expect(preview).toHaveAttribute(
+      "href",
+      "/catalogo/em-revisao?modelo=" + telegramId,
+    );
+    const card = preview.closest("article")!;
+    expect(within(card).getByText("Em revisão")).toBeInTheDocument();
+    expect(
+      within(card).queryByRole("button", { name: "Adicionar à seleção" }),
+    ).not.toBeInTheDocument();
+    expect(
+      calls.filter(({ url }) => url.pathname.endsWith("/api/catalog")),
+    ).toHaveLength(1);
+    expect(
+      calls
+        .find(({ url }) => url.pathname.endsWith("/api/catalog"))
+        ?.url.searchParams.get("scope"),
+    ).toBe("all");
+  });
+
   it("restores ordinary image cards in read-only public mode despite the old blanket flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");
