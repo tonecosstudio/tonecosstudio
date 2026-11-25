@@ -147,6 +147,12 @@ const fullState = () => ({
   deployment: structuredClone(deployment),
   bindings: structuredClone(bindings),
   workerSettings: structuredClone(workerSettings),
+  workersBuilds: {
+    scriptTag: original.productionObservation.workersBuildsScriptTag,
+    activeScriptTag: original.productionObservation.workersBuildsScriptTag,
+    configAbsent: true,
+    triggerCount: 0,
+  },
   showcaseSchema: {
     column: "telegram_showcase_visible",
     migration: showcaseMigration,
@@ -216,6 +222,34 @@ test("all retiring D1/R2 writers must be disabled administratively with empty qu
   assert.ok(
     assessCutoverReadiness(invalidContract, fullState()).blockers.includes(
       "source_additional_writers_active_or_unverified",
+    ),
+  );
+});
+
+test("Workers Builds source must be retired before any canonical Worker release", () => {
+  const good = assessCutoverReadiness(approvedContract(), fullState());
+  assert.equal(good.ready, true, JSON.stringify(good.blockers));
+  const mutations = [
+    (s) => { s.workersBuilds.configAbsent = false; },
+    (s) => { s.workersBuilds.triggerCount = 1; },
+    (s) => { s.workersBuilds.activeScriptTag = "f".repeat(32); },
+    (s) => { delete s.workersBuilds; },
+  ];
+  for (const mutate of mutations) {
+    const state = fullState();
+    mutate(state);
+    const verdict = assessCutoverReadiness(approvedContract(), state);
+    assert.equal(verdict.ready, false);
+    assert.ok(
+      verdict.blockers.includes("cloudflare_workers_builds_parallel_publisher_active_or_unverified"),
+      JSON.stringify(verdict.blockers),
+    );
+  }
+  const forged = approvedContract();
+  forged.productionObservation.workersBuildsScriptTag = "a".repeat(32);
+  assert.ok(
+    assessCutoverReadiness(forged, fullState()).blockers.includes(
+      "cloudflare_workers_builds_parallel_publisher_active_or_unverified",
     ),
   );
 });
@@ -1039,6 +1073,16 @@ test("ownership-only checks live GitHub and Cloudflare metadata without a D1 req
       !address.includes("/d1/database/"),
       "must not query D1 under quota pressure",
     );
+    const buildTag = original.productionObservation.workersBuildsScriptTag;
+    if (address.endsWith("/builds/workers/" + buildTag)) {
+      return Response.json({ success: false, errors: [{ code: 12040, message: "No build configuration" }] }, { status: 404 });
+    }
+    if (address.endsWith("/builds/workers/" + buildTag + "/triggers")) {
+      return Response.json({ success: true, result: [] });
+    }
+    if (address.endsWith("/workers/scripts")) {
+      return Response.json({ success: true, result: [{ id: original.runtime.worker, tag: buildTag }] });
+    }
     if (address.endsWith("/deployments")) {
       return Response.json({
         success: true,
@@ -1076,9 +1120,15 @@ test("ownership-only checks live GitHub and Cloudflare metadata without a D1 req
     );
     assert.equal(
       calls.filter((x) => x.address.includes("api.cloudflare.com")).length,
-      2,
+      5,
     );
-    assert.equal(calls.length, 8 + retiringWriters.length);
+    assert.equal(calls.length, 11 + retiringWriters.length);
+    assert.deepEqual(state.workersBuilds, {
+      scriptTag: original.productionObservation.workersBuildsScriptTag,
+      activeScriptTag: original.productionObservation.workersBuildsScriptTag,
+      configAbsent: true,
+      triggerCount: 0,
+    });
     assert.equal(
       assessCutoverReadiness(approvedContract(), state).ready,
       false,
