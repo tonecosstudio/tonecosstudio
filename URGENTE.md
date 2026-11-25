@@ -1,3 +1,9 @@
+## CHECKPOINT — COBERTURA COMPLEMENTAR E QUATRO MODELOS HISTÓRICOS (25/11/2026)
+
+- Comparação sem filtro de proporção concluída: 34 pranchas, 33 galerias, 217 imagens distintas, zero erros; índice `drive-reconciliation/wicked-visual-review-sheets/aspect-gap-index.json`, complete=true, processo OrdaX `394dc532-b454-41e4-bdc3-c2615f0164c9`. Não regenerar nem reinferir DINO. Revisadas as pranchas 006, 012, 020, 023, 024; não há associação inequívoca entre os modelos históricos examinados e as referências Telegram.
+- Drive: RoboCop Modelo 01 (figura) e 02 (busto), Marty McFly Modelo 01 e Gorr Modelo 01 organizados, quatro JPG, mesmos IDs, tamanhos, permissões e SHA-256 antes/depois. Recibo `drive-reconciliation/robocop-marty-gorr-historical-models-receipt.json`, ação `c2fd483e-27bb-435c-a6f9-acd1c81801b7` exit 0, HISTORICAL_VERIFIED 4. Remapear caminhos pelos recibos; nenhuma associação Telegram confirmada. Sem uploads, exclusões ou alteração de acesso.
+- Wicked leitura atual: 479 confirmadas, 331 prováveis, 10 em revisão. Nenhuma nova confirmação editorial, fusão ou alteração D1/R2 nesta rodada.
+
 ## CHECKPOINT M5 — ROOT CAUSE WORKERS BUILDS ENCERRADA (25/11/2026)
 
 - **Publicador paralelo identificado por prova física Cloudflare:** Workers Builds config `ee2d9075c95d41c3bd7b2690700e0b26`, `auto_build_enabled=true` sobre `tonecosstudio/tonecosstudio/main`, trigger `96352968-9251-4c1b-a9df-1b8ca9c89444` e deploy automático `npx wrangler deploy --config services/catalogo/wrangler.jsonc`. Os recibos oficiais associam commits e builds às versões v61, v62 e v63, inclusive commit de mera documentação/config; esta era a causa raiz da duplicação após desligar os cinco workflows Washington.
