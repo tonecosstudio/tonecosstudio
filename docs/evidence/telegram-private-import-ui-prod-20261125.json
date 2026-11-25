@@ -1,0 +1,90 @@
+{
+  "schemaVersion": "tonart.telegram.private-batch-ui-production/1",
+  "verifiedOn": "2026-11-25",
+  "state": "frontend_live_admin_auth_required",
+  "repository": "tonecosstudio/tonecosstudio",
+  "code": {
+    "adminWorkbenchPr": 183,
+    "adminWorkbenchMerge": "b809980dd84fcf3ce6110a86f280baf468213378",
+    "proxyCorrectionPr": 185,
+    "proxyCorrectionMerge": "2d21e325d228e9410bf92f926d584a712f2f1d63",
+    "consumer": "src/pages/commercial/TonartTelegramDrafts.tsx",
+    "batchUI": "src/pages/commercial/TelegramPrivateDraftBatchImport.tsx",
+    "parser": "src/services/catalog/telegram-private-import-plan.ts",
+    "onlyWriter": "services/catalogo/worker/telegramDraftImport.ts",
+    "existingApi": "POST /api/admin/telegram-drafts/import",
+    "authentication": "Supabase JWT /auth/v1/user + is_tonecos_admin RPC"
+  },
+  "testEvidence": {
+    "vitest": {
+      "passed": 17,
+      "failed": 0
+    },
+    "typecheck": "pass",
+    "eslint": "pass",
+    "prettier": "pass",
+    "localProductionBuild": "pass",
+    "realPrivatePlanReadOnly": {
+      "candidates": 1701,
+      "images": 1701,
+      "studios": 47,
+      "sha256": "5b40f3aeb9dd24bb5a38b1b205214346843e2e634ea8ce10c17762066fb47cc4",
+      "heldForReview": 513,
+      "applied": 0
+    },
+    "privateProxyTests": {
+      "passed": 36,
+      "failed": 0
+    },
+    "pullRequestQualityGateRuns": [
+      "https://github.com/tonecosstudio/tonecosstudio/actions/runs/45579060484",
+      "https://github.com/tonecosstudio/tonecosstudio/actions/runs/45580164861"
+    ]
+  },
+  "vercel": {
+    "project": "tonart-studio-public",
+    "projectId": "prj_oq3lmzMRurTuZoK4aWQtYEQE5UXS",
+    "teamId": "team_VPZxAK2VXdTWXI8blJaKQEl0",
+    "previewId": "dpl_4TBtLztNAyenQTf5ZUjjLwDQP17e",
+    "productionId": "dpl_Bm9Q1AevN8GiwemrPnBLMvjPj2bc",
+    "sourceCommit": "2d21e325d228e9410bf92f926d584a712f2f1d63",
+    "previousProductionId": "dpl_FugADwn1w8ufm8FM43rZkRcCdwp3",
+    "aliases": [
+      "tonartstudio.com.br",
+      "www.tonartstudio.com.br",
+      "tonart-studio-public.vercel.app"
+    ],
+    "verifiedProductionBundle": "/assets/index-BbnceGba.js",
+    "promotionMechanism": "Vercel auto-assigned production aliases on READY; no manual request_promote was executed"
+  },
+  "physicalSmoke": {
+    "mainHtml": 200,
+    "mainCatalogPage": 200,
+    "catalogApi": 200,
+    "categoriesApi": 200,
+    "franchisesApi": 200,
+    "mainMediaWebp": 200,
+    "privateStudioListWithoutJWT": 403,
+    "privateDraftListWithoutJWT": 403,
+    "wrongGetImport": 404,
+    "telegramCatalogApi": 200,
+    "telegramDomainPrivateStudioEndpoint": 404
+  },
+  "productionInvariants": {
+    "workerVersion": "74f3f0da-929c-4f6b-b0ce-6881d3e91385",
+    "workerTrafficPercent": 100,
+    "d1ModelCount": 6871,
+    "telegramModelCount": 4262,
+    "noD1OrR2WritesFromUIRelease": true,
+    "privateAssetsNotExposed": true,
+    "rightsUnchanged": true,
+    "noAdditionalM5Migration": true
+  },
+  "limits": [
+    "An anonymous 403 on the admin routes proves fail-closed access, not a successful logged-in admin import E2E.",
+    "The UI requires an authorized admin to select the existing private JSONL and explicitly start the batch.",
+    "1,701 new private candidate models remain unimported; 513 held cases remain under Curadoria review.",
+    "Access to the OrdaX project browser remains unbound and was not bypassed.",
+    "The Telegram-only Vercel project was not redeployed."
+  ]
+}
