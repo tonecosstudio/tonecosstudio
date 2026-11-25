@@ -24,10 +24,16 @@ function databaseHarness() {
             async all() {
               if (sql.includes('FROM d1_migrations')) return { results: values.map((name) => ({ name })) }
               if (sql.includes('FROM sqlite_schema')) {
-                const rows = []
-                for (let index = 0; index < values.length; index += 2) {
-                  rows.push({ type: values[index], name: values[index + 1] })
-                }
+                // The runtime binds each name once. A 126-variable pair scan
+                // exceeds the real D1 budget and must fail, not fake health.
+                if (values.length > 100) throw Error('too many SQL variables: SQLITE_ERROR')
+                const names = new Set(values)
+                const rows = ['tables', 'indexes', 'triggers'].flatMap((kind) => {
+                  const type = kind === 'tables' ? 'table' : kind === 'indexes' ? 'index' : 'trigger'
+                  return schemaContract.requiredObjects[kind]
+                    .filter((name) => names.has(name))
+                    .map((name) => ({ type, name }))
+                })
                 return { results: rows }
               }
               const table = sql.match(/pragma_table_info\('([^']+)'\)/)?.[1]
