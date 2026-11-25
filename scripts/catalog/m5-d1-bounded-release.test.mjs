@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, mkdtempSync, rmSync, existsSync } from "node
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { planMigrationFiles, stageOnly, approvedSeedReferences } from "./m5-d1-bounded-release.mjs";
+import { planMigrationFiles, stageOnly, approvedSeedReferences, requireExactAuth } from "./m5-d1-bounded-release.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const migrations = readdirSync(join(root, "services/catalogo/migrations"));
@@ -74,4 +74,22 @@ test("M5 never confuses migration file presence with remote applied state", () =
   const p = planMigrationFiles({applied:baseline});
   assert.deepEqual(p.applied, []);
   assert.deepEqual(p.pending,p.all);
+});
+
+test("production D1 cannot be authorized by a normal push or commit title", () => {
+  const base = {
+    GITHUB_ACTIONS:"true",
+    GITHUB_EVENT_NAME:"push",
+    GITHUB_REF:"refs/heads/main",
+    GITHUB_REPOSITORY:"tonecosstudio/tonecosstudio",
+    M5_OPERATION:"m5-schema",
+    M5_ACK:"GO-M5-0028-0033-20261125",
+    GITHUB_TOKEN:"fakegithubreadtoken",
+    CLOUDFLARE_API_TOKEN:"fakecloudflarereadtoken",
+  };
+  assert.throws(() => requireExactAuth(base), /verified_m5_release_event_required/);
+  assert.throws(() => requireExactAuth({...base,M5_VERIFIED_RECEIPT:"false"}), /verified_m5_release_event_required/);
+  assert.throws(() => requireExactAuth({...base,M5_VERIFIED_RECEIPT:"true",M5_ACK:"bad"}), /explicit_m5_ack_missing/);
+  assert.doesNotThrow(() => requireExactAuth({...base,M5_VERIFIED_RECEIPT:"true"}));
+  assert.doesNotThrow(() => requireExactAuth({...base,GITHUB_EVENT_NAME:"workflow_dispatch"}));
 });

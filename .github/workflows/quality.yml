@@ -88,9 +88,9 @@ permissions:
 concurrency:
   # Manual M5 ownership inspections never cancel (or get cancelled by) push CI.
   group: >-
-    ${{ github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'm5-schema') && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
+    ${{ ((github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'm5-schema')) || (github.event_name == 'push' && github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033')) && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
   cancel-in-progress: >-
-    ${{ github.event_name != 'workflow_dispatch' || inputs.operation == 'verify' }}
+    ${{ (github.event_name != 'workflow_dispatch' && github.event.head_commit.message != 'ops(m5): execute authorized D1 schema 0028-0033') || inputs.operation == 'verify' }}
 
 jobs:
   quality:
@@ -461,7 +461,9 @@ jobs:
   # A strictly bounded six-file view avoids accidentally applying 0034+.
   catalog-m5-d1-schema:
     name: Authorized M5 D1 0028-0033 (bounded)
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'm5-schema'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'm5-schema')
+      || (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     environment: production
@@ -483,6 +485,25 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
+      - name: Validate one-use M5 D1 release receipt before any migration
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          receipt='docs/evidence/m5-d1-schema-go-20261125.json'
+          commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA")"
+          jq -e --arg receipt "$receipt" \
+            '(.files | length) == 1 and .files[0].filename == $receipt and .files[0].status == "added" and .commit.message == "ops(m5): execute authorized D1 schema 0028-0033"' <<<"$commit" >/dev/null
+          payload="$(gh api "repos/$GITHUB_REPOSITORY/contents/$receipt?ref=$GITHUB_SHA" --jq '.content' | base64 -d)"
+          expected_source_sha="$(node -p "require('./config/catalog-code-consolidation.json').origin.observedMainSha")"
+          jq -e --arg source "$expected_source_sha" \
+            '.authorization == "GO-M5-0028-0033-20261125" and .intent == "apply-exactly-six-d1-migrations" and .sourceMainSha == $source and .singleUse == true and .target == "tonecosstudio/tonecosstudio"' <<<"$payload" >/dev/null
+          echo 'M5_VERIFIED_RECEIPT=true' >> "$GITHUB_ENV"
+          echo 'M5_OPERATION=m5-schema' >> "$GITHUB_ENV"
+          echo 'M5_ACK=GO-M5-0028-0033-20261125' >> "$GITHUB_ENV"
+          echo 'M5_D1_GO_RECEIPT_VERIFIED'
       - name: Offline M5 migration scope tests
         run: node --test scripts/catalog/m5-d1-bounded-release.test.mjs scripts/catalog/cutover-readiness.test.mjs
       - name: Require exact GO, disabled source writers, D1 bookmark and live ledger

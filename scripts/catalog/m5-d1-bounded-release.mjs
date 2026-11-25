@@ -24,8 +24,12 @@ const asJSON = (file) => JSON.parse(readFileSync(file, "utf8"));
 function ensure(condition, message) {
   if (!condition) throw new Error("m5_d1_blocked:" + message);
 }
-function requireExactAuth(env) {
-  ensure(env.GITHUB_ACTIONS === "true" && env.GITHUB_EVENT_NAME === "workflow_dispatch", "manual_github_action_only");
+export function requireExactAuth(env) {
+  // Manual workflow dispatch or a separately verified one-use release receipt.
+  // An ordinary push, even with a matching commit message, can never authorize D1.
+  const manuallyApproved = env.GITHUB_EVENT_NAME === "workflow_dispatch";
+  const receiptApproved = env.GITHUB_EVENT_NAME === "push" && env.M5_VERIFIED_RECEIPT === "true";
+  ensure(env.GITHUB_ACTIONS === "true" && (manuallyApproved || receiptApproved), "verified_m5_release_event_required");
   ensure(env.GITHUB_REF === "refs/heads/main", "main_only");
   ensure(env.M5_OPERATION === "m5-schema" && env.M5_ACK === APPROVAL, "explicit_m5_ack_missing");
   ensure(env.GITHUB_REPOSITORY === "tonecosstudio/tonecosstudio", "repository_mismatch");
