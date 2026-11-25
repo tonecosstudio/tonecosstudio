@@ -3,6 +3,9 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+> **Interface administrativa publicada em 25/11/2026:** `tonartstudio.com.br/admin/catalogo` inclui o importador privado JSONL usando o mesmo Worker protegido, comprovado por [recibo de implantação e smoke](evidence/telegram-private-import-ui-prod-20261125.json). PRs #183/#185 integradas; Vercel `dpl_Bm9Q1AevN8GiwemrPnBLMvjPj2bc` ativa nos domínios principais. HTTP 200 para páginas/listagens/mídia, 403 para APIs privadas sem sessão e 404 para métodos/host não permitidos. Os **1.701 rascunhos continuam fora do D1** e os 513 casos retidos seguem em revisão. Aplicação somente após login admin legítimo, seleção voluntária do manifesto e reconferência viva de IDs/hashes/objetos R2 pelo importador; nem a UI nem o release aprovaram direitos ou visibilidade.
+
+
 > **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
 
 
