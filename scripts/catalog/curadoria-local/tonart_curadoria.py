@@ -705,7 +705,7 @@ class Handler(BaseHTTPRequestHandler):
                     note=obj.get("note","")))
             if self.path=="/api/audit-legacy-galleries-batch":
                 return self.respond(legacy_album_audit.record_reviews_batch(
-                    DB_PATH,reviews=obj.get("reviews")))
+                    DB_PATH,reviews=obj.get("reviews"),media_root=SOURCE))
             if self.path=="/api/audit-legacy-gallery":
                 return self.respond(legacy_album_audit.record_review(
                     DB_PATH,group_key=obj.get("group_key",""),

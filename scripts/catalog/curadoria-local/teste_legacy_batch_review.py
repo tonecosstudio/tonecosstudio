@@ -4,6 +4,7 @@ from contextlib import closing
 from http.server import ThreadingHTTPServer
 from pathlib import Path
 import http.client
+import hashlib
 import json
 import sqlite3
 import tempfile
@@ -155,3 +156,53 @@ with tempfile.TemporaryDirectory(prefix="tonart-batch-audit-") as temp:
         assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
 
     print("ATOMIC BATCH E2E PASS: 2 galleries, HTTP 200/403/409, all-or-none, SHA/revision, no publication")
+
+    # A singleton already in a legacy caption group can be audited in place
+    # without creating a second gallery or relaxing the original-media proof.
+    root=Path(temp)/"media"
+    root.mkdir()
+    photo=root/"singleton.jpg"
+    photo.write_bytes(b"synthetic original")
+    digest=hashlib.sha256(photo.read_bytes()).hexdigest()
+    key="d"*24
+    with closing(smart.db_open(dbpath)) as db:
+        db.execute("""INSERT INTO assets VALUES(?,?,?,?,?,?,?,?)""",
+                   (31,digest,photo.name,"Studio A","2026-11-22","One photo","","synthetic"))
+        db.execute("""INSERT INTO model_groups
+            (group_key,studio,title,state,created_at,updated_at)
+            VALUES(?,?,?,'provavel','synthetic','synthetic')""",(key,"Studio A","Single"))
+        db.execute("""INSERT INTO model_group_members
+            (message_id,group_key,match_reason,updated_at)
+            VALUES(?,?,'telegram_caption','synthetic')""",(31,key))
+        db.commit()
+    review={"group_key":key,"revision":0,"decision":"same_sculpture",
+            "note":"A única vista original foi examinada integralmente; identidade não aprovada.",
+            "member_ids":[31],"sha256s":[digest]}
+    for overrides in ({"media_root":None},{"media_root":Path(temp)/"missing"}):
+        try:
+            audit.record_reviews_batch(dbpath,reviews=[review],**overrides)
+            raise AssertionError("Missing physical original accepted")
+        except ValueError:
+            pass
+    photo.write_bytes(b"changed")
+    try:
+        audit.record_reviews_batch(dbpath,reviews=[review],media_root=root)
+        raise AssertionError("Changed physical original accepted")
+    except ValueError:
+        pass
+    photo.write_bytes(b"synthetic original")
+    for bad in ({**review,"sha256s":["0"*64]},
+                {**review,"decision":"different_sculptures"}):
+        try:
+            audit.record_reviews_batch(dbpath,reviews=[bad],media_root=root)
+            raise AssertionError("Invalid singleton review accepted")
+        except (ValueError,RuntimeError):
+            pass
+    result=audit.record_reviews_batch(dbpath,reviews=[review],media_root=root)
+    assert result["reviewed"]==1 and not result["publication_approved"]
+    assert audit.record_reviews_batch(dbpath,reviews=[review],media_root=root)["replayed"]
+    with closing(smart.db_open(dbpath,readonly=True)) as db:
+        assert db.execute("SELECT group_key FROM model_group_members WHERE message_id=31").fetchone()[0]==key
+        assert db.execute("SELECT revision FROM model_groups WHERE group_key=?",(key,)).fetchone()[0]==1
+        assert db.execute("PRAGMA quick_check(1)").fetchone()[0]=="ok"
+    print("LEGACY SINGLETON AUDIT E2E PASS")
