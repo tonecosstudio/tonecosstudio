@@ -21,6 +21,7 @@ const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.catalogHub, label: "CATÁLOGOS" },
   { to: PUBLIC_ROUTES.catalogHistorical, label: "ORIGINAIS" },
   { to: PUBLIC_ROUTES.catalogReview, label: "EM REVISÃO" },
+  { to: PUBLIC_ROUTES.catalogUnidentified, label: "A IDENTIFICAR" },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
 ];
