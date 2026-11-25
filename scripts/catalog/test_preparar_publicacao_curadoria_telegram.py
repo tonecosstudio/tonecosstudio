@@ -460,18 +460,13 @@ def test_private_draft_plan_without_publication():
                 expected_franchises,known_d1_images_csv=known_images,
                 expected_d1_images=expected_images,pending_franchise_id=pending)
         ready, held, summary = plan()
-        assert len(ready)==4,ready
+        assert len(ready)==2,ready
         assert summary["existing_d1_models"]==1 and summary["franchises_in_d1"]==1
-        assert summary["reasons"]["already_in_d1"]==1 and summary["held"]==1,summary
+        assert summary["reasons"]["already_in_d1"]==1 and summary["held"]==3,summary
         assert {o["import_manifest"]["groupKey"] for o in ready}=={
-            "a"*24,"single:14","single:15","single:17"}
-        split={o["import_manifest"]["groupKey"]:o for o in ready
-               if o["provisional_singleton"]}
-        assert set(split)=={"single:14","single:15"}
-        assert all(o["source_group_key"]=="c"*24 and
-                   o["import_manifest"]["name"]=="Modelo sem nome #"+
-                   o["import_manifest"]["groupKey"].split(":")[1] and
-                   o["import_manifest"]["universe"]=="Pokémon" for o in split.values())
+            "a"*24,"single:17"}
+        assert {x["identity_key"] for x in held
+                if x["reason"]=="name_identification_pending"}=={"single:14","single:15"}
         assert summary["conservative_split_groups"]==1
         assert summary["conservative_split_images"]==2
         assert all(o["import_manifest"]["franchiseId"]==57 for o in ready)
@@ -483,19 +478,17 @@ def test_private_draft_plan_without_publication():
         ]
         second,_,_ = plan()
         assert [x["operation_id"] for x in ready]==[x["operation_id"] for x in second]
-        # A state-only review blocker still preserves eligible media as
-        # singletons instead of dropping the complete gallery.
+        # A gallery whose identity is unresolved remains in Curadoria,
+        # even when the individual proposals contain a name.
         with closing(sqlite3.connect(db)) as con:
             con.execute("UPDATE model_groups SET state='revisar' WHERE group_key=?",("c"*24,))
             con.execute("UPDATE name_proposals SET title='Mixed' WHERE message_id=15")
             con.execute("UPDATE annotations SET model='Mixed' WHERE message_id=15")
             con.commit()
-        review_split,_,review_summary=plan()
-        review_items={x["import_manifest"]["groupKey"]:x for x in review_split
-                      if x["source_group_key"]=="c"*24}
-        assert set(review_items)=={"single:14","single:15"}
-        assert all(x["provisional_singleton_reason"]=="group_state_requires_review"
-                   for x in review_items.values())
+        review_split,review_held,review_summary=plan()
+        assert not any(x["source_group_key"]=="c"*24 for x in review_split)
+        assert {x["identity_key"] for x in review_held
+                if x["reason"]=="name_identification_pending"}=={"single:14","single:15"}
         assert review_summary["conservative_split_groups"]==1
         try:
             plan(expected_models=2)
@@ -530,8 +523,8 @@ def test_private_draft_plan_without_publication():
                 {"id":77,"name":"Dragon Ball"},
             ])
         extended,held,report=plan(expected_franchises=2)
-        assert len(extended)==7,extended
-        assert len(held)==1
+        assert len(extended)==5,extended
+        assert len(held)==3
         assert report["franchises_in_d1"]==2
         imported={x["import_manifest"]["groupKey"]:x for x in extended}
         assert imported["single:19"]["studio"]=="Studio A"
@@ -548,16 +541,16 @@ def test_private_draft_plan_without_publication():
                 {"id":99,"name":"Franquia a identificar"},
             ])
         provisional,unknown_held,unknown_summary=plan(expected_franchises=3,pending=99)
-        assert len(provisional)==8,provisional
+        assert len(provisional)==6,provisional
         pending={x["import_manifest"]["groupKey"]:x for x in provisional}
         assert pending["single:16"]["franchise_pending"]
         assert pending["single:16"]["import_manifest"]["franchiseId"]==99
         assert pending["single:16"]["import_manifest"]["universe"]=="Unknown Universe"
         assert unknown_summary["pending_franchise_candidates"]==1
-        assert len(unknown_held)==0
+        assert len(unknown_held)==2
         assert not pending["single:16"]["apply_executed"]
-        # Unnamed material can enter the same private catalogue with a stable
-        # placeholder and the real pending franchise; rejected media remains held.
+        # Unnamed material stays in Curadoria even with a valid pending
+        # franchise. Rejected media remains held.
         with closing(sqlite3.connect(db)) as con:
             for mid,status in [(22,"revisar"),(23,"descartado")]:
                 sha=hashlib.sha256(str(mid).encode()).hexdigest()
@@ -570,14 +563,16 @@ def test_private_draft_plan_without_publication():
             con.commit()
         coverage,held,coverage_summary=plan(expected_franchises=3,pending=99)
         coverage_map={x["import_manifest"]["groupKey"]:x for x in coverage}
-        assert coverage_map["single:22"]["import_manifest"]["name"]=="Modelo sem nome #22"
-        assert coverage_map["single:22"]["import_manifest"]["franchiseId"]==99
+        assert "single:22" not in coverage_map
+        assert any(x["identity_key"]=="single:22" and
+                   x["reason"]=="name_identification_pending" for x in held)
         assert "single:23" not in coverage_map
         assert "a"*24 in coverage_map
-        assert coverage_summary["pending_name_candidates"]==3
+        assert coverage_summary["pending_name_candidates"]==0
+        assert coverage_summary["reasons"]["name_identification_pending"]==3
         assert coverage_summary["reasons"]["rejected_media"]==1
-        assert not coverage_map["single:22"]["showcase_visible"]
-        assert not coverage_map["single:22"]["apply_executed"]
+        assert all(not x["showcase_visible"] and not x["apply_executed"]
+                   for x in coverage)
         try:
             plan(expected_franchises=3,pending=57)
             assert False,"wrong provisional ID must be rejected"
