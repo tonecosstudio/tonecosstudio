@@ -141,6 +141,8 @@ function AppContent() {
               <Route path={PUBLIC_ROUTES.catalogHistorical} element={<CatalogModelsArcade />} />
               <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
               <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
+              <Route path={PUBLIC_ROUTES.catalogUnidentified} element={<TelegramCatalog key="unidentified" embedded />} />
+              <Route path={PUBLIC_ROUTES.catalogUnidentifiedStudios} element={<TelegramCatalog key="unidentified" embedded />} />
               <Route path={PUBLIC_ROUTES.arcadeLab} element={<ArcadeLab />} />
               <Route
                 path={PUBLIC_ROUTES.migrateOrder}
