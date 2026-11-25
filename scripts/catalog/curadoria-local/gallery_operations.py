@@ -640,9 +640,9 @@ def relate_orphan_variant(db_path,media_root,*,orphan_mid,orphan_revision,
 
 
 def split_audited_variant(db_path, media_root, *, group_key, revision,
-                          selected_message_id, proofs, corrected_variant,
-                          official_url, note):
-    """Split ONE proven, wrong-variant photo from a prior-audited two-photo gallery.
+                          selected_message_id=None, proofs, corrected_variant,
+                          official_url, note, selected_message_ids=None):
+    """Split a proven distinct sculpture/variant from a prior-audited gallery.
 
     This is not a legacy album re-audit or automatic regroup. The complete
     current member/SHA/name-revision contract and each physical original are
@@ -656,8 +656,16 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
         raise ValueError("Galeria invalida")
     if type(revision) is not int or revision < 0:
         raise ValueError("Revisao CAS obrigatoria")
-    if type(selected_message_id) is not int or selected_message_id <= 0:
-        raise ValueError("Selecione foto fisica")
+    if selected_message_ids is None:
+        selected_message_ids = [selected_message_id]
+    elif selected_message_id is not None:
+        raise ValueError("Informe apenas uma selecao de fotos")
+    if (not isinstance(selected_message_ids, list)
+            or not 1 <= len(selected_message_ids) <= 47
+            or any(type(mid) is not int or mid <= 0 for mid in selected_message_ids)
+            or len(set(selected_message_ids)) != len(selected_message_ids)):
+        raise ValueError("Selecao de fotos fisicas invalida")
+    selected = set(selected_message_ids)
     variant = str(corrected_variant or "").strip()
     if not 1 <= len(variant) <= 120:
         raise ValueError("Variante revisada obrigatoria")
@@ -670,18 +678,17 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
             or not url.path.startswith("/l/") or len(official_url) > 600
             or url.username or url.password):
         raise ValueError("Produto oficial individual Wicked obrigatorio")
-    if (not isinstance(proofs, list) or len(proofs) != 2 or
+    if (not isinstance(proofs, list) or not 2 <= len(proofs) <= 48 or
         any(not isinstance(p, dict) or
             set(p) != {"message_id", "sha256", "revision"} or
             type(p["message_id"]) is not int or
             type(p["revision"]) is not int or p["revision"] < 0 or
             not isinstance(p["sha256"], str) or
             not re.fullmatch("[0-9a-f]{64}", p["sha256"]) for p in proofs)):
-        raise ValueError("Provas SHA-256 e revisao de ambas fotos obrigatorias")
-    if len({p["message_id"] for p in proofs}) != 2 or selected_message_id not in {
-        p["message_id"] for p in proofs
-    }:
-        raise ValueError("Provas duplicadas ou foto escolhida ausente")
+        raise ValueError("Provas SHA-256 e revisao de todas as fotos obrigatorias")
+    proven = {p["message_id"] for p in proofs}
+    if len(proven) != len(proofs) or not selected < proven:
+        raise ValueError("Provas duplicadas ou selecao nao e subconjunto proprio")
     proof_map = {p["message_id"]: (p["sha256"], p["revision"]) for p in proofs}
     root = Path(media_root).resolve()
     timestamp = smart.utc()
@@ -714,8 +721,8 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
                 JOIN name_proposals p USING(message_id)
                 WHERE m.group_key=? ORDER BY a.message_id""",
                 (group_key,)).fetchall()
-            if len(members) != 2 or set(proof_map) != {m["message_id"] for m in members}:
-                raise ValueError("Separacao somente de galeria revisada com duas fotos")
+            if len(members) != len(proofs) or set(proof_map) != {m["message_id"] for m in members}:
+                raise ValueError("Provas devem cobrir todos os membros atuais")
             for m in members:
                 if proof_map[m["message_id"]] != (m["sha256"], m["name_revision"]):
                     raise RuntimeError("Prova SHA/revisao da foto mudou")
@@ -732,22 +739,27 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
                 with path.open("rb") as stream:
                     if hashlib.file_digest(stream, "sha256").hexdigest() != m["sha256"]:
                         raise ValueError("SHA fisico da foto divergente")
-            moved = next(m for m in members if m["message_id"] == selected_message_id)
-            survivor = next(m for m in members if m["message_id"] != selected_message_id)
-            if moved["sha256"] == survivor["sha256"]:
+            moved = [m for m in members if m["message_id"] in selected]
+            survivors = [m for m in members if m["message_id"] not in selected]
+            if {m["sha256"] for m in moved} & {m["sha256"] for m in survivors}:
                 raise ValueError("Mesmo arquivo fisico nao pode representar variantes diferentes")
-            overlap = db.execute("""SELECT g.group_key FROM assets a
-                JOIN model_group_members mg USING(message_id)
-                JOIN model_groups g ON g.group_key=mg.group_key
-                WHERE a.sha256=? AND g.group_key!=?
-                AND g.studio='Wicked' LIMIT 1""",
-                (moved["sha256"], group_key)).fetchone()
-            if overlap:
-                raise ValueError("Mesmo SHA fisico presente em outra galeria")
+            for m in moved:
+                overlap = db.execute("""SELECT g.group_key FROM assets a
+                    JOIN model_group_members mg USING(message_id)
+                    JOIN model_groups g ON g.group_key=mg.group_key
+                    WHERE a.sha256=? AND g.group_key!=?
+                    AND g.studio='Wicked' LIMIT 1""",
+                    (m["sha256"], group_key)).fetchone()
+                if overlap:
+                    raise ValueError("Mesmo SHA fisico presente em outra galeria")
+            # Preserve the deterministic key of the existing one-photo contract.
+            identity = (["tonart.post-audit-variant-split/1", group_key,
+                         moved[0]["message_id"], moved[0]["sha256"]]
+                        if len(moved) == 1 else
+                        ["tonart.post-audit-variant-split/2", group_key,
+                         [[m["message_id"], m["sha256"]] for m in moved]])
             new_key = hashlib.sha256(json.dumps(
-                ["tonart.post-audit-variant-split/1", group_key,
-                 selected_message_id, moved["sha256"]],
-                ensure_ascii=False).encode()).hexdigest()[:24]
+                identity, ensure_ascii=False).encode()).hexdigest()[:24]
             if db.execute("SELECT 1 FROM model_groups WHERE group_key=?",
                           (new_key,)).fetchone():
                 raise RuntimeError("Separacao ja aplicada: recarregue")
@@ -763,29 +775,31 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
                 (timestamp, group_key, revision))
             if changed.rowcount != 1:
                 raise RuntimeError("Revisao concorrente da galeria")
-            changed = db.execute("""UPDATE model_group_members
-                SET group_key=?,match_reason='audited_distinct_variant',
-                    updated_at=? WHERE group_key=? AND message_id=?""",
-                (new_key, timestamp, group_key, selected_message_id))
-            if changed.rowcount != 1:
-                raise RuntimeError("Membro alterado concorrentemente")
-            filename = naming.proposed_name(
-                {"title": moved["title"], "variant": variant},
-                selected_message_id, moved["source_relative"])
-            updated_note = (str(moved["notes"] or "").strip() + "\n" +
-                            "Separada como variante " + variant + ": " + note).strip()[:1000]
-            changed = db.execute("""UPDATE name_proposals
-                SET variant=?,filename=?,status='revisar',confidence=0,
-                    official_url='',notes=?,revision=revision+1,modified_at=?
-                WHERE message_id=? AND revision=? AND status IN ('provavel','revisar')""",
-                (variant, filename, updated_note, timestamp,
-                 selected_message_id, moved["name_revision"]))
-            if changed.rowcount != 1:
-                raise RuntimeError("Nome original mudou concorrentemente")
-            db.execute("""UPDATE model_group_evidence SET group_key=?
-                WHERE group_key=? AND source_url=?
-                AND source_type IN ('telegram_album','telegram_caption')""",
-                (new_key, group_key, smart.SOURCE_C + str(selected_message_id)))
+            for m in moved:
+                mid = m["message_id"]
+                changed = db.execute("""UPDATE model_group_members
+                    SET group_key=?,match_reason='audited_distinct_variant',
+                        updated_at=? WHERE group_key=? AND message_id=?""",
+                    (new_key, timestamp, group_key, mid))
+                if changed.rowcount != 1:
+                    raise RuntimeError("Membro alterado concorrentemente")
+                filename = naming.proposed_name(
+                    {"title": m["title"], "variant": variant},
+                    mid, m["source_relative"])
+                updated_note = (str(m["notes"] or "").strip() + "\n" +
+                                "Separada como variante " + variant + ": " + note).strip()[:1000]
+                changed = db.execute("""UPDATE name_proposals
+                    SET variant=?,filename=?,status='revisar',confidence=0,
+                        official_url='',notes=?,revision=revision+1,modified_at=?
+                    WHERE message_id=? AND revision=? AND status IN ('provavel','revisar')""",
+                    (variant, filename, updated_note, timestamp,
+                     mid, m["name_revision"]))
+                if changed.rowcount != 1:
+                    raise RuntimeError("Nome original mudou concorrentemente")
+                db.execute("""UPDATE model_group_evidence SET group_key=?
+                    WHERE group_key=? AND source_url=?
+                    AND source_type IN ('telegram_album','telegram_caption')""",
+                    (new_key, group_key, smart.SOURCE_C + str(mid)))
             db.execute("""INSERT OR IGNORE INTO model_group_evidence
                 (group_key,source_url,source_type,description,recorded_at)
                 VALUES(?,?,'visual_review',?,?)""",
@@ -811,8 +825,8 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
                 "new_variant": variant,
                 "before_ids": [m["message_id"] for m in members],
                 "before_sha256": [m["sha256"] for m in members],
-                "moved_id": selected_message_id,
-                "surviving_id": survivor["message_id"],
+                "moved_ids": [m["message_id"] for m in moved],
+                "surviving_ids": [m["message_id"] for m in survivors],
                 "official_product_url": official_url,
                 "note": note, "identity_confirmed": False,
                 "rights_approved": False, "commercial_published": False,
@@ -825,15 +839,13 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
                 db.execute("""INSERT INTO curation_events
                     (group_key,event_type,detail,occurred_at)
                     VALUES(?,?,?,?)""", (key, kind, detail, timestamp))
-            for key, mid, sha in (
-                (group_key, survivor["message_id"], survivor["sha256"]),
-                (new_key, selected_message_id, moved["sha256"]),
-            ):
+            for key, partition in ((group_key, survivors), (new_key, moved)):
                 audit = json.dumps({
                     "schema": "tonart.visual-gallery-audit-post-split/1",
                     "classification": "single_sculpture_verified_after_split",
                     "group_key": key, "studio": "Wicked",
-                    "member_ids": [mid], "sha256s": [sha],
+                    "member_ids": [m["message_id"] for m in partition],
+                    "sha256s": [m["sha256"] for m in partition],
                     "prior_group": group_key, "official_product_url": official_url,
                     "note": note, "identity_approved": False,
                     "rights_approved": False, "publication_approved": False
@@ -849,8 +861,10 @@ def split_audited_variant(db_path, media_root, *, group_key, revision,
     return {
         "ok": True, "old_group": group_key, "new_group": new_key,
         "old_revision": revision+1, "new_revision": 0,
-        "moved_id": selected_message_id,
-        "surviving_id": survivor["message_id"],
+        "moved_ids": [m["message_id"] for m in moved],
+        "surviving_ids": [m["message_id"] for m in survivors],
+        "moved_id": moved[0]["message_id"] if len(moved) == 1 else None,
+        "surviving_id": survivors[0]["message_id"] if len(survivors) == 1 else None,
         "new_variant": variant, "new_state": "revisar",
         "rights_changed": False, "originals_modified": False,
         "publication_approved": False
