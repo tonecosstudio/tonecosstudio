@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "authorization": "GO-M5-0028-0033-20261125",
+  "intent": "promote-worker-after-verified-d1",
+  "target": "tonecosstudio/tonecosstudio",
+  "sourceMainSha": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
+  "rollbackVersionId": "cb284457-5492-48ff-830c-184563c49397",
+  "singleUse": true,
+  "approvedOn": "2026-11-25",
+  "productionMigrationReceipt": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/45569400378",
+  "productionMigrationLast": "0033_seed_reviewed_dc_character_tags.sql",
+  "codeReleaseHead": "dc1ab7f21c15468a5690ceebef2753e4da267186",
+  "releasePolicy": "One canonical Quality Gate Worker release. Stage candidate at 0%, verify schema health, drill restoration of previous at 100%, restage candidate 0%, then promote only after smoke and automatic rollback readiness. No other publishers or D1 migrations.",
+  "safeguards": [
+    "all five historical writers disabled",
+    "Cloudflare Workers Builds retired (zero triggers)",
+    "D1 v13 0028-0033 verified",
+    "existing Worker v63 remains 100% until validated candidate promotion",
+    "no migrations 0034+"
+  ]
+}
