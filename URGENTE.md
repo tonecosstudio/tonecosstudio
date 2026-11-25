@@ -1,3 +1,8 @@
+## CHECKPOINT — TELEGRAM PRINCIPAL E HISTÓRICO COMPLEMENTAR (25/11/2026)
+
+- Decisão do proprietário registrada na [SSOT operacional](docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md#prioridade-operacional--telegram-principal-histórico-complementar-25112026). Priorizar integração Telegram; manter histórico como fallback, reconciliar durante a integração, não organizar históricos isoladamente.
+- Base auditada: `87dde9c7a637a1da71416c04b577940e23023eeb`. Esta alteração é documental: nenhuma mídia, ficha, direito, permissão ou publicação foi alterada. Sem rebuild/deploy. Próxima ação: retomar o exportador/reconciliador existente e importador autenticado, revalidar cobertura viva e aplicar lotes elegíveis com recibos; não repetir M5, inventários ou lotes já verificados.
+
 > **Continuidade administrativa pós-M5 (25/11/2026):** a mesa de curadoria ganhou entrada para selecionar o arquivo JSONL da fila e chamar exclusivamente `POST /api/admin/telegram-drafts/import` com sessão Supabase JWT legítima; não há nova API, escritor de catálogo ou fluxo de mídia. O validador do frontend leu o arquivo REAL `coverage-first-catalogwide-20261125`: 1.701 fichas privadas e 1.701 imagens de 47 estúdios, SHA-256 `5b40f3aeb9dd24bb5a38b1b205214346843e2e634ea8ce10c17762066fb47cc4` idêntico ao recibo local, 513 retidas fora da fila. Testes 17/17, TypeScript, ESLint, Prettier aprovados; aplicação externa **ainda não ocorreu**. Detalhes sem dados pessoais: [telegram-private-import-readiness-20261125](docs/evidence/telegram-private-import-readiness-20261125.json). Autenticação admin, CAS, R2 HEAD, direitos e visibilidade permanecem protegidos. Não retomar migrações M5 nem duplicar processos.
 
 ## CHECKPOINT — FUSÕES VISUAIS SEGURAS E FILA DINO VIVA (25/11/2026)
