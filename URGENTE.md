@@ -1,3 +1,5 @@
+> **ATUALIZAÇÃO CANÔNICA PÓS-M5 (25/11/2026):** a infraestrutura M5 já foi concluída no D1/Worker/Vercel. A autoridade para esse fato é o [recibo M5](docs/evidence/m5-production-cutover-20261125.json), e o estado da fila privada está no [recibo de importação](docs/evidence/telegram-private-import-readiness-20261125.json). Os trechos abaixo que afirmam D1 na `0027`, Worker v63, Cloudflare secret ausente ou ausência de publicação são história **supersedida**, não tarefas a reexecutar. Estado atual de cobertura: 1.701 candidatos privados validados, 513 casos retidos, 0 importações D1 nesta rodada, sem autorização para abrir visibilidade/direitos. R2 e Drive preservados. Importar somente pela sessão admin Supabase no Worker canônico, verificando ownership e R2 ao vivo; não recriar pipelines, repetir M5 nem expor staging. A documentação detalhada de normas vigentes está em [AGENTS.md](AGENTS.md) e [SSOT](docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md).
+
 ## Checkpoint de continuidade da missão — 25/11/2026
 
 ### Reconciliação viva D1/R2 — atualização posterior de 25/11
