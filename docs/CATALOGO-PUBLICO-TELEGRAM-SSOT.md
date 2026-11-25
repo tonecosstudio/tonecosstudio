@@ -3,6 +3,9 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+> **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
+
+
 ## Reconciliação visual idempotente (25/11/2026)
 
 - A Curadoria consolidou **11 grupos de origem em 10 galerias finais**, abrangendo 21 imagens de 10 modelos em 3DXM e Yosh Studios. Os nomes e variantes foram mantidos; todas as galerias finais ficaram em `revisar`, sem aprovação de identidade, direitos ou publicação. A base incluiu auditorias visuais positivas já gravadas e duas comparações confirmadas pelo método canônico de mesmo render.

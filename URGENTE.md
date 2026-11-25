@@ -1,3 +1,5 @@
+> **Continuidade da importação (25/11, sem D1 write):** 1.701 manifestos privados existentes foram novamente validados por IDs/SHA/origem e 60 franquias vivas; 513 casos retidos, zero importações efetuadas. Recibo agregado em [telegram-private-import-readiness-20261125](docs/evidence/telegram-private-import-readiness-20261125.json). Interface administrativa passa a aceitar o JSONL por seleção explícita, usando exclusivamente JWT Supabase + o POST canônico do Worker; sem nova API, sem liberação de direitos/visibilidade e sem dependência de M5. O vínculo OrdaX do repositório ainda exige autorização Owner. Nunca aplicar o plano via SQL direto nem publicar mídia do staging.
+
 ## CHECKPOINT — FUSÕES VISUAIS SEGURAS E FILA DINO VIVA (25/11/2026)
 
 - Curadoria: 11 fusões CAS aplicadas pela API canônica, reunindo 21 fotos em 10 galerias finais (3DXM e Yosh Studios). Casos: Obi-Wan Kenobi, Hermione, Comic Deadpool Mask, Jack Skellington, Mulher-Maravilha, Robin Animated, Armoured Batman (três grupos), Black Manta, Mandalorian e Gremlin. Os modelos seguem em `revisar`; nomes, variantes, direitos e publicação não foram alterados.
