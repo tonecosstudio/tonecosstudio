@@ -690,6 +690,7 @@ class Handler(BaseHTTPRequestHandler):
                     DB_PATH,SOURCE,group_key=obj.get("group_key"),
                     revision=obj.get("revision"),
                     selected_message_id=obj.get("selected_message_id"),
+                    selected_message_ids=obj.get("selected_message_ids"),
                     proofs=obj.get("proofs"),
                     corrected_variant=obj.get("corrected_variant"),
                     official_url=obj.get("official_url"),
