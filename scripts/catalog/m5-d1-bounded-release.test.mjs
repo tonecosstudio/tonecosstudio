@@ -4,7 +4,7 @@ import { readFileSync, readdirSync, mkdtempSync, rmSync, existsSync } from "node
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { planMigrationFiles, stageOnly } from "./m5-d1-bounded-release.mjs";
+import { planMigrationFiles, stageOnly, approvedSeedReferences } from "./m5-d1-bounded-release.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const migrations = readdirSync(join(root, "services/catalogo/migrations"));
@@ -41,6 +41,13 @@ test("temporary Wrangler configuration can see only M5 authorized SQL", () => {
   } finally {
     rmSync(tmp,{recursive:true,force:true});
   }
+});
+test("preflight identifies the exact 163 model IDs and 20 reviewed franchise slugs", () => {
+  const {modelIds,franchiseSlugs} = approvedSeedReferences();
+  assert.equal(modelIds.length,163);
+  assert.equal(franchiseSlugs.length,20);
+  assert.ok(modelIds.every((id)=>/^(tg|mdl)_[a-zA-Z0-9_-]+$/.test(id)));
+  assert.ok(franchiseSlugs.every((slug)=>/^[a-z0-9-]+$/.test(slug)));
 });
 test("M5 resume is only a contiguous prefix", () => {
   for (let n=0;n<=6;n++) {
