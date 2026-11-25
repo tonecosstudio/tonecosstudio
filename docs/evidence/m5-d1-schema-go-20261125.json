@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "authorization": "GO-M5-0028-0033-20261125",
+  "intent": "apply-exactly-six-d1-migrations",
+  "target": "tonecosstudio/tonecosstudio",
+  "sourceMainSha": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
+  "singleUse": true,
+  "approvedOn": "2026-11-25",
+  "scope": [
+    "0028_telegram_showcase_listing_index.sql",
+    "0029_canonical_characters_across_sources.sql",
+    "0030_canonical_character_attributes.sql",
+    "0031_seed_reviewed_canonical_model_tags.sql",
+    "0032_seed_marvel_individual_catalog_tags.sql",
+    "0033_seed_reviewed_dc_character_tags.sql"
+  ],
+  "excluded": "0034+ migrations are NOT authorized"
+}
