@@ -9,7 +9,7 @@
   "origin": {
     "repository": "washingtonmsdj/catalogo",
     "repositoryId": 1398242143,
-    "observedMainSha": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
+    "observedMainSha": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
     "openPullRequestsAtAudit": [
       266,
       264,
@@ -149,12 +149,12 @@
     "d1": "tonecos-catalogo",
     "r2": "tonecos-catalogo-media"
   },
-  "activeWorkerPublisher": "washingtonmsdj/catalogo",
+  "activeWorkerPublisher": "tonecosstudio/tonecosstudio",
   "migration": {
-    "phase": "staged-offline",
-    "releaseAuthorized": false,
-    "sourceWriterDisabled": false,
-    "targetWorkerReleaseEnabled": false,
+    "phase": "cutover-approved",
+    "releaseAuthorized": true,
+    "sourceWriterDisabled": true,
+    "targetWorkerReleaseEnabled": true,
     "targetD1MigrationEnabled": false,
     "legacySiteRetired": false,
     "sourceRepoArchived": false
@@ -165,10 +165,10 @@
     "copyOldFrontend": false,
     "allowAutoDeploy": false
   },
-  "lastVerifiedDate": "2026-11-04",
+  "lastVerifiedDate": "2026-11-25",
   "notes": "Snapshot audit only. Revalidate source main and open PRs immediately before copying; this historical SHA is not authority for a future deploy.",
   "staging": {
-    "sourceMain": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
+    "sourceMain": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
     "sourceFixPullRequest": 266,
     "sourceFixHead": "59983806acb7a338ae3b9c1ddfd524561ff8a02f",
     "sourceFixStatusAtImport": "open-draft-not-merged",
@@ -366,28 +366,28 @@
     }
   },
   "productionObservation": {
-    "observedDate": "2026-11-22",
+    "observedDate": "2026-11-25",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "749a743b-ced7-4723-9465-4b47e612075d",
-    "currentVersionId": "aa8fd20c-857c-4780-a15e-021569a32251",
-    "currentVersionNumber": 50,
+    "currentDeploymentId": "68f249d5-428b-45ed-9ad5-40f4ef93bed5",
+    "currentVersionId": "b8da2462-5dcc-497f-af5a-bbe710d78595",
+    "currentVersionNumber": 60,
     "currentTrafficPercent": 100,
     "currentVersionSourceCommit": null,
-    "currentVersionDeployedAt": "2026-11-21T23:05:32.396115Z",
-    "previousVersionId": "d2f5333c-6285-47c5-a917-746f79cab4b0",
-    "previousVersionNumber": 49,
+    "currentVersionDeployedAt": "2026-11-25T02:05:07.687112Z",
+    "previousVersionId": "86504761-5d25-4f9d-a386-a4d436636c0f",
+    "previousVersionNumber": 59,
     "previousVersionMayBeRollbackCandidate": false,
     "rollbackTestedAgainstProduction": false,
     "observedMainAheadOfProductionByCommits": null,
     "runtimeFileChangesBetweenProductionSourceAndObservedMain": null,
-    "observedSourceMainSha": "62fa6b5eb8f32e11be1ba94889835c764cf29fd2",
+    "observedSourceMainSha": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
     "sourceDeployWorkflow": ".github/workflows/cloudflare.yml",
     "sourceWorkflowTriggers": [
-      "push/main with runtime paths",
-      "workflow_dispatch"
+      "historical push/main runtime paths (administratively disabled)",
+      "historical workflow_dispatch (administratively disabled)"
     ],
-    "sourceDispatchCanApplyRemoteD1Migrations": true,
+    "sourceDispatchCanApplyRemoteD1Migrations": false,
     "currentSettingsBindings": [
       "ADMIN_SUPABASE_ANON_KEY",
       "ADMIN_SUPABASE_URL",
@@ -397,11 +397,11 @@
       "PRIVATE_TELEGRAM",
       "TURNSTILE_SECRET_KEY"
     ],
-    "sourceWorkflowDisabledVerified": false,
-    "releaseGoApproved": false,
+    "sourceWorkflowDisabledVerified": true,
+    "releaseGoApproved": true,
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "Read-only 2026-11-22 reconciliation: source main 62fa6b5 is exactly one documentation-only commit after the previously pinned 8d3ae13 (README.md and docs/CONTINUIDADE-OPERACIONAL.md only). Worker v50/aa8fd20c is live at 100% via Wrangler in the existing Cloudflare account with canonical D1 and R2 bindings; active Worker source commit is not independently attested. Previous v49 is NOT a tested rollback candidate. Five GitHub workflows in the source repository remain administratively active, and M5 authorization, rollback proof, target credentials and D1 index 0028 are absent or not verified. This observation is not release approval; recheck identities, version and schema immediately before cutover."
+    "note": "Verified on 2026-11-25: owner GO M5 explicitly granted; five source GitHub Actions workflows 371358484,384544141,385740730,385342502,385318875 are disabled_manually, source main pinned at 1f2e4e41; canonical target Quality Gate contains bounded D1 operation and Worker release path. Cloudflare Worker v60/b8da2462 at 100% uses existing resources; D1 currently last applied 0027. Worker rollback proof and target production credentials are NOT yet verified; runtime cutover and D1 migrations NOT yet performed. Target cutover remains blocked by live gates until proven."
   }
 }
