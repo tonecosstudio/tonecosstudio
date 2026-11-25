@@ -175,6 +175,7 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
     'worker/entry.ts',
     'worker/index.ts',
     'worker/publicQueryBudget.ts',
+    'worker/schemaContract.ts',
     'wrangler.jsonc',
   ]);
   assert.ok(['staged-offline','cutover-approved','cutover-complete'].includes(contract.migration.phase),
