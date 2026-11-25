@@ -1,3 +1,9 @@
+## CHECKPOINT — LOKI E ALINHAMENTO EDITORIAL (25/11/2026)
+
+- Loki: três imagens históricas de esculturas distintas organizadas em Modelo 01/01.jpg, Modelo 02/01.jpg e Modelo 03/01.png, mesmos IDs e permissões, hashes SHA-256 anteriores e posteriores idênticos. Recibo `drive-reconciliation/wicked-loki-three-historical-models-receipt.json`, ação `0d1081f1-db0a-4fbb-8650-f3da32a01449` exit 0, LOKI_VERIFIED 3. Nenhuma correspondência Telegram afirmada, nenhum upload, exclusão ou alteração de acesso. Não repetir.
+- PR #170 draft, commit `5426142cbf801ba57429f01477b424f41c43af27`: operação canônica para alinhar título/franquia provisórios da galeria a propostas manuais unânimes, preservando variantes, fotos, direitos e estado não confirmado. Provas SHA e CAS de todos os membros. Testes físicos em processo OrdaX `28cac921-f9af-4f39-be20-9055a4c24149`; não instalar nem aplicar antes de validação. Quatro galerias elegíveis a verificar: Johnny Storm Full Size #12955 e Busto #12978; Harry Home Alone Full Size #14347–14349 e Busto #14354–14356. As seis outras divergências de variante não são equivalentes e exigem análise separada.
+- Sem alteração editorial real nesta rodada até a aplicação verificada. Última contagem 479/820 confirmadas, 331 prováveis, 10 em revisão. Não repetir DINO ou promover nomes por similaridade.
+
 ## CHECKPOINT — COLOSSUS E TRIAGEM WICKED (25/11/2026)
 
 - Lote de pranchas concluído pelo OrdaX `4c360092-73cf-4b51-aea6-22efa477a66e`, exit 0: 95 referências, 16 pranchas, zero erros. Índice local `drive-reconciliation/wicked-visual-review-sheets/index.json`. Não regenerar.
