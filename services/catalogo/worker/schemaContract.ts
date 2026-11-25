@@ -55,12 +55,18 @@ async function structuralStatus(db: SchemaDatabase) {
     for (const name of schemaContract.requiredObjects[type]) objectPairs.push([sqliteType, name])
   }
 
-  if (objectPairs.length) {
-    const where = objectPairs.map(() => '(type=? AND name=?)').join(' OR ')
-    const values = objectPairs.flatMap(([type, name]) => [type, name])
+  // D1 rejects overly large bound statements (126 variables for the v13
+  // type/name pair scan). Bind each required name once, then verify the
+  // returned type:name against the exact contract below. Bound the batch
+  // size so future schema growth cannot reintroduce this production 503.
+  const names = [...new Set(objectPairs.map(([, name]) => name))]
+  const maxNamesPerQuery = 80
+  for (let start = 0; start < names.length; start += maxNamesPerQuery) {
+    const batch = names.slice(start, start + maxNamesPerQuery)
+    const placeholders = batch.map(() => '?').join(',')
     const result = await db.prepare(
-      `SELECT type,name FROM sqlite_schema WHERE ${where}`,
-    ).bind(...values).all<{ type: string; name: string }>()
+      `SELECT type,name FROM sqlite_schema WHERE type IN ('table','index','trigger') AND name IN (${placeholders})`,
+    ).bind(...batch).all<{ type: string; name: string }>()
     for (const row of result.results) found.add(`${row.type}:${row.name}`)
   }
 
