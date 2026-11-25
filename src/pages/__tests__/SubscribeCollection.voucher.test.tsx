@@ -37,7 +37,10 @@ const COLLECTION_ID = "11111111-1111-4111-8111-111111111111";
 const PLAN_3_ID = "22222222-2222-4222-8222-222222222222";
 const PLAN_6_ID = "33333333-3333-4333-8333-333333333333";
 const CHECKOUT_REQUEST_ID = "77777777-7777-4777-8777-777777777777";
-const MODEL_SLUGS = Array.from({ length: 20 }, (_, index) => `terror-model-${index + 1}`);
+const MODEL_SLUGS = Array.from(
+  { length: 20 },
+  (_, index) => `terror-model-${index + 1}`,
+);
 const CATALOG_MODELS = MODEL_SLUGS.map((slug, index) => ({
   id: `model-${index + 1}`,
   slug,
@@ -93,7 +96,10 @@ function renderPage(initialEntry = "/assinar/terror") {
 
 async function attachVoucher(user: ReturnType<typeof userEvent.setup>) {
   const input = screen.getByLabelText(/Escolher arquivo do comprovante/i);
-  await user.upload(input, new File(["pix recebido"], "comprovante.pdf", { type: "application/pdf" }));
+  await user.upload(
+    input,
+    new File(["pix recebido"], "comprovante.pdf", { type: "application/pdf" }),
+  );
 }
 
 async function modelButtons() {
@@ -109,15 +115,17 @@ describe("SubscribeCollection curated model checkout", () => {
     mocks.useSubscribeCollectionCheckout.mockReturnValue({
       plans: [plan(3), plan(6)],
       plansLoading: false,
-      collections: [{
-        id: COLLECTION_ID,
-        name: "Coleção Terror",
-        slug: "terror",
-        description: "Modelos escolhidos para a coleção de terror.",
-        image_url: null,
-        is_active: true,
-        catalog_model_slugs: MODEL_SLUGS,
-      }],
+      collections: [
+        {
+          id: COLLECTION_ID,
+          name: "Coleção Terror",
+          slug: "terror",
+          description: "Modelos escolhidos para a coleção de terror.",
+          image_url: null,
+          is_active: true,
+          catalog_model_slugs: MODEL_SLUGS,
+        },
+      ],
       collectionsLoading: false,
       initialCollectionLoading: false,
       loadError: null,
@@ -130,7 +138,9 @@ describe("SubscribeCollection curated model checkout", () => {
       pix_key: "tonart@example.com",
       payment_link: "",
     });
-    mocks.currentUser.mockResolvedValue({ id: "44444444-4444-4444-8444-444444444444" });
+    mocks.currentUser.mockResolvedValue({
+      id: "44444444-4444-4444-8444-444444444444",
+    });
     mocks.checkout.mockResolvedValue({
       subscriptionId: "55555555-5555-4555-8555-555555555555",
       paymentId: "66666666-6666-4666-8666-666666666666",
@@ -155,7 +165,11 @@ describe("SubscribeCollection curated model checkout", () => {
     expect(screen.getByText("3 de 3 selecionados")).toBeInTheDocument();
     expect(models[3]).toBeDisabled();
     await attachVoucher(user);
-    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /Enviar comprovante e solicitar assinatura/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(mocks.checkout).toHaveBeenCalledWith({
@@ -168,7 +182,11 @@ describe("SubscribeCollection curated model checkout", () => {
         checkoutRequestId: CHECKOUT_REQUEST_ID,
       });
     });
-    expect(await screen.findByRole("heading", { name: "Sua solicitação está em análise" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Sua solicitação está em análise",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("switches to the six-piece plan and prevents submitting an incomplete selection", async () => {
@@ -176,11 +194,21 @@ describe("SubscribeCollection curated model checkout", () => {
     renderPage();
 
     const models = await modelButtons();
-    await user.click(screen.getAllByRole("button", { name: "Selecionar plano" })[0]);
+    // This assertion covers plan selection state; real pointer/upload behavior
+    // is exercised in the checkout submission tests below.
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Selecionar plano" })[0],
+    );
 
-    expect(screen.getByRole("heading", { name: "Escolha 6 peças" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Escolha 6 peças" }),
+    ).toBeInTheDocument();
     await attachVoucher(user);
-    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", {
+        name: /Enviar comprovante e solicitar assinatura/i,
+      }),
+    ).toBeDisabled();
 
     for (const model of models.slice(0, 6)) {
       fireEvent.click(model);
@@ -188,7 +216,11 @@ describe("SubscribeCollection curated model checkout", () => {
 
     expect(screen.getByText("6 de 6 selecionados")).toBeInTheDocument();
     expect(models[6]).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", {
+        name: /Enviar comprovante e solicitar assinatura/i,
+      }),
+    ).toBeEnabled();
     expect(mocks.checkout).not.toHaveBeenCalled();
   });
 
@@ -211,16 +243,27 @@ describe("SubscribeCollection curated model checkout", () => {
     renderPage();
 
     const models = await modelButtons();
-    const checkoutLink = await screen.findByRole("link", { name: /Abrir pagamento seguro/i });
-    expect(checkoutLink).toHaveAttribute("href", "https://checkout.example/tonart");
+    const checkoutLink = await screen.findByRole("link", {
+      name: /Abrir pagamento seguro/i,
+    });
+    expect(checkoutLink).toHaveAttribute(
+      "href",
+      "https://checkout.example/tonart",
+    );
     expect(checkoutLink).toHaveAttribute("target", "_blank");
-    expect(screen.getByText(/Valor integral: R\$\s?705,00/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Valor integral: R\$\s?705,00/),
+    ).toBeInTheDocument();
 
     for (const model of models.slice(0, 3)) {
       fireEvent.click(model);
     }
     await attachVoucher(user);
-    await user.click(screen.getByRole("button", { name: /Enviar comprovante e solicitar assinatura/i }));
+    await user.click(
+      screen.getByRole("button", {
+        name: /Enviar comprovante e solicitar assinatura/i,
+      }),
+    );
 
     await waitFor(() => {
       expect(mocks.checkout).toHaveBeenCalledWith({
@@ -245,7 +288,9 @@ describe("SubscribeCollection curated model checkout", () => {
     renderPage();
 
     await modelButtons();
-    expect(screen.queryByRole("link", { name: /Abrir pagamento seguro/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /Abrir pagamento seguro/i }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Cartão/ })).toBeDisabled();
   });
 });

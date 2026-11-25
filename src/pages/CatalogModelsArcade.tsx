@@ -1,16 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
+import {
+  catalogBrowsingScope,
+  useCatalogBrowsing,
+} from "@/services/catalog/catalog-browsing-context";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Bookmark,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Bookmark } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
-import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { catalogModelDisplayName, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell } from "@/components/catalog/CatalogTaxonomy";
+import {
+  CatalogExplorerHeader,
+  CatalogGridListToggle,
+} from "@/components/catalog/CatalogExplorerHeader";
+import {
+  catalogModelDisplayName,
+  catalogTagGroupsFromPublicTags,
+  CatalogCardIdentity,
+  CatalogCardMediaFrame,
+  CatalogCardTagRow,
+  CatalogModelCardShell,
+} from "@/components/catalog/CatalogTaxonomy";
 import type { CatalogTag } from "@/types/catalog-tags";
 import { ApprovedModelShowcase } from "./catalog/ApprovedModelShowcase";
 import {
@@ -128,7 +137,8 @@ export default function CatalogModelsArcade() {
 
   useEffect(() => setDraft(search), [search]);
   useEffect(() => {
-    if (category || franchise || folder || characterId || attributeId) setFiltersExpanded(true);
+    if (category || franchise || folder || characterId || attributeId)
+      setFiltersExpanded(true);
   }, [category, franchise, folder, characterId, attributeId]);
 
   const gateway = useMemo(() => {
@@ -140,7 +150,7 @@ export default function CatalogModelsArcade() {
     }
   }, []);
 
-  const scope = JSON.stringify([search, category, franchise, folder, characterId, attributeId]);
+  const scope = catalogBrowsingScope(searchParams);
   const activePage =
     paging.scope === scope ? paging : { scope, cursors: [undefined], index: 0 };
   const cursor = activePage.cursors[activePage.index];
@@ -262,7 +272,12 @@ export default function CatalogModelsArcade() {
     franchises.data?.items.find((item) => item.id === franchise)?.label ||
     franchise;
   const hasActiveFilters = Boolean(
-    search || (category && category !== "all") || franchise || folder || characterId || attributeId,
+    search ||
+    (category && category !== "all") ||
+    franchise ||
+    folder ||
+    characterId ||
+    attributeId,
   );
   const activeFacetCount = [
     category && category !== "all",
@@ -290,7 +305,10 @@ export default function CatalogModelsArcade() {
     else {
       params.set("category", model.categorySlug);
       params.set("franchise", model.franchiseSlug);
-      params.set(tag.kind === "character" ? "character_id" : "attribute_id", tag.id);
+      params.set(
+        tag.kind === "character" ? "character_id" : "attribute_id",
+        tag.id,
+      );
     }
     setSearchParams(params);
   }
@@ -388,7 +406,16 @@ export default function CatalogModelsArcade() {
               setDraft("");
               changeParams("", category);
             }}
-            categories={categories.data?.map(({ id, label }) => ({ id, label })) ?? Array.from(new Map(rows.filter((item) => validCatalogSlug(item.categorySlug)).map((item) => [item.categorySlug, item.category] as const))).map(([id, label]) => ({ id, label }))}
+            categories={
+              categories.data?.map(({ id, label }) => ({ id, label })) ??
+              Array.from(
+                new Map(
+                  rows
+                    .filter((item) => validCatalogSlug(item.categorySlug))
+                    .map((item) => [item.categorySlug, item.category] as const),
+                ),
+              ).map(([id, label]) => ({ id, label }))
+            }
             category={category === "all" ? "" : category}
             onCategoryChange={(next) => {
               setFranchiseDraft("");
@@ -402,8 +429,16 @@ export default function CatalogModelsArcade() {
             filterCount={activeFacetCount}
             filtersExpanded={filtersExpanded}
             filtersControlId="catalog-advanced-filters"
-            totalLabel={models.isSuccess ? `Página ${activePage.index + 1} · ${rows.length} modelos nesta página` : undefined}
-            coverUrl={rows[0] && gateway ? gateway.mediaUrl(rows[0].coverStorageKey) : undefined}
+            totalLabel={
+              models.isSuccess
+                ? `Página ${activePage.index + 1} · ${rows.length} modelos nesta página`
+                : undefined
+            }
+            coverUrl={
+              rows[0] && gateway
+                ? gateway.mediaUrl(rows[0].coverStorageKey)
+                : undefined
+            }
             collectionHref={PUBLIC_ROUTES.catalog}
           />
 
@@ -414,7 +449,13 @@ export default function CatalogModelsArcade() {
                 estar visíveis neste momento.
               </p>
             ) : null}
-            <div className={filtersExpanded || hasActiveFilters ? "border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(0,0%,6%)] p-3 sm:p-4" : "border-0 p-0"}>
+            <div
+              className={
+                filtersExpanded || hasActiveFilters
+                  ? "border border-[hsl(var(--gold-accent)/0.2)] bg-[hsl(0,0%,6%)] p-3 sm:p-4"
+                  : "border-0 p-0"
+              }
+            >
               {/* A pesquisa principal é compartilhada pelo cabeçalho dos dois acervos. */}
 
               {/* Toggle de filtros único no cabeçalho compartilhado. */}
@@ -673,7 +714,10 @@ export default function CatalogModelsArcade() {
                     )}
                   </nav>
                 )}
-                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
+                <CatalogGridListToggle
+                  view={catalogView}
+                  onChange={setCatalogView}
+                />
                 <SheetTrigger asChild>
                   <button
                     type="button"
@@ -777,15 +821,24 @@ export default function CatalogModelsArcade() {
                 ) : null}
               </div>
             ) : (
-              <div className={catalogView === "grid" ? CATALOG_GRID_CLASS : "grid grid-cols-1 gap-3 sm:gap-4"}>
+              <div
+                className={
+                  catalogView === "grid"
+                    ? CATALOG_GRID_CLASS
+                    : "grid grid-cols-1 gap-3 sm:gap-4"
+                }
+              >
                 {rows.map((model) => {
                   const displayName = catalogModelDisplayName(model);
+                  const isSelected = selectedModels.some(
+                    (item) => item.id === model.id,
+                  );
                   const tagGroups = catalogTagGroupsFromPublicTags(
                     model.tags ?? [],
                     (tag) => applyCanonicalTag(model, tag),
                   );
                   return (
-                    <CatalogModelCardShell key={model.id}>
+                    <CatalogModelCardShell key={model.id} selected={isSelected}>
                       <div className="flex h-full flex-col">
                         <Link
                           to={catalogModelDetailsPath(model.slug)}
@@ -799,7 +852,7 @@ export default function CatalogModelsArcade() {
                             catalogReturnSearch: searchParams.toString(),
                             catalogSiblingSlugs: pageSlugs,
                           }}
-                          aria-label={"Abrir modelo " + model.name}
+                          aria-label={"Ver detalhes de " + model.name}
                           className="block w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))]"
                         >
                           <ModelCover
@@ -820,6 +873,20 @@ export default function CatalogModelsArcade() {
                           label={"Filtros de " + model.name}
                           groups={tagGroups}
                         />
+                        <button
+                          type="button"
+                          onClick={() => toggleSelected(model)}
+                          disabled={
+                            !isSelected &&
+                            selectedModels.length >= MAX_CANONICAL_SELECTION
+                          }
+                          aria-pressed={isSelected}
+                          className="mx-3 mb-3 inline-flex min-h-11 items-center justify-center border border-[hsl(0,0%,25%)] px-2 text-xs font-medium hover:border-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+                        >
+                          {isSelected
+                            ? "Remover da seleção"
+                            : "Adicionar à seleção"}
+                        </button>
                       </div>
                     </CatalogModelCardShell>
                   );

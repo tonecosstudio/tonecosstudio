@@ -13,7 +13,12 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
 import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
-import { catalogModelDisplayName, catalogTagLabel, CatalogFilterTag, visibleCatalogTags } from "@/components/catalog/CatalogTaxonomy";
+import {
+  catalogModelDisplayName,
+  catalogTagLabel,
+  CatalogFilterTag,
+  visibleCatalogTags,
+} from "@/components/catalog/CatalogTaxonomy";
 import { RelatedModels, relatedCatalogReturnState } from "./RelatedModels";
 import { Page } from "@/components/layouts/Page";
 import {
@@ -21,7 +26,11 @@ import {
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { PUBLIC_ROUTES } from "@/config/routes";
-import { useCatalogBrowsing } from "@/services/catalog/catalog-browsing-context";
+import {
+  CATALOG_BROWSING_SCOPE_KEYS,
+  catalogBrowsingScope,
+  useCatalogBrowsing,
+} from "@/services/catalog/catalog-browsing-context";
 import {
   MAX_CANONICAL_SELECTION,
   toggleCanonicalSelection,
@@ -77,7 +86,7 @@ function catalogReturnPath(state: unknown): string {
   if (typeof raw !== "string" || raw.length > 1024) return base;
   const source = new URLSearchParams(raw);
   const filters = new URLSearchParams();
-  for (const key of ["q", "category", "franchise", "folder"] as const) {
+  for (const key of CATALOG_BROWSING_SCOPE_KEYS) {
     const values = source.getAll(key);
     if (values.length > 1) return base;
     const value = values[0]?.trim();
@@ -96,6 +105,14 @@ function catalogReturnPath(state: unknown): string {
     return base;
   if (franchise && !validCatalogSlug(franchise)) return base;
   if (folder && (!category || !franchise || !validCatalogFolder(folder)))
+    return base;
+  const characterId = filters.get("character_id");
+  const attributeId = filters.get("attribute_id");
+  if (
+    (characterId && !/^[A-Za-z0-9_-]{3,100}$/.test(characterId)) ||
+    (attributeId && !/^[A-Za-z0-9_-]{3,100}$/.test(attributeId)) ||
+    (characterId && attributeId)
+  )
     return base;
   const search = filters.toString();
   return search ? `${base}?${search}` : base;
@@ -245,11 +262,7 @@ export default function CanonicalModelDetails() {
     )
       return;
     const params = new URLSearchParams(catalogReturnTo.split("?")[1] ?? "");
-    const scope = JSON.stringify(
-      ["q", "category", "franchise", "folder"].map(
-        (key) => params.get(key)?.trim() ?? "",
-      ),
-    );
+    const scope = catalogBrowsingScope(params);
     setPaging((current) => {
       if (current.scope === scope && current.returnFocusSlug === slug)
         return current;
@@ -309,7 +322,10 @@ export default function CanonicalModelDetails() {
     navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
   }
 
-  function applyModelCharacterTag(model: PublicCatalogDetail, characterId: string) {
+  function applyModelCharacterTag(
+    model: PublicCatalogDetail,
+    characterId: string,
+  ) {
     const params = new URLSearchParams({
       category: model.categorySlug,
       franchise: model.franchiseSlug,
@@ -318,7 +334,10 @@ export default function CanonicalModelDetails() {
     navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
   }
 
-  function applyModelAttributeTag(model: PublicCatalogDetail, attributeId: string) {
+  function applyModelAttributeTag(
+    model: PublicCatalogDetail,
+    attributeId: string,
+  ) {
     const params = new URLSearchParams({
       category: model.categorySlug,
       franchise: model.franchiseSlug,
@@ -567,7 +586,10 @@ export default function CanonicalModelDetails() {
     >
       <div className="min-h-[80vh] bg-[hsl(0,0%,4%)] px-4 py-8 text-[hsl(0,0%,94%)] md:px-8 md:py-12">
         <div className="mx-auto max-w-7xl">
-          <nav aria-label="Navegação da ficha" className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <nav
+            aria-label="Navegação da ficha"
+            className="flex flex-wrap items-center gap-x-4 gap-y-2"
+          >
             <Link
               to={catalogReturnTo}
               className="inline-flex min-h-11 items-center gap-2 rounded-none text-sm font-medium text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"

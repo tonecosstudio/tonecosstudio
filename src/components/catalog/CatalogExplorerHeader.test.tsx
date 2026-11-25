@@ -1,8 +1,19 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
-import { CatalogExplorerHeader, CatalogGridListToggle } from "./CatalogExplorerHeader";
-import { CatalogCategoryBadge, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardMetadata, CatalogModelCardShell, orderCatalogCategories } from "./CatalogTaxonomy";
+import {
+  CatalogExplorerHeader,
+  CatalogGridListToggle,
+} from "./CatalogExplorerHeader";
+import {
+  CatalogCategoryBadge,
+  CatalogCardIdentity,
+  CatalogCardMediaFrame,
+  CatalogCardMetadata,
+  CatalogModelCardShell,
+  CatalogCardTagRow,
+  orderCatalogCategories,
+} from "./CatalogTaxonomy";
 
 function renderHeader(kind: "historical" | "review") {
   const handlers = {
@@ -13,7 +24,11 @@ function renderHeader(kind: "historical" | "review") {
     filters: vi.fn(),
   };
   render(
-    <MemoryRouter initialEntries={[kind === "review" ? "/catalogo/em-revisao" : "/catalogo/antigos"]}>
+    <MemoryRouter
+      initialEntries={[
+        kind === "review" ? "/catalogo/em-revisao" : "/catalogo/antigos",
+      ]}
+    >
       <CatalogExplorerHeader
         kind={kind}
         search=""
@@ -31,7 +46,9 @@ function renderHeader(kind: "historical" | "review") {
         filtersExpanded={false}
         filtersControlId="catalog-filters"
         totalLabel="24 referências nesta página"
-        collectionHref={kind === "review" ? "/catalogo/em-revisao/estudios" : "/universo"}
+        collectionHref={
+          kind === "review" ? "/catalogo/em-revisao/estudios" : "/universo"
+        }
       />
       <div id="catalog-filters" />
     </MemoryRouter>,
@@ -40,30 +57,52 @@ function renderHeader(kind: "historical" | "review") {
 }
 
 describe("TONART shared catalog discovery structure", () => {
-  it.each(["historical", "review"] as const)("keeps search, hero, category chips and filters together in %s", (kind) => {
-    const actions = renderHeader(kind);
-    const form = screen.getByRole("search", { name: "Buscar modelos no catálogo" });
-    expect(within(form).getByRole("textbox", { name: "Pesquisar modelos" })).toBeInTheDocument();
-    fireEvent.submit(form);
-    expect(actions.search).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(kind === "review" ? "MODELOS EM REVISÃO" : "TODOS OS MODELOS");
-    const filters = screen.getByRole("button", { name: "Filtros (1)" });
-    expect(filters).toHaveAttribute("aria-expanded", "false");
-    expect(filters).toHaveAttribute("aria-controls", "catalog-filters");
-    fireEvent.click(filters);
-    expect(actions.filters).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Games" }));
-    expect(actions.category).toHaveBeenCalledWith("games");
-    expect(screen.getByRole("button", { name: "Todos" })).toHaveAttribute("aria-pressed", "true");
-  });
+  it.each(["historical", "review"] as const)(
+    "keeps search, hero, category chips and filters together in %s",
+    (kind) => {
+      const actions = renderHeader(kind);
+      const form = screen.getByRole("search", {
+        name: "Buscar modelos no catálogo",
+      });
+      expect(
+        within(form).getByRole("textbox", { name: "Pesquisar modelos" }),
+      ).toBeInTheDocument();
+      fireEvent.submit(form);
+      expect(actions.search).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+        kind === "review" ? "MODELOS EM REVISÃO" : "TODOS OS MODELOS",
+      );
+      const filters = screen.getByRole("button", { name: "Filtros (1)" });
+      expect(filters).toHaveAttribute("aria-expanded", "false");
+      expect(filters).toHaveAttribute("aria-controls", "catalog-filters");
+      fireEvent.click(filters);
+      expect(actions.filters).toHaveBeenCalledTimes(1);
+      fireEvent.click(screen.getByRole("button", { name: "Games" }));
+      expect(actions.category).toHaveBeenCalledWith("games");
+      expect(screen.getByRole("button", { name: "Todos" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    },
+  );
 
   it("keeps catalog sections navigable rather than inventing favorites or pending features", () => {
     renderHeader("review");
     const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
-    expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/catalogo/em-revisao");
-    expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/catalogo/em-revisao/estudios");
-    expect(within(tabs).getByRole("link", { name: "Originais" })).toHaveAttribute("href", "/catalogo/antigos");
-    expect(within(tabs).queryByRole("button", { name: /Favoritos|Novos|Minha lista/ })).not.toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: "Explorar" }),
+    ).toHaveAttribute("href", "/catalogo/em-revisao");
+    expect(
+      within(tabs).getByRole("link", { name: "Coleções" }),
+    ).toHaveAttribute("href", "/catalogo/em-revisao/estudios");
+    expect(
+      within(tabs).getByRole("link", { name: "Originais" }),
+    ).toHaveAttribute("href", "/catalogo/antigos");
+    expect(
+      within(tabs).queryByRole("button", {
+        name: /Favoritos|Novos|Minha lista/,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders Telegram navigation without a Router in the standalone catalog", () => {
@@ -83,9 +122,15 @@ describe("TONART shared catalog discovery structure", () => {
       />,
     );
     const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
-    expect(within(tabs).getByRole("link", { name: "Coleções" })).toHaveAttribute("href", "/estudios");
-    expect(within(tabs).getByRole("link", { name: "Explorar" })).toHaveAttribute("href", "/");
-    expect(within(tabs).queryByRole("link", { name: "Originais" })).not.toBeInTheDocument();
+    expect(
+      within(tabs).getByRole("link", { name: "Coleções" }),
+    ).toHaveAttribute("href", "/estudios");
+    expect(
+      within(tabs).getByRole("link", { name: "Explorar" }),
+    ).toHaveAttribute("href", "/");
+    expect(
+      within(tabs).queryByRole("link", { name: "Originais" }),
+    ).not.toBeInTheDocument();
   });
 
   it("orders the same category tags consistently across both sources", () => {
@@ -98,57 +143,108 @@ describe("TONART shared catalog discovery structure", () => {
     ];
     const snapshot = categories.map((item) => item.id);
     expect(orderCatalogCategories(categories).map((item) => item.id)).toEqual([
-      "anime", "games", "filmes", "marvel", "custom",
+      "anime",
+      "games",
+      "filmes",
+      "marvel",
+      "custom",
     ]);
     expect(categories.map((item) => item.id)).toEqual(snapshot);
-    expect(orderCatalogCategories([
-      { id: "marvel", label: "Marvel & DC" },
-      { id: "anime", label: "Anime" },
-      { id: "games", label: "Games" },
-    ]).map((item) => item.id)).toEqual(["anime", "games", "marvel"]);
-
+    expect(
+      orderCatalogCategories([
+        { id: "marvel", label: "Marvel & DC" },
+        { id: "anime", label: "Anime" },
+        { id: "games", label: "Games" },
+      ]).map((item) => item.id),
+    ).toEqual(["anime", "games", "marvel"]);
   });
 
-  it.each(["historical", "review"] as const)("renders category controls in the same order on %s", (kind) => {
-    render(
-      <MemoryRouter>
-        <CatalogExplorerHeader
-          kind={kind}
-          search=""
-          onSearchChange={() => {}}
-          onSearchSubmit={(event) => event.preventDefault()}
-          onSearchClear={() => {}}
-          categories={[
-            { id: "marvel", label: "Marvel & DC" },
-            { id: "filmes", label: "Filmes & Séries" },
-            { id: "games", label: "Games" },
-            { id: "anime", label: "Animes & Desenhos" },
-          ]}
-          category=""
-          onCategoryChange={() => {}}
-          onFiltersClick={() => {}}
-          collectionHref="/catalogo"
-        />
-      </MemoryRouter>,
-    );
-    const categories = screen.getByLabelText("Categorias do catálogo");
-    expect(within(categories).getAllByRole("button").map((button) => button.textContent?.trim())).toEqual([
-      "Todos", "Animes & Desenhos", "Games", "Filmes & Séries", "Marvel & DC", "Filtros",
-    ]);
-  });
+  it.each(["historical", "review"] as const)(
+    "renders category controls in the same order on %s",
+    (kind) => {
+      render(
+        <MemoryRouter>
+          <CatalogExplorerHeader
+            kind={kind}
+            search=""
+            onSearchChange={() => {}}
+            onSearchSubmit={(event) => event.preventDefault()}
+            onSearchClear={() => {}}
+            categories={[
+              { id: "marvel", label: "Marvel & DC" },
+              { id: "filmes", label: "Filmes & Séries" },
+              { id: "games", label: "Games" },
+              { id: "anime", label: "Animes & Desenhos" },
+            ]}
+            category=""
+            onCategoryChange={() => {}}
+            onFiltersClick={() => {}}
+            collectionHref="/catalogo"
+          />
+        </MemoryRouter>,
+      );
+      const categories = screen.getByLabelText("Categorias do catálogo");
+      expect(
+        within(categories)
+          .getAllByRole("button")
+          .map((button) => button.textContent?.trim()),
+      ).toEqual([
+        "Todos",
+        "Animes & Desenhos",
+        "Games",
+        "Filmes & Séries",
+        "Marvel & DC",
+        "Filtros",
+      ]);
+    },
+  );
 
   it("uses a single category badge and card text hierarchy for both catalogs", () => {
     render(
       <div className="relative">
         <CatalogCategoryBadge label="Games" />
-        <CatalogCardIdentity name="Modelo teste" franchise="NieR" />
-        <CatalogCardIdentity name="Referência Telegram" franchise="Pokémon" franchiseProvisional />
+        <CatalogCardIdentity name="Modelo teste" />
+        <CatalogCardIdentity name="Referência Telegram" />
+        <CatalogCardTagRow
+          label="Classificação confirmada"
+          groups={{
+            identities: [],
+            franchise: {
+              key: "franchise:nier",
+              kind: "franchise",
+              label: "NieR",
+              onClick: () => {},
+            },
+          }}
+        />
+        <CatalogCardTagRow
+          label="Classificação provisória"
+          groups={{
+            identities: [],
+            franchise: {
+              key: "franchise:pokemon",
+              kind: "franchise",
+              label: "Pokémon",
+              provisional: true,
+              disabled: true,
+              onClick: () => {},
+            },
+          }}
+        />
       </div>,
     );
     expect(screen.getByText("Games")).toHaveClass("absolute", "rounded-full");
-    expect(screen.getByRole("heading", { name: "Modelo teste" })).toHaveClass("uppercase");
-    expect(screen.getByText("NieR")).toBeInTheDocument();
-    expect(screen.getByLabelText("Franquia em revisão: Pokémon")).toHaveTextContent("Pokémon · em revisão");
+    expect(screen.getByRole("heading", { name: "Modelo teste" })).toHaveClass(
+      "uppercase",
+    );
+    expect(
+      screen.getByRole("button", { name: "Filtrar por franquia NieR" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByRole("button", {
+        name: "Filtrar por franquia em revisão Pokémon",
+      }),
+    ).toBeDisabled();
   });
 
   it("renders the same arcade card shell and compact metadata for both source types", () => {
@@ -159,7 +255,11 @@ describe("TONART shared catalog discovery structure", () => {
           <CatalogCardMetadata description="TS-001" />
         </CatalogModelCardShell>
         <CatalogModelCardShell>
-          <CatalogCardIdentity name="Telegram" franchise="Pokémon" franchiseProvisional />
+          <CatalogCardIdentity
+            name="Telegram"
+            franchise="Pokémon"
+            franchiseProvisional
+          />
           <CatalogCardMetadata description="2 imagens" status="Em curadoria" />
         </CatalogModelCardShell>
       </div>,
@@ -176,8 +276,12 @@ describe("TONART shared catalog discovery structure", () => {
   it("uses the same cover dimensions and multi-photo chip in both channels", () => {
     render(
       <div>
-        <CatalogCardMediaFrame imageCount={3}><span>original</span></CatalogCardMediaFrame>
-        <CatalogCardMediaFrame imageCount={3}><span>telegram</span></CatalogCardMediaFrame>
+        <CatalogCardMediaFrame imageCount={3}>
+          <span>original</span>
+        </CatalogCardMediaFrame>
+        <CatalogCardMediaFrame imageCount={3}>
+          <span>telegram</span>
+        </CatalogCardMediaFrame>
       </div>,
     );
     const photoStages = screen.getAllByText("3 fotos");
@@ -191,8 +295,12 @@ describe("TONART shared catalog discovery structure", () => {
   it("provides real list and grid actions", () => {
     const onChange = vi.fn();
     render(<CatalogGridListToggle view="grid" onChange={onChange} />);
-    expect(screen.getByRole("button", { name: "Visualizar em grade" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Visualizar em lista" }));
+    expect(
+      screen.getByRole("button", { name: "Visualizar em grade" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Visualizar em lista" }),
+    );
     expect(onChange).toHaveBeenCalledWith("list");
   });
 });

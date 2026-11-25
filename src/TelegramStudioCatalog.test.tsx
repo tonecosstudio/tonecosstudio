@@ -67,23 +67,44 @@ describe("Telegram-only public studio gallery", () => {
       franchise: "Avatar",
       franchiseSlug: "avatar",
     };
-    vi.stubGlobal("fetch", vi.fn(async (input: string) => {
-      const uri = String(input);
-      if (uri.endsWith("/studios")) return Response.json({ studios: [] });
-      return Response.json({ total: 1, offset: 0, limit: 24, items: [embeddedModel] });
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        const uri = String(input);
+        if (uri.endsWith("/studios")) return Response.json({ studios: [] });
+        return Response.json({
+          total: 1,
+          offset: 0,
+          limit: 24,
+          items: [embeddedModel],
+        });
+      }),
+    );
     render(<TelegramStudioCatalog embedded />);
-    const opener = await screen.findByRole("button", { name: /abrir galeria de aang/i });
+    const opener = await screen.findByRole("button", {
+      name: /abrir galeria de aang/i,
+    });
     const card = opener.closest("article");
     expect(card).not.toBeNull();
-    expect(within(card!).getByText("Anime")).toHaveClass("absolute", "rounded-full");
-    expect(within(card!).getByRole("heading", { name: "Aang" })).toHaveClass("uppercase");
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por categoria Animes/Desenho",
+      }),
+    ).toBeInTheDocument();
+    expect(within(card!).getByRole("heading", { name: "Aang" })).toHaveClass(
+      "uppercase",
+    );
     expect(card).toHaveClass("bg-[hsl(0,0%,7%)]");
-    expect(within(card!).getByText("Ver galeria")).toBeInTheDocument();
-    expect(within(card!).getByText("2 imagens")).toBeInTheDocument();
+    expect(opener).toHaveAccessibleName(/abrir galeria de aang/i);
     expect(within(card!).getByText("2 fotos")).toBeInTheDocument();
-    expect(within(card!).getByLabelText("Franquia em revisão: Avatar")).toHaveTextContent("Avatar · em revisão");
-    expect(screen.queryByRole("group", { name: "Categorias dos modelos" })).not.toBeInTheDocument();
+    expect(
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia em revisão Avatar",
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("group", { name: "Categorias dos modelos" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Anime" })).toBeInTheDocument();
   });
 
@@ -363,11 +384,16 @@ describe("Telegram-only public studio gallery", () => {
     expect(within(card!).queryByText("3DXM")).toBeNull();
     expect(
       within(card!).getByRole("button", {
-        name: "Filtrar por categoria Anime",
+        name: "Filtrar por categoria Animes/Desenho",
       }),
     ).toBeInTheDocument();
-    expect(card).toHaveTextContent(/2 imagens/);
-    expect(card).toHaveTextContent(/Em curadoria/);
+    expect(card).toHaveTextContent(/2 fotos/);
+    expect(
+      screen.getByText(
+        /Em curadoria \u00b7 identifica\u00e7\u00e3o provis\u00f3ria/,
+      ),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Filtros" }));
     fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
     await waitFor(() =>
       expect(
@@ -410,7 +436,7 @@ describe("Telegram-only public studio gallery", () => {
     expect(card).not.toBeNull();
     expect(
       within(card!).getByRole("button", {
-        name: "Filtrar por categoria Animes & Desenhos",
+        name: "Filtrar por categoria Animes/Desenho",
       }),
     ).toBeInTheDocument();
     expect(
@@ -478,7 +504,9 @@ describe("Telegram-only public studio gallery", () => {
     expect(card).not.toBeNull();
     expect(within(card!).getByText("Aang")).toBeInTheDocument();
     expect(
-      within(card!).getByLabelText("Franquia em revisão: Pokémon"),
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia em revisão Pokémon",
+      }),
     ).toBeInTheDocument();
     expect(
       within(card!).queryByRole("button", {
@@ -538,6 +566,7 @@ describe("Telegram-only public studio gallery", () => {
       franchise: "One Piece",
       franchiseSlug: "one-piece",
       variant: "",
+      tags: [{ kind: "character", id: "ace", label: "Ace", slug: "ace" }],
     };
     const fetcher = vi.fn(async (input: string) => {
       if (String(input).endsWith("/studios"))
@@ -553,7 +582,7 @@ describe("Telegram-only public studio gallery", () => {
     expect(card).not.toBeNull();
     expect(
       within(card!).getByRole("button", {
-        name: "Filtrar por categoria Animes & Desenhos",
+        name: "Filtrar por categoria Animes/Desenho",
       }),
     ).toBeInTheDocument();
     expect(
@@ -578,13 +607,13 @@ describe("Telegram-only public studio gallery", () => {
           ).searchParams;
           return (
             params.get("franchise") === "one-piece" &&
-            params.get("character") === "Ace"
+            params.get("character_id") === "ace"
           );
         }),
       ).toBe(true),
     );
     expect(window.location.search).toContain("franquia=one-piece");
-    expect(window.location.search).toContain("personagem=Ace");
+    expect(window.location.search).toContain("personagem=ace");
   });
 
   it("never turns a provisional sculpt title into a verified character tag on a studio card", async () => {
@@ -616,11 +645,15 @@ describe("Telegram-only public studio gallery", () => {
       within(card!).queryByRole("button", { name: /Filtrar por personagem/i }),
     ).not.toBeInTheDocument();
     expect(
-      within(card!).queryByRole("button", { name: /Filtrar por franquia/i }),
-    ).not.toBeInTheDocument();
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia em revisão Marvel",
+      }),
+    ).toBeDisabled();
     expect(
-      within(card!).getByLabelText("Franquia em revisão: Marvel"),
-    ).toBeInTheDocument();
+      within(card!).getByRole("button", {
+        name: "Filtrar por franquia em revisão Marvel",
+      }),
+    ).toBeDisabled();
     expect(
       within(card!).getByRole("button", {
         name: "Filtrar por categoria Marvel & DC",
@@ -697,25 +730,55 @@ describe("Telegram-only public studio gallery", () => {
       screen.getByRole("link", { name: /todos os estúdios/i }),
     ).toHaveAttribute("href", "/estudios");
   });
-  it("filters by a model variant chip from a studio collection only", async () => {
+  it("filters by an approved canonical editorial attribute, never an inferred variant", async () => {
     window.history.replaceState(null, "", "/estudios?studio=3DXM");
-    const fetcher = mockCatalog();
-    render(<TelegramStudioCatalog />);
-    expect(await screen.findByText("Aang")).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Filtrar por tag Chibi" }),
-    );
-
-    await waitFor(() => {
-      expect(
-        fetcher.mock.calls.some(([uri]) => String(uri).includes("q=Chibi")),
-      ).toBe(true);
+    const curated = {
+      ...model,
+      provisional: false,
+      franchise: "Avatar",
+      franchiseSlug: "avatar",
+      tags: [
+        {
+          kind: "publisher",
+          id: "nickelodeon",
+          label: "Nickelodeon",
+          slug: "nickelodeon",
+        },
+      ],
+    };
+    const fetcher = vi.fn(async (input: string) => {
+      if (String(input).endsWith("/studios"))
+        return Response.json({ studios: [{ studio: "3DXM", total: 1 }] });
+      return Response.json({
+        total: 1,
+        offset: 0,
+        limit: 24,
+        items: [curated],
+      });
     });
-    expect(window.location.pathname).toBe("/estudios");
-    expect(window.location.search).toContain("studio=3DXM");
-    expect(window.location.search).toContain("q=Chibi");
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Pesquisar modelos" })).toHaveValue("Chibi");
+    vi.stubGlobal("fetch", fetcher);
+    render(<TelegramStudioCatalog />);
+    const opener = await screen.findByRole("button", {
+      name: /abrir galeria de aang/i,
+    });
+    const card = opener.closest("article");
+    expect(card).not.toBeNull();
+    expect(
+      within(card!).queryByRole("button", { name: /Filtrar por tag Chibi/ }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      within(card!).getByRole("button", {
+        name: "Filtrar por editora Nickelodeon",
+      }),
+    );
+    expect(window.location.search).toContain("atributo=nickelodeon");
+    expect(window.location.search).not.toContain("q=Chibi");
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls.some(([uri]) =>
+          String(uri).includes("attribute_id=nickelodeon"),
+        ),
+      ).toBe(true),
+    );
   });
 });

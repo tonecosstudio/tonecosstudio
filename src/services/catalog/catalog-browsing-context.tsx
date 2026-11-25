@@ -45,6 +45,22 @@ type PersistedSelection = {
   items: PublicCatalogModel[];
 };
 
+/** Shared identity of a paginated catalog query, including canonical taxonomy. */
+export const CATALOG_BROWSING_SCOPE_KEYS = [
+  "q",
+  "category",
+  "franchise",
+  "folder",
+  "character_id",
+  "attribute_id",
+] as const;
+
+export function catalogBrowsingScope(params: URLSearchParams): string {
+  return JSON.stringify(
+    CATALOG_BROWSING_SCOPE_KEYS.map((key) => params.get(key)?.trim() ?? ""),
+  );
+}
+
 const CatalogBrowsingContext = createContext<CatalogBrowsingState | null>(null);
 const COMMERCIAL_SELECTION_STORAGE_KEY = "tonart:pending-quote-selection:v1";
 const COMMERCIAL_SELECTION_TTL_MS = 2 * 60 * 60 * 1000;
@@ -62,7 +78,10 @@ function boundedText(value: unknown, max = 512): value is string {
   return typeof value === "string" && value.length > 0 && value.length <= max;
 }
 
-function optionalBoundedText(value: unknown, max = 512): value is string | null {
+function optionalBoundedText(
+  value: unknown,
+  max = 512,
+): value is string | null {
   return value === null || (typeof value === "string" && value.length <= max);
 }
 
@@ -90,13 +109,9 @@ function isPersistableModel(value: unknown): value is PublicCatalogModel {
     (model.imageCount as number) >= 0 &&
     Number.isSafeInteger(model.galleryVersion) &&
     (model.galleryVersion as number) >= 0 &&
-    (
-      model.coverStorageKey === null ||
-      (
-        boundedText(model.coverStorageKey, 4096) &&
-        model.coverStorageKey.startsWith("media/")
-      )
-    )
+    (model.coverStorageKey === null ||
+      (boundedText(model.coverStorageKey, 4096) &&
+        model.coverStorageKey.startsWith("media/")))
   );
 }
 

@@ -62,6 +62,20 @@ describe("canonical catalog read boundary", () => {
           imageCount: 3,
           galleryVersion: 1,
           coverStorageKey: "media/covers/mdl-123.webp",
+          tags: [
+            {
+              kind: "category",
+              id: "originais",
+              label: "Originais",
+              slug: "originais",
+            },
+            {
+              kind: "franchise",
+              id: "autoral",
+              label: "Autoral",
+              slug: "autoral",
+            },
+          ],
         },
       ],
       nextCursor: "next",
@@ -107,7 +121,11 @@ describe("canonical catalog read boundary", () => {
     for (const folder of [
       "x".repeat(241),
       "games/../admin",
-      "games" + String.fromCharCode(92) + ".." + String.fromCharCode(92) + "admin",
+      "games" +
+        String.fromCharCode(92) +
+        ".." +
+        String.fromCharCode(92) +
+        "admin",
       "games" + String.fromCharCode(10) + "other",
     ]) {
       await expect(
@@ -118,18 +136,28 @@ describe("canonical catalog read boundary", () => {
   });
 
   it("shares the Worker's 240-character folder limit in list and navigation", async () => {
-    const io = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
+    const io = vi.fn(async () =>
+      Response.json({ items: [], nextCursor: null }),
+    );
     const gateway = createPublicCatalogGateway(
       "https://example.test/catalogo-api",
       io as typeof fetch,
     );
     const overlong = "x".repeat(241);
-    await expect(gateway.listPage({
-      category: "games", franchise: "resident-evil", folder: overlong,
-    })).rejects.toThrow("catalog_folder_invalid");
-    await expect(gateway.listFolders({
-      category: "games", franchise: "resident-evil", parent: overlong,
-    })).rejects.toThrow("catalog_folder_path_invalid");
+    await expect(
+      gateway.listPage({
+        category: "games",
+        franchise: "resident-evil",
+        folder: overlong,
+      }),
+    ).rejects.toThrow("catalog_folder_invalid");
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: overlong,
+      }),
+    ).rejects.toThrow("catalog_folder_path_invalid");
     expect(io).not.toHaveBeenCalled();
   });
 
@@ -154,25 +182,31 @@ describe("canonical catalog read boundary", () => {
   });
 
   it("rejects oversized and empty pagination cursors before making requests", async () => {
-    const io = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
+    const io = vi.fn(async () =>
+      Response.json({ items: [], nextCursor: null }),
+    );
     const gateway = createPublicCatalogGateway(
       "https://example.test/catalogo-api",
       io as typeof fetch,
     );
-    await expect(gateway.listPage({ cursor: "x".repeat(2049) })).rejects.toThrow(
-      "catalog_cursor_invalid",
-    );
+    await expect(
+      gateway.listPage({ cursor: "x".repeat(2049) }),
+    ).rejects.toThrow("catalog_cursor_invalid");
     await expect(gateway.listPage({ cursor: "" })).rejects.toThrow(
       "catalog_cursor_invalid",
     );
-    await expect(gateway.listGallery("animal-original", {
-      version: 1,
-      cursor: "x".repeat(2049),
-    })).rejects.toThrow("catalog_gallery_cursor_invalid");
-    await expect(gateway.listGallery("animal-original", {
-      version: 1,
-      cursor: "",
-    })).rejects.toThrow("catalog_gallery_cursor_invalid");
+    await expect(
+      gateway.listGallery("animal-original", {
+        version: 1,
+        cursor: "x".repeat(2049),
+      }),
+    ).rejects.toThrow("catalog_gallery_cursor_invalid");
+    await expect(
+      gateway.listGallery("animal-original", {
+        version: 1,
+        cursor: "",
+      }),
+    ).rejects.toThrow("catalog_gallery_cursor_invalid");
     expect(io).not.toHaveBeenCalled();
   });
 
@@ -263,7 +297,10 @@ describe("canonical catalog read boundary", () => {
         createPublicCatalogGateway("http://127.0.0.1:8080/api/", fetch),
       ).toThrow("catalog_endpoint_not_configured");
       expect(() =>
-        createPublicCatalogGateway("http://127.0.0.1:5173/catalogo-api/", fetch),
+        createPublicCatalogGateway(
+          "http://127.0.0.1:5173/catalogo-api/",
+          fetch,
+        ),
       ).toThrow("catalog_endpoint_not_configured");
 
       vi.stubGlobal("window", {
@@ -426,26 +463,30 @@ describe("cross-endpoint published gallery integrity", () => {
       total: 2,
       version: 9,
     });
-    await expect(gateway.listGallery("animal-original", expected))
-      .rejects.toThrow("catalog_gallery_count_mismatch");
+    await expect(
+      gateway.listGallery("animal-original", expected),
+    ).rejects.toThrow("catalog_gallery_count_mismatch");
     expect(io).toHaveBeenCalledTimes(1);
   });
 
   it("refuses a first-page cover that differs from the model's published cover", async () => {
     const { io, gateway } = gatewayFor({
-      items: [{
-        ...galleryImage,
-        variantKeys: {
-          ...galleryImage.variantKeys,
-          card: "media/mdl-other/1/card.webp",
+      items: [
+        {
+          ...galleryImage,
+          variantKeys: {
+            ...galleryImage.variantKeys,
+            card: "media/mdl-other/1/card.webp",
+          },
         },
-      }],
+      ],
       nextCursor: null,
       total: 1,
       version: 9,
     });
-    await expect(gateway.listGallery("animal-original", expected))
-      .rejects.toThrow("catalog_gallery_cover_mismatch");
+    await expect(
+      gateway.listGallery("animal-original", expected),
+    ).rejects.toThrow("catalog_gallery_cover_mismatch");
     expect(io).toHaveBeenCalledTimes(1);
   });
 
@@ -456,16 +497,14 @@ describe("cross-endpoint published gallery integrity", () => {
       total: 1,
       version: 9,
     });
-    await expect(gateway.listGallery("animal-original", expected))
-      .rejects.toThrow("catalog_gallery_cover_mismatch");
+    await expect(
+      gateway.listGallery("animal-original", expected),
+    ).rejects.toThrow("catalog_gallery_cover_mismatch");
   });
 
   it("rejects duplicate gallery image IDs instead of rendering ambiguous thumbnails", async () => {
     const { io, gateway } = gatewayFor({
-      items: [
-        galleryImage,
-        { ...galleryImage, role: "gallery" },
-      ],
+      items: [galleryImage, { ...galleryImage, role: "gallery" }],
       nextCursor: null,
       total: 2,
       version: 9,
@@ -540,12 +579,14 @@ describe("read-only catalog discovery and detail", () => {
   });
 
   it("rejects duplicate category IDs from a single bounded response", async () => {
-    const io = vi.fn(async () => Response.json({
-      items: [
-        { id: "games", label: "Games", count: 2 },
-        { id: "games", label: "Outra categoria", count: 1 },
-      ],
-    }));
+    const io = vi.fn(async () =>
+      Response.json({
+        items: [
+          { id: "games", label: "Games", count: 2 },
+          { id: "games", label: "Outra categoria", count: 1 },
+        ],
+      }),
+    );
     const gateway = createPublicCatalogGateway(
       "https://example.test/catalogo-api",
       io as typeof fetch,
@@ -611,8 +652,12 @@ describe("read-only catalog discovery and detail", () => {
         "https://example.test/catalogo-api",
         io as typeof fetch,
       );
-      expect(gateway.mediaUrl("media/covers/mdl-123.webp")).toBe("https://example.test/catalogo-api/media/covers/mdl-123.webp");
-      expect(gateway.mediaUrl("media/gallery/valid.webp")).toBe("https://example.test/catalogo-api/media/gallery/valid.webp");
+      expect(gateway.mediaUrl("media/covers/mdl-123.webp")).toBe(
+        "https://example.test/catalogo-api/media/covers/mdl-123.webp",
+      );
+      expect(gateway.mediaUrl("media/gallery/valid.webp")).toBe(
+        "https://example.test/catalogo-api/media/gallery/valid.webp",
+      );
       expect(io).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllEnvs();
@@ -636,9 +681,15 @@ describe("read-only catalog discovery and detail", () => {
     expect(gateway.mediaUrl("media/")).toBeNull();
     expect(gateway.mediaUrl("media/a//image.webp")).toBeNull();
     expect(gateway.mediaUrl("media/" + "a".repeat(257))).toBeNull();
-    expect(gateway.mediaUrl("media/" + "x/".repeat(17) + "cover.webp")).toBeNull();
-    expect(gateway.mediaUrl("media/images/" + String.fromCharCode(0) + "bad.webp")).toBeNull();
-    expect(gateway.mediaUrl("media/images/" + String.fromCharCode(0xD800))).toBeNull();
+    expect(
+      gateway.mediaUrl("media/" + "x/".repeat(17) + "cover.webp"),
+    ).toBeNull();
+    expect(
+      gateway.mediaUrl("media/images/" + String.fromCharCode(0) + "bad.webp"),
+    ).toBeNull();
+    expect(
+      gateway.mediaUrl("media/images/" + String.fromCharCode(0xd800)),
+    ).toBeNull();
     expect(gateway.mediaUrl("media/cards/café.webp")).toBe(
       "https://example.test/catalogo-api/media/cards/caf%C3%A9.webp",
     );
@@ -653,14 +704,31 @@ describe("read-only catalog discovery and detail", () => {
 
 describe("canonical folder discovery is scoped and fail-closed", () => {
   it("reads a single indexed root, with no catalog-wide scan", async () => {
-    const io = vi.fn(async () => Response.json({
-      current: null,
-      trail: [],
-      items: [{ id: "personagens", label: "Personagens", count: 3, hasChildren: true }],
-    }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    const page = await gateway.listFolders({ category: "games", franchise: "resident-evil" });
-    expect(page.items).toEqual([{ id: "personagens", label: "Personagens", count: 3, hasChildren: true }]);
+    const io = vi.fn(async () =>
+      Response.json({
+        current: null,
+        trail: [],
+        items: [
+          {
+            id: "personagens",
+            label: "Personagens",
+            count: 3,
+            hasChildren: true,
+          },
+        ],
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const page = await gateway.listFolders({
+      category: "games",
+      franchise: "resident-evil",
+    });
+    expect(page.items).toEqual([
+      { id: "personagens", label: "Personagens", count: 3, hasChildren: true },
+    ]);
     expect(io).toHaveBeenCalledExactlyOnceWith(
       "https://example.test/catalogo-api/api/folders?category=games&franchise=resident-evil",
       expect.objectContaining({ method: "GET", credentials: "omit" }),
@@ -668,13 +736,29 @@ describe("canonical folder discovery is scoped and fail-closed", () => {
   });
 
   it("reads nested paths and the canonical breadcrumb without walking parent indexes", async () => {
-    const io = vi.fn(async () => Response.json({
-      current: { id: "personagens", label: "Personagens", count: 2 },
-      trail: [{ id: "personagens", label: "Personagens" }],
-      items: [{ id: "personagens/herois", label: "Heróis", count: 2, hasChildren: false }],
-    }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    const data = await gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" });
+    const io = vi.fn(async () =>
+      Response.json({
+        current: { id: "personagens", label: "Personagens", count: 2 },
+        trail: [{ id: "personagens", label: "Personagens" }],
+        items: [
+          {
+            id: "personagens/herois",
+            label: "Heróis",
+            count: 2,
+            hasChildren: false,
+          },
+        ],
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    const data = await gateway.listFolders({
+      category: "games",
+      franchise: "resident-evil",
+      parent: "personagens",
+    });
     expect(data.trail).toEqual([{ id: "personagens", label: "Personagens" }]);
     expect(data.items[0].id).toBe("personagens/herois");
     const [url] = io.mock.calls[0] as unknown as [string, RequestInit];
@@ -683,57 +767,140 @@ describe("canonical folder discovery is scoped and fail-closed", () => {
   });
 
   it("rejects invalid scopes, traversal and oversized parent paths before I/O", async () => {
-    const io = vi.fn(async () => Response.json({ current: null, trail: [], items: [] }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    await expect(gateway.listFolders({ category: "../admin", franchise: "resident-evil" })).rejects.toThrow("catalog_folder_scope_invalid");
-    await expect(gateway.listFolders({ category: "games", franchise: "../admin" })).rejects.toThrow("catalog_folder_scope_invalid");
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "a/../admin" })).rejects.toThrow("catalog_folder_path_invalid");
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "x".repeat(241) })).rejects.toThrow("catalog_folder_path_invalid");
+    const io = vi.fn(async () =>
+      Response.json({ current: null, trail: [], items: [] }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(
+      gateway.listFolders({ category: "../admin", franchise: "resident-evil" }),
+    ).rejects.toThrow("catalog_folder_scope_invalid");
+    await expect(
+      gateway.listFolders({ category: "games", franchise: "../admin" }),
+    ).rejects.toThrow("catalog_folder_scope_invalid");
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: "a/../admin",
+      }),
+    ).rejects.toThrow("catalog_folder_path_invalid");
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: "x".repeat(241),
+      }),
+    ).rejects.toThrow("catalog_folder_path_invalid");
     expect(io).not.toHaveBeenCalled();
   });
 
   it("rejects untrusted parent identity and inconsistent breadcrumbs", async () => {
-    const io = vi.fn(async () => Response.json({ current: null, trail: [], items: [] }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_parent_mismatch");
-    io.mockImplementationOnce(async () => Response.json({
-      current: { id: "personagens", label: "Personagens", count: 1 },
-      trail: [],
-      items: [],
-    }));
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_trail_mismatch");
+    const io = vi.fn(async () =>
+      Response.json({ current: null, trail: [], items: [] }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: "personagens",
+      }),
+    ).rejects.toThrow("catalog_folder_parent_mismatch");
+    io.mockImplementationOnce(async () =>
+      Response.json({
+        current: { id: "personagens", label: "Personagens", count: 1 },
+        trail: [],
+        items: [],
+      }),
+    );
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: "personagens",
+      }),
+    ).rejects.toThrow("catalog_folder_trail_mismatch");
   });
 
   it("rejects duplicate paths and children outside the requested parent", async () => {
-    const io = vi.fn(async () => Response.json({
-      current: null, trail: [],
-      items: [
-        { id: "a", label: "A", count: 1, hasChildren: false },
-        { id: "a", label: "B", count: 1, hasChildren: false },
-      ],
-    }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("duplicate_catalog_folder");
-    io.mockImplementationOnce(async () => Response.json({
-      current: { id: "personagens", label: "Personagens", count: 1 },
-      trail: [{ id: "personagens", label: "Personagens" }],
-      items: [{ id: "other", label: "Outro", count: 1, hasChildren: false }],
-    }));
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil", parent: "personagens" })).rejects.toThrow("catalog_folder_child_outside_parent");
+    const io = vi.fn(async () =>
+      Response.json({
+        current: null,
+        trail: [],
+        items: [
+          { id: "a", label: "A", count: 1, hasChildren: false },
+          { id: "a", label: "B", count: 1, hasChildren: false },
+        ],
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(
+      gateway.listFolders({ category: "games", franchise: "resident-evil" }),
+    ).rejects.toThrow("duplicate_catalog_folder");
+    io.mockImplementationOnce(async () =>
+      Response.json({
+        current: { id: "personagens", label: "Personagens", count: 1 },
+        trail: [{ id: "personagens", label: "Personagens" }],
+        items: [{ id: "other", label: "Outro", count: 1, hasChildren: false }],
+      }),
+    );
+    await expect(
+      gateway.listFolders({
+        category: "games",
+        franchise: "resident-evil",
+        parent: "personagens",
+      }),
+    ).rejects.toThrow("catalog_folder_child_outside_parent");
   });
 
   it("rejects malformed child counts and hasChildren without silent coercion", async () => {
-    const io = vi.fn(async () => Response.json({
-      current: null, trail: [],
-      items: [{ id: "personagens", label: "Personagens", count: -1, hasChildren: true }],
-    }));
-    const gateway = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("invalid_catalog_folder_count");
-    io.mockImplementationOnce(async () => Response.json({
-      current: null, trail: [],
-      items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: "true" }],
-    }));
-    await expect(gateway.listFolders({ category: "games", franchise: "resident-evil" })).rejects.toThrow("invalid_catalog_folder_has_children");
+    const io = vi.fn(async () =>
+      Response.json({
+        current: null,
+        trail: [],
+        items: [
+          {
+            id: "personagens",
+            label: "Personagens",
+            count: -1,
+            hasChildren: true,
+          },
+        ],
+      }),
+    );
+    const gateway = createPublicCatalogGateway(
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
+    );
+    await expect(
+      gateway.listFolders({ category: "games", franchise: "resident-evil" }),
+    ).rejects.toThrow("invalid_catalog_folder_count");
+    io.mockImplementationOnce(async () =>
+      Response.json({
+        current: null,
+        trail: [],
+        items: [
+          {
+            id: "personagens",
+            label: "Personagens",
+            count: 1,
+            hasChildren: "true",
+          },
+        ],
+      }),
+    );
+    await expect(
+      gateway.listFolders({ category: "games", franchise: "resident-evil" }),
+    ).rejects.toThrow("invalid_catalog_folder_has_children");
   });
 });
 
@@ -824,7 +991,10 @@ describe("franchise discovery stays bounded and uses Worker authority", () => {
         "invalid_catalog_franchise_id",
       ],
       [
-        { items: [{ ...expected, category: "games/../admin" }], truncated: false },
+        {
+          items: [{ ...expected, category: "games/../admin" }],
+          truncated: false,
+        },
         "invalid_catalog_franchise_category",
       ],
       [
@@ -852,26 +1022,32 @@ describe("franchise discovery stays bounded and uses Worker authority", () => {
 
 describe("catalog preview credential isolation", () => {
   it("sends Vercel protection cookies only through our exact same-origin proxy", () => {
-    expect(resolveCatalogFetchCredentials(
-      "https://tonecosstudio-preview.vercel.app",
-      "https://tonecosstudio-preview.vercel.app",
-    )).toBe("same-origin");
+    expect(
+      resolveCatalogFetchCredentials(
+        "https://tonecosstudio-preview.vercel.app",
+        "https://tonecosstudio-preview.vercel.app",
+      ),
+    ).toBe("same-origin");
   });
 
   it("keeps Cloudflare Worker requests credential-free", () => {
-    expect(resolveCatalogFetchCredentials(
-      "https://tonecos-catalogo-api.tonecosstudio.workers.dev",
-      "https://tonecosstudio-preview.vercel.app",
-    )).toBe("omit");
+    expect(
+      resolveCatalogFetchCredentials(
+        "https://tonecos-catalogo-api.tonecosstudio.workers.dev",
+        "https://tonecosstudio-preview.vercel.app",
+      ),
+    ).toBe("omit");
   });
 
   it.each([undefined, "", "http://tonecosstudio-preview.vercel.app"])(
     "never sends cookies to an unverified or mismatched origin: %s",
     (origin) => {
-      expect(resolveCatalogFetchCredentials(
-        "https://tonecosstudio-preview.vercel.app",
-        origin,
-      )).toBe("omit");
+      expect(
+        resolveCatalogFetchCredentials(
+          "https://tonecosstudio-preview.vercel.app",
+          origin,
+        ),
+      ).toBe("omit");
     },
   );
 });
@@ -890,7 +1066,9 @@ describe("indexed recent catalog publications", () => {
     expect(io).toHaveBeenCalledExactlyOnceWith(
       "https://example.test/catalogo-api/api/recent?limit=6",
       expect.objectContaining({
-        method: "GET", credentials: "omit", signal: abort.signal,
+        method: "GET",
+        credentials: "omit",
+        signal: abort.signal,
       }),
     );
   });
@@ -908,7 +1086,9 @@ describe("indexed recent catalog publications", () => {
       slug: "animal-original-" + index,
       cover_storage_key: "media/mdl-approved-" + index + "/cover.webp",
     }));
-    const io = vi.fn(async () => Response.json({ items: [...blocked, ...approved] }));
+    const io = vi.fn(async () =>
+      Response.json({ items: [...blocked, ...approved] }),
+    );
     const api = createPublicCatalogGateway(
       "https://example.test/catalogo-api",
       io as typeof fetch,
@@ -932,8 +1112,17 @@ describe("indexed recent catalog publications", () => {
       "https://example.test/catalogo-api",
       io as typeof fetch,
     );
-    for (const limit of [0, 25, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      await expect(api.listRecent(limit)).rejects.toThrow("catalog_recent_limit_invalid");
+    for (const limit of [
+      0,
+      25,
+      -1,
+      1.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+    ]) {
+      await expect(api.listRecent(limit)).rejects.toThrow(
+        "catalog_recent_limit_invalid",
+      );
     }
     expect(io).not.toHaveBeenCalled();
   });
@@ -942,7 +1131,10 @@ describe("indexed recent catalog publications", () => {
     const cases = [
       [{}, "invalid_catalog_recent_items"],
       [{ items: [row, row] }, "duplicate_catalog_recent_model"],
-      [{ items: [row, { ...row, slug: "../admin", id: "mdl-124" }] }, "invalid_catalog_recent_slug"],
+      [
+        { items: [row, { ...row, slug: "../admin", id: "mdl-124" }] },
+        "invalid_catalog_recent_slug",
+      ],
       [{ items: Array(25).fill(row) }, "invalid_catalog_recent_items"],
     ];
     for (const [payload, failure] of cases) {
@@ -957,7 +1149,6 @@ describe("indexed recent catalog publications", () => {
   });
 });
 
-
 describe("external catalog media branding quarantine", () => {
   const branded = {
     ...row,
@@ -971,16 +1162,20 @@ describe("external catalog media branding quarantine", () => {
   it("hides identified branded models from list and recent without changing cursor or reading more pages", async () => {
     const io = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url.includes("/api/recent?")) return Response.json({ items: [row, branded] });
+      if (url.includes("/api/recent?"))
+        return Response.json({ items: [row, branded] });
       return Response.json({ items: [row, branded], nextCursor: "page-two" });
     });
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", io as typeof fetch,
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
     );
     const page = await api.listPage({ limit: 24 });
     expect(page.items.map((model) => model.slug)).toEqual(["animal-original"]);
     expect(page.nextCursor).toBe("page-two");
-    expect((await api.listRecent(6)).map((model) => model.slug)).toEqual(["animal-original"]);
+    expect((await api.listRecent(6)).map((model) => model.slug)).toEqual([
+      "animal-original",
+    ]);
     expect(io).toHaveBeenCalledTimes(2);
   });
 
@@ -1000,15 +1195,27 @@ describe("external catalog media branding quarantine", () => {
       const io = vi.fn(async (request: RequestInfo | URL) => {
         const uri = String(request);
         if (uri.includes("/api/models/")) return Response.json(branded);
-        if (uri.includes("/api/recent?")) return Response.json({ items: [row, branded] });
+        if (uri.includes("/api/recent?"))
+          return Response.json({ items: [row, branded] });
         return Response.json({ items: [row, branded], nextCursor: null });
       });
-      const api = createPublicCatalogGateway("https://example.test/catalogo-api", io as typeof fetch);
-      expect((await api.listPage({ limit: 8 })).items.map((item) => item.id)).toEqual([row.id]);
-      expect((await api.listRecent(8)).map((item) => item.id)).toEqual([row.id]);
-      await expect(api.getModel(entry.slug)).rejects.toThrow("catalog_model_media_restricted");
+      const api = createPublicCatalogGateway(
+        "https://example.test/catalogo-api",
+        io as typeof fetch,
+      );
+      expect(
+        (await api.listPage({ limit: 8 })).items.map((item) => item.id),
+      ).toEqual([row.id]);
+      expect((await api.listRecent(8)).map((item) => item.id)).toEqual([
+        row.id,
+      ]);
+      await expect(api.getModel(entry.slug)).rejects.toThrow(
+        "catalog_model_media_restricted",
+      );
       expect(api.mediaUrl(entry.coverStorageKey)).toBeNull();
-      expect(api.mediaUrl(`media/${entry.modelId}/another-image/detail.webp`)).toBeNull();
+      expect(
+        api.mediaUrl(`media/${entry.modelId}/another-image/detail.webp`),
+      ).toBeNull();
       expect(io).toHaveBeenCalledTimes(3);
     }
   });
@@ -1028,11 +1235,16 @@ describe("external catalog media branding quarantine", () => {
     const io = vi.fn(async (request: RequestInfo | URL) => {
       const uri = String(request);
       if (uri.includes("/api/models/")) return Response.json(aceDuck);
-      if (uri.includes("/api/recent?")) return Response.json({ items: [row, aceDuck] });
-      return Response.json({ items: [row, aceDuck], nextCursor: "more-results" });
+      if (uri.includes("/api/recent?"))
+        return Response.json({ items: [row, aceDuck] });
+      return Response.json({
+        items: [row, aceDuck],
+        nextCursor: "more-results",
+      });
     });
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", io as typeof fetch,
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
     );
     const listing = await api.listPage({ limit: 8 });
     expect(listing.items.map((item) => item.id)).toEqual([row.id]);
@@ -1042,9 +1254,9 @@ describe("external catalog media branding quarantine", () => {
       "catalog_model_media_restricted",
     );
     expect(api.mediaUrl(aceDuck.cover_storage_key)).toBeNull();
-    expect(api.mediaUrl(
-      "media/mdl_ae8d28d2fa93b1367b0a/another-image/detail.webp",
-    )).toBeNull();
+    expect(
+      api.mediaUrl("media/mdl_ae8d28d2fa93b1367b0a/another-image/detail.webp"),
+    ).toBeNull();
     expect(api.mediaUrl(row.cover_storage_key)).not.toBeNull();
     expect(io).toHaveBeenCalledTimes(3);
   });
@@ -1077,16 +1289,22 @@ describe("external catalog media branding quarantine", () => {
       if (request.includes("/api/models/")) {
         return Response.json(bySlug.get(request.split("/api/models/")[1]));
       }
-      return Response.json({ items: [row, ...credited], nextCursor: "more-items" });
+      return Response.json({
+        items: [row, ...credited],
+        nextCursor: "more-items",
+      });
     });
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", io as typeof fetch,
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
     );
     expect((await api.listPage({ limit: 8 })).items).toHaveLength(8);
-    expect((await api.listRecent(8))).toHaveLength(8);
+    expect(await api.listRecent(8)).toHaveLength(8);
     for (const item of credited) {
       expect(api.mediaUrl(item.cover_storage_key)).not.toBeNull();
-      await expect(api.getModel(item.slug)).resolves.toMatchObject({ id: item.id });
+      await expect(api.getModel(item.slug)).resolves.toMatchObject({
+        id: item.id,
+      });
     }
     expect(io).toHaveBeenCalledTimes(9);
   });
@@ -1107,16 +1325,27 @@ describe("external catalog media branding quarantine", () => {
     const io = vi.fn(async (url: RequestInfo | URL) => {
       const path = String(url);
       if (path.includes("/api/recent?")) {
-        return Response.json({ items: [row, collectionBranded, categoryBranded] });
+        return Response.json({
+          items: [row, collectionBranded, categoryBranded],
+        });
       }
-      if (path.includes("/api/models/")) return Response.json(collectionBranded);
-      return Response.json({ items: [row, collectionBranded, categoryBranded], nextCursor: null });
+      if (path.includes("/api/models/"))
+        return Response.json(collectionBranded);
+      return Response.json({
+        items: [row, collectionBranded, categoryBranded],
+        nextCursor: null,
+      });
     });
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", io as typeof fetch,
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
     );
-    expect((await api.listPage()).items.map((item) => item.id)).toEqual(["mdl-123"]);
-    expect((await api.listRecent()).map((item) => item.id)).toEqual(["mdl-123"]);
+    expect((await api.listPage()).items.map((item) => item.id)).toEqual([
+      "mdl-123",
+    ]);
+    expect((await api.listRecent()).map((item) => item.id)).toEqual([
+      "mdl-123",
+    ]);
     await expect(api.getModel("apparently-clean-model")).rejects.toThrow(
       "catalog_model_media_restricted",
     );
@@ -1126,7 +1355,8 @@ describe("external catalog media branding quarantine", () => {
   it("does not expose identified branded models through a direct detail link", async () => {
     const io = vi.fn(async () => Response.json(branded));
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", io as typeof fetch,
+      "https://example.test/catalogo-api",
+      io as typeof fetch,
     );
     await expect(api.getModel("specialstl-figure")).rejects.toThrow(
       "catalog_model_media_restricted",
@@ -1136,7 +1366,8 @@ describe("external catalog media branding quarantine", () => {
 
   it("blocks branded media paths even on folder/category/gallery thumbnails without affecting clean keys", () => {
     const api = createPublicCatalogGateway(
-      "https://example.test/catalogo-api", vi.fn() as typeof fetch,
+      "https://example.test/catalogo-api",
+      vi.fn() as typeof fetch,
     );
     expect(api.mediaUrl("media/covers/SpecialSTL.com/promo.webp")).toBeNull();
     expect(api.mediaUrl("media/gallery/special-stl/photo.webp")).toBeNull();

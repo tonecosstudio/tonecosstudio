@@ -1,4 +1,10 @@
-import { useLayoutEffect, useRef, useState, type PropsWithChildren } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import { Images } from "lucide-react";
 import type { CatalogTag, CatalogTagKind } from "@/types/catalog-tags";
 
@@ -33,7 +39,10 @@ export function catalogTagLabel(label: string): string {
 }
 
 /** Small editorial display corrections; canonical catalog values stay unchanged. */
-export function catalogModelDisplayName(model: { slug: string; name: string }): string {
+export function catalogModelDisplayName(model: {
+  slug: string;
+  name: string;
+}): string {
   return model.slug === "a-mascara-a-mascara" ? "O Máscara" : model.name;
 }
 
@@ -49,30 +58,41 @@ export function catalogTagKey(label: string): string {
 /** Visual ordering only; API labels and taxonomic identifiers remain untouched. */
 function categoryOrderKey(label: string): string {
   const normalized = normalizeCategoryLabel(label);
-  if (normalized === "anime" || normalized === "animes e desenhos") return "animes & desenhos";
+  if (normalized === "anime" || normalized === "animes e desenhos")
+    return "animes & desenhos";
   if (normalized === "filmes e series") return "filmes & series";
   if (normalized === "tokusatsu") return "tokusatsu & cultura japonesa";
   return normalized;
 }
 
 /** Stable ordering, without inventing categories absent from the current data. */
-export function orderCatalogCategories<T extends CatalogCategoryOption>(options: readonly T[]): T[] {
+export function orderCatalogCategories<T extends CatalogCategoryOption>(
+  options: readonly T[],
+): T[] {
   const seen = new Set<string>();
   return options
     .filter((option) => {
-      if (!option.id || !option.label.trim() || seen.has(option.id)) return false;
+      if (!option.id || !option.label.trim() || seen.has(option.id))
+        return false;
       seen.add(option.id);
       return true;
     })
     .sort((a, b) => {
       const aLabel = categoryOrderKey(a.label);
       const bLabel = categoryOrderKey(b.label);
-      const aRank = CATEGORY_ORDER.indexOf(aLabel as (typeof CATEGORY_ORDER)[number]);
-      const bRank = CATEGORY_ORDER.indexOf(bLabel as (typeof CATEGORY_ORDER)[number]);
+      const aRank = CATEGORY_ORDER.indexOf(
+        aLabel as (typeof CATEGORY_ORDER)[number],
+      );
+      const bRank = CATEGORY_ORDER.indexOf(
+        bLabel as (typeof CATEGORY_ORDER)[number],
+      );
       if (aRank >= 0 && bRank >= 0) return aRank - bRank;
       if (aRank >= 0) return -1;
       if (bRank >= 0) return 1;
-      return aLabel.localeCompare(bLabel, "pt-BR") || a.id.localeCompare(b.id, "pt-BR");
+      return (
+        aLabel.localeCompare(bLabel, "pt-BR") ||
+        a.id.localeCompare(b.id, "pt-BR")
+      );
     });
 }
 
@@ -85,12 +105,10 @@ export function CatalogCategoryBadge({ label }: { label: string }) {
 }
 
 /** Exactly the same text hierarchy in published and review cards. */
-export function CatalogCardIdentity({
-  name,
-}: { name: string }) {
+export function CatalogCardIdentity({ name }: { name: string }) {
   return (
     <h3 className="line-clamp-2 min-h-[1.25em] text-base font-semibold uppercase leading-tight tracking-[0.04em] text-[hsl(0,0%,94%)]">
-        {name}
+      {name}
     </h3>
   );
 }
@@ -115,21 +133,22 @@ export function CatalogFilterTag({
   balanced?: boolean;
   onClick: () => void;
 }) {
-  const kindLabel = kind === "name"
-    ? "nome"
-    : kind === "category"
-      ? "categoria"
-      : kind === "character"
-        ? "personagem"
-        : kind === "publisher"
-          ? "editora"
-          : kind === "universe"
-            ? "universo"
-            : kind === "sign"
-              ? "signo"
-              : kind === "constellation"
-                ? "constelação"
-                : "franquia";
+  const kindLabel =
+    kind === "name"
+      ? "nome"
+      : kind === "category"
+        ? "categoria"
+        : kind === "character"
+          ? "personagem"
+          : kind === "publisher"
+            ? "editora"
+            : kind === "universe"
+              ? "universo"
+              : kind === "sign"
+                ? "signo"
+                : kind === "constellation"
+                  ? "constelação"
+                  : "franquia";
   const sizingClass = balanced
     ? kind === "franchise"
       ? "min-w-[1.75rem] max-w-[12rem] flex-1 shrink"
@@ -142,11 +161,20 @@ export function CatalogFilterTag({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      aria-label={(provisional ? "Filtrar por " + kindLabel + " em revisão " : "Filtrar por " + kindLabel + " ") + label}
-      title={disabled ? "A pesquisa por nome exige pelo menos 3 caracteres." : label}
+      aria-label={
+        (provisional
+          ? "Filtrar por " + kindLabel + " em revisão "
+          : "Filtrar por " + kindLabel + " ") + label
+      }
+      title={
+        disabled ? "A pesquisa por nome exige pelo menos 3 caracteres." : label
+      }
       className={`inline-flex min-h-10 min-w-0 items-center truncate rounded-full border border-[hsl(0,0%,24%)] bg-[hsl(0,0%,8%)] ${balanced ? "px-1.5 text-[10px] sm:px-2.5 sm:text-xs" : "px-2 text-xs"} text-[hsl(0,0%,66%)] transition-colors hover:border-[hsl(var(--gold-accent)/0.5)] hover:text-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-[hsl(0,0%,24%)] disabled:hover:text-[hsl(0,0%,66%)] ${sizingClass}`}
     >
-      <span className="min-w-0 truncate">{label}{provisional ? " · em revisão" : ""}</span>
+      <span className="min-w-0 truncate">
+        {label}
+        {provisional ? " · em revisão" : ""}
+      </span>
     </button>
   );
 }
@@ -176,8 +204,10 @@ export function visibleCatalogTags(tags: CatalogTag[]): CatalogTag[] {
       tag.kind === "franchise" &&
       tag.slug === "herois-individuais" &&
       (hasPublisher || hasUniverse)
-    ) return false;
-    if (hasPublisher && tag.kind === "category" && tag.slug === "marvel-dc") return false;
+    )
+      return false;
+    if (hasPublisher && tag.kind === "category" && tag.slug === "marvel-dc")
+      return false;
     return true;
   });
 }
@@ -193,11 +223,20 @@ export function catalogTagGroupsFromPublicTags(
     kind: tag.kind,
     label: catalogTagLabel(tag.label),
     provisional: tag.provisional,
+    disabled: tag.provisional === true,
     onClick: () => onClick(tag),
   });
-  const identities = presentedTags.filter((tag) => tag.kind === "character").map(toItem);
+  const identities = presentedTags
+    .filter((tag) => tag.kind === "character")
+    .map(toItem);
   const attributes = presentedTags
-    .filter((tag) => tag.kind === "publisher" || tag.kind === "universe" || tag.kind === "sign" || tag.kind === "constellation")
+    .filter(
+      (tag) =>
+        tag.kind === "publisher" ||
+        tag.kind === "universe" ||
+        tag.kind === "sign" ||
+        tag.kind === "constellation",
+    )
     .map(toItem);
   const franchise = presentedTags.find((tag) => tag.kind === "franchise");
   const category = presentedTags.find((tag) => tag.kind === "category");
@@ -209,7 +248,9 @@ export function catalogTagGroupsFromPublicTags(
   };
 }
 
-function uniqueCardTags(items: Array<CatalogCardTagItem | null | undefined>): CatalogCardTagItem[] {
+function uniqueCardTags(
+  items: Array<CatalogCardTagItem | null | undefined>,
+): CatalogCardTagItem[] {
   const seen = new Set<string>();
   return items.filter((item): item is CatalogCardTagItem => {
     if (!item) return false;
@@ -251,11 +292,13 @@ export function CatalogCardTagRow({
   const rowRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const [visibleKeys, setVisibleKeys] = useState<string[] | null>(null);
-  const { items, fallbackItems } = resolveCatalogCardTagGroups(groups);
-  const balanced = items.some((item) => item.kind === "sign" || item.kind === "constellation");
-  const signature = [items, fallbackItems]
-    .map((group) => group.map(({ key, label }) => key + "=" + label).join("|"))
-    .join("::");
+  const { items } = useMemo(
+    () => resolveCatalogCardTagGroups(groups),
+    [groups],
+  );
+  const balanced = items.some(
+    (item) => item.kind === "sign" || item.kind === "constellation",
+  );
 
   useLayoutEffect(() => {
     const row = rowRef.current;
@@ -264,7 +307,8 @@ export function CatalogCardTagRow({
     const update = () => {
       if (row.clientWidth === 0) return;
       const style = window.getComputedStyle(row);
-      const available = row.clientWidth -
+      const available =
+        row.clientWidth -
         Number.parseFloat(style.paddingLeft) -
         Number.parseFloat(style.paddingRight);
       const nodes = Array.from(measure.children) as HTMLElement[];
@@ -273,15 +317,22 @@ export function CatalogCardTagRow({
       items.forEach((item, index) => {
         widths.set(item.key, nodes[index].getBoundingClientRect().width);
       });
-      const gap = Number.parseFloat(window.getComputedStyle(measure).columnGap) || 0;
+      const gap =
+        Number.parseFloat(window.getComputedStyle(measure).columnGap) || 0;
       const commitVisibleKeys = (next: string[]) => {
-        setVisibleKeys((current) => current?.length === next.length &&
+        setVisibleKeys((current) =>
+          current?.length === next.length &&
           current.every((key, index) => key === next[index])
-          ? current
-          : next);
+            ? current
+            : next,
+        );
       };
       const fits = (candidate: CatalogCardTagItem[]) => {
-        const width = candidate.reduce((sum, item) => sum + (widths.get(item.key) ?? 0), 0) +
+        const width =
+          candidate.reduce(
+            (sum, item) => sum + (widths.get(item.key) ?? 0),
+            0,
+          ) +
           Math.max(0, candidate.length - 1) * gap;
         return width <= available + 1;
       };
@@ -300,8 +351,12 @@ export function CatalogCardTagRow({
         uniqueCardTags([identity, firstAttribute]),
         uniqueCardTags([identity]),
       ];
-      const anchors = candidates.find((candidate) => candidate.length > 0 && fits(candidate)) ??
-        candidates.find((candidate) => candidate.length > 0) ?? [];
+      const anchors =
+        candidates.find(
+          (candidate) => candidate.length > 0 && fits(candidate),
+        ) ??
+        candidates.find((candidate) => candidate.length > 0) ??
+        [];
       const selected = new Set(anchors.map((item) => item.key));
       const selectedItems = [...anchors];
       for (const item of items) {
@@ -311,7 +366,9 @@ export function CatalogCardTagRow({
         selected.add(item.key);
         selectedItems.push(item);
       }
-      const orderedKeys = items.filter((item) => selected.has(item.key)).map((item) => item.key);
+      const orderedKeys = items
+        .filter((item) => selected.has(item.key))
+        .map((item) => item.key);
       commitVisibleKeys(orderedKeys);
     };
     update();
@@ -320,7 +377,7 @@ export function CatalogCardTagRow({
     observer.observe(row);
     observer.observe(measure);
     return () => observer.disconnect();
-  }, [signature, fallbackItems.length]);
+  }, [items, groups.identities, groups.attributes, groups.franchise]);
 
   const visibleItemKeys = visibleKeys === null ? null : new Set(visibleKeys);
   const visibleItems = visibleItemKeys
@@ -365,7 +422,6 @@ export function CatalogCardTagRow({
   );
 }
 
-
 /** Shared TONART arcade card surface across both public catalog channels. */
 export function CatalogModelCardShell({
   children,
@@ -375,7 +431,10 @@ export function CatalogModelCardShell({
     <article
       className={`group relative flex h-full flex-col overflow-hidden border border-[hsl(0,0%,12%)] bg-[hsl(0,0%,7%)] transition-colors duration-300 hover:border-[hsl(var(--gold-accent)/0.6)] focus-within:border-[hsl(var(--gold-accent))] ${selected ? "ring-1 ring-[hsl(var(--gold-accent)/0.28)]" : ""}`}
     >
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-10"
+      >
         <span className="absolute left-0 top-0 h-4 w-4 border-l-2 border-t-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
         <span className="absolute right-0 top-0 h-4 w-4 border-r-2 border-t-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
         <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[hsl(var(--gold-accent)/0.3)] group-hover:border-[hsl(var(--gold-accent))]" />
@@ -387,15 +446,22 @@ export function CatalogModelCardShell({
 }
 
 /** Same bottom metadata row; each catalog supplies only facts it owns. */
-export function CatalogCardMetadata({ description, status }: { description: string; status?: string }) {
+export function CatalogCardMetadata({
+  description,
+  status,
+}: {
+  description: string;
+  status?: string;
+}) {
   return (
     <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[10px] tracking-[0.04em] text-[hsl(0,0%,53%)]">
       <span className="min-w-0 truncate">{description}</span>
-      {status ? <span className="text-[hsl(var(--gold-accent)/0.85)]">{status}</span> : null}
+      {status ? (
+        <span className="text-[hsl(var(--gold-accent)/0.85)]">{status}</span>
+      ) : null}
     </div>
   );
 }
-
 
 /** One image stage: consistent crop, inset, and multi-photo marker in both catalog channels. */
 export function CatalogCardMediaFrame({
@@ -403,9 +469,7 @@ export function CatalogCardMediaFrame({
   imageCount,
 }: PropsWithChildren<{ imageCount?: number }>) {
   return (
-    <div
-      className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]"
-    >
+    <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-[radial-gradient(ellipse_at_center,hsl(0_0%_13%),hsl(0_0%_7%)_72%)]">
       {children}
       {imageCount && imageCount > 1 ? (
         <span className="absolute bottom-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--gold-accent)/0.45)] bg-[hsl(0,0%,5%)/0.9] px-2.5 py-1 font-mono text-[10px] text-[hsl(0,0%,90%)]">

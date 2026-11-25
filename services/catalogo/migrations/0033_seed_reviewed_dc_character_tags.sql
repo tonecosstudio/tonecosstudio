@@ -129,7 +129,6 @@ VALUES
   ('mdl_9e7213da423e0abf8710', 'char_dc_batman', 'owner_reviewed_model:2026-11-24', 'Model title: Batman e flash busto hibrido. Confirmed as one separate Batman character tag.', 0),
   ('mdl_9e7213da423e0abf8710', 'char_dc_flash', 'owner_reviewed_model:2026-11-24', 'Model title: Batman e flash busto hibrido. Confirmed as one separate Flash character tag across franchises.', 1),
   ('mdl_46c56e734de37f452c3c', 'char_dc_batman', 'owner_reviewed_model:2026-11-24', 'Model title: Batman vs homem de ferro em diorama. Confirmed as one separate Batman character tag.', 0),
-  ('mdl_46c56e734de37f452c3c', 'char_marvel_homem_de_ferro', 'owner_reviewed_model:2026-11-24', 'Model title: Batman vs homem de ferro em diorama. Confirmed as one separate Homem de Ferro tag across franchises.', 1),
   ('mdl_c895d5041056cd6029a9', 'char_dc_capuz_vermelho', 'owner_reviewed_model:2026-11-24', 'Model title: Capuz vermelho vs coringa em diorama. Confirmed as one separate Capuz Vermelho character tag.', 0),
   ('mdl_c895d5041056cd6029a9', 'char_dc_coringa', 'owner_reviewed_model:2026-11-24', 'Model title: Capuz vermelho vs coringa em diorama. Confirmed as one separate Coringa character tag.', 0),
   ('mdl_cb51000743d4ca8f89da', 'char_dc_batman', 'owner_reviewed_model:2026-11-24', 'Model title: Batfamilia batman com jovens herois. Batman is named; other young heroes are not individually named and are left untagged.', 0),
