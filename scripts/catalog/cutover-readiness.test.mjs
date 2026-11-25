@@ -165,22 +165,30 @@ const fullState = () => ({
   },
 });
 
-test("approved M5 still blocks Worker release without credentials and rollback proof", () => {
+test("completed M5 cannot replay a one-use Worker release authorization", () => {
   const result = assessCutoverReadiness(original, fullState());
+  assert.equal(original.migration.phase, "cutover-complete");
+  assert.equal(original.productionObservation.runtimeCutoverPerformed, true);
+  assert.equal(original.productionObservation.targetProductionCredentialsVerified, true);
+  assert.equal(original.productionObservation.rollbackTestedAgainstProduction, true);
   assert.equal(result.ready, false);
-  assert.ok(result.blockers.includes("target_credentials_unverified"));
-  assert.ok(result.blockers.includes("rollback_not_verified"));
-  assert.ok(!result.blockers.includes("cutover_not_approved"));
+  assert.ok(result.blockers.includes("cutover_not_approved"));
+  assert.ok(!result.blockers.includes("target_credentials_unverified"));
+  assert.ok(!result.blockers.includes("rollback_not_verified"));
   assert.ok(!result.blockers.includes("explicit_release_go_missing"));
 });
 
-test("zero-percent staging defers only proof that the same run must physically establish", () => {
-  const full = assessCutoverReadiness(original, fullState());
+test("zero-percent staging defers only pending proof in the historical approved phase", () => {
+  const beforePhysicalProof = approvedContract();
+  beforePhysicalProof.productionObservation.targetProductionCredentialsVerified = false;
+  beforePhysicalProof.productionObservation.rollbackTestedAgainstProduction = false;
+  beforePhysicalProof.productionObservation.runtimeCutoverPerformed = false;
+  const full = assessCutoverReadiness(beforePhysicalProof, fullState());
   assert.deepEqual([...full.blockers].sort(), [
     "target_credentials_unverified",
     "rollback_not_verified",
   ].sort());
-  const preflight = assessWorkerZeroTrafficStageReadiness(original, fullState());
+  const preflight = assessWorkerZeroTrafficStageReadiness(beforePhysicalProof, fullState());
   assert.equal(preflight.ready, true, JSON.stringify(preflight.blockers));
   assert.equal(preflight.stageOnly, true);
   assert.deepEqual([...preflight.deferredProof].sort(), [...full.blockers].sort());
@@ -197,10 +205,10 @@ test("zero-percent staging defers only proof that the same run must physically e
   for (const corrupt of corruptions) {
     const state = fullState();
     corrupt(state);
-    const denied = assessWorkerZeroTrafficStageReadiness(original, state);
+    const denied = assessWorkerZeroTrafficStageReadiness(beforePhysicalProof, state);
     assert.equal(denied.ready, false, JSON.stringify(denied));
   }
-  const deniedOwner = structuredClone(original);
+  const deniedOwner = structuredClone(beforePhysicalProof);
   deniedOwner.migration.releaseAuthorized = false;
   assert.equal(
     assessWorkerZeroTrafficStageReadiness(deniedOwner, fullState()).ready,
