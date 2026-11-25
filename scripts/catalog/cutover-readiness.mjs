@@ -441,6 +441,31 @@ export function assessCutoverReadiness(contract, state) {
   return { ready: blockers.length === 0, blockers };
 }
 
+// Stage readiness is strictly weaker than promotion readiness: the existing
+// current-worker rollback and credential provenance flags remain unverified
+// until this one gated release physically proves them. All *other* live
+// checks (source writers, Workers Builds, D1, bindings, traffic) stay required.
+export function assessWorkerZeroTrafficStageReadiness(contract, state) {
+  const full = assessCutoverReadiness(contract, state);
+  const deferred = new Set(["target_credentials_unverified", "rollback_not_verified"]);
+  const blockers = full.blockers.filter((name) => !deferred.has(name));
+  if (
+    state?.cloudflareAccountId !== CLOUDFLARE_ACCOUNT_ID ||
+    !Array.isArray(state?.deployment?.versions) ||
+    !Array.isArray(state?.showcaseSchema?.appliedMigrations) ||
+    !Array.isArray(state?.bindings) ||
+    !isRetiredWorkersBuilds(state?.workersBuilds)
+  ) {
+    blockers.push("zero_traffic_stage_cloudflare_live_proof_missing");
+  }
+  return {
+    ready: blockers.length === 0,
+    blockers,
+    deferredProof: full.blockers.filter((name) => deferred.has(name)),
+    stageOnly: true,
+  };
+}
+
 async function getJSON(url, headers = {}) {
   const response = await fetch(url, {
     method: "GET",
@@ -762,21 +787,24 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
 async function main() {
   if (
     process.argv.length !== 3 ||
-    !["--live", "--ownership-only"].includes(process.argv[2])
+    !["--live", "--ownership-only", "--worker-stage"].includes(process.argv[2])
   ) {
     console.error(
-      "Read-only gate: use --ownership-only (no D1) or --live (full schema). No deployment option exists.",
+      "Read-only gate: use --ownership-only (no D1), --live (full schema), or --worker-stage (zero-traffic staging only). No deployment option exists.",
     );
     process.exitCode = 2;
     return;
   }
   const contract = CANONICAL;
   const ownershipOnly = process.argv[2] === "--ownership-only";
+  const workerStageOnly = process.argv[2] === "--worker-stage";
   try {
     const state = await inspectLiveReadOnly(process.env, {
       verifyShowcaseSchema: !ownershipOnly,
     });
-    const verdict = assessCutoverReadiness(contract, state);
+    const verdict = workerStageOnly
+      ? assessWorkerZeroTrafficStageReadiness(contract, state)
+      : assessCutoverReadiness(contract, state);
     const blockers = ownershipOnly
       ? [
           ...new Set([
@@ -790,9 +818,12 @@ async function main() {
         {
           status:
             verdict.ready && !ownershipOnly
-              ? "READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER"
+              ? workerStageOnly
+                ? "SAFE_TO_STAGE_AT_ZERO_PERCENT_ONLY"
+                : "READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER"
               : "BLOCKED",
-          mode: ownershipOnly ? "ownership-only" : "full-live",
+          mode: ownershipOnly ? "ownership-only" : workerStageOnly ? "worker-stage" : "full-live",
+          deferredProof: workerStageOnly ? verdict.deferredProof : undefined,
           d1SchemaCheck: ownershipOnly ? "skipped_by_design" : "required",
           sourceWorkflow: state.workflow?.state ?? "unverified",
           sourceMainSha: state.sourceMainSha ?? null,
