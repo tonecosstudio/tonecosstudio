@@ -73,11 +73,25 @@ test('version-override smoke verifies v9 schema, Telegram models, studios and th
 })
 test('one existing workflow owns controlled release, protected by M5 and rollback',()=>{
   const m=JSON.parse(readFileSync(new URL('../../../config/catalog-code-consolidation.json',import.meta.url)))
-  assert.equal(m.migration.releaseAuthorized,false)
+  const approved=['cutover-approved','cutover-complete'].includes(m.migration.phase)
+  assert.equal(m.migration.releaseAuthorized,approved,'Owner GO must match the canonical phase')
+  assert.equal(m.migration.targetWorkerReleaseEnabled,approved,'Only one approved target publisher is allowed')
+  assert.equal(m.activeWorkerPublisher,approved ? m.target.repository : m.origin.repository,
+    'M5 ownership must remain single-writer and phase-specific')
+  assert.equal(m.migration.targetD1MigrationEnabled,false,'D1 migrations must use only the bounded M5 operation')
+  if(!m.productionObservation.targetProductionCredentialsVerified||
+     !m.productionObservation.rollbackTestedAgainstProduction) {
+    assert.equal(m.productionObservation.runtimeCutoverPerformed,false,
+      'GO alone cannot imply credentials, rollback or a completed Worker cutover')
+  }
   const workflow=readFileSync(new URL('../../../.github/workflows/quality.yml',import.meta.url),'utf8')
   assert.ok(workflow.includes('catalog-controlled-worker-release:'))
   assert.ok(workflow.includes("inputs.operation == 'worker-release'"))
-  const job=workflow.split('  catalog-controlled-worker-release:')[1]
+  const remaining=workflow.split('  catalog-controlled-worker-release:')[1]
+  assert.ok(remaining,'Existing Quality Gate must have exactly one Worker release job')
+  // Stop at the next YAML job. The same Quality Gate owns D1 migrations,
+  // but their Wrangler commands must not be attributed to Worker release.
+  const job=remaining.split(/\r?\n {2}[a-z][a-z0-9-]*:/,1)[0]
   assert.ok(job.includes('environment: production'))
   assert.ok(job.indexOf('cutover-readiness.mjs --live')<job.indexOf('wrangler versions upload'))
   assert.ok(job.includes('@0%'))
