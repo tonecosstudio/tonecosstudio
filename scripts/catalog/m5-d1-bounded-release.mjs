@@ -133,6 +133,26 @@ async function remoteState(token, manifest, db, schema, { schemaObjects = false 
   }
   return state;
 }
+export function approvedSeedReferences() {
+  // Two reviewed data seeds; never infer identities from model titles.
+  const sql = [MIGRATIONS[3], MIGRATIONS[5]]
+    .map((file) => readFileSync(join(ROOT, "services/catalogo/migrations", file), "utf8"))
+    .join("\n");
+  const modelIds = [...new Set([...sql.matchAll(/'(?:tg|mdl)_[a-zA-Z0-9_-]+'/g)].map((x) => x[0].slice(1, -1)))];
+  const franchiseSlugs = [...new Set([...sql.matchAll(/slug\s*=\s*'([a-z0-9-]+)'/g)].map((x) => x[1]))];
+  ensure(modelIds.length === 163 && franchiseSlugs.length === 20, "reviewed_seed_reference_scope_changed");
+  return { modelIds, franchiseSlugs };
+}
+async function verifySeedReferences(token, manifest, db) {
+  const { modelIds, franchiseSlugs } = approvedSeedReferences();
+  const quote = (value) => "'" + value.replaceAll("'", "''") + "'";
+  const account = manifest.runtime.cloudflareAccountId;
+  const foundModels = await d1Fetch(token, account, db.database_id, "SELECT id FROM models WHERE id IN (" + modelIds.map(quote).join(",") + ")");
+  const foundFranchises = await d1Fetch(token, account, db.database_id, "SELECT slug FROM franchises WHERE slug IN (" + franchiseSlugs.map(quote).join(",") + ")");
+  ensure(new Set(foundModels.map((x) => x.id)).size === modelIds.length && modelIds.every((id) => foundModels.some((x) => x.id === id)), "reviewed_seed_models_missing");
+  ensure(new Set(foundFranchises.map((x) => x.slug)).size === franchiseSlugs.length && franchiseSlugs.every((slug) => foundFranchises.some((x) => x.slug === slug)), "reviewed_seed_franchises_missing");
+}
+
 async function getBookmark(token, account, dbid) {
   const data = await requestJSON(
     "https://api.cloudflare.com/client/v4/accounts/" + account + "/d1/database/" + dbid + "/time_travel/bookmark",
@@ -167,6 +187,7 @@ export async function perform(mode, env, stagePath) {
   ensure(requiredPrior.length >= 27 && requiredPrior.every((name) => ledger.applied.includes(name)), "earlier_required_migrations_missing");
   if (mode === "prepare") {
     await verifyRetiredSource(env.GITHUB_TOKEN, manifest);
+    await verifySeedReferences(env.CLOUDFLARE_API_TOKEN, manifest, db);
     ensure(plan.pending.length > 0, "already_applied_noop_requires_verify");
     const bookmark = await getBookmark(env.CLOUDFLARE_API_TOKEN, manifest.runtime.cloudflareAccountId, db.database_id);
     const config = stageOnly(stagePath, plan.pending, db, wrangler);
