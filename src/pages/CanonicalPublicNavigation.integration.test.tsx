@@ -13,12 +13,18 @@ vi.mock("@/components/arcade/ArcadeEffects", () => ({
 }));
 
 vi.mock("@/components/arcade/ArcadeLayout", () => ({
-  ArcadeCard: ({ children }: { children: ReactNode }) => <article>{children}</article>,
-  ArcadeHero: ({ title }: { title: string }) => <h1>{title}</h1>,
-  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
-  ArcadeCTA: ({ primaryAction }: { primaryAction: { href: string; label: string } }) => (
-    <a href={primaryAction.href}>{primaryAction.label}</a>
+  ArcadeCard: ({ children }: { children: ReactNode }) => (
+    <article>{children}</article>
   ),
+  ArcadeHero: ({ title }: { title: string }) => <h1>{title}</h1>,
+  ArcadeSectionTitle: ({ children }: { children: ReactNode }) => (
+    <h2>{children}</h2>
+  ),
+  ArcadeCTA: ({
+    primaryAction,
+  }: {
+    primaryAction: { href: string; label: string };
+  }) => <a href={primaryAction.href}>{primaryAction.label}</a>,
 }));
 
 const BASE = "https://catalog.example.test/catalogo-api";
@@ -53,13 +59,21 @@ function setupFetch() {
       calls.push({ url, init });
       if (url.pathname.endsWith("/api/categories")) {
         return Response.json({
-          items: [{ id: "all", label: "Todos", count: 12 }, { id: "games", label: "Games", count: 12 }],
+          items: [
+            { id: "all", label: "Todos", count: 12 },
+            { id: "games", label: "Games", count: 12 },
+          ],
         });
       }
       if (url.pathname.endsWith("/api/franchises")) {
         return Response.json({
           items: [
-            { id: "resident-evil", category: "games", label: "Resident Evil", count: 7 },
+            {
+              id: "resident-evil",
+              category: "games",
+              label: "Resident Evil",
+              count: 7,
+            },
           ],
           truncated: false,
         });
@@ -75,7 +89,15 @@ function setupFetch() {
         return Response.json({
           current: null,
           trail: [],
-          items: [{ id: "personagens", label: "Personagens", count: 1, hasChildren: false, cover_storage_key: "media/model-one/img_one/card.webp" }],
+          items: [
+            {
+              id: "personagens",
+              label: "Personagens",
+              count: 1,
+              hasChildren: false,
+              cover_storage_key: "media/model-one/img_one/card.webp",
+            },
+          ],
         });
       }
       if (url.pathname.endsWith("/api/recent")) {
@@ -93,24 +115,31 @@ function setupFetch() {
 async function renderRoute(path: string) {
   const { default: LandingPage } = await import("./LandingPage");
   const { default: CatalogArcade } = await import("./CatalogArcade");
-  const { CatalogBrowsingProvider } = await import("@/services/catalog/catalog-browsing-context");
+  const { CatalogBrowsingProvider } =
+    await import("@/services/catalog/catalog-browsing-context");
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
   return render(
     <QueryClientProvider client={client}>
       <CatalogBrowsingProvider>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/universo" element={<CatalogArcade />} />
-          <Route path="/universo/:themeKey" element={<CatalogArcade />} />
-          <Route path="/universo/:themeKey/:franchiseKey" element={<CatalogArcade />} />
-          <Route path="/universo/:themeKey/:franchiseKey/:characterSlug" element={<CatalogArcade />} />
-          <Route path="/modelos" element={<Destination />} />
-          <Route path="/modelos/:id" element={<Destination />} />
-        </Routes>
-      </MemoryRouter>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/universo" element={<CatalogArcade />} />
+            <Route path="/universo/:themeKey" element={<CatalogArcade />} />
+            <Route
+              path="/universo/:themeKey/:franchiseKey"
+              element={<CatalogArcade />}
+            />
+            <Route
+              path="/universo/:themeKey/:franchiseKey/:characterSlug"
+              element={<CatalogArcade />}
+            />
+            <Route path="/modelos" element={<Destination />} />
+            <Route path="/modelos/:id" element={<Destination />} />
+          </Routes>
+        </MemoryRouter>
       </CatalogBrowsingProvider>
     </QueryClientProvider>,
   );
@@ -133,30 +162,44 @@ describe("canonical public navigation without Supabase catalog", () => {
     await renderRoute("/universo");
     const games = await screen.findByRole("link", { name: /Games/ });
     expect(games).toHaveAttribute("href", "/universo/games");
-    expect(screen.queryByRole("link", { name: /^Todos/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: /^Todos/ }),
+    ).not.toBeInTheDocument();
     expect(calls).toHaveLength(1);
     expect(calls[0].url.pathname).toBe("/catalogo-api/api/categories");
 
     fireEvent.click(games);
-    const franchise = await screen.findByRole("link", { name: /Resident Evil/ });
-    expect(franchise).toHaveAttribute(
-      "href",
-      "/universo/games/resident-evil",
+    const franchise = await screen.findByRole("link", {
+      name: /Resident Evil/,
+    });
+    expect(franchise).toHaveAttribute("href", "/universo/games/resident-evil");
+    const request = calls.find((c) =>
+      c.url.pathname.endsWith("/api/franchises"),
     );
-    const request = calls.find((c) => c.url.pathname.endsWith("/api/franchises"));
     expect(request?.url.searchParams.get("category")).toBe("games");
     expect(request?.url.searchParams.get("limit")).toBe("24");
     expect(calls).toHaveLength(2);
     fireEvent.click(franchise);
     const folder = await screen.findByRole("link", { name: /Personagens/ });
-    expect(folder).toHaveAttribute("href", "/universo/games/resident-evil?folder=personagens");
-    await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
-    const folderRequests = calls.filter((call) => call.url.pathname.endsWith("/api/folders"));
-    const catalogRequests = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
+    expect(folder).toHaveAttribute(
+      "href",
+      "/universo/games/resident-evil?folder=personagens",
+    );
+    await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
+    const folderRequests = calls.filter((call) =>
+      call.url.pathname.endsWith("/api/folders"),
+    );
+    const catalogRequests = calls.filter((call) =>
+      call.url.pathname.endsWith("/api/catalog"),
+    );
     expect(folderRequests).toHaveLength(1);
     expect(catalogRequests).toHaveLength(1);
     expect(folderRequests[0].url.searchParams.get("category")).toBe("games");
-    expect(folderRequests[0].url.searchParams.get("franchise")).toBe("resident-evil");
+    expect(folderRequests[0].url.searchParams.get("franchise")).toBe(
+      "resident-evil",
+    );
     expect(catalogRequests[0].url.searchParams.get("limit")).toBe("8");
     expect(calls.length).toBeLessThanOrEqual(5);
     expect(calls.every((c) => c.init.method === "GET")).toBe(true);
@@ -166,23 +209,39 @@ describe("canonical public navigation without Supabase catalog", () => {
   it("navigates into one indexed folder and preserves the folder when opening all models", async () => {
     const calls = setupFetch();
     await renderRoute("/universo/games/resident-evil?folder=personagens");
-    expect(await screen.findByRole("link", { name: "Ver detalhes de Escultura original" })).toHaveAttribute(
-      "href", "/modelos/escultura-original",
-    );
-    expect(screen.getByRole("link", { name: /Explorar todos os modelos/ })).toHaveAttribute(
-      "href", "/modelos?category=games&franchise=resident-evil&folder=personagens",
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toHaveAttribute("href", "/modelos/escultura-original");
+    expect(
+      screen.getByRole("link", { name: /Explorar todos os modelos/ }),
+    ).toHaveAttribute(
+      "href",
+      "/modelos?category=games&franchise=resident-evil&folder=personagens",
     );
     expect(screen.getByRole("link", { name: /\/ games/i })).toHaveAttribute(
-      "href", "/universo/games",
+      "href",
+      "/universo/games",
     );
     expect(screen.getByText(/\/ Resident Evil/i)).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Explorar modelos desta categoria/i })).not.toBeInTheDocument();
-    const folderRequests = calls.filter((call) => call.url.pathname.endsWith("/api/folders"));
-    const catalogRequests = calls.filter((call) => call.url.pathname.endsWith("/api/catalog"));
+    expect(
+      screen.queryByRole("link", { name: /Explorar modelos desta categoria/i }),
+    ).not.toBeInTheDocument();
+    const folderRequests = calls.filter((call) =>
+      call.url.pathname.endsWith("/api/folders"),
+    );
+    const catalogRequests = calls.filter((call) =>
+      call.url.pathname.endsWith("/api/catalog"),
+    );
     expect(folderRequests).toHaveLength(1);
     expect(catalogRequests).toHaveLength(1);
-    expect(folderRequests[0].url.searchParams.get("parent")).toBe("personagens");
-    expect(catalogRequests[0].url.searchParams.get("folder")).toBe("personagens");
+    expect(folderRequests[0].url.searchParams.get("parent")).toBe(
+      "personagens",
+    );
+    expect(catalogRequests[0].url.searchParams.get("folder")).toBe(
+      "personagens",
+    );
     expect(catalogRequests[0].url.searchParams.get("limit")).toBe("8");
     expect(calls.length).toBeLessThanOrEqual(4);
   });
@@ -190,16 +249,22 @@ describe("canonical public navigation without Supabase catalog", () => {
   it("keeps the category-wide action only at the category level", async () => {
     setupFetch();
     await renderRoute("/universo/games");
-    expect(await screen.findByRole("link", { name: /Resident Evil/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Explorar modelos desta categoria/i })).toHaveAttribute(
-      "href", "/modelos?category=games",
-    );
+    expect(
+      await screen.findByRole("link", { name: /Resident Evil/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Explorar modelos desta categoria/i }),
+    ).toHaveAttribute("href", "/modelos?category=games");
   });
 
   it("rejects malformed folder scopes without making HTTP calls", async () => {
     const calls = setupFetch();
-    await renderRoute("/universo/games/resident-evil?folder=characters%2F..%2Fadmin");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível encontrar esta pasta");
+    await renderRoute(
+      "/universo/games/resident-evil?folder=characters%2F..%2Fadmin",
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível encontrar esta pasta",
+    );
     expect(calls).toHaveLength(0);
   });
 
@@ -207,9 +272,13 @@ describe("canonical public navigation without Supabase catalog", () => {
     const calls = setupFetch();
     await renderRoute("/universo/games/resident-evil/ada-wong");
     expect(
-      await screen.findByText("destination: /modelos?category=games&franchise=resident-evil"),
+      await screen.findByText(
+        "destination: /modelos?category=games&franchise=resident-evil",
+      ),
     ).toBeInTheDocument();
-    expect(calls.every((c) => c.url.pathname !== "/catalogo-api/api/catalog")).toBe(true);
+    expect(
+      calls.every((c) => c.url.pathname !== "/catalogo-api/api/catalog"),
+    ).toBe(true);
   });
 
   it("rejects malformed category links before fetching categories or franchises", async () => {
@@ -222,13 +291,20 @@ describe("canonical public navigation without Supabase catalog", () => {
   it("renders six-or-fewer featured models from one canonical read and links to canonical details", async () => {
     const calls = setupFetch();
     await renderRoute("/");
-    const link = await screen.findByRole("link", { name: "Ver detalhes de Escultura original" });
+    const link = await screen.findByRole("link", {
+      name: "Ver detalhes de Escultura original",
+    });
     expect(link).toHaveAttribute("href", "/modelos/escultura-original");
-    const image = screen.getByRole("img", { name: "Referência visual de Escultura original" });
-    expect(image).toHaveAttribute("src", BASE + "/media/model-one/img_one/card.webp");
+    const image = screen.getByRole("img", {
+      name: "Referência visual de Escultura original",
+    });
+    expect(image).toHaveAttribute(
+      "src",
+      BASE + "/media/model-one/img_one/card.webp",
+    );
     expect(screen.getByRole("link", { name: /VER CATÁLOGO/ })).toHaveAttribute(
       "href",
-      "/modelos",
+      "/catalogo",
     );
     expect(calls).toHaveLength(1);
     expect(calls[0].url.pathname).toBe("/catalogo-api/api/recent");
@@ -242,7 +318,9 @@ describe("canonical public navigation without Supabase catalog", () => {
     const fetcher = vi.fn();
     vi.stubGlobal("fetch", fetcher);
     await renderRoute("/");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível",
+    );
     expect(fetcher).not.toHaveBeenCalled();
   });
 
@@ -254,13 +332,19 @@ describe("canonical public navigation without Supabase catalog", () => {
         attempts++;
         return attempts === 1
           ? new Response("Unavailable", { status: 503 })
-          : Response.json({ items: [{ id: "games", label: "Games", count: 2 }] });
+          : Response.json({
+              items: [{ id: "games", label: "Games", count: 2 }],
+            });
       }),
     );
     await renderRoute("/universo");
-    expect(await screen.findByRole("alert")).toHaveTextContent("acervo oficial");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "acervo oficial",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(screen.getByRole("link", { name: /Games/ })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: /Games/ })).toBeInTheDocument(),
+    );
     expect(attempts).toBe(2);
   });
 });

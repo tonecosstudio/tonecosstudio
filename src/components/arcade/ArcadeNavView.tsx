@@ -55,8 +55,7 @@ export function ArcadeNavView({
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
-  const showPublicSignup =
-    !visibleUser && !PREVIEW_READ_ONLY && signupEnabled;
+  const showPublicSignup = !visibleUser && !PREVIEW_READ_ONLY && signupEnabled;
 
   // Navigation may happen outside the menu (browser Back, catalog cards,
   // footer links). Never leave an expanded mobile menu on the next page.
@@ -76,7 +75,7 @@ export function ArcadeNavView({
   }, [mobileOpen]);
 
   const isActive = (path: string) => {
-    if (path === PUBLIC_ROUTES.home) {
+    if (path === PUBLIC_ROUTES.home || path === PUBLIC_ROUTES.catalogHub) {
       return location.pathname === path;
     }
 

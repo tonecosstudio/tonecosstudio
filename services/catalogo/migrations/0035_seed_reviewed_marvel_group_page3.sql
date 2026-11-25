@@ -53,6 +53,7 @@ VALUES
   ('mdl_78fc13707479aa1eb4ff', 'char_marvel_rocket', 'owner_reviewed_model:2026-11-24', 'Groot e Rocket busto dupla; second named character relation.', 1),
   ('mdl_af340da9545767612eb1', 'char_marvel_homem_aranha', 'owner_reviewed_model:2026-11-24', 'Public title explicitly names Homem-Aranha e Hulk; separate Homem-Aranha relation.', 1),
   ('mdl_af340da9545767612eb1', 'char_marvel_hulk', 'owner_reviewed_model:2026-11-24', 'Public title explicitly names Homem-Aranha e Hulk; separate Hulk relation.', 1),
+  ('mdl_46c56e734de37f452c3c', 'char_marvel_homem_de_ferro', 'owner_reviewed_model:2026-11-24', 'Model title: Batman vs homem de ferro em diorama. Confirmed as one separate Homem de Ferro tag across franchises.', 1),
   ('mdl_2572f45c00e15015fd8b', 'char_marvel_homem_de_ferro', 'owner_reviewed_model:2026-11-24', 'Homem de Ferro in Vingadores/Homem de Ferro; public title and folder reviewed.', 1),
   ('mdl_3a6961558bf191438f27', 'char_marvel_homem_de_ferro', 'owner_reviewed_model:2026-11-24', 'Second Homem de Ferro model; ID and collection checked individually.', 1),
   ('mdl_75a4725370116cb11c97', 'char_marvel_homem_de_ferro', 'owner_reviewed_model:2026-11-24', 'Third Homem de Ferro model; ID and collection checked individually.', 1),

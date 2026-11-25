@@ -3,9 +3,24 @@ import { ArrowUpRight, Search } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
 import { PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
-import { CatalogExplorerHeader, CatalogGridListToggle } from "@/components/catalog/CatalogExplorerHeader";
-import { catalogTagKey, catalogTagGroupsFromPublicTags, CatalogCardIdentity, CatalogCardMediaFrame, CatalogCardTagRow, CatalogModelCardShell, orderCatalogCategories } from "@/components/catalog/CatalogTaxonomy";
-import { canonicalTagsForModel, type CatalogTag, type CatalogTagKind } from "@/types/catalog-tags";
+import {
+  CatalogExplorerHeader,
+  CatalogGridListToggle,
+} from "@/components/catalog/CatalogExplorerHeader";
+import {
+  catalogTagKey,
+  catalogTagGroupsFromPublicTags,
+  CatalogCardIdentity,
+  CatalogCardMediaFrame,
+  CatalogCardTagRow,
+  CatalogModelCardShell,
+  orderCatalogCategories,
+} from "@/components/catalog/CatalogTaxonomy";
+import {
+  canonicalTagsForModel,
+  type CatalogTag,
+  type CatalogTagKind,
+} from "@/types/catalog-tags";
 
 type Model = {
   id: string;
@@ -40,8 +55,10 @@ type Route = {
 
 const API = "/catalogo-api/api/telegram-studios";
 function isEmbeddedCatalogRoute(pathname: string): boolean {
-  return pathname === PUBLIC_ROUTES.catalogReview ||
-    pathname === PUBLIC_ROUTES.catalogReviewStudios;
+  return (
+    pathname === PUBLIC_ROUTES.catalogReview ||
+    pathname === PUBLIC_ROUTES.catalogReviewStudios
+  );
 }
 const PAGE_SIZE = 24;
 const MODEL_ID = /^tg_[a-f0-9]{24}$/;
@@ -50,12 +67,22 @@ function tagKey(text: string) {
   return catalogTagKey(text);
 }
 function modelFacets(model: Model): CatalogTag[] {
-  return canonicalTagsForModel(model.tags, {
+  const tags = canonicalTagsForModel(model.tags, {
     category: model.category,
     categorySlug: model.categorySlug,
     franchise: model.franchise,
     franchiseSlug: model.franchiseSlug,
   });
+  // A provisional Telegram title never approves an inferred franchise.
+  // Canonically confirmed Worker tags take precedence over the fallback.
+  const hasApprovedFranchise =
+    model.tags?.some((tag) => tag.kind === "franchise" && !tag.provisional) ??
+    false;
+  return tags.map((tag) =>
+    tag.kind === "franchise" && model.provisional && !hasApprovedFranchise
+      ? { ...tag, provisional: true }
+      : tag,
+  );
 }
 const classes =
   "min-h-11 rounded-lg border border-[#75644b] bg-[#22251f] px-4 py-2 text-[#f2dbb6] transition hover:border-[#d0ae7d] hover:bg-[#32342a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#efc792] disabled:cursor-not-allowed disabled:opacity-40";
@@ -85,8 +112,9 @@ function readRoute(): Route {
     };
   const params = new URLSearchParams(window.location.search);
   const view =
-    (window.location.pathname === "/estudios" ||
-      window.location.pathname === PUBLIC_ROUTES.catalogReviewStudios) || params.has("studio")
+    window.location.pathname === "/estudios" ||
+    window.location.pathname === PUBLIC_ROUTES.catalogReviewStudios ||
+    params.has("studio")
       ? "studios"
       : "models";
   const studio =
@@ -103,13 +131,15 @@ function readRoute(): Route {
       ? rawFranchise
       : "";
   const rawCharacter = (params.get("personagem") || "").trim();
-  const character = franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawCharacter)
-    ? rawCharacter
-    : "";
+  const character =
+    franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawCharacter)
+      ? rawCharacter
+      : "";
   const rawAttribute = (params.get("atributo") || "").trim();
-  const attribute = franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawAttribute)
-    ? rawAttribute
-    : "";
+  const attribute =
+    franchise && /^[A-Za-z0-9_-]{3,100}$/.test(rawAttribute)
+      ? rawAttribute
+      : "";
   const provisionalParam = params.get("situacao");
   const provisional =
     provisionalParam === "0" || provisionalParam === "1"
@@ -139,9 +169,14 @@ function urlForRoute(route: Route): string {
   const url = new URL(window.location.href);
   const params = new URLSearchParams();
   const embedded = isEmbeddedCatalogRoute(window.location.pathname);
-  url.pathname = route.view === "studios"
-    ? (embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios")
-    : (embedded ? PUBLIC_ROUTES.catalogReview : "/");
+  url.pathname =
+    route.view === "studios"
+      ? embedded
+        ? PUBLIC_ROUTES.catalogReviewStudios
+        : "/estudios"
+      : embedded
+        ? PUBLIC_ROUTES.catalogReview
+        : "/";
   if (route.view === "studios" && route.studio)
     params.set("studio", route.studio);
   if (route.category) params.set("categoria", route.category);
@@ -171,11 +206,22 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export default function TelegramStudioCatalog({ embedded = false }: { embedded?: boolean }) {
+export default function TelegramStudioCatalog({
+  embedded = false,
+}: {
+  embedded?: boolean;
+}) {
   const [route, setRoute] = useState<Route>(() => readRoute());
   const [draft, setDraft] = useState(route.query);
   const [catalogView, setCatalogView] = useState<"grid" | "list">("grid");
-  const [filtersOpen, setFiltersOpen] = useState(() => Boolean(route.franchise || route.character || route.attribute || route.provisional));
+  const [filtersOpen, setFiltersOpen] = useState(() =>
+    Boolean(
+      route.franchise ||
+      route.character ||
+      route.attribute ||
+      route.provisional,
+    ),
+  );
   const [studios, setStudios] = useState<Studio[]>([]);
   const [studioSearch, setStudioSearch] = useState("");
   const [studiosError, setStudiosError] = useState("");
@@ -225,7 +271,12 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
       next.franchise = model.franchiseSlug || "";
       next.character = tag.id;
     }
-    if (kind === "publisher" || kind === "universe" || kind === "sign" || kind === "constellation") {
+    if (
+      kind === "publisher" ||
+      kind === "universe" ||
+      kind === "sign" ||
+      kind === "constellation"
+    ) {
       next.franchise = model.franchiseSlug || "";
       next.attribute = tag.id;
     }
@@ -438,55 +489,63 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
 
   const ContentContainer = embedded ? "div" : "main";
   return (
-    <div className={embedded
-      ? "min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,96%)] selection:bg-[hsl(var(--gold-accent))] selection:text-black"
-      : "min-h-screen bg-[#0e120f] text-[#f4eee4] selection:bg-[#c7ac80] selection:text-[#10140e]"}>
+    <div
+      className={
+        embedded
+          ? "min-h-screen bg-[hsl(0,0%,5%)] text-[hsl(0,0%,96%)] selection:bg-[hsl(var(--gold-accent))] selection:text-black"
+          : "min-h-screen bg-[#0e120f] text-[#f4eee4] selection:bg-[#c7ac80] selection:text-[#10140e]"
+      }
+    >
       <a
         href={view === "studios" && !studio ? "#estudios" : "#colecao"}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:bg-[#dfbd8d] focus:p-3 focus:text-[#11140e]"
       >
         Ir para o conteúdo
       </a>
-      {!embedded && <header className="sticky top-0 z-30 border-b border-[#ffffff16] bg-[#0e120f]/95 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[78px] max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
-          <a
-            href={embedded ? PUBLIC_ROUTES.catalogReview : "/"}
-            aria-label="TONART — início do catálogo"
-            className="flex items-center gap-3 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
-          >
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c3a678] font-serif text-2xl text-[#e9ce9f]">
-              T
-            </span>
-            <span>
-              <span className="block text-lg font-bold tracking-[0.22em]">
-                TONART
-              </span>
-              <span className="block text-[9px] uppercase tracking-[0.2em] text-[#bba888]">
-                Acervo de esculturas 3D
-              </span>
-            </span>
-          </a>
-          <nav
-            aria-label="Navegação do catálogo"
-            className="flex items-center gap-4 text-xs text-[#d7d0be] sm:gap-8 sm:text-sm"
-          >
+      {!embedded && (
+        <header className="sticky top-0 z-30 border-b border-[#ffffff16] bg-[#0e120f]/95 backdrop-blur-xl">
+          <div className="mx-auto flex min-h-[78px] max-w-[1440px] items-center justify-between gap-4 px-5 sm:px-8 lg:px-12">
             <a
               href={embedded ? PUBLIC_ROUTES.catalogReview : "/"}
-              aria-current={view === "models" ? "page" : undefined}
-              className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
+              aria-label="TONART — início do catálogo"
+              className="flex items-center gap-3 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#efc792]"
             >
-              Modelos
+              <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[#c3a678] font-serif text-2xl text-[#e9ce9f]">
+                T
+              </span>
+              <span>
+                <span className="block text-lg font-bold tracking-[0.22em]">
+                  TONART
+                </span>
+                <span className="block text-[9px] uppercase tracking-[0.2em] text-[#bba888]">
+                  Acervo de esculturas 3D
+                </span>
+              </span>
             </a>
-            <a
-              href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
-              aria-current={view === "studios" ? "page" : undefined}
-              className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
+            <nav
+              aria-label="Navegação do catálogo"
+              className="flex items-center gap-4 text-xs text-[#d7d0be] sm:gap-8 sm:text-sm"
             >
-              Estúdios
-            </a>
-          </nav>
-        </div>
-      </header>}
+              <a
+                href={embedded ? PUBLIC_ROUTES.catalogReview : "/"}
+                aria-current={view === "models" ? "page" : undefined}
+                className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
+              >
+                Modelos
+              </a>
+              <a
+                href={
+                  embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+                }
+                aria-current={view === "studios" ? "page" : undefined}
+                className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
+              >
+                Estúdios
+              </a>
+            </nav>
+          </div>
+        </header>
+      )}
       <ContentContainer className="mx-auto w-full max-w-[1600px] pb-24">
         {(view === "models" || Boolean(studio)) && (
           <CatalogExplorerHeader
@@ -494,23 +553,41 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
             activeTab={view === "studios" ? "collections" : "explore"}
             standalone={!embedded}
             search={draft}
-            onSearchChange={(value) => { setDraft(value); setSearchError(""); }}
+            onSearchChange={(value) => {
+              setDraft(value);
+              setSearchError("");
+            }}
             onSearchSubmit={search}
             onSearchClear={() => {
               setDraft("");
               setSearchError("");
               navigate({ ...route, query: "", offset: 0, selected: null });
             }}
-            categories={modelCategories.map((item) => ({ id: item.slug, label: item.name }))}
+            categories={modelCategories.map((item) => ({
+              id: item.slug,
+              label: item.name,
+            }))}
             category={category}
-            onCategoryChange={(next) => navigate({ ...route, category: next, offset: 0, selected: null })}
+            onCategoryChange={(next) =>
+              navigate({ ...route, category: next, offset: 0, selected: null })
+            }
             onFiltersClick={() => setFiltersOpen((open) => !open)}
-            filterCount={[category, franchise, character, attribute, provisional].filter(Boolean).length}
+            filterCount={
+              [category, franchise, character, attribute, provisional].filter(
+                Boolean,
+              ).length
+            }
             filtersExpanded={filtersOpen}
             filtersControlId="telegram-catalog-filters"
-            totalLabel={page ? page.total.toLocaleString("pt-BR") + " referências" : undefined}
+            totalLabel={
+              page
+                ? page.total.toLocaleString("pt-BR") + " referências"
+                : undefined
+            }
             coverUrl={imageUrl(page?.items[0]?.cover)}
-            collectionHref={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"}
+            collectionHref={
+              embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+            }
           />
         )}
         {(view === "models" || Boolean(studio)) && (
@@ -521,62 +598,77 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           >
             {studio ? (
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <a href={embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"} className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline">
+                <a
+                  href={
+                    embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+                  }
+                  className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline"
+                >
                   ← Todos os estúdios
                 </a>
-                <p className="text-sm text-[hsl(0,0%,70%)]">Coleção do estúdio: <strong className="text-white">{studio}</strong></p>
+                <p className="text-sm text-[hsl(0,0%,70%)]">
+                  Coleção do estúdio:{" "}
+                  <strong className="text-white">{studio}</strong>
+                </p>
               </div>
             ) : null}
             {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
 
-            <div id="telegram-catalog-filters" className={filtersOpen ? `mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 ${embedded ? "lg:grid-cols-2" : "lg:grid-cols-3"}` : "hidden"}>
+            <div
+              id="telegram-catalog-filters"
+              className={
+                filtersOpen
+                  ? `mt-3 grid scroll-mt-24 gap-4 rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,7%)] p-4 ${embedded ? "lg:grid-cols-2" : "lg:grid-cols-3"}`
+                  : "hidden"
+              }
+            >
               {!embedded && (
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
-                  Categorias
-                </p>
-                <p className="mt-1 text-xs text-[#929c90]">
-                  Categorias reais dos modelos desta página.
-                </p>
-                <div
-                  className="mt-3 flex flex-wrap gap-2"
-                  role="group"
-                  aria-label="Categorias dos modelos"
-                >
-                  {modelCategories.map((item) => (
-                    <button
-                      type="button"
-                      key={item.slug}
-                      aria-pressed={category === item.slug}
-                      onClick={() =>
-                        navigate({
-                          ...route,
-                          category: category === item.slug ? "" : item.slug,
-                          offset: 0,
-                          selected: null,
-                        })
-                      }
-                      className={
-                        "min-h-11 rounded-full border px-3 py-2 text-xs transition hover:border-[#d6b484] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
-                        (category === item.slug
-                          ? "border-[#d6b484] bg-[#5b4931] text-[#fff1db]"
-                          : "border-[#555b4e] text-[#c0c4b8]")
-                      }
-                    >
-                      {item.name}
-                    </button>
-                  ))}
-                  {modelCategories.length === 0 && (
-                    <p className="text-xs text-[#949c91]">
-                      Nenhuma categoria classificada nesta página.
-                    </p>
-                  )}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
+                    Categorias
+                  </p>
+                  <p className="mt-1 text-xs text-[#929c90]">
+                    Categorias reais dos modelos desta página.
+                  </p>
+                  <div
+                    className="mt-3 flex flex-wrap gap-2"
+                    role="group"
+                    aria-label="Categorias dos modelos"
+                  >
+                    {modelCategories.map((item) => (
+                      <button
+                        type="button"
+                        key={item.slug}
+                        aria-pressed={category === item.slug}
+                        onClick={() =>
+                          navigate({
+                            ...route,
+                            category: category === item.slug ? "" : item.slug,
+                            offset: 0,
+                            selected: null,
+                          })
+                        }
+                        className={
+                          "min-h-11 rounded-full border px-3 py-2 text-xs transition hover:border-[#d6b484] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#efc792] " +
+                          (category === item.slug
+                            ? "border-[#d6b484] bg-[#5b4931] text-[#fff1db]"
+                            : "border-[#555b4e] text-[#c0c4b8]")
+                        }
+                      >
+                        {item.name}
+                      </button>
+                    ))}
+                    {modelCategories.length === 0 && (
+                      <p className="text-xs text-[#949c91]">
+                        Nenhuma categoria classificada nesta página.
+                      </p>
+                    )}
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[#949c91]">
+                    O filtro pesquisa todo o acervo. Classificações pendentes
+                    não são apresentadas como categorias oficiais.
+                  </p>
                 </div>
-                <p className="mt-3 text-xs leading-5 text-[#949c91]">
-                  O filtro pesquisa todo o acervo. Classificações pendentes não
-                  são apresentadas como categorias oficiais.
-                </p>
-              </div>
               )}
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#d6ba93]">
@@ -711,7 +803,10 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <CatalogGridListToggle view={catalogView} onChange={setCatalogView} />
+                <CatalogGridListToggle
+                  view={catalogView}
+                  onChange={setCatalogView}
+                />
                 <span
                   role="status"
                   aria-live="polite"
@@ -789,7 +884,13 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
               </div>
             )}
             {!loading && page && (
-              <div className={catalogView === "grid" ? "mt-7 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 lg:gap-5" : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"}>
+              <div
+                className={
+                  catalogView === "grid"
+                    ? "mt-7 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 lg:gap-5"
+                    : "mt-7 grid grid-cols-1 gap-3 sm:gap-4"
+                }
+              >
                 {page.items.map((model) => {
                   const facets = modelFacets(model);
                   const tagGroups = catalogTagGroupsFromPublicTags(
@@ -797,54 +898,54 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
                     (tag) => applyFacet(tag.kind, model, tag),
                   );
                   return (
-                  <CatalogModelCardShell key={model.id}>
-                    <button
-                      type="button"
-                      onClick={() => navigate({ ...route, selected: model.id })}
-                      aria-label={
-                        "Abrir galeria de " + model.name + ", " + model.studio
-                      }
-                      className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
-                    >
-                      <CatalogCardMediaFrame imageCount={model.imageCount}>
-                        {imageUrl(model.cover) ? (
-                          <img
-                            src={imageUrl(model.cover)}
-                            alt=""
-                            loading="lazy"
-                            className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
-                          />
-                        ) : (
-                          <span className="p-3 text-center text-sm text-[#b6a496]">
-                            Render em preparação
-                          </span>
+                    <CatalogModelCardShell key={model.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate({ ...route, selected: model.id })
+                        }
+                        aria-label={
+                          "Abrir galeria de " + model.name + ", " + model.studio
+                        }
+                        className="flex w-full flex-1 flex-col text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5bd8c]"
+                      >
+                        <CatalogCardMediaFrame imageCount={model.imageCount}>
+                          {imageUrl(model.cover) ? (
+                            <img
+                              src={imageUrl(model.cover)}
+                              alt=""
+                              loading="lazy"
+                              className="h-full w-full object-contain p-2 transition-transform duration-500 group-hover:scale-[1.03] motion-reduce:transition-none sm:p-3"
+                            />
+                          ) : (
+                            <span className="p-3 text-center text-sm text-[#b6a496]">
+                              Render em preparação
+                            </span>
+                          )}
+                        </CatalogCardMediaFrame>
+                        <div className="space-y-1.5 p-3 pb-1 md:px-4 md:pt-4">
+                          {showStudioModelTags && (
+                            <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
+                              {model.studio}
+                            </p>
+                          )}
+                          <CatalogCardIdentity name={model.name} />
+                        </div>
+                      </button>
+                      <CatalogImageDownload
+                        src={imageUrl(model.cover)?.replace(
+                          /\/thumb$/,
+                          "/display",
                         )}
-                      </CatalogCardMediaFrame>
-                      <div className="space-y-1.5 p-3 pb-1 md:px-4 md:pt-4">
-                        {showStudioModelTags && (
-                          <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                            {model.studio}
-                          </p>
-                        )}
-                        <CatalogCardIdentity
-                          name={model.name}
-                        />
-                      </div>
-                    </button>
-                    <CatalogImageDownload
-                      src={imageUrl(model.cover)?.replace(
-                        /\/thumb$/,
-                        "/display",
-                      )}
-                      name={model.name}
-                      id={model.id}
-                      className="mx-3 mt-2"
-                    />
-                    <CatalogCardTagRow
-                      label={"Filtros de " + model.name}
-                      groups={tagGroups}
-                    />
-                  </CatalogModelCardShell>
+                        name={model.name}
+                        id={model.id}
+                        className="mx-3 mt-2"
+                      />
+                      <CatalogCardTagRow
+                        label={"Filtros de " + model.name}
+                        groups={tagGroups}
+                      />
+                    </CatalogModelCardShell>
                   );
                 })}
               </div>
@@ -1009,9 +1110,7 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
           error={detailError}
           photoIndex={photoIndex}
           copyMessage={copyMessage}
-          facets={detail?.id === selected
-            ? modelFacets(detail)
-            : []}
+          facets={detail?.id === selected ? modelFacets(detail) : []}
           showStudioVariant={showStudioModelTags}
           imageUrl={imageUrl}
           onClose={closeGallery}
@@ -1031,19 +1130,21 @@ export default function TelegramStudioCatalog({ embedded = false }: { embedded?:
         />
       )}
 
-      {!embedded && <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8 lg:px-12">
-          <div>
-            <p className="font-semibold tracking-[0.22em]">TONART</p>
-            <p className="mt-1 text-xs text-[#a9afa5]">
-              Modelos 3D, estúdios e criatividade reunidos.
-            </p>
+      {!embedded && (
+        <footer className="border-t border-[#ffffff20] bg-[#0a0e0b]">
+          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-5 py-8 sm:px-8 lg:px-12">
+            <div>
+              <p className="font-semibold tracking-[0.22em]">TONART</p>
+              <p className="mt-1 text-xs text-[#a9afa5]">
+                Modelos 3D, estúdios e criatividade reunidos.
+              </p>
+            </div>
+            <span className="text-xs text-[#aaa99d]">
+              Acervo visual · Conteúdo em curadoria
+            </span>
           </div>
-          <span className="text-xs text-[#aaa99d]">
-            Acervo visual · Conteúdo em curadoria
-          </span>
-        </div>
-      </footer>}
+        </footer>
+      )}
     </div>
   );
 }
