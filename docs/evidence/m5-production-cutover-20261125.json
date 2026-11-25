@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "status": "operational_m5_cutover_complete",
+  "verifiedOn": "2026-11-25",
+  "targetRepository": "tonecosstudio/tonecosstudio",
+  "sourceRepository": "washingtonmsdj/catalogo",
+  "sourceMainSha": "1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9",
+  "d1": {
+    "accountId": "8827c547d6def5ee5b9ca550fdd5680a",
+    "databaseId": "87006366-60f3-4937-af73-2ef5a5f901fb",
+    "canonicalQualityGateRun": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/45569400378",
+    "appliedExactRange": [
+      "0028",
+      "0029",
+      "0030",
+      "0031",
+      "0032",
+      "0033"
+    ],
+    "lastMigration": "0033_seed_reviewed_dc_character_tags.sql",
+    "requiredMigrations": 33,
+    "appliedRequiredMigrations": 33,
+    "requiredStructures": 90,
+    "verifiedStructures": 90,
+    "totalModelRows": 6871,
+    "totalFolderRows": 1075,
+    "characters": 71,
+    "modelCharacterLinks": 172,
+    "attributes": 17,
+    "characterAttributeLinks": 68,
+    "excludedMigrations": "0034+",
+    "result": "success_data_preserved"
+  },
+  "worker": {
+    "name": "tonecos-catalogo-api",
+    "canonicalQualityGateRun": "https://github.com/tonecosstudio/tonecosstudio/actions/runs/45572115912",
+    "releaseTriggerCommit": "efcd76b5256ad45948496ee4618ad96747c1ff87",
+    "releaseReceipt": "docs/evidence/m5-worker-release-go-20261125.json",
+    "previouslyLiveVersion": "cb284457-5492-48ff-830c-184563c49397",
+    "currentVersionNumber": 64,
+    "currentVersionId": "74f3f0da-929c-4f6b-b0ce-6881d3e91385",
+    "currentDeploymentId": "03dab97a-b5e9-42cf-abe9-0f065b30582d",
+    "currentDeployedAt": "2026-11-25T07:58:42.908742Z",
+    "trafficPercent": 100,
+    "zeroPercentCandidateValidated": true,
+    "rollbackDrillVerified": true,
+    "previousWorkerRolledBackTo100PercentAndTelegramSmokeVerified": true,
+    "candidateRestagedAndSmoked": true,
+    "candidatePromotedAfterRollbackDrill": true,
+    "previousWorkerKnownDefect": "v63 /api/health and /api/catalog returned 503; tested previous version restore confirms Telegram continuity ONLY, not full healthy core fallback",
+    "productionHealth": {
+      "http": 200,
+      "schemaReady": true,
+      "schemaVersion": 13,
+      "migrations": 33,
+      "structures": 90
+    },
+    "duplicateCloudflareWorkersBuildsDisabled": true
+  },
+  "frontend": {
+    "project": "tonart-studio-public",
+    "vercelProjectId": "prj_oq3lmzMRurTuZoK4aWQtYEQE5UXS",
+    "vercelTeamId": "team_VPZxAK2VXdTWXI8blJaKQEl0",
+    "previousProductionDeployment": "dpl_DFG9Pmu1f73wXFYhRHp39sveYkQH",
+    "promotedDeployment": "dpl_FugADwn1w8ufm8FM43rZkRcCdwp3",
+    "promotedDeploymentSourceCommit": "5e86085b341b75b084ea69a5b787fdf0e7cfe4ce",
+    "state": "READY_and_alias_promotion_completed",
+    "aliases": [
+      "tonartstudio.com.br",
+      "www.tonartstudio.com.br",
+      "tonart-studio-public.vercel.app"
+    ],
+    "productionJavascriptBundle": "/assets/index-Bc1a0rDU.js",
+    "standaloneTelegramDomain": "catalogo.tonartstudio.com.br",
+    "standaloneTelegramProjectId": "prj_6uaHlw05JQIxn8z9ocFH9MarES3p",
+    "standaloneTelegramUnchanged": true
+  },
+  "physicalHttpTests": {
+    "mainDomain": "https://tonartstudio.com.br",
+    "mainHtml200": true,
+    "mainCatalogPage200": true,
+    "commercialCatalogApi200": true,
+    "commercialCategoriesApi200": true,
+    "commercialFranchisesApi200": true,
+    "commercialWebP200": true,
+    "commercialPublishedCategoryCount": 2575,
+    "telegramDomain": "https://catalogo.tonartstudio.com.br",
+    "telegramCatalogPage200": true,
+    "telegramListApi200": true,
+    "telegramWebP200": true,
+    "telegramPublicModelCount": 4262,
+    "telegramDomainRejectsCommercialCatalogApiAsDesigned": true,
+    "validatedDevice": "DESKTOP-4UFL03B"
+  },
+  "safeguards": {
+    "originalSourceWritersDisabled": 5,
+    "cloudflareWorkersBuildsTriggers": 0,
+    "canonicalPublisher": "tonecosstudio/tonecosstudio GitHub Quality Gate",
+    "noD1MigrationsBeyond0033": true,
+    "noManualCloudflareWorkerDeployOutsideGate": true,
+    "preservesPrivateR2AndUnpublishedCatalogData": true,
+    "sourceRepositoryRemainsReadOnly": true
+  },
+  "scopeLimits": [
+    "M5 is an infrastructure and public-catalog availability cutover. Full editorial classification and private Telegram import continue in separate authorized workflows.",
+    "The old v63 rollback is physically verified for version restoration and Telegram public continuity; it is not a proven fully healthy core-catalog fallback.",
+    "No 0034+ migrations, R2 bulk changes, Drive migration or source repository archival are authorized by this receipt."
+  ]
+}
