@@ -969,8 +969,14 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
                              {"confirmado", "provavel"} for x in members))
         if label and (len(label) > 160 or any(ord(c) < 32 or ord(c) == 127 for c in label)):
             provisional_label = True
-        if provisional_label:
-            label = f"Modelo sem nome #{min(mids)}"
+        # Only actual probable/confirmed names are eligible. A conservative
+        # split is still pending identity reconciliation, never a new draft.
+        if provisional_label or re.fullmatch(
+                r"(?:modelo\s+sem\s+nome(?:\s*#\d+)?|sem\s+(?:nome|t[ií]tulo)|"
+                r"unknown|unnamed|untitled|a\s+identificar|(?:modelo\s+)?tg[-_][a-f0-9]+|"
+                r"(?:modelo|model)\s*#?\d+|single:\d+)", label, re.IGNORECASE):
+            reject(group_id, members, "name_identification_pending")
+            continue
         if (len({key(x["title"]) for x in members}) != 1 or
                 len({key(x["variant"]) for x in members}) != 1 or
                 len({key(x["universe"]) for x in members}) != 1):
@@ -979,7 +985,7 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         if not group_id.startswith("single:"):
             if any(x["model_group_state"] not in {"provavel", "confirmado"} or
                    x["group_studio"] not in {topic, credited_studio} or
-                   (not provisional_label and key(x["group_title"]) != key(label)) or
+                   key(x["group_title"]) != key(label) or
                    int(x["group_image_count"] or 0) != len(members) for x in members):
                 reject(group_id, members, "group_needs_review")
                 continue
@@ -1029,9 +1035,6 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
             continue
         seen_ids.add(model_id)
         variant, universe = str(head["variant"] or "").strip(), str(head["universe"] or "").strip()
-        if provisional_label and not unit["provisional_singleton"]:
-            # An unidentified title must not assert unverified thematic metadata.
-            variant, universe = "", ""
         if len(variant) > 160 or len(universe) > 160:
             reject(group_id, members, "metadata_too_long")
             continue
@@ -1049,8 +1052,6 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
         franchise_id = pending_franchise_id if fallback else next(iter(ids))
         if fallback:
             reasons["pending_franchise"] += 1
-        if provisional_label:
-            reasons["pending_name"] += 1
         media = sorted(zip(mids, digests))
         import_manifest = {
             "originId": "2370335738", "studio": credited_studio, "groupKey": group_id,
