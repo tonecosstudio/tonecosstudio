@@ -407,7 +407,7 @@ jobs:
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
-          node scripts/catalog/cutover-readiness.mjs --live
+          node scripts/catalog/cutover-readiness.mjs --worker-stage
 
       - name: Verify unchanged production version before upload
         run: |
@@ -446,6 +446,26 @@ jobs:
 
       - name: Verify staged version by exact Cloudflare version override
         run: node services/catalogo/tools/controlled_worker_release.mjs staged "$ROLLBACK_PREVIOUS_VERSION" "$STAGED_WORKER_VERSION"
+
+      # Roll back a zero-traffic candidate to the exact previous live version
+      # and prove the original public Telegram reads before any promotion.
+      - name: Drill physical rollback without changing customer traffic
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler versions deploy "${ROLLBACK_PREVIOUS_VERSION}@100%" \
+            --message "TONART M5 zero-traffic rollback drill ${{ github.sha }}" \
+            --yes --config "$WRANGLER_CONFIG"
+          node services/catalogo/tools/controlled_worker_release.mjs rollback-drill "$ROLLBACK_PREVIOUS_VERSION"
+
+      - name: Restage and verify candidate after rollback drill
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx wrangler versions deploy "${ROLLBACK_PREVIOUS_VERSION}@100%" "${STAGED_WORKER_VERSION}@0%" \
+            --message "TONART M5 restage candidate after rollback drill ${{ github.sha }}" \
+            --yes --config "$WRANGLER_CONFIG"
+          node services/catalogo/tools/controlled_worker_release.mjs staged "$ROLLBACK_PREVIOUS_VERSION" "$STAGED_WORKER_VERSION"
 
       - name: Promote validated candidate
         run: >-
