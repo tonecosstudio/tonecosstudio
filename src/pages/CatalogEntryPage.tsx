@@ -25,8 +25,8 @@ export default function CatalogEntryPage() {
             CATÁLOGOS
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">
-            Dois caminhos para explorar nosso universo de esculturas digitais:
-            o catálogo e o acervo em organização.
+            Dois caminhos para explorar nosso universo de esculturas digitais: o
+            catálogo e o acervo em organização.
           </p>
         </div>
 
@@ -36,7 +36,10 @@ export default function CatalogEntryPage() {
             className={`group flex min-h-[280px] flex-col justify-between border border-[hsl(var(--gold-accent)/0.26)] bg-[hsl(0,0%,7%)] p-6 transition-colors hover:border-[hsl(var(--gold-accent))] sm:p-8 ${FOCUS}`}
           >
             <div>
-              <Archive aria-hidden="true" className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]" />
+              <Archive
+                aria-hidden="true"
+                className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]"
+              />
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">
                 ACERVO TONART
               </span>
@@ -44,11 +47,16 @@ export default function CatalogEntryPage() {
                 {PUBLIC_CATALOG_LABELS.historical}
               </h2>
               <p className="mt-4 max-w-md text-sm leading-7 text-[hsl(0,0%,70%)]">
-                Explore os modelos, categorias, franquias, fotos e galerias do nosso acervo.
+                Explore os modelos, categorias, franquias, fotos e galerias do
+                nosso acervo.
               </p>
             </div>
             <span className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))]">
-              Explorar modelos <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              Explorar modelos{" "}
+              <ArrowRight
+                className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                aria-hidden="true"
+              />
             </span>
           </Link>
 
@@ -57,7 +65,10 @@ export default function CatalogEntryPage() {
             className={`group flex min-h-[280px] flex-col justify-between border border-[hsl(var(--gold-accent)/0.26)] bg-[hsl(0,0%,7%)] p-6 transition-colors hover:border-[hsl(var(--gold-accent))] sm:p-8 ${FOCUS}`}
           >
             <div>
-              <ScanSearch aria-hidden="true" className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]" />
+              <ScanSearch
+                aria-hidden="true"
+                className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]"
+              />
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">
                 CURADORIA EM ANDAMENTO
               </span>
@@ -70,12 +81,19 @@ export default function CatalogEntryPage() {
               </p>
             </div>
             <span className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))]">
-              Explorar acervo em organização <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              Explorar acervo em organização{" "}
+              <ArrowRight
+                className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                aria-hidden="true"
+              />
             </span>
           </Link>
         </div>
         <p className="mt-9 inline-flex items-center gap-2 text-xs leading-6 text-[hsl(0,0%,56%)]">
-          <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-[hsl(var(--gold-accent))]" />
+          <Layers3
+            aria-hidden="true"
+            className="h-4 w-4 shrink-0 text-[hsl(var(--gold-accent))]"
+          />
           Explore as duas áreas do mesmo acervo de esculturas digitais.
         </p>
       </section>

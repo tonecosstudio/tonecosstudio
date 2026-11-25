@@ -19,7 +19,10 @@ const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
 const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
-  { to: PUBLIC_ROUTES.catalogHistorical, label: PUBLIC_CATALOG_LABELS.historical },
+  {
+    to: PUBLIC_ROUTES.catalogHistorical,
+    label: PUBLIC_CATALOG_LABELS.historical,
+  },
   { to: PUBLIC_ROUTES.catalogReview, label: PUBLIC_CATALOG_LABELS.review },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },

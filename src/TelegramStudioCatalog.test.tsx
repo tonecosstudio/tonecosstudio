@@ -388,11 +388,7 @@ describe("Telegram-only public studio gallery", () => {
       }),
     ).toBeInTheDocument();
     expect(card).toHaveTextContent(/2 fotos/);
-    expect(
-      screen.getByText(
-        /Em curadoria \u00b7 identifica\u00e7\u00e3o provis\u00f3ria/,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Acervo em atualização/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Filtros" }));
     fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
     await waitFor(() =>

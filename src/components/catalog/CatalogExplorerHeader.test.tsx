@@ -70,7 +70,7 @@ describe("TONART shared catalog discovery structure", () => {
       fireEvent.submit(form);
       expect(actions.search).toHaveBeenCalledTimes(1);
       expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-        kind === "review" ? "MODELOS EM REVISÃO" : "TODOS OS MODELOS",
+        kind === "review" ? "Catálogo em organização" : "Catálogo",
       );
       const filters = screen.getByRole("button", { name: "Filtros (1)" });
       expect(filters).toHaveAttribute("aria-expanded", "false");
@@ -86,6 +86,24 @@ describe("TONART shared catalog discovery structure", () => {
     },
   );
 
+  it("invites visitors to the organization catalog from the historical page", () => {
+    renderHeader("historical");
+    const banner = screen.getByRole("complementary", {
+      name: "Catálogo em organização",
+    });
+    expect(
+      within(banner).getByRole("link", { name: "Explorar modelos" }),
+    ).toHaveAttribute("href", "/catalogo/em-revisao");
+    expect(banner).toHaveTextContent("nomes ou classificações provisórias");
+  });
+
+  it("does not repeat the invitation on the organization page", () => {
+    renderHeader("review");
+    expect(
+      screen.queryByRole("complementary", { name: "Catálogo em organização" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("keeps catalog sections navigable rather than inventing favorites or pending features", () => {
     renderHeader("review");
     const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
@@ -96,7 +114,7 @@ describe("TONART shared catalog discovery structure", () => {
       within(tabs).getByRole("link", { name: "Coleções" }),
     ).toHaveAttribute("href", "/catalogo/em-revisao/estudios");
     expect(
-      within(tabs).getByRole("link", { name: "Originais" }),
+      within(tabs).getByRole("link", { name: "Catálogo" }),
     ).toHaveAttribute("href", "/catalogo/antigos");
     expect(
       within(tabs).queryByRole("button", {
@@ -129,7 +147,7 @@ describe("TONART shared catalog discovery structure", () => {
       within(tabs).getByRole("link", { name: "Explorar" }),
     ).toHaveAttribute("href", "/");
     expect(
-      within(tabs).queryByRole("link", { name: "Originais" }),
+      within(tabs).queryByRole("link", { name: "Catálogo" }),
     ).not.toBeInTheDocument();
   });
 
