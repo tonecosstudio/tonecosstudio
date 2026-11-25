@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import TelegramPrivateDraftBatchImport from "./TelegramPrivateDraftBatchImport";
 
 const mocks = vi.hoisted(() => ({
@@ -29,12 +35,14 @@ const plan = {
   sha256: "f".repeat(64),
   studioCount: 1,
   photoCount: 1,
-  drafts: [{
-    id: "tg_" + "b".repeat(24),
-    operationId: "c".repeat(64),
-    studio: "Momoji",
-    manifest,
-  }],
+  drafts: [
+    {
+      id: "tg_" + "b".repeat(24),
+      operationId: "c".repeat(64),
+      studio: "Momoji",
+      manifest,
+    },
+  ],
 };
 
 async function loadPlan() {
@@ -48,7 +56,9 @@ async function loadPlan() {
     target: { files: [file] },
   });
   await waitFor(() => expect(mocks.parse).toHaveBeenCalledWith("{}"));
-  expect(await screen.findByText(/Plano validado localmente/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Plano validado localmente/),
+  ).toBeInTheDocument();
 }
 
 beforeEach(() => {
@@ -70,7 +80,9 @@ describe("TONART existing admin Worker private import workbench", () => {
     render(<TelegramPrivateDraftBatchImport />);
     await loadPlan();
     expect(mocks.importDraft).not.toHaveBeenCalled();
-    const start = screen.getByRole("button", { name: "Iniciar importação privada" });
+    const start = screen.getByRole("button", {
+      name: "Iniciar importação privada",
+    });
     expect(start).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox"));
     expect(start).toBeEnabled();
@@ -92,7 +104,9 @@ describe("TONART existing admin Worker private import workbench", () => {
     render(<TelegramPrivateDraftBatchImport />);
     await loadPlan();
     fireEvent.click(screen.getByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: "Iniciar importação privada" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Iniciar importação privada" }),
+    );
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /Resposta inesperada do Worker/,
     );
@@ -101,7 +115,9 @@ describe("TONART existing admin Worker private import workbench", () => {
   });
 
   it("rejects a bad local file without sending any network request", async () => {
-    mocks.parse.mockRejectedValueOnce(new Error("private_import_plan_not_private_new_draft"));
+    mocks.parse.mockRejectedValueOnce(
+      new Error("private_import_plan_not_private_new_draft"),
+    );
     render(<TelegramPrivateDraftBatchImport />);
     const file = new File(["bad"], "bad.jsonl");
     Object.defineProperty(file, "text", { value: async () => "bad" });
@@ -112,7 +128,8 @@ describe("TONART existing admin Worker private import workbench", () => {
       "private_import_plan_not_private_new_draft",
     );
     expect(mocks.importDraft).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Iniciar importação privada" }))
-      .not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Iniciar importação privada" }),
+    ).not.toBeInTheDocument();
   });
 });
