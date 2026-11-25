@@ -19,6 +19,12 @@
 > **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
 
 
+### Nomenclatura pública — decisão do proprietário (25/11/2026)
+
+- Cabeçalho desktop/mobile: dois links diretos, **Catálogo** e **Catálogo em organização**, com os mesmos rótulos na navegação e páginas. A origem Telegram/histórico fica nos metadados e ferramentas internas; não rotular acervo público como antigo, original ou Telegram. Reutilizar `PUBLIC_CATALOG_LABELS` e rotas existentes, sem quebrar links. Mostrar aviso discreto de nomes/classificações provisórias no catálogo em organização. A pesquisa global continua sendo requisito independente; não afirmar que foi publicada por uma mudança de rótulo.
+
+- No Catálogo, exibir banner discreto e responsivo para descobrir o Catálogo em organização, com link direto à visualização existente. Não repetir o banner na própria página de destino.
+
 ### Pesquisa global e cobertura sem nome — decisão do proprietário de 25/11/2026
 
 - Uma pesquisa global do site consulta o catálogo histórico e o Telegram (incluindo `/catalogo/em-revisao` e `/catalogo/a-identificar`), sem filtro implícito de origem ou página. As páginas são visualizações de navegação do mesmo catálogo, não universos separados de busca. Reutilizar o Worker/D1, rotas e componentes de busca existentes; não criar outro índice autoritativo, banco ou catálogo.

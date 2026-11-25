@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowUpRight, Search } from "lucide-react";
 import TelegramModelGallery from "./TelegramModelGallery";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_CATALOG_LABELS, PUBLIC_ROUTES } from "@/config/routes";
 import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload";
 import {
   CatalogExplorerHeader,
@@ -1099,7 +1099,7 @@ export default function TelegramStudioCatalog({
             autorização de reprodução.
           </p>
           <span className="rounded-full border border-[#807052] px-3 py-1 text-[10px] uppercase tracking-widest text-[#e2c79c]">
-            {embedded ? "Em revisão" : "Vitrine visual"}
+            {embedded ? PUBLIC_CATALOG_LABELS.review : "Vitrine visual"}
           </span>
         </aside>
       </ContentContainer>

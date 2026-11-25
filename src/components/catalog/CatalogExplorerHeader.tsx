@@ -1,7 +1,7 @@
 import { useEffect, useRef, type FormEvent } from "react";
 import { ArrowRight, Grid2X2, Layers3, Search, SlidersHorizontal, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_CATALOG_LABELS, PUBLIC_ROUTES } from "@/config/routes";
 import { orderCatalogCategories } from "./CatalogTaxonomy";
 
 type CatalogKind = "historical" | "review";
@@ -59,14 +59,14 @@ export function CatalogExplorerHeader({
   }, []);
 
   const review = kind === "review";
-  const title = review ? "MODELOS EM REVISÃO" : "TODOS OS MODELOS";
+  const title = review ? PUBLIC_CATALOG_LABELS.review : PUBLIC_CATALOG_LABELS.historical;
   const intro = review
-    ? "Explore referências recebidas pelo Telegram. Identificações podem ser provisórias; nenhuma ficha implica liberação comercial."
-    : "Explore modelos do acervo original, seus universos e suas galerias.";
+    ? "Estamos ampliando e organizando nosso catálogo. Alguns modelos podem apresentar nomes ou classificações provisórias."
+    : "Explore nossos modelos, seus universos e suas galerias.";
   const tabs = [
     { label: "Explorar", href: review && standalone ? "/" : review ? PUBLIC_ROUTES.catalogReview : PUBLIC_ROUTES.catalogHistorical, active: activeTab === "explore" },
     { label: "Coleções", href: collectionHref, active: activeTab === "collections" },
-    ...(!standalone ? [{ label: review ? "Originais" : "Em revisão", href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false }] : []),
+    ...(!standalone ? [{ label: review ? PUBLIC_CATALOG_LABELS.historical : PUBLIC_CATALOG_LABELS.review, href: review ? PUBLIC_ROUTES.catalogHistorical : PUBLIC_ROUTES.catalogReview, active: false }] : []),
   ];
 
   return (
@@ -115,6 +115,30 @@ export function CatalogExplorerHeader({
           );
         })}      </nav>
 
+      {!review && !standalone && (
+        <aside
+          data-catalog-organization-banner="true"
+          aria-label={PUBLIC_CATALOG_LABELS.review}
+          className="mt-4 flex flex-col gap-3 rounded-lg border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+        >
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-white">
+              Conheça também o {PUBLIC_CATALOG_LABELS.review}
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-[hsl(0,0%,70%)] sm:text-sm">
+              Estamos ampliando nosso acervo. Explore mais modelos, inclusive
+              aqueles que ainda possuem nomes ou classificações provisórias.
+            </p>
+          </div>
+          <Link
+            to={PUBLIC_ROUTES.catalogReview}
+            className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-md border border-[hsl(var(--gold-accent)/0.5)] px-4 text-xs font-semibold text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:self-center"
+          >
+            Explorar modelos <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </aside>
+      )}
+
       <header
         data-compact="true"
         className="relative isolate mt-4 flex min-h-[180px] flex-col justify-center overflow-hidden rounded-lg border border-[hsl(var(--gold-accent)/0.22)] bg-[hsl(0,0%,9%)] px-5 py-7 sm:mt-5 sm:min-h-[235px] sm:px-9 sm:py-9"
@@ -124,14 +148,14 @@ export function CatalogExplorerHeader({
         ) : null}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[hsl(0,0%,6%)] via-[hsl(0,0%,6%)/0.92] to-[hsl(0,0%,6%)/0.25]" />
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
-          {review ? "ACERVO TELEGRAM" : "ACERVO TONART · CATÁLOGO ORIGINAL"}
+          ACERVO TONART
         </p>
         <h1 className="mt-3 text-[clamp(1.9rem,8.5vw,3rem)] font-bold uppercase leading-[0.98] tracking-wide text-white sm:text-5xl" style={{ fontFamily: "'Bebas Neue', Impact, sans-serif" }}>{title}</h1>
         <p className="mt-3 max-w-lg text-xs leading-6 text-[hsl(0,0%,77%)] sm:text-sm">{intro}</p>
         {review ? (
           <p className="mt-3 inline-flex w-fit max-w-full items-center gap-2 border border-[hsl(0,0%,28%)] bg-[hsl(0,0%,7%)/0.85] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[hsl(0,0%,66%)] sm:text-[10px]">
             <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--gold-accent)/0.7)]" />
-            Em curadoria · identificação provisória
+            Acervo em atualização
           </p>
         ) : null}
         {totalLabel ? <p className="mt-4 font-mono text-sm font-semibold text-[hsl(var(--gold-accent))]">{totalLabel}</p> : null}

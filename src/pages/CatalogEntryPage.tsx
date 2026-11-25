@@ -1,7 +1,7 @@
 import { ArrowRight, Archive, Layers3, ScanSearch } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Page } from "@/components/layouts/Page";
-import { PUBLIC_ROUTES } from "@/config/routes";
+import { PUBLIC_CATALOG_LABELS, PUBLIC_ROUTES } from "@/config/routes";
 
 const FOCUS =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]";
@@ -10,7 +10,7 @@ export default function CatalogEntryPage() {
   return (
     <Page
       title="Catálogos — TONART Studio"
-      description="Escolha entre o catálogo original de modelos e o acervo dos estúdios vindo do Telegram, em organização editorial."
+      description="Explore o catálogo TONART e descubra os modelos do acervo em organização."
       keywords={["tonart", "catálogo", "modelos", "estúdios", "curadoria"]}
     >
       <section className="relative mx-auto min-h-[70vh] max-w-7xl px-4 py-14 sm:px-6 sm:py-20">
@@ -25,9 +25,8 @@ export default function CatalogEntryPage() {
             CATÁLOGOS
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">
-            Dois caminhos para explorar o mesmo universo de esculturas digitais:
-            o acervo original do site e os modelos dos estúdios recebidos pelo
-            Telegram, ainda em organização editorial.
+            Dois caminhos para explorar nosso universo de esculturas digitais:
+            o catálogo e o acervo em organização.
           </p>
         </div>
 
@@ -39,14 +38,13 @@ export default function CatalogEntryPage() {
             <div>
               <Archive aria-hidden="true" className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]" />
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">
-                ARQUIVO ORIGINAL
+                ACERVO TONART
               </span>
               <h2 className="mt-3 text-3xl font-bold uppercase text-white">
-                Modelos do site
+                {PUBLIC_CATALOG_LABELS.historical}
               </h2>
               <p className="mt-4 max-w-md text-sm leading-7 text-[hsl(0,0%,70%)]">
-                Explore o catálogo tradicional: busca, categorias, franquias,
-                fotos e galerias dos modelos já presentes no acervo do site.
+                Explore os modelos, categorias, franquias, fotos e galerias do nosso acervo.
               </p>
             </div>
             <span className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))]">
@@ -64,21 +62,21 @@ export default function CatalogEntryPage() {
                 CURADORIA EM ANDAMENTO
               </span>
               <h2 className="mt-3 text-3xl font-bold uppercase text-white">
-                Estúdios · Telegram
+                {PUBLIC_CATALOG_LABELS.review}
               </h2>
               <p className="mt-4 max-w-md text-sm leading-7 text-[hsl(0,0%,70%)]">
-                Conheça os modelos em revisão e organização. Identificações
-                provisórias não representam aprovação editorial nem comercial.
+                Estamos ampliando e organizando nosso catálogo. Alguns modelos
+                podem apresentar nomes ou classificações provisórias.
               </p>
             </div>
             <span className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))]">
-              Ver acervo em revisão <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+              Explorar acervo em organização <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </span>
           </Link>
         </div>
         <p className="mt-9 inline-flex items-center gap-2 text-xs leading-6 text-[hsl(0,0%,56%)]">
           <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-[hsl(var(--gold-accent))]" />
-          Os dois acervos utilizam os serviços canônicos de catálogo. A curadoria privada não é publicada aqui.
+          Explore as duas áreas do mesmo acervo de esculturas digitais.
         </p>
       </section>
     </Page>

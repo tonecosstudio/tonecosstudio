@@ -32,6 +32,12 @@ export const PUBLIC_ROUTES = {
   preLaunch: "/pre-lancamento",
 } as const;
 
+// Public catalog labels describe editorial status, never ingestion provenance.
+export const PUBLIC_CATALOG_LABELS = {
+  historical: "Catálogo",
+  review: "Catálogo em organização",
+} as const;
+
 export const TONECOS_COMMERCIAL_ROUTES = {
   login: PUBLIC_ROUTES.login,
   account: "/perfil",

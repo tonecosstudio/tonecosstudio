@@ -1,3 +1,7 @@
+## CHECKPOINT — NOMENCLATURA PÚBLICA DOS CATÁLOGOS (25/11/2026)
+
+- Proprietário aprovou Catálogo e Catálogo em organização. Banner responsivo no catálogo principal; navegação desktop/mobile e títulos compartilham a configuração de rótulos; rotas e acesso existentes preservados. Alteração frontend, sem escrita D1/R2/Drive. Base `a6f6566173043f3fcae77681b6133952d7994a62`; validar UI e publicação pelo mecanismo canônico. Busca global é entrega distinta, não declarar concluída por este ajuste.
+
 ## CHECKPOINT — COBERTURA INTEGRAL E PESQUISA GLOBAL (25/11/2026)
 
 - Decisão atual: site e Drive incluem todos os modelos elegíveis, sem nome em A identificar; mover a mesma identidade ao nomear. Busca global unificada histórico + Telegram, etiqueta editorial discreta nos não confirmados, respeitando visibilidade. Critérios e autoridade no documento `docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md`.

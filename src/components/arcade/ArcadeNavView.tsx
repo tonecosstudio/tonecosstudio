@@ -8,6 +8,7 @@ import { isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
   ADMIN_ROUTES,
   AUTH_ROUTES,
+  PUBLIC_CATALOG_LABELS,
   PUBLIC_COLLECTIONS_ENABLED,
   PUBLIC_ROUTES,
   PUBLIC_SUBSCRIPTIONS_ENABLED,
@@ -18,9 +19,8 @@ const PREVIEW_READ_ONLY = import.meta.env.VITE_PREVIEW_READ_ONLY === "true";
 const navLinks: Array<{ to: string; label: string }> = [
   { to: PUBLIC_ROUTES.home, label: "INÍCIO" },
   { to: PUBLIC_ROUTES.catalog, label: "UNIVERSO" },
-  { to: PUBLIC_ROUTES.catalogHub, label: "CATÁLOGOS" },
-  { to: PUBLIC_ROUTES.catalogHistorical, label: "ORIGINAIS" },
-  { to: PUBLIC_ROUTES.catalogReview, label: "EM REVISÃO" },
+  { to: PUBLIC_ROUTES.catalogHistorical, label: PUBLIC_CATALOG_LABELS.historical },
+  { to: PUBLIC_ROUTES.catalogReview, label: PUBLIC_CATALOG_LABELS.review },
   { to: PUBLIC_ROUTES.about, label: "SOBRE" },
   { to: PUBLIC_ROUTES.contact, label: "CONTATO" },
 ];
@@ -85,7 +85,7 @@ export function ArcadeNavView({
   };
 
   const linkClass = (path: string) =>
-    `min-h-11 items-center font-mono text-[10px] uppercase tracking-[0.2em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] ${
+    `min-h-11 items-center whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] ${
       isActive(path)
         ? "text-[hsl(var(--gold-accent))]"
         : "text-[hsl(0,0%,55%)] hover:text-[hsl(var(--gold-accent))]"
@@ -107,7 +107,7 @@ export function ArcadeNavView({
           {BRAND_SHORT_NAME}
         </Link>
 
-        <div className="hidden items-center gap-5 lg:flex">
+        <div className="hidden items-center gap-3 lg:flex xl:gap-5">
           {navLinks.map((link) => (
             <Link
               key={link.to}
