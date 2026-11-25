@@ -54,10 +54,15 @@ type Route = {
 };
 
 const API = "/catalogo-api/api/telegram-studios";
+function isUnidentifiedCatalogRoute(pathname: string): boolean {
+  return pathname === PUBLIC_ROUTES.catalogUnidentified ||
+    pathname === PUBLIC_ROUTES.catalogUnidentifiedStudios;
+}
 function isEmbeddedCatalogRoute(pathname: string): boolean {
   return (
     pathname === PUBLIC_ROUTES.catalogReview ||
-    pathname === PUBLIC_ROUTES.catalogReviewStudios
+    pathname === PUBLIC_ROUTES.catalogReviewStudios ||
+    isUnidentifiedCatalogRoute(pathname)
   );
 }
 const PAGE_SIZE = 24;
@@ -114,6 +119,7 @@ function readRoute(): Route {
   const view =
     window.location.pathname === "/estudios" ||
     window.location.pathname === PUBLIC_ROUTES.catalogReviewStudios ||
+    window.location.pathname === PUBLIC_ROUTES.catalogUnidentifiedStudios ||
     params.has("studio")
       ? "studios"
       : "models";
@@ -169,13 +175,14 @@ function urlForRoute(route: Route): string {
   const url = new URL(window.location.href);
   const params = new URLSearchParams();
   const embedded = isEmbeddedCatalogRoute(window.location.pathname);
+  const unidentified = isUnidentifiedCatalogRoute(window.location.pathname);
   url.pathname =
     route.view === "studios"
       ? embedded
-        ? PUBLIC_ROUTES.catalogReviewStudios
+        ? (unidentified ? PUBLIC_ROUTES.catalogUnidentifiedStudios : PUBLIC_ROUTES.catalogReviewStudios)
         : "/estudios"
       : embedded
-        ? PUBLIC_ROUTES.catalogReview
+        ? (unidentified ? PUBLIC_ROUTES.catalogUnidentified : PUBLIC_ROUTES.catalogReview)
         : "/";
   if (route.view === "studios" && route.studio)
     params.set("studio", route.studio);
@@ -197,7 +204,7 @@ function urlForRoute(route: Route): string {
 async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
   // Only the anonymous directory and paged list use the bounded CDN TTL.
   // Gallery details and media must always recheck current visibility/rights.
-  const publicMetadata = path === "/studios" || path.startsWith("?");
+  const publicMetadata = path === "/studios" || path.startsWith("/studios?") || path.startsWith("?");
   const response = await fetch(API + path, {
     signal,
     cache: publicMetadata ? "default" : "no-store",
@@ -246,6 +253,12 @@ export default function TelegramStudioCatalog({
     offset,
     selected,
   } = route;
+
+  const unidentified = embedded && isUnidentifiedCatalogRoute(window.location.pathname);
+  const identity = embedded ? (unidentified ? "unidentified" : "identified") : "";
+  const studiosHref = embedded
+    ? (unidentified ? PUBLIC_ROUTES.catalogUnidentifiedStudios : PUBLIC_ROUTES.catalogReviewStudios)
+    : "/estudios";
 
   // Studio-specific editorial chips belong in a studio collection, not the
   // global Modelos feed. The API and top-level search filters remain shared.
@@ -312,7 +325,7 @@ export default function TelegramStudioCatalog({
   useEffect(() => {
     if (view !== "studios") return;
     const c = new AbortController();
-    get<{ studios: Studio[] }>("/studios", c.signal)
+    get<{ studios: Studio[] }>("/studios" + (identity ? "?identity=" + identity : ""), c.signal)
       .then((data) => {
         if (!c.signal.aborted) setStudios(data.studios);
       })
@@ -321,7 +334,7 @@ export default function TelegramStudioCatalog({
           setStudiosError("Não foi possível carregar a lista de estúdios.");
       });
     return () => c.abort();
-  }, [view]);
+  }, [view, identity]);
 
   useEffect(() => {
     if (view === "studios" && !studio) {
@@ -335,6 +348,7 @@ export default function TelegramStudioCatalog({
       offset: String(offset),
       limit: String(PAGE_SIZE),
     });
+    if (identity) params.set("identity", identity);
     if (studio) params.set("studio", studio);
     if (category) params.set("category", category);
     if (franchise) params.set("franchise", franchise);
@@ -370,6 +384,7 @@ export default function TelegramStudioCatalog({
     query,
     offset,
     reloadVersion,
+    identity,
   ]);
 
   useEffect(() => {
@@ -535,7 +550,7 @@ export default function TelegramStudioCatalog({
               </a>
               <a
                 href={
-                  embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+                  studiosHref
                 }
                 aria-current={view === "studios" ? "page" : undefined}
                 className="hover:text-[#eacb98] aria-[current=page]:text-[#efcd9b]"
@@ -550,6 +565,7 @@ export default function TelegramStudioCatalog({
         {(view === "models" || Boolean(studio)) && (
           <CatalogExplorerHeader
             kind="review"
+            unidentified={unidentified}
             activeTab={view === "studios" ? "collections" : "explore"}
             standalone={!embedded}
             search={draft}
@@ -586,7 +602,7 @@ export default function TelegramStudioCatalog({
             }
             coverUrl={imageUrl(page?.items[0]?.cover)}
             collectionHref={
-              embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+              studiosHref
             }
           />
         )}
@@ -600,7 +616,7 @@ export default function TelegramStudioCatalog({
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <a
                   href={
-                    embedded ? PUBLIC_ROUTES.catalogReviewStudios : "/estudios"
+                    studiosHref
                   }
                   className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline"
                 >
@@ -681,8 +697,8 @@ export default function TelegramStudioCatalog({
                 >
                   {[
                     { value: "", label: "Todos" },
-                    { value: "0", label: "Identificados" },
-                    { value: "1", label: "Em curadoria" },
+                    { value: "0", label: "Nome confirmado" },
+                    { value: "1", label: "Nome provisório" },
                   ].map((item) => (
                     <button
                       key={item.value}
@@ -1099,7 +1115,7 @@ export default function TelegramStudioCatalog({
             autorização de reprodução.
           </p>
           <span className="rounded-full border border-[#807052] px-3 py-1 text-[10px] uppercase tracking-widest text-[#e2c79c]">
-            {embedded ? "Em revisão" : "Vitrine visual"}
+            {unidentified ? "A identificar" : embedded ? "Em revisão" : "Vitrine visual"}
           </span>
         </aside>
       </ContentContainer>
