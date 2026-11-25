@@ -399,6 +399,19 @@ O E2E usa um diretório temporário e uma imagem fictícia. Verifica edição, c
 
 ## Nomeação e agrupamento em paralelo
 
+### Consumir fila DINO sem repetir fusões já feitas
+
+`reconcile_reviewed_dino_pairs.py` confronta `strong_pairs` e `exact_clusters` de `current-candidate-triage.json` com as associações atuais das imagens na Curadoria. Serve para não reaplicar trabalho quando o cache visual é mais antigo que o SQLite. Embeddings e hashes apenas priorizam a fila: não são evidência de identidade. O comando é somente leitura por padrão:
+
+```powershell
+python reconcile_reviewed_dino_pairs.py `
+  --database "$env:USERPROFILE\Documents\TONART-Telegram-Import\espelho-telegram\curadoria-local\curadoria.sqlite3" `
+  --candidate-report "$env:LOCALAPPDATA\TONART\visual-benchmark\studio-review\current-candidate-triage.json" `
+  --output "$env:LOCALAPPDATA\TONART\visual-benchmark\studio-review\reconciliation.json"
+```
+
+Após revisar a classificação, `--apply` habilita apenas as fusões que já têm auditoria visual `same_sculpture` válida para **todos** os membros, metadados e variante iguais e estado não confirmado. Cada operação relê as galerias, usa revisões CAS e provas SHA pela API canônica e verifica a resposta posterior. Forneça `--token-file` local ou `TONART_CURADORIA_TOKEN`; o segredo não deve ser incluído em argumentos, relatórios ou Git. Colisões editoriais, membros ausentes e falta de auditoria continuam retidos para revisão. Teste offline: `python test_reconcile_reviewed_dino_pairs.py`.
+
 A etapa de **nomeação** foi implementada em `name_curadoria.py` e usa o **mesmo SQLite local** da Curadoria Visual, sem criar outro banco. Ela examina cada imagem independentemente, extrai estúdio, título, universo e variante das legendas estruturadas do Telegram e sugere nomes únicos como `deadpool-diorama-msg13588.jpg`. Uma imagem sem legenda pode receber evidência contextual **para revisão**, mas título e álbum compartilhados não comprovam ser a mesma escultura. A identificação exige o Telegram original e evidências independentes.
 
 Os nomes são preservados em `name_proposals` com evidência, confiança, estado, revisão e histórico em `name_proposal_events`. A nomeação participa do ciclo incremental, mas não impede que uma galeria reúna imagens ainda sem nome. A revisão visual e a identificação podem avançar em paralelo no mesmo SQLite. As propostas não são nomes oficiais comprovados, nem aprovações comerciais.

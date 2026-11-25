@@ -1,0 +1,47 @@
+{
+  "schema": "tonart.telegram-visual-reconciliation/1",
+  "date": "2026-11-25",
+  "curadoria_write_path": "local canonical API with revision CAS and physical SHA proofs",
+  "gallery_operations": {
+    "source_groups_consolidated": 11,
+    "final_galleries": 10,
+    "images_preserved": 21,
+    "studios": ["3DXM", "Yosh Studios"],
+    "families": [
+      "Obi-Wan Kenobi",
+      "Hermione",
+      "Comic Deadpool Mask",
+      "Jack Skellington",
+      "Mulher-Maravilha",
+      "Robin Animated",
+      "Armoured Batman",
+      "Black Manta",
+      "Mandalorian",
+      "Gremlin"
+    ],
+    "final_editorial_state": "revisar",
+    "names_changed": false,
+    "variants_changed": false,
+    "identity_approved": false,
+    "rights_changed": false,
+    "publication_approved": false,
+    "originals_changed": false
+  },
+  "live_cache_reconciliation": {
+    "strong_similarity_edges": 66,
+    "exact_sha_cluster_edges": 305,
+    "candidate_pairs": 371,
+    "already_merged_edges": 228,
+    "editorial_or_variant_conflicts": 59,
+    "missing_or_ambiguous_members": 80,
+    "visual_review_required": 4,
+    "eligible_positive_audits_remaining": 0,
+    "apply_run_idempotent_after_merges": true
+  },
+  "validation": {
+    "reconciler_safety_test": "passed",
+    "live_curadoria_readback_after_each_merge": "passed",
+    "source_groups_absent_and_gallery_members_preserved": "passed",
+    "D1_R2_site_drive_mutations": 0
+  }
+}
