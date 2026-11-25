@@ -88,9 +88,9 @@ permissions:
 concurrency:
   # Manual M5 ownership inspections never cancel (or get cancelled by) push CI.
   group: >-
-    ${{ ((github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'm5-schema')) || (github.event_name == 'push' && github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033')) && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
+    ${{ ((github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'm5-schema')) || (github.event_name == 'push' && (github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033' || github.event.head_commit.message == 'ops(m5): execute approved Worker release after D1'))) && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
   cancel-in-progress: >-
-    ${{ (github.event_name != 'workflow_dispatch' && github.event.head_commit.message != 'ops(m5): execute authorized D1 schema 0028-0033') || inputs.operation == 'verify' }}
+    ${{ (github.event_name != 'workflow_dispatch' && github.event.head_commit.message != 'ops(m5): execute authorized D1 schema 0028-0033' && github.event.head_commit.message != 'ops(m5): execute approved Worker release after D1') || inputs.operation == 'verify' }}
 
 jobs:
   quality:
@@ -355,7 +355,9 @@ jobs:
   # No new Worker, D1, R2 or workflow. Blocked until explicit M5 live GO.
   catalog-controlled-worker-release:
     name: Controlled M5 handoff — existing Worker
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'worker-release'
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'worker-release')
+      || (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'ops(m5): execute approved Worker release after D1')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production
@@ -379,6 +381,23 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Verify auditable one-use M5 Worker release receipt
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          receipt='docs/evidence/m5-worker-release-go-20261125.json'
+          commit="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA")"
+          jq -e --arg receipt "$receipt" \
+            '(.files | length) == 1 and .files[0].filename == $receipt and .files[0].status == "added" and .commit.message == "ops(m5): execute approved Worker release after D1"' <<<"$commit" >/dev/null
+          payload="$(gh api "repos/$GITHUB_REPOSITORY/contents/$receipt?ref=$GITHUB_SHA" --jq '.content' | base64 -d)"
+          expected_source="$(node -p "require('./config/catalog-code-consolidation.json').origin.observedMainSha")"
+          expected_rollback="$(node -p "require('./config/catalog-code-consolidation.json').productionObservation.currentVersionId")"
+          jq -e --arg source "$expected_source" --arg rollback "$expected_rollback" \
+            '.authorization == "GO-M5-0028-0033-20261125" and .intent == "promote-worker-after-verified-d1" and .target == "tonecosstudio/tonecosstudio" and .sourceMainSha == $source and .rollbackVersionId == $rollback and .singleUse == true' <<<"$payload" >/dev/null
+          echo 'M5_WORKER_RELEASE_RECEIPT_VERIFIED'
       - name: Require explicit M5 GO and verify all five original writers disabled
         env:
           GITHUB_TOKEN: ${{ github.token }}
