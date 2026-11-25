@@ -25,13 +25,11 @@ export default function CatalogEntryPage() {
             CATÁLOGOS
           </h1>
           <p className="mt-6 max-w-2xl text-sm leading-7 text-[hsl(0,0%,70%)] sm:text-base">
-            Dois caminhos para explorar o mesmo universo de esculturas digitais:
-            o acervo original do site e os modelos dos estúdios recebidos pelo
-            Telegram, ainda em organização editorial.
+            Explore o acervo original, os modelos identificados em revisão e as referências dos estúdios que ainda aguardam nome.
           </p>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-3">
           <Link
             to={PUBLIC_ROUTES.catalogHistorical}
             className={`group flex min-h-[280px] flex-col justify-between border border-[hsl(var(--gold-accent)/0.26)] bg-[hsl(0,0%,7%)] p-6 transition-colors hover:border-[hsl(var(--gold-accent))] sm:p-8 ${FOCUS}`}
@@ -75,10 +73,28 @@ export default function CatalogEntryPage() {
               Ver acervo em revisão <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </span>
           </Link>
+          <Link
+            to={PUBLIC_ROUTES.catalogUnidentified}
+            className={`group flex min-h-[280px] flex-col justify-between border border-[hsl(var(--gold-accent)/0.26)] bg-[hsl(0,0%,7%)] p-6 transition-colors hover:border-[hsl(var(--gold-accent))] sm:p-8 ${FOCUS}`}
+          >
+            <div>
+              <ScanSearch aria-hidden="true" className="mb-8 h-8 w-8 text-[hsl(var(--gold-accent))]" />
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-[hsl(var(--gold-accent))]">
+                IDENTIFICAÇÃO PENDENTE
+              </span>
+              <h2 className="mt-3 text-3xl font-bold uppercase text-white">A identificar</h2>
+              <p className="mt-4 max-w-md text-sm leading-7 text-[hsl(0,0%,70%)]">
+                Modelos ainda sem nome. Conforme forem identificados, passam para o acervo em revisão.
+              </p>
+            </div>
+            <span className="mt-7 inline-flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-[hsl(var(--gold-accent))]">
+              Ver modelos sem nome <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </span>
+          </Link>
         </div>
         <p className="mt-9 inline-flex items-center gap-2 text-xs leading-6 text-[hsl(0,0%,56%)]">
           <Layers3 aria-hidden="true" className="h-4 w-4 shrink-0 text-[hsl(var(--gold-accent))]" />
-          Os dois acervos utilizam os serviços canônicos de catálogo. A curadoria privada não é publicada aqui.
+          As três visualizações utilizam os serviços canônicos de catálogo. A curadoria privada não é publicada aqui.
         </p>
       </section>
     </Page>
