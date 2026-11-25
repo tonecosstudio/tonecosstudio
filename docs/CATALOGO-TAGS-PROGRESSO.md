@@ -705,7 +705,7 @@ Batman no contrato e na API pública: **77 modelos publicados**, 76 com vínculo
 
 ## Integridade das migrations locais
 
-A migration `0032_seed_marvel_individual_catalog_tags.sql` foi substituída por um placeholder SQL sem escrita: o arquivo anterior tinha 78.595 bytes NUL e nenhum conteúdo recuperável neste checkout. Portanto, ele não associa modelos Marvel. A categoria Heróis Individuais e qualquer vínculo histórico atribuído a `0032` precisam ser conferidos novamente por ID antes de gerar novos seeds explícitos. Os seeds `0034`–`0050` guardam relações individualizadas já auditadas em SQL idempotente; são candidatos locais e não foram aplicados.
+A migration `0032_seed_marvel_individual_catalog_tags.sql` foi substituída por um placeholder SQL sem escrita: o arquivo anterior tinha 78.595 bytes NUL e nenhum conteúdo recuperável neste checkout. Portanto, ele não associa modelos Marvel. A categoria Heróis Individuais e qualquer vínculo histórico atribuído a `0032` precisam ser conferidos novamente por ID antes de gerar novos seeds explícitos. Os seeds `0034`–`0051` guardam relações individualizadas já auditadas em SQL idempotente; são candidatos locais e não foram aplicados. `0051` restaura as cinco relações ainda ausentes de Abutre/Adam Warlock a Aranha Escarlate conferidas na página inicial da API; Abutre permanece apenas em `0031`, sem associação duplicada.
 
 ## Lotes que aguardam auditoria individual
 
