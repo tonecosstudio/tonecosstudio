@@ -473,7 +473,7 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
       M5_OPERATION: ${{ inputs.operation }}
       M5_ACK: ${{ inputs.m5_ack }}
-      M5_STAGE_DIR: ${{ runner.temp }}/tonart-m5-d1-${{ github.run_id }}-${{ github.run_attempt }}
+      M5_STAGE_DIR: tonart-m5-d1-${{ github.run_id }}-${{ github.run_attempt }}
     steps:
       - name: Checkout exact current main
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -491,15 +491,15 @@ jobs:
           set -euo pipefail
           test "$CLOUDFLARE_ACCOUNT_ID" = "8827c547d6def5ee5b9ca550fdd5680a"
           test "$M5_ACK" = "GO-M5-0028-0033-20261125"
-          node scripts/catalog/m5-d1-bounded-release.mjs prepare "$M5_STAGE_DIR"
+          node scripts/catalog/m5-d1-bounded-release.mjs prepare "$RUNNER_TEMP/$M5_STAGE_DIR"
       - name: Apply ONLY verified 0028-0033 through canonical Wrangler D1 migrations
         shell: bash
         run: |
           set -euo pipefail
           npx --yes wrangler@4.155.0 d1 migrations apply DB --remote \
-            --config "$M5_STAGE_DIR/wrangler-d1.jsonc" --yes
+            --config "$RUNNER_TEMP/$M5_STAGE_DIR/wrangler-d1.jsonc" --yes
       - name: Verify exact ledger, schema objects and preserved catalog counts
         shell: bash
         run: |
           set -euo pipefail
-          node scripts/catalog/m5-d1-bounded-release.mjs verify "$M5_STAGE_DIR"
+          node scripts/catalog/m5-d1-bounded-release.mjs verify "$RUNNER_TEMP/$M5_STAGE_DIR"
