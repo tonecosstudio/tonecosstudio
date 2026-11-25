@@ -47,12 +47,18 @@ function fakeDb(appliedNames, calls, missingStructures = new Set()) {
                 }
               }
               if (sql.includes('FROM sqlite_schema')) {
-                const results = []
-                for (let index = 0; index < values.length; index += 2) {
-                  const type = values[index]
-                  const name = values[index + 1]
-                  if (!missingStructures.has(`${type}:${name}`)) results.push({ type, name })
-                }
+                // Reproduce D1's parameter budget: the old two-binds-per-object
+                // query used 126 variables and left production health at 503.
+                if (values.length > 100) throw Error('too many SQL variables: SQLITE_ERROR')
+                const wanted = new Set(values)
+                const results = structureKeys()
+                  .filter((key) => /^(table|index|trigger):/.test(key))
+                  .filter((key) => wanted.has(key.slice(key.indexOf(':') + 1)))
+                  .filter((key) => !missingStructures.has(key))
+                  .map((key) => {
+                    const at = key.indexOf(':')
+                    return { type: key.slice(0, at), name: key.slice(at + 1) }
+                  })
                 return { results }
               }
               const table = sql.match(/pragma_table_info\('([^']+)'\)/)?.[1]
@@ -103,6 +109,23 @@ test('schema status is ready only when migrations and physical structures exist'
   assert.equal(status.verifiedStructures, structureKeys().length)
   assert.deepEqual(status.missingStructures, [])
   assert.ok(calls.filter((item) => item.kind === 'prepare').length >= 3)
+})
+
+test('schema audit keeps D1 bound parameters below the live 100-variable limit', async () => {
+  resetSchemaStatusCacheForTests()
+  const calls = []
+  const ready = await catalogSchemaStatus(fakeDb(new Set(contract.requiredMigrations), calls))
+  assert.equal(ready.ready, true, JSON.stringify(ready))
+
+  const metadata = calls.filter((item) => item.kind === 'bind' && item.sql.includes('FROM sqlite_schema'))
+  assert.ok(metadata.length >= 1)
+  assert.ok(metadata.every((item) => item.values.length <= 80))
+  assert.ok(metadata.every((item) => item.sql.includes("type IN ('table','index','trigger')")))
+  const requestedNames = new Set(metadata.flatMap((item) => item.values))
+  const expectedNames = new Set(structureKeys()
+    .filter((key) => /^(table|index|trigger):/.test(key))
+    .map((key) => key.slice(key.indexOf(':') + 1)))
+  assert.deepEqual(requestedNames, expectedNames)
 })
 
 test('healthy schema status is cached for the worker isolate', async () => {
