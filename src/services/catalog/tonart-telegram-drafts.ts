@@ -5,6 +5,7 @@
 import { getCurrentAuthSession } from "@/services/auth/auth-session-service";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
+import type { PrivateTelegramManifest } from "./telegram-private-import-plan";
 
 export type TelegramDraftImage = {
   messageId: number;
@@ -135,7 +136,9 @@ export async function searchTelegramStudioIndex(
 
 export function telegramStudioCoverUrl(path: string | null) {
   return path &&
-    /^\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/thumb$/.test(path)
+    /^\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/thumb$/.test(
+      path,
+    )
     ? base() + path
     : undefined;
 }
@@ -183,4 +186,26 @@ export async function getTelegramDraftImage(path: string) {
   if (!(res.headers.get("content-type") || "").startsWith("image/webp"))
     throw new Error("invalid_private_media");
   return URL.createObjectURL(await res.blob());
+}
+
+/**
+ * Authenticated transport only. The canonical Worker validates live D1 SHA
+ * ownership, franchise, gallery identity, R2 HEAD and atomic changes. No
+ * browser-side SQL, R2 writes or publication paths are introduced here.
+ */
+export async function importPrivateTelegramDraft(
+  manifest: PrivateTelegramManifest,
+) {
+  const response = await request("/api/admin/telegram-drafts/import", {
+    method: "POST",
+    body: JSON.stringify(manifest),
+  });
+  return (await response.json()) as {
+    id: string;
+    created: boolean;
+    reused: boolean;
+    published: false;
+    imageCount?: number;
+    appended?: number;
+  };
 }
