@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import {
   assessCutoverReadiness,
+  assessWorkerZeroTrafficStageReadiness,
   inspectLiveReadOnly,
 } from "./cutover-readiness.mjs";
 
@@ -171,6 +172,40 @@ test("approved M5 still blocks Worker release without credentials and rollback p
   assert.ok(result.blockers.includes("rollback_not_verified"));
   assert.ok(!result.blockers.includes("cutover_not_approved"));
   assert.ok(!result.blockers.includes("explicit_release_go_missing"));
+});
+
+test("zero-percent staging defers only proof that the same run must physically establish", () => {
+  const full = assessCutoverReadiness(original, fullState());
+  assert.deepEqual([...full.blockers].sort(), [
+    "target_credentials_unverified",
+    "rollback_not_verified",
+  ].sort());
+  const preflight = assessWorkerZeroTrafficStageReadiness(original, fullState());
+  assert.equal(preflight.ready, true, JSON.stringify(preflight.blockers));
+  assert.equal(preflight.stageOnly, true);
+  assert.deepEqual([...preflight.deferredProof].sort(), [...full.blockers].sort());
+
+  const corruptions = [
+    (s) => { s.workflow.state = "active"; },
+    (s) => { s.workersBuilds.triggerCount = 1; },
+    (s) => { s.showcaseSchema.appliedMigrations.pop(); },
+    (s) => { s.deployment.versions[0].version_id = "f".repeat(36); },
+    (s) => { delete s.showcaseSchema; },
+    (s) => { delete s.bindings; },
+    (s) => { delete s.cloudflareAccountId; },
+  ];
+  for (const corrupt of corruptions) {
+    const state = fullState();
+    corrupt(state);
+    const denied = assessWorkerZeroTrafficStageReadiness(original, state);
+    assert.equal(denied.ready, false, JSON.stringify(denied));
+  }
+  const deniedOwner = structuredClone(original);
+  deniedOwner.migration.releaseAuthorized = false;
+  assert.equal(
+    assessWorkerZeroTrafficStageReadiness(deniedOwner, fullState()).ready,
+    false,
+  );
 });
 
 test("an approved flag cannot override an active source workflow", () => {
