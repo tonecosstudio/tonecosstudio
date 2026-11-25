@@ -1,3 +1,8 @@
+## CHECKPOINT — WICKED: COBERTURA VISUAL SEM FILTRO DE PROPORÇÃO (25/11/2026)
+
+- Revisão do lote de Drive identificou 33 galerias com pelo menos uma fotografia sem candidato devido ao filtro de proporção da imagem; pastas históricas existem. Ação `c1c40c8b-9c45-4eb8-926d-076e953bf0cd` exit 0. Não tratar essas lacunas como ausência de modelo. Comparação suplementar em processo OrdaX `394dc532-b454-41e4-bdc3-c2615f0164c9` usando as pastas já inventariadas, todos os formatos e todas as vistas, sem nova inferência DINO, excluindo o arquivo histórico de duplicatas consolidadas. Índice esperado `drive-reconciliation/wicked-visual-review-sheets/aspect-gap-index.json`; confirmar complete e resultado antes de aplicar. Pranchas derivadas, não SSOT. Não repetir o processo se concluído.
+- Prancha 004 revisada: RoboCop, Hulk e Marty McFly; nenhum match inequívoco na triagem antiga. Contagem real Wicked 479 confirmadas, 331 prováveis, 10 em revisão, ação `26f38652-13f9-442a-93c4-256939eb7ece`. Sem novos uploads, exclusões, confirmações ou fusões nesta rodada.
+
 ## CHECKPOINT — NOVE AUDITORIAS E CAPITÃO AMÉRICA (25/11/2026)
 
 - Processo OrdaX `a52ead13-8831-4e88-98c6-e8d456d3832e` exit 0, AUDITED 9 ok: Armoured Batman (#18591,18870,19053), Mandalorian (#18780,18878), Gremlin (#18814,18900), acessório rotulado Black Manta (#10910,25754). Recibo `studio-review/strong-pairs-batman-mandalorian-gremlin-manta-receipt.json`. SHA físico conferido, auditorias registradas; sem fusões ou mudança de nomes. Não repetir.
