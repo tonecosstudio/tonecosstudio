@@ -72,15 +72,20 @@ export async function readLiveDeployment(env=process.env, fetchImpl=fetch) {
   if(data?.success!==true)throw Error('Cloudflare deployment metadata not verified')
   return deploymentVersions(data)
 }
-export async function smoke(apiUrl, candidate=null, fetchImpl=fetch) {
+function canonicalWorkerOrigin(apiUrl) {
   const url=new URL(String(apiUrl??''))
   if(url.protocol!=='https:'||url.pathname!=='/'||url.search||url.hash||
      url.username||url.password||!url.hostname.startsWith(config.name+'.')||
      !url.hostname.endsWith('.workers.dev'))throw Error('Use direct canonical Worker HTTPS origin')
+  return url.origin
+}
+
+export async function smoke(apiUrl, candidate=null, fetchImpl=fetch) {
+  const origin=canonicalWorkerOrigin(apiUrl)
   const headers={accept:'application/json','cache-control':'no-cache'}
   if(candidate)headers['Cloudflare-Workers-Version-Overrides']=config.name+'="'+validId(candidate)+'"'
   async function json(path) {
-    const response=await fetchImpl(url.origin+path,{method:'GET',headers,signal:AbortSignal.timeout(12000)})
+    const response=await fetchImpl(origin+path,{method:'GET',headers,signal:AbortSignal.timeout(12000)})
     if(response.status!==200)throw Error('Worker smoke HTTP '+response.status+' '+path.split('?')[0])
     return response.json()
   }
@@ -104,7 +109,7 @@ export async function smoke(apiUrl, candidate=null, fetchImpl=fetch) {
   if(thumb!=null) {
     if(!/^\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/thumb$/.test(thumb))
       throw Error('Invalid thumbnail route')
-    const response=await fetchImpl(url.origin+thumb,{
+    const response=await fetchImpl(origin+thumb,{
       method:'GET',headers:{...headers,accept:'image/webp'},signal:AbortSignal.timeout(12000)
     })
     try {
@@ -116,6 +121,31 @@ export async function smoke(apiUrl, candidate=null, fetchImpl=fetch) {
   }
   return {ok:true,schemaVersion:schema.version,models:catalog.total,studios:studios.studios.length}
 }
+// Only a rollback probe of the PREVIOUS Worker: the v63 baseline serves the
+// Telegram showcase but its full catalog health is known to be 503. A rollback
+// must prove exact previous version at 100% and the preserved public route;
+// it must not falsely claim that the pre-existing catalog health is fixed.
+export async function smokePreviousTelegram(apiUrl, fetchImpl=fetch) {
+  const origin=canonicalWorkerOrigin(apiUrl)
+  const headers={accept:'application/json','cache-control':'no-cache'}
+  async function get(path) {
+    const response=await fetchImpl(origin+path,{
+      method:'GET',headers,signal:AbortSignal.timeout(12000)
+    })
+    if(response.status!==200)throw Error('Previous Worker Telegram rollback HTTP '+response.status)
+    return response.json()
+  }
+  const catalog=await get('/api/telegram-studios?limit=1&offset=0')
+  if(!Number.isSafeInteger(catalog?.total)||catalog.total<1||
+     !Array.isArray(catalog.items)||catalog.items.length!==1||
+     !/^tg_[a-f0-9]{24}$/.test(catalog.items[0]?.id??''))
+    throw Error('Previous Worker Telegram catalog not restored')
+  const studios=await get('/api/telegram-studios/studios')
+  if(!Array.isArray(studios?.studios)||studios.studios.length<1)
+    throw Error('Previous Worker studio directory not restored')
+  return {previousWorkerRestored:true,telegramModels:catalog.total,studios:studios.studios.length}
+}
+
 async function main(){
   const [mode,a,b]=process.argv.slice(2)
   let result
@@ -131,9 +161,9 @@ async function main(){
     result=uploadedVersion(readFileSync(a,'utf8'))
   }else if(mode==='rollback-plan'){
     result=rollbackPlan(await readLiveDeployment(),validId(a))
-  }else if(mode==='rollback-verify'){
+  }else if(mode==='rollback-drill'||mode==='rollback-verify'){
     assertTraffic(await readLiveDeployment(),validId(a),null,'before')
-    result=await smoke(process.env.CATALOG_API_URL)
+    result=await smokePreviousTelegram(process.env.CATALOG_API_URL)
   }else if(mode==='staged'){
     assertTraffic(await readLiveDeployment(),a,b,'staged')
     result=await smoke(process.env.CATALOG_API_URL,b)
