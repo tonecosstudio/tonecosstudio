@@ -6,7 +6,8 @@ import {
 import { importPrivateTelegramDraft } from "@/services/catalog/tonart-telegram-drafts";
 
 const panel = "rounded-lg border border-[#56412e] bg-[#17130f] p-4";
-const button = "min-h-10 rounded border border-[#997348] px-4 py-2 text-sm text-[#ecd3ad] disabled:cursor-not-allowed disabled:opacity-50";
+const button =
+  "min-h-10 rounded border border-[#997348] px-4 py-2 text-sm text-[#ecd3ad] disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function TelegramPrivateDraftBatchImport() {
   const [plan, setPlan] = useState<PrivateTelegramPlan | null>(null);
@@ -35,6 +36,8 @@ export default function TelegramPrivateDraftBatchImport() {
     try {
       // The browser reads only the file selected by the administrator.
       // No local file path, original photograph or credential is uploaded.
+      if (file.size > 8 * 1024 * 1024)
+        throw new Error("Arquivo acima de 8 MiB.");
       const text = await file.text();
       const parsed = await parsePrivateTelegramPlan(text);
       setFilename(file.name);
@@ -48,7 +51,8 @@ export default function TelegramPrivateDraftBatchImport() {
   }
 
   async function runImport() {
-    if (!plan || !confirmed || running || progress >= plan.drafts.length) return;
+    if (!plan || !confirmed || running || progress >= plan.drafts.length)
+      return;
     stopAfterCurrent.current = false;
     setError("");
     setNotice("");
@@ -59,7 +63,9 @@ export default function TelegramPrivateDraftBatchImport() {
     try {
       for (; i < plan.drafts.length; i++) {
         if (stopAfterCurrent.current) {
-          setNotice("Pausado depois da última ficha confirmada. Pode retomar o mesmo arquivo.");
+          setNotice(
+            "Pausado depois da última ficha confirmada. Pode retomar o mesmo arquivo.",
+          );
           break;
         }
         const item = plan.drafts[i];
@@ -82,13 +88,17 @@ export default function TelegramPrivateDraftBatchImport() {
         setProgress(i + 1);
       }
       if (i === plan.drafts.length) {
-        setNotice("Lote concluído. Todas as fichas foram verificadas como privadas.");
+        setNotice(
+          "Lote concluído. Todas as fichas foram verificadas como privadas.",
+        );
       }
     } catch (cause) {
       const item = plan.drafts[i];
       setError(
-        "Interrompido em " + (item?.id ?? "registro desconhecido") + ": " +
-        (cause instanceof Error ? cause.message : "Erro no importador"),
+        "Interrompido em " +
+          (item?.id ?? "registro desconhecido") +
+          ": " +
+          (cause instanceof Error ? cause.message : "Erro no importador"),
       );
       // The current item may have committed just before a network failure:
       // retrying the SAME manifest is idempotent at the canonical Worker.
@@ -99,14 +109,19 @@ export default function TelegramPrivateDraftBatchImport() {
 
   return (
     <section className={panel} aria-label="Importação privada da Curadoria">
-      <h4 className="font-serif text-lg text-[#ecd3ad]">Importação privada por lote</h4>
+      <h4 className="font-serif text-lg text-[#ecd3ad]">
+        Importação privada por lote
+      </h4>
       <p className="mt-2 text-xs leading-relaxed text-[#c7b49b]">
         Usa exclusivamente o importador autenticado do Worker canônico. Aceita o
         JSONL gerado pela Curadoria, verifica IDs, origens e hashes antes do
-        envio e interrompe em qualquer conflito. Não publica modelos, não
-        altera direitos e não transfere imagens para o Drive.
+        envio e interrompe em qualquer conflito. Não publica modelos, não altera
+        direitos e não transfere imagens para o Drive.
       </p>
-      <label htmlFor="tonart-private-draft-plan" className="mt-4 block text-sm text-[#e2caa9]">
+      <label
+        htmlFor="tonart-private-draft-plan"
+        className="mt-4 block text-sm text-[#e2caa9]"
+      >
         Plano privado da Curadoria (.jsonl)
       </label>
       <input
@@ -119,15 +134,25 @@ export default function TelegramPrivateDraftBatchImport() {
           void selectFile(event.target.files?.[0]);
         }}
       />
-      {loading && <p role="status" className="mt-3 text-xs">Validando arquivo local…</p>}
+      {loading && (
+        <p role="status" className="mt-3 text-xs">
+          Validando arquivo local…
+        </p>
+      )}
       {plan && (
         <>
           <div className="mt-4 space-y-1 text-xs text-[#d6c2aa]">
             <p>Arquivo: {filename}</p>
-            <p>SHA-256: <code className="break-all">{plan.sha256}</code></p>
-            <p>{plan.drafts.length} fichas · {plan.photoCount} imagens · {plan.studioCount} estúdios</p>
+            <p>
+              SHA-256: <code className="break-all">{plan.sha256}</code>
+            </p>
+            <p>
+              {plan.drafts.length} fichas · {plan.photoCount} imagens ·{" "}
+              {plan.studioCount} estúdios
+            </p>
             <p role="status">
-              {progress} de {plan.drafts.length} verificadas · {created} criadas · {reused} reutilizadas
+              {progress} de {plan.drafts.length} verificadas · {created} criadas
+              · {reused} reutilizadas
             </p>
           </div>
           <progress
@@ -144,29 +169,53 @@ export default function TelegramPrivateDraftBatchImport() {
               onChange={(event) => setConfirmed(event.target.checked)}
             />
             Confirmo que este arquivo pertence à Curadoria autorizada e que
-            somente rascunhos privados devem ser criados, sem alteração de direitos.
+            somente rascunhos privados devem ser criados, sem alteração de
+            direitos.
           </label>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" className={button}
-              disabled={running || loading || !confirmed || progress === plan.drafts.length}
-              onClick={() => { void runImport(); }}>
+            <button
+              type="button"
+              className={button}
+              disabled={
+                running ||
+                loading ||
+                !confirmed ||
+                progress === plan.drafts.length
+              }
+              onClick={() => {
+                void runImport();
+              }}
+            >
               {progress ? "Retomar importação" : "Iniciar importação privada"}
             </button>
             {running && (
-              <button type="button" className={button}
-                onClick={() => { stopAfterCurrent.current = true; }}>
+              <button
+                type="button"
+                className={button}
+                onClick={() => {
+                  stopAfterCurrent.current = true;
+                }}
+              >
                 Pausar após esta ficha
               </button>
             )}
           </div>
           <p className="mt-2 text-[11px] text-[#a99b89]">
-            Uma requisição por vez; mantenha esta aba aberta. Se houver falha,
-            o mesmo arquivo pode ser retomado sem duplicar as fichas confirmadas.
+            Uma requisição por vez; mantenha esta aba aberta. Se houver falha, o
+            mesmo arquivo pode ser retomado sem duplicar as fichas confirmadas.
           </p>
         </>
       )}
-      {notice && <p role="status" className="mt-3 text-xs text-[#cfdeb9]">{notice}</p>}
-      {error && <p role="alert" className="mt-3 text-xs text-[#ffc1b0]">{error}</p>}
+      {notice && (
+        <p role="status" className="mt-3 text-xs text-[#cfdeb9]">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p role="alert" className="mt-3 text-xs text-[#ffc1b0]">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
