@@ -6,6 +6,12 @@
 > **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
 
 
+## Checkpoint Drive — Gambit, Galactus e Dracula (25/11/2026)
+
+- Recibos físicos/remotos existentes confirmam seis arquivos de Gambit em Modelo 02–07 e duas vistas de Galactus no Modelo 02. Não repetir esses moves; recibos locais `gambit-six-historical-models-receipt.json` e `galactus-modelo-02-historical-options-receipt.json` em `drive-reconciliation`.
+- Dracula (Castlevania): um arquivo histórico movido para `Modelo 01/01.webp`, sem recodificação (assinatura RIFF/WEBP já presente, extensão antiga .jpg incorreta). Mesmo ID Drive, tamanho de 1.368.932 bytes, SHA-256 físico antes/depois idêntico, pai remoto e permissões preservados; montagem G: verificada e origem anterior ausente. Recibo `drive-reconciliation/dracula-historical-model-receipt.json`, OrdaX action `73c8dd34-7cc6-4c61-8283-59be84fd4d9b`, exit 0.
+- Total deste checkpoint: nove arquivos, oito modelos históricos organizados. Nenhuma correspondência Telegram confirmada, upload, exclusão, alteração de compartilhamento ou escrita D1/R2. Preservar esculturas distintas e não refazer o lote.
+
 ## Reconciliação visual idempotente (25/11/2026)
 
 - A Curadoria consolidou **11 grupos de origem em 10 galerias finais**, abrangendo 21 imagens de 10 modelos em 3DXM e Yosh Studios. Os nomes e variantes foram mantidos; todas as galerias finais ficaram em `revisar`, sem aprovação de identidade, direitos ou publicação. A base incluiu auditorias visuais positivas já gravadas e duas comparações confirmadas pelo método canônico de mesmo render.
