@@ -4,8 +4,12 @@ import { parsePrivateTelegramPlan } from "./telegram-private-import-plan";
 
 const source = "2370335738";
 const solo = "single:24268";
-const soloId = "tg_" + createHash("sha256").update(source + ":" + solo)
-  .digest("hex").slice(0, 24);
+const soloId =
+  "tg_" +
+  createHash("sha256")
+    .update(source + ":" + solo)
+    .digest("hex")
+    .slice(0, 24);
 
 function entry(
   group = solo,
@@ -67,29 +71,67 @@ describe("TONART private draft plan uses the canonical Worker importer only", ()
     expect(valid.studioCount).toBe(1);
 
     other.import_manifest.images[0].sha256 = "a".repeat(64);
-    await expect(parsePrivateTelegramPlan(
-      [JSON.stringify(entry()), JSON.stringify(other)].join("\n"),
-    )).rejects.toThrow("private_import_plan_photo_identity_or_duplicate");
+    await expect(
+      parsePrivateTelegramPlan(
+        [JSON.stringify(entry()), JSON.stringify(other)].join("\n"),
+      ),
+    ).rejects.toThrow("private_import_plan_photo_identity_or_duplicate");
   });
 
   it.each([
-    ["ownerless authorization", (x: ReturnType<typeof entry>) => { x.production_write_authorized = true; }],
-    ["unexpected visibility", (x: ReturnType<typeof entry>) => { x.showcase_visible = true; }],
-    ["preexisting gallery append", (x: ReturnType<typeof entry>) => { x.new_private_draft_only = false; }],
-    ["mismatched derived model ID", (x: ReturnType<typeof entry>) => { x.model_id = "tg_" + "f".repeat(24); }],
-    ["wrong singleton message", (x: ReturnType<typeof entry>) => { x.import_manifest.images[0].messageId = 42; }],
-    ["external Telegram origin", (x: ReturnType<typeof entry>) => { x.import_manifest.originId = "another"; }],
+    [
+      "ownerless authorization",
+      (x: ReturnType<typeof entry>) => {
+        x.production_write_authorized = true;
+      },
+    ],
+    [
+      "unexpected visibility",
+      (x: ReturnType<typeof entry>) => {
+        x.showcase_visible = true;
+      },
+    ],
+    [
+      "preexisting gallery append",
+      (x: ReturnType<typeof entry>) => {
+        x.new_private_draft_only = false;
+      },
+    ],
+    [
+      "mismatched derived model ID",
+      (x: ReturnType<typeof entry>) => {
+        x.model_id = "tg_" + "f".repeat(24);
+      },
+    ],
+    [
+      "wrong singleton message",
+      (x: ReturnType<typeof entry>) => {
+        x.import_manifest.images[0].messageId = 42;
+      },
+    ],
+    [
+      "external Telegram origin",
+      (x: ReturnType<typeof entry>) => {
+        x.import_manifest.originId = "another";
+      },
+    ],
   ])("fails closed on %s", async (_title, change) => {
     const row = entry();
     change(row);
-    await expect(parsePrivateTelegramPlan(JSON.stringify(row)))
-      .rejects.toThrow(/^private_import_plan_/);
+    await expect(parsePrivateTelegramPlan(JSON.stringify(row))).rejects.toThrow(
+      /^private_import_plan_/,
+    );
   });
 
   it("rejects large or malformed files before any network operation", async () => {
-    await expect(parsePrivateTelegramPlan("")).rejects.toThrow("private_import_plan_file_size");
-    await expect(parsePrivateTelegramPlan("{ invalid")).rejects.toThrow("private_import_plan_invalid_jsonl");
-    await expect(parsePrivateTelegramPlan(" ".repeat(8 * 1024 * 1024 + 1)))
-      .rejects.toThrow("private_import_plan_file_size");
+    await expect(parsePrivateTelegramPlan("")).rejects.toThrow(
+      "private_import_plan_file_size",
+    );
+    await expect(parsePrivateTelegramPlan("{ invalid")).rejects.toThrow(
+      "private_import_plan_invalid_jsonl",
+    );
+    await expect(
+      parsePrivateTelegramPlan(" ".repeat(8 * 1024 * 1024 + 1)),
+    ).rejects.toThrow("private_import_plan_file_size");
   });
 });
