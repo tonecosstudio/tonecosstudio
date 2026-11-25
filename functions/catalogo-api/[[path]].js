@@ -135,10 +135,13 @@ function isBoundedPublicQuery(route, searchParams) {
           "franchise",
           "character",
           "provisional",
+          "identity",
           "offset",
           "limit",
         ]
-      : route === "api/telegram-studios/studios" ||
+      : route === "api/telegram-studios/studios"
+        ? ["identity"]
+        :
           /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(
             route,
           )
@@ -195,6 +198,8 @@ function isBoundedPublicQuery(route, searchParams) {
       if (!/^(0|[1-9][0-9]{0,4})$/.test(value)) return false;
     } else if (key === "studio") {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
+    } else if (key === "identity") {
+      if (value !== "identified" && value !== "unidentified") return false;
     } else if (key === "provisional") {
       if (route !== "api/telegram-studios" || !/^[01]$/.test(value))
         return false;
