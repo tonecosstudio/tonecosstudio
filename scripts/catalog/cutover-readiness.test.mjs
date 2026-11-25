@@ -154,6 +154,7 @@ const fullState = () => ({
     triggers: [...showcaseTriggers],
     indexes: [showcaseIndex],
     indexDefinition,
+    schemaObjects: structuredClone(schema.requiredObjects),
   },
 });
 
@@ -312,6 +313,41 @@ test("later canonical taxonomy migrations are mandatory even when Telegram 0025 
   });
 });
 
+test("every required v13 schema object is mandatory independently of migration history", () => {
+  const edits = [
+    (s) => s.showcaseSchema.schemaObjects.tables.pop(),
+    (s) => s.showcaseSchema.schemaObjects.indexes.shift(),
+    (s) => s.showcaseSchema.schemaObjects.triggers.pop(),
+    (s) => s.showcaseSchema.schemaObjects.columns.models.pop(),
+    (s) => {
+      delete s.showcaseSchema.schemaObjects.columns.catalog_folders;
+    },
+    (s) =>
+      s.showcaseSchema.schemaObjects.indexes.push(
+        s.showcaseSchema.schemaObjects.indexes[0],
+      ),
+    (s) => {
+      delete s.showcaseSchema.schemaObjects;
+    },
+  ];
+  for (const change of edits) {
+    const state = fullState();
+    change(state);
+    const verdict = assessCutoverReadiness(approvedContract(), state);
+    assert.equal(verdict.ready, false);
+    assert.ok(
+      verdict.blockers.includes(
+        "target_worker_required_schema_objects_unverified",
+      ),
+      JSON.stringify(verdict.blockers),
+    );
+  }
+  assert.deepEqual(assessCutoverReadiness(approvedContract(), fullState()), {
+    ready: true,
+    blockers: [],
+  });
+});
+
 test("Cloudflare schema inspection is metadata-only and never runs DDL or model scans", async () => {
   const previous = globalThis.fetch;
   const calls = [];
@@ -384,19 +420,19 @@ test("Cloudflare schema inspection is metadata-only and never runs DDL or model 
       assert.equal(init.method, "POST");
       assert.equal(init.headers.Authorization, "Bearer test-cloudflare-key");
       const { sql } = JSON.parse(init.body);
-      assert.match(
-        sql,
-        /^SELECT 'column' AS category,name,NULL AS definition FROM pragma_table_info\('models'\)/,
-      );
-      assert.match(
-        sql,
-        /sql AS definition FROM sqlite_master WHERE type='index'/,
-      );
+      assert.match(sql, /JOIN pragma_table_info\(tables.name\)/);
+      assert.match(sql, /tables.name IN \(/);
+      assert.ok(sql.includes("'catalog_folders'"));
+      assert.match(sql, /columns.name IN \(/);
       assert.match(sql, /FROM d1_migrations WHERE name IN \(/);
       assert.ok(sql.includes("'" + schema.latestMigration + "'"));
-      assert.match(sql, /FROM sqlite_master WHERE type='trigger'/);
-      assert.match(sql, /FROM sqlite_master WHERE type='index'/);
+      assert.match(
+        sql,
+        /SELECT type AS category,name,sql AS definition,NULL AS parent FROM sqlite_master/,
+      );
+      assert.match(sql, /type IN \('table','index','trigger'\)/);
       assert.match(sql, /idx_models_telegram_showcase_name/);
+      assert.equal((sql.match(/\bUNION ALL\b/g) ?? []).length, 2);
       assert.ok(
         !/\b(UPDATE|DELETE|INSERT|ALTER|DROP|REPLACE)\s+(?:TABLE|INTO|models|FROM)\b/i.test(
           sql,
@@ -408,20 +444,27 @@ test("Cloudflare schema inspection is metadata-only and never runs DDL or model 
         result: [
           {
             results: [
-              { category: "column", name: "telegram_showcase_visible" },
+              ...Object.entries(schema.requiredObjects.columns).flatMap(
+                ([parent, names]) =>
+                  names.map((name) => ({ category: "column", parent, name })),
+              ),
               ...schema.requiredMigrations.map((name) => ({
                 category: "migration",
                 name,
               })),
-              ...showcaseTriggers.map((name) => ({
+              ...schema.requiredObjects.tables.map((name) => ({
+                category: "table",
+                name,
+              })),
+              ...schema.requiredObjects.triggers.map((name) => ({
                 category: "trigger",
                 name,
               })),
-              {
+              ...schema.requiredObjects.indexes.map((name) => ({
                 category: "index",
-                name: showcaseIndex,
-                definition: indexDefinition,
-              },
+                name,
+                definition: name === showcaseIndex ? indexDefinition : null,
+              })),
             ],
           },
         ],
@@ -444,6 +487,10 @@ test("Cloudflare schema inspection is metadata-only and never runs DDL or model 
     assert.deepEqual(state.showcaseSchema.triggers, showcaseTriggers);
     assert.deepEqual(state.showcaseSchema.indexes, [showcaseIndex]);
     assert.equal(state.showcaseSchema.indexDefinition, indexDefinition);
+    assert.deepEqual(
+      state.showcaseSchema.schemaObjects,
+      schema.requiredObjects,
+    );
     assert.equal(calls.filter((x) => x.method === "POST").length, 1);
     assert.equal(calls.filter((x) => x.url.endsWith("/query")).length, 1);
   } finally {

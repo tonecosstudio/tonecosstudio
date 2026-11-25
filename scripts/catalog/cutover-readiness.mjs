@@ -85,6 +85,24 @@ const REQUIRED_SHOWCASE_TRIGGERS =
     x.startsWith("trg_telegram_showcase_"),
   ) ?? [];
 
+const REQUIRED_SCHEMA_OBJECTS = SCHEMA_CONTRACT.requiredObjects;
+const REQUIRED_SCHEMA_COLUMNS = Object.entries(
+  REQUIRED_SCHEMA_OBJECTS?.columns ?? {},
+);
+const identifierList = (names) =>
+  Array.isArray(names) &&
+  names.length > 0 &&
+  names.every(
+    (name) => typeof name === "string" && /^[a-z][a-z0-9_]*$/.test(name),
+  ) &&
+  new Set(names).size === names.length;
+const sameNames = (expected, actual) =>
+  identifierList(expected) &&
+  Array.isArray(actual) &&
+  actual.length === expected.length &&
+  new Set(actual).size === actual.length &&
+  expected.every((name) => actual.includes(name));
+
 export function assessCutoverReadiness(contract, state) {
   const blockers = [];
   const m = contract?.migration ?? {};
@@ -380,6 +398,25 @@ export function assessCutoverReadiness(contract, state) {
       ),
     "target_worker_required_migrations_unverified",
   );
+  // The migration ledger does not prove the actual schema objects survived.
+  // Check all contract tables, indexes, triggers and columns in one metadata scan.
+  const actualObjects = visibility?.schemaObjects;
+  const expectedObjects = REQUIRED_SCHEMA_OBJECTS;
+  add(
+    ["tables", "indexes", "triggers"].every((kind) =>
+      sameNames(expectedObjects?.[kind], actualObjects?.[kind]),
+    ) &&
+      REQUIRED_SCHEMA_COLUMNS.length > 0 &&
+      REQUIRED_SCHEMA_COLUMNS.every(
+        ([table, names]) =>
+          /^[a-z][a-z0-9_]*$/.test(table) &&
+          sameNames(names, actualObjects?.columns?.[table]),
+      ) &&
+      actualObjects?.columns &&
+      Object.keys(actualObjects.columns).length ===
+        REQUIRED_SCHEMA_COLUMNS.length,
+    "target_worker_required_schema_objects_unverified",
+  );
   // M5 must not promote a new Worker while its public listing requires
   // a temporary sorting tree. The index is installed separately by the D1 owner.
   add(
@@ -413,22 +450,45 @@ async function getVerifiedShowcaseSchema(account, token) {
     !REQUIRED_SHOWCASE_LISTING_INDEX ||
     REQUIRED_SHOWCASE_TRIGGERS.length !== 3 ||
     REQUIRED_WORKER_MIGRATIONS.length < 25 ||
-    REQUIRED_WORKER_MIGRATIONS.at(-1) !== SCHEMA_CONTRACT.latestMigration
+    REQUIRED_WORKER_MIGRATIONS.at(-1) !== SCHEMA_CONTRACT.latestMigration ||
+    !["tables", "indexes", "triggers"].every((kind) =>
+      identifierList(REQUIRED_SCHEMA_OBJECTS?.[kind]),
+    ) ||
+    REQUIRED_SCHEMA_COLUMNS.length === 0 ||
+    !REQUIRED_SCHEMA_COLUMNS.every(
+      ([table, names]) =>
+        /^[a-z][a-z0-9_]*$/.test(table) && identifierList(names),
+    )
   ) {
     throw new Error("required_showcase_schema_contract_missing");
   }
   const quote = (value) => "'" + String(value).replaceAll("'", "''") + "'";
+  // One bounded metadata-only query with three SELECT terms. The correlated
+  // table-valued PRAGMA avoids SQLite's compound SELECT term limit and never
+  // reads any row from models, galleries or R2.
+  const columnTables = REQUIRED_SCHEMA_COLUMNS.map(([table]) => table);
+  const columnNames = [
+    ...new Set(REQUIRED_SCHEMA_COLUMNS.flatMap(([, names]) => names)),
+  ];
+  const objectNames = [
+    ...new Set(
+      ["tables", "indexes", "triggers"].flatMap(
+        (kind) => REQUIRED_SCHEMA_OBJECTS[kind],
+      ),
+    ),
+  ];
   const sql = [
-    "SELECT 'column' AS category,name,NULL AS definition FROM pragma_table_info('models') WHERE name=" +
-      quote(REQUIRED_SHOWCASE_COLUMN),
-    "SELECT 'migration' AS category,name,NULL AS definition FROM d1_migrations WHERE name IN (" +
+    "SELECT 'column' AS category, columns.name AS name, NULL AS definition, tables.name AS parent FROM sqlite_master AS tables JOIN pragma_table_info(tables.name) AS columns WHERE tables.type='table' AND tables.name IN (" +
+      columnTables.map(quote).join(",") +
+      ") AND columns.name IN (" +
+      columnNames.map(quote).join(",") +
+      ")",
+    "SELECT 'migration' AS category,name,NULL AS definition,NULL AS parent FROM d1_migrations WHERE name IN (" +
       REQUIRED_WORKER_MIGRATIONS.map(quote).join(",") +
       ")",
-    "SELECT 'trigger' AS category,name,NULL AS definition FROM sqlite_master WHERE type='trigger' AND name IN (" +
-      REQUIRED_SHOWCASE_TRIGGERS.map(quote).join(",") +
+    "SELECT type AS category,name,sql AS definition,NULL AS parent FROM sqlite_master WHERE type IN ('table','index','trigger') AND name IN (" +
+      objectNames.map(quote).join(",") +
       ")",
-    "SELECT 'index' AS category,name,sql AS definition FROM sqlite_master WHERE type='index' AND name=" +
-      quote(REQUIRED_SHOWCASE_LISTING_INDEX),
   ].join(" UNION ALL ");
   const url =
     "https://api.cloudflare.com/client/v4/accounts/" +
@@ -455,7 +515,12 @@ async function getVerifiedShowcaseSchema(account, token) {
   const has = (category, name) =>
     records.some((x) => x.category === category && x.name === name);
   return {
-    column: has("column", REQUIRED_SHOWCASE_COLUMN)
+    column: records.some(
+      (x) =>
+        x.category === "column" &&
+        x.parent === "models" &&
+        x.name === REQUIRED_SHOWCASE_COLUMN,
+    )
       ? REQUIRED_SHOWCASE_COLUMN
       : null,
     migration: has("migration", REQUIRED_SHOWCASE_MIGRATION)
@@ -464,6 +529,30 @@ async function getVerifiedShowcaseSchema(account, token) {
     appliedMigrations: REQUIRED_WORKER_MIGRATIONS.filter((name) =>
       has("migration", name),
     ),
+    schemaObjects: {
+      tables: REQUIRED_SCHEMA_OBJECTS.tables.filter((name) =>
+        has("table", name),
+      ),
+      indexes: REQUIRED_SCHEMA_OBJECTS.indexes.filter((name) =>
+        has("index", name),
+      ),
+      triggers: REQUIRED_SCHEMA_OBJECTS.triggers.filter((name) =>
+        has("trigger", name),
+      ),
+      columns: Object.fromEntries(
+        REQUIRED_SCHEMA_COLUMNS.map(([table, names]) => [
+          table,
+          names.filter((name) =>
+            records.some(
+              (x) =>
+                x.category === "column" &&
+                x.parent === table &&
+                x.name === name,
+            ),
+          ),
+        ]),
+      ),
+    },
     triggers: REQUIRED_SHOWCASE_TRIGGERS.filter((name) => has("trigger", name)),
     indexes: has("index", REQUIRED_SHOWCASE_LISTING_INDEX)
       ? [REQUIRED_SHOWCASE_LISTING_INDEX]
