@@ -6,6 +6,12 @@
 > **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
 
 
+## Checkpoint Drive — Ciri, Harry Potter e revisão Venom (25/11/2026)
+
+- Pranchas existentes `aspect-gap-029–032.jpg`: 19 referências históricas distintas por arquivo (8 Venom, 5 Harry Potter, 6 Ciri), comparadas com os renders Telegram apresentados, sem equivalência inequívoca; nenhuma fusão, nova confirmação de identidade ou DINO reexecutado. Venom: oito arquivos com preflight SHA físico concluído, mas ainda não movidos; há um nono arquivo fora das pranchas que requer revisão própria. Revalidar antes de aplicar.
+- Ciri (The Witcher): seis arquivos históricos movidos para Modelo 01–06; quatro WebP já existentes, três extensões .jpg corrigidas para .webp sem recodificar. Harry Potter: quatro arquivos históricos movidos para Modelo 02–05, preservando Modelo 01 existente. Total dez arquivos em dez pastas, sem upload/exclusão ou alteração de acesso. IDs, tamanhos, pais e permissões remotas verificados, SHA-256 antes/depois e ausência das origens antigas confirmados na montagem G:.
+- Recibos locais `drive-reconciliation/ciri-six-historical-models-receipt.json` (OrdaX `74a81bcd-79a8-44f7-acc8-122ed6178918`, exit 0) e `drive-reconciliation/harry-potter-four-historical-models-receipt.json` (OrdaX `7b044bd6-0d19-4a77-a337-abbbc92d1721`, exit 0). Não repetir os moves. Nenhuma escrita Curadoria/D1/R2 nem alteração de publicação.
+
 ## Checkpoint Drive — Gambit, Galactus e Dracula (25/11/2026)
 
 - Recibos físicos/remotos existentes confirmam seis arquivos de Gambit em Modelo 02–07 e duas vistas de Galactus no Modelo 02. Não repetir esses moves; recibos locais `gambit-six-historical-models-receipt.json` e `galactus-modelo-02-historical-options-receipt.json` em `drive-reconciliation`.
