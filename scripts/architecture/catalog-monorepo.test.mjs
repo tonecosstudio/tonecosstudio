@@ -169,6 +169,7 @@ test('staged files preserve immutable import pins and reviewed Telegram draft ov
   assert.deepEqual(Object.keys(overlays).sort(), [
     'config/catalog-schema-contract.json',
     'tools/test_schema_contract.mjs',
+    'tools/test_worker_catalog_facets.mjs',
     'tools/test_worker_catalog_scale_sqlite.mjs',
     'tools/test_worker_folder_counts.mjs',
     'tools/test_worker_media_contract.mjs',
