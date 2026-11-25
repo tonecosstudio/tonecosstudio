@@ -372,6 +372,17 @@ test('canonical group importer creates once, verifies every private R2 HEAD and 
   assert.equal(x.heads.length,4,'no R2 rewrite or needless HEAD on idempotent replay')
 })
 
+test('unidentified and identifier-only titles cannot create private drafts',async()=>{
+  const x=draftImportFixture()
+  for (const name of ['Modelo sem nome #24268','Modelo TG-66bc3d8b6e01','TG-123abc','Modelo 123','A identificar','Unnamed','single:24268','Sem nome']) {
+    const rejected=await x.run({...x.input,name})
+    assert.equal(rejected.status,400,name)
+    assert.equal(rejected.data.error,'name_identification_pending',name)
+  }
+  assert.equal(x.getBatches(),0)
+  assert.equal(x.heads.length,0)
+})
+
 test('identical character names in different studios are not duplicate sculpture identities',async()=>{
   // The original global lower(name) lookup rejected a legitimate second
   // studio's independently sourced image when the character name matched.
