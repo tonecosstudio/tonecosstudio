@@ -93,3 +93,16 @@ test("production D1 cannot be authorized by a normal push or commit title", () =
   assert.doesNotThrow(() => requireExactAuth({...base,M5_VERIFIED_RECEIPT:"true"}));
   assert.doesNotThrow(() => requireExactAuth({...base,GITHUB_EVENT_NAME:"workflow_dispatch"}));
 });
+
+test("Wrangler D1 CLI uses supported flags and the six-file isolated config", () => {
+  const workflow = readFileSync(join(root, ".github/workflows/quality.yml"), "utf8");
+  const bounded = workflow.split("      - name: Apply ONLY verified 0028-0033 through canonical Wrangler D1 migrations")[1]
+    ?.split("      - name: Verify exact ledger, schema objects and preserved catalog counts")[0];
+  assert.ok(bounded, "existing Quality Gate must own the migration job");
+  // Wrangler 4.155.0 --help confirms there is NO --yes on d1 migrations apply;
+  // in GitHub Actions CI (non-interactive), confirmation is skipped automatically.
+  assert.match(bounded, /npx --yes wrangler@4\.155\.0 d1 migrations apply DB --remote/);
+  assert.match(bounded, /--config "\$RUNNER_TEMP\/\$M5_STAGE_DIR\/wrangler-d1\.jsonc"/);
+  assert.doesNotMatch(bounded, /wrangler-d1\.jsonc"\s+--yes/);
+  assert.doesNotMatch(bounded, /\bd1 (?:execute|migrations apply)\b[^\n]*\b0034\b/);
+});
