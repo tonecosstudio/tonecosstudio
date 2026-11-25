@@ -3,6 +3,9 @@
 **Estado:** catálogo público separado e integração progressiva com a Curadoria.
 **Fonte única de código:** `tonecosstudio/tonecosstudio`, `main`. Sem repositório paralelo.
 
+> **Estado operacional vigente, 25/11/2026:** a migração M5 de infraestrutura está CONCLUÍDA (D1 na migration 0033, Worker v64 com saúde 200 e frontend principal promovido); consultar [recibo canônico de produção](evidence/m5-production-cutover-20261125.json) antes de interpretar checkpoints antigos deste documento. A cobertura Telegram permanece separada: 1.701 candidatos de rascunho privados em staging, com IDs/message_ids/SHA distintos, 513 casos retidos, todos os 60 IDs de franquia referenciados encontrados no D1 e nenhum write de importação executado. O [recibo pós-M5 de prontidão privada](evidence/telegram-private-import-readiness-20261125.json) identifica provas, limites e gates restantes. O importador administrativo já existente só pode aplicar mudanças com JWT Supabase de admin válido, conferência D1/R2 ao vivo e sem liberar direitos ou visibilidade. Não recriar publicador, banco, importador nem destino Drive com acesso indevido. **Números/checkpoints anteriores de D1 0027 e Worker v63 são históricos.**
+
+
 ## Decisão canônica do proprietário — acervo Drive e ingestão Telegram (24/11/2026)
 
 **Prioridade:** concluir nomes e galerias por estúdio. Tags/variante derivadas da classificação existente (ex.: Busto, Full Size, Diorama). URL direta oficial é enriquecimento quando disponível; não bloquear curadoria por ausência de link. Não alterar UI/UX, direitos, licenças, exposição pública ou publicar por esta decisão.
