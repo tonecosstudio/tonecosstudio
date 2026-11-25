@@ -75,7 +75,12 @@ on:
           - verify
           - m5-ownership
           - worker-release
+          - m5-schema
         default: verify
+      m5_ack:
+        description: Confirm the owner-authorized M5 D1 0028-0033 migration scope
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -83,7 +88,7 @@ permissions:
 concurrency:
   # Manual M5 ownership inspections never cancel (or get cancelled by) push CI.
   group: >-
-    ${{ github.event_name == 'workflow_dispatch' && inputs.operation == 'worker-release' && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
+    ${{ github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'm5-schema') && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
   cancel-in-progress: >-
     ${{ github.event_name != 'workflow_dispatch' || inputs.operation == 'verify' }}
 
@@ -451,3 +456,50 @@ jobs:
             exit 2
           fi
           node services/catalogo/tools/controlled_worker_release.mjs rollback-verify "$previous"
+
+  # Same Quality Gate; canonical D1. No second publisher or DB.
+  # A strictly bounded six-file view avoids accidentally applying 0034+.
+  catalog-m5-d1-schema:
+    name: Authorized M5 D1 0028-0033 (bounded)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'm5-schema'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
+      M5_OPERATION: ${{ inputs.operation }}
+      M5_ACK: ${{ inputs.m5_ack }}
+      M5_STAGE_DIR: ${{ runner.temp }}/tonart-m5-d1-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Checkout exact current main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Offline M5 migration scope tests
+        run: node --test scripts/catalog/m5-d1-bounded-release.test.mjs scripts/catalog/cutover-readiness.test.mjs
+      - name: Require exact GO, disabled source writers, D1 bookmark and live ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CLOUDFLARE_ACCOUNT_ID" = "8827c547d6def5ee5b9ca550fdd5680a"
+          test "$M5_ACK" = "GO-M5-0028-0033-20261125"
+          node scripts/catalog/m5-d1-bounded-release.mjs prepare "$M5_STAGE_DIR"
+      - name: Apply ONLY verified 0028-0033 through canonical Wrangler D1 migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.155.0 d1 migrations apply DB --remote \
+            --config "$M5_STAGE_DIR/wrangler-d1.jsonc" --yes
+      - name: Verify exact ledger, schema objects and preserved catalog counts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/catalog/m5-d1-bounded-release.mjs verify "$M5_STAGE_DIR"
