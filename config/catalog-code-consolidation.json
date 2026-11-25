@@ -256,8 +256,8 @@
       },
       "tools/test_schema_contract.mjs": {
         "sourceBlob": "fc6335a7c3e2458d8a3d81cecdcc24c4d7a3e34a",
-        "localBlob": "de77b673b2287b3177db503335b8505cfa4d46b7",
-        "reason": "Reviewed TONART-local test distinguishes source-required D1 migrations through 0025 from later staged 0026-0028; it does not activate or require a production migration."
+        "localBlob": "67c7f239c925841b0e3c4ce733f10f59006f2bc1",
+        "reason": "Reviewed TONART-local D1 runtime regression test reproduces the 100-variable binding ceiling after M5 0028–0033; it verifies the schema metadata audit uses at most 80 bindings without weakening structural guards or exposing SQL errors."
       },
       "tools/test_worker_media_contract.mjs": {
         "sourceBlob": "6d57dc241a405ee6743a92d6a25c6f8f5a6f67d0",
@@ -268,6 +268,11 @@
         "sourceBlob": "b4dca481759d53448f31aaaff879b01546c3c74f",
         "localBlob": "dc401b6c9758af2111594d704779e02f50936a6c",
         "reason": "Reviewed TONART-only offline 20k SQLite scale regression fixture now derives unpublished canonical seed prerequisites from the already staged migrations and preserves D1 foreign keys, keyset budgets and source import pins. No Worker or D1 production change."
+      },
+      "worker/schemaContract.ts": {
+        "sourceBlob": "6e9f77269e844849653b9314517c28df7ef3c976",
+        "localBlob": "e6cda43278d24bd056fed33ae12a43824a410e81",
+        "reason": "M5 production schema v13 audit originally bound 126 D1 variables and failed at 503 after approved migration; reviewed TONART-local fix bounds each metadata query to 80 names, preserving the exact type-and-name integrity contract. Proved on live D1 in read-only mode."
       }
     },
     "excludedModules": [
