@@ -1,3 +1,8 @@
+## CHECKPOINT — NAMOR E CHARLES XAVIER (25/11/2026)
+
+- Drive: Namor quatro modelos e Charles Xavier três modelos organizados em Modelo 01–04 e Modelo 01–03, respectivamente. Sete arquivos (seis JPG e um PNG), IDs, tamanhos, permissões e pais verificados remotamente. Conferência SHA física antes/depois submetida ao OrdaX, ação `53f7ab87-d47e-4760-aab4-078ebf7a4ead`; consultar resultado, recibo esperado `drive-reconciliation/namor-xavier-seven-historical-models-receipt.json`. Não repetir movimentações. Sem uploads, exclusões ou alteração de compartilhamento.
+- Pranchas complementares 011, 015, 021, 026 e 027 revisadas: Dracula, Galactus, Charles Xavier, Namor e Ken, sem match inequívoco Telegram/Drive. Preservar as esculturas distintas; não inferir correspondência oficial. Sem confirmação editorial nova nem mudança D1/R2 nesta rodada.
+
 ## CHECKPOINT — COBERTURA COMPLEMENTAR E QUATRO MODELOS HISTÓRICOS (25/11/2026)
 
 - Comparação sem filtro de proporção concluída: 34 pranchas, 33 galerias, 217 imagens distintas, zero erros; índice `drive-reconciliation/wicked-visual-review-sheets/aspect-gap-index.json`, complete=true, processo OrdaX `394dc532-b454-41e4-bdc3-c2615f0164c9`. Não regenerar nem reinferir DINO. Revisadas as pranchas 006, 012, 020, 023, 024; não há associação inequívoca entre os modelos históricos examinados e as referências Telegram.
