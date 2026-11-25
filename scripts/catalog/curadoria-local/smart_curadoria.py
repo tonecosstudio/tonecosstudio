@@ -154,6 +154,41 @@ def process_batch(db_path,limit=300):
                  WHERE message_id=? AND outcome='visual_split_review'""",
                  (mid,)).fetchone():
                 continue
+            # Editorial decisions own both the identity and membership. A
+            # downloader correction can change or erase a caption; it must
+            # never detach a confirmed/held model or silently recreate it as
+            # a new provisional group. Keep the image linked and record only
+            # fingerprints (never the private source caption) for follow-up.
+            editorial=db.execute("""SELECT m.group_key,g.state,m.match_reason
+                FROM model_group_members m
+                JOIN model_groups g ON g.group_key=m.group_key
+                WHERE m.message_id=? AND (
+                    g.state IN ('confirmado','revisar') OR
+                    m.match_reason IN ('reviewed_angles','reviewed_split'))
+                LIMIT 1""",(mid,)).fetchone()
+            if editorial:
+                stamp=utc()
+                db.execute("""INSERT INTO curation_seen(
+                     message_id,fingerprint,outcome,processed_at
+                     ) VALUES(?,?,'editorial_review_preserved',?)
+                     ON CONFLICT(message_id) DO UPDATE SET
+                     fingerprint=excluded.fingerprint,
+                     outcome=excluded.outcome,
+                     processed_at=excluded.processed_at""",
+                     (mid,fp,stamp))
+                db.execute("""INSERT INTO curation_events(
+                     group_key,message_id,event_type,detail,occurred_at)
+                     VALUES(?,?, 'source_metadata_changed_after_review', ?, ?)""",
+                     (editorial["group_key"],mid,json.dumps({
+                         "previous_fingerprint":seen.get(mid,""),
+                         "current_fingerprint":fp,
+                         "state":editorial["state"],
+                         "match_reason":editorial["match_reason"],
+                         "membership_preserved":True,
+                     },ensure_ascii=False,sort_keys=True),stamp))
+                changed+=1
+                if changed>=limit:break
+                continue
             # An explicit gallery-wide visual audit also owns the current
             # membership. Older audited albums may still carry the historic
             # 'telegram_album' match_reason, so checking reviewed_angles alone

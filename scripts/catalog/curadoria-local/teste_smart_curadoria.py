@@ -114,6 +114,29 @@ with tempfile.TemporaryDirectory(prefix="tonart-smart-") as temp:
     assert changed["images_grouped"]==2,changed
     assert changed["model_groups"]==2,changed
     assert changed["model_states"]=={"confirmado":1,"provavel":1},changed
+    # A confirmed model remains authoritative if Telegram later removes or
+    # replaces its structured caption. Preserve the link, log the drift, and
+    # mark the new source fingerprint handled instead of making a duplicate.
+    with closing(sqlite3.connect(dbpath)) as conn, conn as db:
+        db.execute("UPDATE assets SET source_caption='' WHERE message_id=101")
+    drift=m.process_batch(dbpath,100)
+    assert drift["processed"]==1,drift
+    assert drift["model_groups"]==2 and drift["images_grouped"]==2,drift
+    assert drift["model_states"]=={"confirmado":1,"provavel":1},drift
+    with m.db_open(dbpath,readonly=True) as db:
+        membership=db.execute(
+            "SELECT group_key FROM model_group_members WHERE message_id=101"
+        ).fetchone()
+        seen=db.execute(
+            "SELECT outcome FROM curation_seen WHERE message_id=101"
+        ).fetchone()
+        audit=db.execute("""SELECT detail FROM curation_events
+            WHERE message_id=101
+              AND event_type='source_metadata_changed_after_review'
+            ORDER BY event_id DESC LIMIT 1""").fetchone()
+        assert membership and membership["group_key"]==couple["group_key"]
+        assert seen and seen["outcome"]=="editorial_review_preserved"
+        assert audit and '"membership_preserved": true' in audit["detail"]
     for mid in [101,102,103,104]:
         p=source/("msg_%d.jpg"%mid)
         assert p.read_bytes()==("CONTENT_"+str(mid)).encode()
