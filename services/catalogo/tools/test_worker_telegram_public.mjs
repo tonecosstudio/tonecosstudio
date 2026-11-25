@@ -261,6 +261,23 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
    assert.equal(page.total,2100);
    assert.equal(page.items[0].name,"Modelo 00201");
    assert.equal(page.items.length,24);
+   // Probable names are not unidentified. A rename moves the same ID,
+   // while a rejected/private row remains invisible in either view.
+   const unidentifiedId="tg_"+(0).toString(16).padStart(24,"0");
+   db.prepare("UPDATE models SET name=?,telegram_name_provisional=1 WHERE id=?").run("Modelo sem nome #1212",unidentifiedId);
+   const unnamed=await routeTelegramStudioShowcase(request("?identity=unidentified&limit=24"),env);
+   assert.equal(unnamed.status,200);
+   const unnamedPage=await unnamed.json();
+   assert.equal(unnamedPage.total,1);
+   assert.equal(unnamedPage.items[0].id,unidentifiedId);
+   assert.equal((await (await routeTelegramStudioShowcase(request("?identity=identified"),env)).json()).total,4199);
+   const directory=await routeTelegramStudioShowcase(request("/studios?identity=unidentified"),env);
+   assert.deepEqual((await directory.json()).studios,[{studio:"Studio A",total:1}]);
+   db.prepare("UPDATE models SET name=? WHERE id=?").run("Aang",unidentifiedId);
+   assert.equal((await (await routeTelegramStudioShowcase(request("?identity=unidentified"),env)).json()).total,0);
+   const named=await routeTelegramStudioShowcase(request("?identity=identified&q=Aang"),env);
+   assert.equal((await named.json()).items[0].id,unidentifiedId);
+   db.prepare("UPDATE models SET name=?,telegram_name_provisional=0 WHERE id=?").run("Modelo 00000",unidentifiedId);
    const exact=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Escultura&limit=24"),env);
    assert.equal(exact.status,200);
    assert.equal((await exact.json()).total,4200);
@@ -299,6 +316,15 @@ test("category filter binds canonical taxonomy and rejects invalid slugs",async(
  for(const url of ["?category=Anime","?category=anime%20game","?category=anime&category=anime","?category=-anime"]){
   assert.equal((await routeTelegramStudioShowcase(request(url),env)).status,400,url);
  }
+});
+test("identity view rejects invalid filters and preserves explicit visibility",async()=>{
+ const {env,queries}=fixture();
+ for(const url of ["?identity=unknown","?identity=identified&identity=unidentified","/studios?identity=all"]) {
+   assert.equal((await routeTelegramStudioShowcase(request(url),env)).status,400);
+ }
+ assert.equal((await routeTelegramStudioShowcase(request("?identity=identified"),env)).status,200);
+ assert.ok(queries.every(sql=>sql.includes("telegram_showcase_visible=1") || !sql.includes("FROM models m")));
+ assert.ok(queries.some(sql=>sql.includes("NOT (TRIM(COALESCE(m.name")));
 });
 test("provisional filter is server-side and rejects unexpected values",async()=>{
  const {env,queries}=fixture();
