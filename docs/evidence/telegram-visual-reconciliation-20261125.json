@@ -3,10 +3,13 @@
   "date": "2026-11-25",
   "curadoria_write_path": "local canonical API with revision CAS and physical SHA proofs",
   "gallery_operations": {
-    "source_groups_consolidated": 11,
-    "final_galleries": 10,
-    "images_preserved": 21,
-    "studios": ["3DXM", "Yosh Studios"],
+    "source_groups_consolidated": 12,
+    "final_galleries": 11,
+    "images_preserved": 24,
+    "studios": [
+      "3DXM",
+      "Yosh Studios"
+    ],
     "families": [
       "Obi-Wan Kenobi",
       "Hermione",
@@ -17,7 +20,8 @@
       "Armoured Batman",
       "Black Manta",
       "Mandalorian",
-      "Gremlin"
+      "Gremlin",
+      "Stormtrooper"
     ],
     "final_editorial_state": "revisar",
     "names_changed": false,
@@ -31,10 +35,10 @@
     "strong_similarity_edges": 66,
     "exact_sha_cluster_edges": 305,
     "candidate_pairs": 371,
-    "already_merged_edges": 228,
+    "already_merged_edges": 229,
     "editorial_or_variant_conflicts": 59,
     "missing_or_ambiguous_members": 80,
-    "visual_review_required": 4,
+    "visual_review_required": 3,
     "eligible_positive_audits_remaining": 0,
     "apply_run_idempotent_after_merges": true
   },
