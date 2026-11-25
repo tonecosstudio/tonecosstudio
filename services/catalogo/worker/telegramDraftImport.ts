@@ -68,6 +68,10 @@ export async function importPrivateTelegramDraft(
       !Array.isArray(ids) || ids.length < 1 || ids.length > 80) {
     return error(400, 'invalid_group_identity')
   }
+  // The catalog admits probable names, not identifier-only placeholders.
+  if (/^(?:modelo\s+sem\s+nome(?:\s*#\d+)?|sem\s+(?:nome|t[ií]tulo)|unknown|unnamed|untitled|a\s+identificar|(?:modelo\s+)?tg[-_][a-f0-9]+|(?:modelo|model)\s*#?\d+|single:\d+)$/iu.test((name as string).trim())) {
+    return error(400, 'name_identification_pending')
+  }
   const images: Photo[] = []
   for (const entry of ids) {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return error(400, 'invalid_photo')
