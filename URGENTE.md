@@ -1,3 +1,10 @@
+## CHECKPOINT — NOVE AUDITORIAS E CAPITÃO AMÉRICA (25/11/2026)
+
+- Processo OrdaX `a52ead13-8831-4e88-98c6-e8d456d3832e` exit 0, AUDITED 9 ok: Armoured Batman (#18591,18870,19053), Mandalorian (#18780,18878), Gremlin (#18814,18900), acessório rotulado Black Manta (#10910,25754). Recibo `studio-review/strong-pairs-batman-mandalorian-gremlin-manta-receipt.json`. SHA físico conferido, auditorias registradas; sem fusões ou mudança de nomes. Não repetir.
+- Wooper #7487/#7489: diferenças de acabamento/cor preservadas. Uther Lightbringer #20323 e #20326–20332: provável mesma escultura, mas a última imagem é composição promocional com outros modelos; não fundir sem revisar composição e consumidores. Prancha ação `60bf02e8-0b29-494b-8917-84edb8e9aacd`.
+- Drive Capitão América: cinco imagens históricas distintas organizadas em Modelo 01–05, quatro WebP e um JPG, mesmos IDs, tamanhos, permissões e SHA antes/depois. Recibo `drive-reconciliation/captain-america-five-historical-models-receipt.json`, ação `53baa3c5-e3fa-4fc0-89a0-4eb4bdb0e605` exit 0, CAPTAIN_AMERICA_VERIFIED 5. Não repetir; remapear caminhos antigos pelo recibo. Nenhuma correspondência Telegram confirmada, nenhum upload, exclusão ou alteração de acesso.
+- Wicked: sem novas confirmações oficiais ou alteração de variantes nesta rodada; último estado 479/820. Sem alterações D1/R2. O bloqueio anterior da ferramenta para fusão de Deadpool permanece respeitado.
+
 ## CHECKPOINT — CINCO PARES DINO AUDITADOS (25/11/2026)
 
 - Processo OrdaX `3a0b83f9-7d86-4876-a140-0e5bcc2fa121` exit 0, AUDITED 10 ok, recibo `studio-review/strong-pairs-next-five-audit-receipt.json`: Hermione (#18868,18924), Comic Deadpool Mask (#11134,11254), Jack Skellington (#18988,19096), Mulher-Maravilha (#18880,18958), Robin Animated (#19304,19314). Comparação visual e SHA dos dez originais, auditoria canônica registrada, integridade ok. Não repetir auditorias.
