@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync, existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { inspectRetiredWorkersBuilds, isRetiredWorkersBuilds } from "./cutover-readiness.mjs";
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const MIGRATIONS = [
@@ -189,8 +190,14 @@ export async function perform(mode, env, stagePath) {
   const plan = planMigrationFiles({ applied: ledger.applied });
   const requiredPrior = schema.requiredMigrations.filter((name) => /^\d{4}_/.test(name) && Number(name.slice(0, 4)) <= 27);
   ensure(requiredPrior.length >= 27 && requiredPrior.every((name) => ledger.applied.includes(name)), "earlier_required_migrations_missing");
+  // Both initial DDL and final verification must share the same single-writer
+  // gate as Worker promotion. A surviving Workers Builds trigger can deploy
+  // incompatible runtime code while an authorized D1 migration is in progress.
+  await verifyRetiredSource(env.GITHUB_TOKEN, manifest);
+  const builds = await inspectRetiredWorkersBuilds(manifest.runtime.cloudflareAccountId, env.CLOUDFLARE_API_TOKEN);
+  ensure(isRetiredWorkersBuilds(builds, manifest.productionObservation.workersBuildsScriptTag),
+    "cloudflare_workers_builds_parallel_publisher_active_or_unverified");
   if (mode === "prepare") {
-    await verifyRetiredSource(env.GITHUB_TOKEN, manifest);
     await verifySeedReferences(env.CLOUDFLARE_API_TOKEN, manifest, db);
     ensure(plan.pending.length > 0, "already_applied_noop_requires_verify");
     const bookmark = await getBookmark(env.CLOUDFLARE_API_TOKEN, manifest.runtime.cloudflareAccountId, db.database_id);
@@ -199,7 +206,6 @@ export async function perform(mode, env, stagePath) {
     writeFileSync(join(resolve(stagePath), "preflight.json"), JSON.stringify(baseline) + "\n", { flag: "wx", mode: 0o600 });
     return { status: "PREPARED_ONLY", pending: plan.pending, previous: plan.applied, config, models: ledger.counts.models, bookmarkCaptured: true };
   }
-  await verifyRetiredSource(env.GITHUB_TOKEN, manifest);
   const baseline = asJSON(join(resolve(stagePath), "preflight.json"));
   ensure(baseline.sha === env.GITHUB_SHA, "head_changed_during_migration");
   ensure(baseline.beforeBookmark?.length > 10, "backup_bookmark_not_recorded");
