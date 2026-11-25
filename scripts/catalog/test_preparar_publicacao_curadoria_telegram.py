@@ -401,7 +401,8 @@ def test_existing_name_sync_read_only():
 def test_private_draft_plan_without_publication():
     with tempfile.TemporaryDirectory(prefix="tonart-private-import-plan-") as temp:
         home = Path(temp)
-        db, known, fr = home/"c.sqlite3", home/"d1.csv", home/"franchises.csv"
+        db, known, fr, known_images = (home/"c.sqlite3", home/"d1.csv",
+                                       home/"franchises.csv", home/"d1-images.csv")
         with closing(sqlite3.connect(db)) as con:
             con.executescript("""
                 CREATE TABLE assets(message_id INTEGER PRIMARY KEY, sha256 TEXT,
@@ -439,17 +440,40 @@ def test_private_draft_plan_without_publication():
             insert(18,"Geral + 50k","Private","Pokémon",None)
             con.commit()
         with known.open("w",encoding="utf8",newline="") as file:
-            w=csv.DictWriter(file,fieldnames=["model_id","studio","telegram_group_key"])
+            fields=["model_id","studio","telegram_group_key","published","image_count","gallery_version","name","variant_name"]
+            w=csv.DictWriter(file,fieldnames=fields)
             w.writeheader();w.writerow(dict(model_id="tg_"+"b"*24,studio="Studio A",
-                                          telegram_group_key="b"*24))
+                telegram_group_key="b"*24,published=0,image_count=1,gallery_version=1,
+                name="Mew",variant_name=""))
+        with known_images.open("w",encoding="utf8",newline="") as file:
+            fields=["model_id","image_id","source_sha256","studio","telegram_group_key","telegram_origin_id","position","gallery_version","model_gallery_version"]
+            w=csv.DictWriter(file,fieldnames=fields);w.writeheader()
+            w.writerow(dict(model_id="tg_"+"b"*24,image_id="tg:13",
+                source_sha256=hashlib.sha256(b"13").hexdigest(),studio="Studio A",
+                telegram_group_key="b"*24,telegram_origin_id="2370335738",position=0,
+                gallery_version=1,model_gallery_version=1))
         with fr.open("w",encoding="utf8",newline="") as file:
             w=csv.DictWriter(file,fieldnames=["id","name"])
             w.writeheader();w.writerow(dict(id=57,name="Pokémon"))
-        ready, held, summary = m.plan_private_telegram_drafts(db,known,1,fr,1)
-        assert len(ready)==2,ready
+        def plan(expected_models=1, expected_franchises=1, expected_images=1, pending=None):
+            return m.plan_private_telegram_drafts(db,known,expected_models,fr,
+                expected_franchises,known_d1_images_csv=known_images,
+                expected_d1_images=expected_images,pending_franchise_id=pending)
+        ready, held, summary = plan()
+        assert len(ready)==4,ready
         assert summary["existing_d1_models"]==1 and summary["franchises_in_d1"]==1
-        assert summary["reasons"]["already_in_d1"]==1 and summary["held"]==2,summary
-        assert {o["import_manifest"]["groupKey"] for o in ready}=={"a"*24,"single:17"}
+        assert summary["reasons"]["already_in_d1"]==1 and summary["held"]==1,summary
+        assert {o["import_manifest"]["groupKey"] for o in ready}=={
+            "a"*24,"single:14","single:15","single:17"}
+        split={o["import_manifest"]["groupKey"]:o for o in ready
+               if o["provisional_singleton"]}
+        assert set(split)=={"single:14","single:15"}
+        assert all(o["source_group_key"]=="c"*24 and
+                   o["import_manifest"]["name"]=="Modelo sem nome #"+
+                   o["import_manifest"]["groupKey"].split(":")[1] and
+                   o["import_manifest"]["universe"]=="Pokémon" for o in split.values())
+        assert summary["conservative_split_groups"]==1
+        assert summary["conservative_split_images"]==2
         assert all(o["import_manifest"]["franchiseId"]==57 for o in ready)
         assert all(not o["apply_executed"] and not o["showcase_visible"]
                    and not o["rights_verified"] and not o["r2_verified"] for o in ready)
@@ -457,15 +481,29 @@ def test_private_draft_plan_without_publication():
             {"messageId":11,"sha256":hashlib.sha256(b"11").hexdigest()},
             {"messageId":12,"sha256":hashlib.sha256(b"12").hexdigest()},
         ]
-        second,_,_ = m.plan_private_telegram_drafts(db,known,1,fr,1)
+        second,_,_ = plan()
         assert [x["operation_id"] for x in ready]==[x["operation_id"] for x in second]
+        # A state-only review blocker still preserves eligible media as
+        # singletons instead of dropping the complete gallery.
+        with closing(sqlite3.connect(db)) as con:
+            con.execute("UPDATE model_groups SET state='revisar' WHERE group_key=?",("c"*24,))
+            con.execute("UPDATE name_proposals SET title='Mixed' WHERE message_id=15")
+            con.execute("UPDATE annotations SET model='Mixed' WHERE message_id=15")
+            con.commit()
+        review_split,_,review_summary=plan()
+        review_items={x["import_manifest"]["groupKey"]:x for x in review_split
+                      if x["source_group_key"]=="c"*24}
+        assert set(review_items)=={"single:14","single:15"}
+        assert all(x["provisional_singleton_reason"]=="group_state_requires_review"
+                   for x in review_items.values())
+        assert review_summary["conservative_split_groups"]==1
         try:
-            m.plan_private_telegram_drafts(db,known,2,fr,1)
+            plan(expected_models=2)
             assert False, "partial D1 export must be blocked"
         except ValueError as exc:
             assert "Snapshot D1 incompleto" in str(exc)
         try:
-            m.plan_private_telegram_drafts(db,known,1,fr,2)
+            plan(expected_franchises=2)
             assert False, "partial franchise export must be blocked"
         except ValueError as exc:
             assert "franquias D1 incompleto" in str(exc)
@@ -491,9 +529,9 @@ def test_private_draft_plan_without_publication():
                 {"id":57,"name":"Pokémon"},
                 {"id":77,"name":"Dragon Ball"},
             ])
-        extended,held,report=m.plan_private_telegram_drafts(db,known,1,fr,2)
-        assert len(extended)==5,extended
-        assert len(held)==2
+        extended,held,report=plan(expected_franchises=2)
+        assert len(extended)==7,extended
+        assert len(held)==1
         assert report["franchises_in_d1"]==2
         imported={x["import_manifest"]["groupKey"]:x for x in extended}
         assert imported["single:19"]["studio"]=="Studio A"
@@ -509,15 +547,14 @@ def test_private_draft_plan_without_publication():
                 {"id":77,"name":"Dragon Ball"},
                 {"id":99,"name":"Franquia a identificar"},
             ])
-        provisional,unknown_held,unknown_summary=m.plan_private_telegram_drafts(
-            db,known,1,fr,3,pending_franchise_id=99)
-        assert len(provisional)==6,provisional
+        provisional,unknown_held,unknown_summary=plan(expected_franchises=3,pending=99)
+        assert len(provisional)==8,provisional
         pending={x["import_manifest"]["groupKey"]:x for x in provisional}
         assert pending["single:16"]["franchise_pending"]
         assert pending["single:16"]["import_manifest"]["franchiseId"]==99
         assert pending["single:16"]["import_manifest"]["universe"]=="Unknown Universe"
         assert unknown_summary["pending_franchise_candidates"]==1
-        assert len(unknown_held)==1
+        assert len(unknown_held)==0
         assert not pending["single:16"]["apply_executed"]
         # Unnamed material can enter the same private catalogue with a stable
         # placeholder and the real pending franchise; rejected media remains held.
@@ -531,21 +568,104 @@ def test_private_draft_plan_without_publication():
                             (mid,"revisar","Studio A","","","",f"{mid}.jpg","","",0))
             con.execute("UPDATE model_groups SET state='confirmado' WHERE group_key=?",("a"*24,))
             con.commit()
-        coverage,held,coverage_summary=m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=99)
+        coverage,held,coverage_summary=plan(expected_franchises=3,pending=99)
         coverage_map={x["import_manifest"]["groupKey"]:x for x in coverage}
         assert coverage_map["single:22"]["import_manifest"]["name"]=="Modelo sem nome #22"
         assert coverage_map["single:22"]["import_manifest"]["franchiseId"]==99
         assert "single:23" not in coverage_map
         assert "a"*24 in coverage_map
-        assert coverage_summary["pending_name_candidates"]==1
+        assert coverage_summary["pending_name_candidates"]==3
         assert coverage_summary["reasons"]["rejected_media"]==1
         assert not coverage_map["single:22"]["showcase_visible"]
         assert not coverage_map["single:22"]["apply_executed"]
         try:
-            m.plan_private_telegram_drafts(db,known,1,fr,3,pending_franchise_id=57)
+            plan(expected_franchises=3,pending=57)
             assert False,"wrong provisional ID must be rejected"
         except ValueError as exc:
             assert "Franquia provisoria" in str(exc)
+
+        # A same-key gallery can safely append newly curated source images to
+        # its existing private draft. The importer receives the complete live
+        # gallery plus new images, so replay remains idempotent.
+        with closing(sqlite3.connect(db)) as con:
+            insert(24,"Studio A","Mew","Pokémon","b"*24)
+            con.commit()
+        appended,_,append_summary=plan(expected_franchises=3)
+        append_op=next(x for x in appended if x["append_to_existing_private_draft"])
+        assert append_op["model_id"]=="tg_"+"b"*24
+        assert append_op["existing_d1_model"]=="tg_"+"b"*24
+        assert not append_op["new_private_draft_only"]
+        assert [x["messageId"] for x in append_op["import_manifest"]["images"]]==[13,24]
+        assert append_summary["private_draft_appends"]==1
+        appended_again,_,_=plan(expected_franchises=3)
+        assert append_op["operation_id"]==next(
+            x["operation_id"] for x in appended_again
+            if x["append_to_existing_private_draft"])
+
+        # A Curadoria key change must not turn an image already owned by a
+        # different D1 model into a permanent duplicate singleton.
+        with known.open("w",encoding="utf8",newline="") as file:
+            fields=["model_id","studio","telegram_group_key","published","image_count","gallery_version","name","variant_name"]
+            w=csv.DictWriter(file,fieldnames=fields);w.writeheader()
+            w.writerows([
+                dict(model_id="tg_"+"b"*24,studio="Studio A",telegram_group_key="b"*24,
+                     published=0,image_count=1,gallery_version=1,name="Mew",variant_name=""),
+                dict(model_id="tg_"+"d"*24,studio="Studio A",telegram_group_key="d"*24,
+                     published=0,image_count=1,gallery_version=1,name="Incompatible",variant_name=""),
+            ])
+        with known_images.open("w",encoding="utf8",newline="") as file:
+            fields=["model_id","image_id","source_sha256","studio","telegram_group_key","telegram_origin_id","position","gallery_version","model_gallery_version"]
+            w=csv.DictWriter(file,fieldnames=fields);w.writeheader()
+            w.writerows([
+                dict(model_id="tg_"+"b"*24,image_id="tg:13",
+                     source_sha256=hashlib.sha256(b"13").hexdigest(),studio="Studio A",
+                     telegram_group_key="b"*24,telegram_origin_id="2370335738",position=0,
+                     gallery_version=1,model_gallery_version=1),
+                dict(model_id="tg_"+"d"*24,image_id="tg:14",
+                     source_sha256=hashlib.sha256(b"14").hexdigest(),studio="Studio A",
+                     telegram_group_key="d"*24,telegram_origin_id="2370335738",position=0,
+                     gallery_version=1,model_gallery_version=1),
+            ])
+        reconciled,overlap_held,overlap_summary=plan(
+            expected_models=2,expected_franchises=3,expected_images=2)
+        assert not any(x["source_group_key"]=="c"*24 for x in reconciled)
+        conflict=next(x for x in overlap_held
+                      if x["identity_key"]=="c"*24)
+        assert conflict["reason"]=="existing_image_identity_conflict"
+        assert conflict["conflicting_d1_models"]==["tg_"+"d"*24]
+        assert overlap_summary["reasons"]["existing_image_identity_conflict"]==1
+
+        # Historical catalog SHA ownership also blocks a Telegram duplicate.
+        with known_images.open("a",encoding="utf8",newline="") as file:
+            w=csv.DictWriter(file,fieldnames=fields)
+            w.writerow(dict(model_id="legacy-model",image_id="img_legacy01",
+                source_sha256=hashlib.sha256(b"16").hexdigest(),studio="",
+                telegram_group_key="",telegram_origin_id="",position=0,
+                gallery_version=42,model_gallery_version=42))
+        historical,history_held,history_summary=plan(
+            expected_models=2,expected_franchises=3,expected_images=3)
+        assert "single:16" not in {x["import_manifest"]["groupKey"] for x in historical}
+        assert any(x["identity_key"]=="single:16" and
+                   x["reason"]=="existing_image_identity_conflict" for x in history_held)
+
+        # The same studio/name/variant check used by the Worker catches a
+        # likely sculpture duplicate before a batch reaches the API.
+        with known.open("w",encoding="utf8",newline="") as file:
+            fields=["model_id","studio","telegram_group_key","published","image_count","gallery_version","name","variant_name"]
+            w=csv.DictWriter(file,fieldnames=fields);w.writeheader()
+            w.writerows([
+                dict(model_id="tg_"+"b"*24,studio="Studio A",telegram_group_key="b"*24,
+                     published=0,image_count=1,gallery_version=1,name="Pikachu",variant_name=""),
+                dict(model_id="tg_"+"d"*24,studio="Studio A",telegram_group_key="d"*24,
+                     published=0,image_count=1,gallery_version=1,name="Incompatible",variant_name=""),
+            ])
+        identity_plan,identity_held,identity_summary=plan(
+            expected_models=2,expected_franchises=3,expected_images=3)
+        assert "single:17" not in {x["import_manifest"]["groupKey"] for x in identity_plan}
+        pikachu=next(x for x in identity_held
+                     if x["identity_key"]=="single:17")
+        assert pikachu["reason"]=="possible_same_studio_sculpture"
+        assert pikachu["conflicting_d1_models"]==["tg_"+"b"*24]
 
 
 
