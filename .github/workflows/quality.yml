@@ -317,7 +317,7 @@ jobs:
         run: node --test scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/vercel/catalog-proxy.test.mjs
 
       - name: Validate cutover gate fail-closed without network
-        run: node --test scripts/catalog/cutover-readiness.test.mjs
+        run: node --test scripts/catalog/cutover-readiness.test.mjs scripts/catalog/production-cloudflare-env.test.mjs
 
       # The canonical TONART launch PR requires release:verify before a
       # production promotion. Reuse this existing PR job instead of creating
@@ -381,6 +381,8 @@ jobs:
           node-version: 24
           cache: npm
 
+      - name: Resolve Cloudflare account from manifest and require production token
+        run: node scripts/catalog/production-cloudflare-env.mjs
       - name: Verify auditable one-use M5 Worker release receipt
         if: github.event_name == 'push'
         shell: bash
@@ -504,6 +506,8 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
+      - name: Resolve Cloudflare account from manifest and require production token
+        run: node scripts/catalog/production-cloudflare-env.mjs
       - name: Validate one-use M5 D1 release receipt before any migration
         if: github.event_name == 'push'
         shell: bash
@@ -524,7 +528,7 @@ jobs:
           echo 'M5_ACK=GO-M5-0028-0033-20261125' >> "$GITHUB_ENV"
           echo 'M5_D1_GO_RECEIPT_VERIFIED'
       - name: Offline M5 migration scope tests
-        run: node --test scripts/catalog/m5-d1-bounded-release.test.mjs scripts/catalog/cutover-readiness.test.mjs
+        run: node --test scripts/catalog/m5-d1-bounded-release.test.mjs scripts/catalog/cutover-readiness.test.mjs scripts/catalog/production-cloudflare-env.test.mjs
       - name: Require exact GO, disabled source writers, D1 bookmark and live ledger
         shell: bash
         run: |
