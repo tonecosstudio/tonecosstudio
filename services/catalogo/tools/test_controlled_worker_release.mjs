@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {readFileSync} from 'node:fs'
-import {deploymentVersions,assertTraffic,rollbackPlan,uploadedVersion,readLiveDeployment,smoke} from './controlled_worker_release.mjs'
+import {deploymentVersions,assertTraffic,rollbackPlan,uploadedVersion,readLiveDeployment,smoke,smokePreviousTelegram} from './controlled_worker_release.mjs'
 
 const previous='aa8fd20c-857c-4780-a15e-021569a32251'
 const candidate='dddddddd-1111-2222-3333-aaaaaaaaaaaa'
@@ -71,6 +71,32 @@ test('version-override smoke verifies v9 schema, Telegram models, studios and th
   assert.equal(count,4)
   await assert.rejects(smoke('https://catalogo.tonartstudio.com.br',candidate,async()=>{throw Error('unexpected fetch')}))
 })
+test('zero-traffic rollback drill verifies previous Telegram service without claiming v63 core health',async()=>{
+  const id='tg_abcdef0123456789abcdef01'
+  const requests=[]
+  const restored=await smokePreviousTelegram(
+    'https://tonecos-catalogo-api.tonecosstudio.workers.dev',
+    async(url,init)=>{
+      requests.push(url)
+      assert.equal(init.method,'GET')
+      assert.ok(!url.includes('/api/health'),'old v63 is not the corrected candidate')
+      if(url.endsWith('/studios'))return Response.json({studios:[{studio:'Studio A',total:1}]})
+      return Response.json({total:4262,items:[{id}]})
+    }
+  )
+  assert.equal(restored.previousWorkerRestored,true)
+  assert.equal(restored.telegramModels,4262)
+  assert.equal(requests.length,2)
+  await assert.rejects(smokePreviousTelegram(
+    'https://catalogo.tonartstudio.com.br',
+    async()=>{throw Error('unexpected external origin')}
+  ))
+  await assert.rejects(smokePreviousTelegram(
+    'https://tonecos-catalogo-api.tonecosstudio.workers.dev',
+    async()=>new Response('error',{status:503})
+  ))
+})
+
 test('one existing workflow owns controlled release, protected by M5 and rollback',()=>{
   const m=JSON.parse(readFileSync(new URL('../../../config/catalog-code-consolidation.json',import.meta.url)))
   const approved=['cutover-approved','cutover-complete'].includes(m.migration.phase)
@@ -93,7 +119,10 @@ test('one existing workflow owns controlled release, protected by M5 and rollbac
   // but their Wrangler commands must not be attributed to Worker release.
   const job=remaining.split(/\r?\n {2}[a-z][a-z0-9-]*:/,1)[0]
   assert.ok(job.includes('environment: production'))
-  assert.ok(job.indexOf('cutover-readiness.mjs --live')<job.indexOf('wrangler versions upload'))
+  assert.ok(job.indexOf('cutover-readiness.mjs --worker-stage')<job.indexOf('wrangler versions upload'))
+  assert.ok(job.indexOf('controlled_worker_release.mjs rollback-drill') > job.indexOf('controlled_worker_release.mjs staged'))
+  assert.ok(job.indexOf('controlled_worker_release.mjs rollback-drill') < job.indexOf('Promote validated candidate'))
+  assert.ok(job.indexOf('Restage and verify candidate after rollback drill') < job.indexOf('Promote validated candidate'))
   assert.ok(job.includes('@0%'))
   assert.ok(job.includes("steps.stage.outcome == 'failure'"))
   assert.ok(job.includes("steps.stage.outcome == 'success'"))
