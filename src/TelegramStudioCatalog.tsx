@@ -324,6 +324,12 @@ export default function TelegramStudioCatalog({
   }, [view]);
 
   useEffect(() => {
+    if (query && isEmbeddedCatalogRoute(window.location.pathname)) {
+      window.location.replace(
+        PUBLIC_ROUTES.catalogModels + "?q=" + encodeURIComponent(query),
+      );
+      return;
+    }
     if (view === "studios" && !studio) {
       setLoading(false);
       setListError("");
@@ -399,6 +405,12 @@ export default function TelegramStudioCatalog({
       return;
     }
     setSearchError("");
+    if (term && isEmbeddedCatalogRoute(window.location.pathname)) {
+      window.location.assign(
+        PUBLIC_ROUTES.catalogModels + "?q=" + encodeURIComponent(term),
+      );
+      return;
+    }
     navigate({
       ...route,
       franchise: "",

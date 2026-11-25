@@ -342,3 +342,44 @@ test("D1 Worker SQL keyset pages and filters a 20k live catalog over a full migr
   assert.equal(searched.body.items[0].code, "R29-00001");
   assert.ok(searched.body.nextCursor);
 });
+
+test("global search combines eligible historical and Telegram rows, preserves keyset pagination and hides private drafts", async (context) => {
+  const db = createCatalogDatabase();
+  context.after(() => db.close());
+  const { database } = createD1Adapter(db);
+  const franchise = db.prepare("SELECT id FROM franchises WHERE slug='saga-alfa'").get().id;
+  db.prepare("INSERT INTO models(id,franchise_id,slug,code,name,published,search_text,image_count) VALUES(?,?,?,?,?,1,?,1)")
+    .run("historical-thanos",franchise,"historical-thanos","OLD-THANOS","Thanos A","Thanos A");
+  const put = db.prepare("INSERT INTO models(id,franchise_id,slug,code,name,published,search_text,image_count,telegram_group_key,telegram_origin_id,telegram_studio,telegram_character,telegram_review_status,telegram_name_provisional,telegram_rights_status) VALUES(?,?,?,?,?,0,?,1,?,'2370335738','Test Studio',?,'pending',1,'not_reviewed')");
+  const ids = ["a","b","c","d"].map(x => "tg_"+x.repeat(24));
+  put.run(ids[0],franchise,"telegram-a","TG-A","Thanos B","Thanos B","a".repeat(24),"Thanos");
+  put.run(ids[1],franchise,"telegram-b","TG-B","Modelo sem nome #2","Modelo sem nome #2","b".repeat(24),"Thanos");
+  put.run(ids[2],franchise,"telegram-c","TG-C","Thanos hidden","Thanos hidden","c".repeat(24),"Thanos");
+  put.run(ids[3],franchise,"telegram-d","TG-D","Thanos rejected","Thanos rejected","d".repeat(24),"Thanos");
+  for (const id of [ids[0],ids[1],ids[3]]) {
+    db.prepare("INSERT INTO telegram_showcase_owner_preview_grants(model_id,authority,scope,reason) VALUES(?,'owner_explicit_request','noncommercial_readonly_preview','Synthetic test fixture')").run(id);
+    db.prepare("UPDATE models SET telegram_showcase_visible=1 WHERE id=?").run(id);
+  }
+  db.prepare("UPDATE models SET telegram_review_status='rejected' WHERE id=?").run(ids[3]);
+  const sha="e".repeat(64);
+  db.prepare("INSERT INTO model_image_sources(model_id,image_id,position,role,source_sha256,gallery_version) VALUES(?,'tg:42',0,'cover',?,1)").run(ids[0],sha);
+  const oldOnly = await requestCatalog(database,{q:"Thanos",limit:10});
+  assert.equal(oldOnly.response.status,200);
+  assert.deepEqual(oldOnly.body.items.map(m=>m.id),["historical-thanos"]);
+  const first=await requestCatalog(database,{q:"Thanos",scope:"all",limit:2});
+  assert.equal(first.response.status,200);
+  assert.ok(first.body.nextCursor);
+  const second=await requestCatalog(database,{q:"Thanos",scope:"all",limit:2,cursor:first.body.nextCursor});
+  assert.equal(second.response.status,200);
+  assert.equal(second.body.nextCursor,null);
+  const results=[...first.body.items,...second.body.items];
+  assert.deepEqual(results.map(m=>m.id),[ids[1],"historical-thanos",ids[0]]);
+  assert.equal(results.find(m=>m.id==="historical-thanos").telegram_preview,undefined);
+  assert.deepEqual(results.find(m=>m.id===ids[0]).telegram_preview,{pending:true,cover:"/api/telegram-studios/"+ids[0]+"/media/"+sha+"/thumb"});
+  assert.equal(results.find(m=>m.id===ids[0]).cover_storage_key,null);
+  const wildcard=await requestCatalog(database,{q:"___",scope:"all",limit:10});
+  assert.equal(wildcard.response.status,200);
+  assert.deepEqual(wildcard.body.items,[]);
+  const invalid=await requestCatalog(database,{scope:"all"});
+  assert.equal(invalid.response.status,400);
+});

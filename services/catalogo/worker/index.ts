@@ -1,6 +1,6 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
 import { routeTelegramDrafts, type TelegramDraftEnv } from './telegramDrafts'
-import { routeTelegramStudioShowcase, type TelegramPublicEnv } from './telegramPublic'
+import { routeTelegramStudioShowcase, TELEGRAM_PUBLIC_VISIBLE_SQL, TELEGRAM_PUBLIC_COVER_SHA_SQL, type TelegramPublicEnv } from './telegramPublic'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
 import { type GalleryModelState } from './galleryValidation'
 import { catalogSchemaStatus } from './schemaContract'
@@ -53,6 +53,10 @@ type CatalogRow = {
   image_count: number
   gallery_version: number
   cover_storage_key: string | null
+  telegram_cover_sha?: string | null
+  telegram_review_status?: string | null
+  telegram_name_provisional?: number | null
+  telegram_preview?: number
 }
 
 type CatalogCursor = {
@@ -376,7 +380,12 @@ async function listCatalog(request: Request, env: Env) {
     if (length > 120) return json(request, env, { error: 'search_too_long', maxLength: 120 }, { status: 400 })
   }
 
-  const where = ['m.published = 1']
+  // Global text search does not change commercial browsing or publication.
+  const globalSearch = url.searchParams.get('scope') === 'all'
+  if (globalSearch && !query) return json(request, env, { error: 'global_search_requires_query' }, { status: 400 })
+  const where = [globalSearch
+    ? "((m.telegram_group_key IS NULL AND m.published=1) OR (" + TELEGRAM_PUBLIC_VISIBLE_SQL + "))"
+    : 'm.published = 1']
   const values: unknown[] = []
   let folderCte = ''
   if (folder) {
@@ -423,7 +432,12 @@ async function listCatalog(request: Request, env: Env) {
     )`)
     values.push(attributeId)
   }
-  if (query) { where.push('models_fts MATCH ?'); values.push(toFtsPhrase(query)) }
+  if (query && globalSearch) {
+    const term = query.toLowerCase()
+    where.push('m.id IN (SELECT model_id FROM models_fts WHERE models_fts MATCH ? UNION SELECT m.id FROM models m JOIN franchises f ON f.id=m.franchise_id WHERE ' +
+      TELEGRAM_PUBLIC_VISIBLE_SQL + " AND (instr(lower(m.name), ?) > 0 OR instr(lower(COALESCE(m.telegram_character,'')), ?) > 0 OR instr(lower(COALESCE(m.variant_name,'')), ?) > 0 OR instr(lower(f.name), ?) > 0))")
+    values.push(toFtsPhrase(query), term, term, term, term)
+  } else if (query) { where.push('models_fts MATCH ?'); values.push(toFtsPhrase(query)) }
   if (material) { where.push('LOWER(COALESCE(m.material, \'\')) LIKE LOWER(?) ESCAPE \'\\\''); values.push(`%${material.replace(/[\\%_]/g, '\\$&')}%`) }
   if (collection) { where.push('LOWER(COALESCE(m.collection, \'\')) LIKE LOWER(?) ESCAPE \'\\\''); values.push(`%${collection.replace(/[\\%_]/g, '\\$&')}%`) }
   if (minHeight !== null && minHeight >= 1 && minHeight <= 300) { where.push('m.height_cm >= ?'); values.push(minHeight) }
@@ -433,11 +447,18 @@ async function listCatalog(request: Request, env: Env) {
     values.push(cursor.name, cursor.name, cursor.id)
   }
 
-  const searchJoin = query ? 'JOIN models_fts ON models_fts.model_id = m.id' : ''
+  const searchJoin = query && !globalSearch ? 'JOIN models_fts ON models_fts.model_id = m.id' : ''
+  const coverProjection = globalSearch ? [
+    "CASE WHEN m.telegram_group_key IS NOT NULL THEN NULL ELSE m.cover_storage_key END AS cover_storage_key",
+    "CASE WHEN m.telegram_group_key IS NOT NULL THEN 1 ELSE 0 END AS telegram_preview",
+    "CASE WHEN m.telegram_group_key IS NOT NULL THEN m.telegram_review_status END AS telegram_review_status",
+    "CASE WHEN m.telegram_group_key IS NOT NULL THEN m.telegram_name_provisional END AS telegram_name_provisional",
+    "CASE WHEN m.telegram_group_key IS NOT NULL THEN " + TELEGRAM_PUBLIC_COVER_SHA_SQL + " END AS telegram_cover_sha",
+  ].join(',') + ',' : 'm.cover_storage_key,'
   const sql = `${folderCte} SELECT m.id,m.slug,m.code,m.name,m.variant_name,m.collection,m.material,m.height_cm,cf.path AS folder_path,
     ${LOGICAL_IMAGE_COUNT_SQL} AS image_count,
     ${PUBLIC_GALLERY_VERSION_SQL} AS gallery_version,
-    m.cover_storage_key,
+    ${coverProjection}
     f.name AS franchise,f.slug AS franchise_slug,c.name AS category,c.slug AS category_slug
     FROM models m
     JOIN franchises f ON f.id=m.franchise_id
@@ -455,7 +476,18 @@ async function listCatalog(request: Request, env: Env) {
   const tags = await loadCanonicalPublicModelTags(env.DB, items)
   const lastItem = items.at(-1)
   return json(request, env, {
-    items: items.map(item => ({ ...item, tags: tags.get(item.id) ?? [] })),
+    items: items.map(item => {
+      if (!globalSearch) return { ...item, tags: tags.get(item.id) ?? [] }
+      const { telegram_cover_sha, telegram_preview, telegram_review_status, telegram_name_provisional, ...model } = item
+      return {
+        ...model, tags: tags.get(item.id) ?? [],
+        ...(telegram_preview === 1 ? { telegram_preview: {
+          pending: telegram_review_status !== 'confirmed' || telegram_name_provisional === 1,
+          cover: /^[a-f0-9]{64}$/.test(telegram_cover_sha ?? '') && /^tg_[a-f0-9]{24}$/.test(item.id)
+            ? '/api/telegram-studios/' + item.id + '/media/' + telegram_cover_sha + '/thumb' : null,
+        } } : {}),
+      }
+    }),
     nextCursor: hasMore && lastItem ? encodeCatalogCursor(lastItem) : null,
   }, {}, 'public, max-age=30, s-maxage=120')
 }

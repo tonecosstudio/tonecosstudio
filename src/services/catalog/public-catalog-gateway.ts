@@ -1,6 +1,13 @@
-import { isApprovedPublicCover, isApprovedPublicMediaKey } from "./approved-public-renders";
+import {
+  isApprovedPublicCover,
+  isApprovedPublicMediaKey,
+} from "./approved-public-renders";
 import specialstlQuarantine from "./specialstl-quarantine.json";
-import { canonicalTagsForModel, type CatalogTag, type CatalogTagKind } from "@/types/catalog-tags";
+import {
+  canonicalTagsForModel,
+  type CatalogTag,
+  type CatalogTagKind,
+} from "@/types/catalog-tags";
 
 /**
  * Read-only boundary for the canonical Tonecos catalog.
@@ -25,6 +32,7 @@ export type PublicCatalogModel = {
   galleryVersion: number;
   coverStorageKey: string | null;
   tags?: CatalogTag[];
+  telegramPreview?: { pending: boolean; cover: string | null };
 };
 
 export type PublicCatalogCategory = {
@@ -116,6 +124,7 @@ export type PublicCatalogFilters = {
   characterId?: string;
   attributeId?: string;
   search?: string;
+  globalSearch?: boolean;
   cursor?: string;
   limit?: number;
 };
@@ -139,6 +148,7 @@ type CatalogWireModel = {
   material?: unknown;
   height_cm?: unknown;
   tags?: unknown;
+  telegram_preview?: unknown;
 };
 
 const PUBLIC_TAG_KINDS = new Set<CatalogTagKind>([
@@ -158,7 +168,10 @@ function decodeCatalogTags(value: unknown): CatalogTag[] {
     if (!item || typeof item !== "object" || Array.isArray(item))
       throw new Error("invalid_catalog_tag");
     const tag = item as Record<string, unknown>;
-    if (typeof tag.kind !== "string" || !PUBLIC_TAG_KINDS.has(tag.kind as CatalogTagKind))
+    if (
+      typeof tag.kind !== "string" ||
+      !PUBLIC_TAG_KINDS.has(tag.kind as CatalogTagKind)
+    )
       throw new Error("invalid_catalog_tag_kind");
     if (tag.provisional !== undefined && typeof tag.provisional !== "boolean")
       throw new Error("invalid_catalog_tag_status");
@@ -186,7 +199,10 @@ function optionalText(value: unknown, field: string): string | null {
 }
 
 function validateCatalogCursor(value: string | undefined, field: string): void {
-  if (value !== undefined && (typeof value !== "string" || !value || value.length > 2048)) {
+  if (
+    value !== undefined &&
+    (typeof value !== "string" || !value || value.length > 2048)
+  ) {
     throw new Error(field);
   }
 }
@@ -226,7 +242,32 @@ function decodeModel(value: unknown): PublicCatalogModel {
   const categorySlug = requiredText(row.category_slug, "category_slug");
   const franchise = requiredText(row.franchise, "franchise");
   const franchiseSlug = requiredText(row.franchise_slug, "franchise_slug");
+  let telegramPreview: PublicCatalogModel["telegramPreview"];
+  if (row.telegram_preview !== undefined) {
+    const preview = row.telegram_preview as {
+      pending?: unknown;
+      cover?: unknown;
+    } | null;
+    if (
+      !preview ||
+      typeof preview.pending !== "boolean" ||
+      typeof row.id !== "string" ||
+      !/^tg_[a-f0-9]{24}$/.test(row.id) ||
+      (preview.cover !== null &&
+        (typeof preview.cover !== "string" ||
+          !new RegExp(
+            "^/api/telegram-studios/" + row.id + "/media/[a-f0-9]{64}/thumb$",
+          ).test(preview.cover)))
+    ) {
+      throw new Error("invalid_catalog_telegram_preview");
+    }
+    telegramPreview = {
+      pending: preview.pending,
+      cover: preview.cover as string | null,
+    };
+  }
   return {
+    ...(telegramPreview ? { telegramPreview } : {}),
     id: requiredText(row.id, "id"),
     slug: requiredText(row.slug, "slug"),
     code: requiredText(row.code, "code"),
@@ -258,7 +299,8 @@ function decodeModel(value: unknown): PublicCatalogModel {
  * An image whose branding exists only inside its pixels must be reviewed
  * separately before it can be called clean.
  */
-const EXTERNAL_MEDIA_BRAND = /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
+const EXTERNAL_MEDIA_BRAND =
+  /(?:^|[^a-z0-9])special[\s._-]*stl(?:\.com)?(?=$|[^a-z0-9])/i;
 
 /**
  * One image was matched visually, pixel-for-pixel by subject/composition,
@@ -274,8 +316,6 @@ const CONFIRMED_SPECIALSTL_MODEL_IDS = new Set(
   specialstlQuarantine.confirmed.map((entry) => entry.modelId),
 );
 
-
-
 /**
  * A creator's own logo, signature or Patreon credit is not evidence of
  * unauthorized redistribution. Only explicitly identified redistribution
@@ -287,11 +327,23 @@ function hasRestrictedExternalBrand(value: string | null | undefined): boolean {
 }
 
 function isPubliclyEligibleCatalogModel(model: PublicCatalogModel): boolean {
-  return (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) || isApprovedPublicCover(model)) && ![
-    model.slug, model.code, model.name, model.variantName,
-    model.category, model.categorySlug, model.franchise, model.franchiseSlug,
-    model.collection, model.folderPath, model.coverStorageKey,
-  ].some(hasRestrictedExternalBrand);
+  return (
+    (!CONFIRMED_SPECIALSTL_MODEL_IDS.has(model.id) ||
+      isApprovedPublicCover(model)) &&
+    ![
+      model.slug,
+      model.code,
+      model.name,
+      model.variantName,
+      model.category,
+      model.categorySlug,
+      model.franchise,
+      model.franchiseSlug,
+      model.collection,
+      model.folderPath,
+      model.coverStorageKey,
+    ].some(hasRestrictedExternalBrand)
+  );
 }
 
 /**
@@ -319,14 +371,23 @@ export async function probeCanonicalCatalogMediaByte(
   if (!approvedMediaUrl) throw new Error("catalog_media_probe_url_missing");
   const base = new URL(baseUrl);
   const url = new URL(approvedMediaUrl);
-  if (base.protocol !== "https:" || url.origin !== base.origin ||
-      !url.href.startsWith(base.href + "media/") || url.search || url.hash ||
-      url.username || url.password) {
+  if (
+    base.protocol !== "https:" ||
+    url.origin !== base.origin ||
+    !url.href.startsWith(base.href + "media/") ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  ) {
     throw new Error("catalog_media_probe_url_invalid");
   }
   const response = await fetcher(url.toString(), {
     method: "GET",
-    headers: { Range: "bytes=0-0", Accept: "image/webp,image/avif,image/png,image/jpeg" },
+    headers: {
+      Range: "bytes=0-0",
+      Accept: "image/webp,image/avif,image/png,image/jpeg",
+    },
     credentials: "omit",
     redirect: "error",
     signal,
@@ -335,10 +396,14 @@ export async function probeCanonicalCatalogMediaByte(
   try {
     const range = response.headers.get("Content-Range");
     const mime = response.headers.get("Content-Type");
-    if (response.status !== 206 ||
-        !range || !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
-        !mime || !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
-        !reader) {
+    if (
+      response.status !== 206 ||
+      !range ||
+      !/^bytes 0-0\/[1-9][0-9]*$/.test(range) ||
+      !mime ||
+      !/^image\/(?:webp|avif|png|jpeg)(?:;|$)/i.test(mime) ||
+      !reader
+    ) {
       throw new Error("catalog_media_probe_invalid_response");
     }
     const chunk = await reader.read();
@@ -392,7 +457,10 @@ export function createPublicCatalogGateway(
     typeof window === "undefined" ? undefined : window.location.origin,
   );
 
-  async function read(path: string | URL, signal?: AbortSignal): Promise<unknown> {
+  async function read(
+    path: string | URL,
+    signal?: AbortSignal,
+  ): Promise<unknown> {
     const response = await fetcher(new URL(path, base).toString(), {
       method: "GET",
       credentials,
@@ -408,26 +476,38 @@ export function createPublicCatalogGateway(
     mediaUrl(key: string | null): string | null {
       // The Worker and Pages proxy expose only /media/*, never arbitrary
       // catalog API routes. Validate before turning untrusted keys into URLs.
-      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key)) return null;
+      if (!key?.startsWith("media/") || hasRestrictedExternalBrand(key))
+        return null;
       const segments = key.split("/");
-      if (CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") && !isApprovedPublicMediaKey(key)) return null;
+      if (
+        CONFIRMED_SPECIALSTL_MODEL_IDS.has(segments[1] ?? "") &&
+        !isApprovedPublicMediaKey(key)
+      )
+        return null;
       if (
         segments.length < 2 ||
         segments.length > 17 ||
-        segments.slice(1).some(
-          (part) =>
-            !part ||
-            part === "." ||
-            part === ".." ||
-            /[:?#%\\]/.test(part) || Array.from(part).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127),
-        )
-      ) return null;
+        segments
+          .slice(1)
+          .some(
+            (part) =>
+              !part ||
+              part === "." ||
+              part === ".." ||
+              /[:?#%\\]/.test(part) ||
+              Array.from(part).some(
+                (char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127,
+              ),
+          )
+      )
+        return null;
       try {
         // encodeURIComponent leaves !'()* raw; Pages media paths permit only
         // unreserved characters and valid percent-escaped bytes.
         const encoded = segments.map((part) =>
-          encodeURIComponent(part).replace(/[!'()*]/g, (char) =>
-            "%" + char.charCodeAt(0).toString(16).toUpperCase(),
+          encodeURIComponent(part).replace(
+            /[!'()*]/g,
+            (char) => "%" + char.charCodeAt(0).toString(16).toUpperCase(),
           ),
         );
         if (encoded.some((part) => part.length > 256)) return null;
@@ -474,7 +554,12 @@ export function createPublicCatalogGateway(
           count: wholeNumber(category.count, "category_count"),
           ...(category.cover_storage_key === undefined
             ? {}
-            : { coverStorageKey: optionalText(category.cover_storage_key, "category_cover_key") }),
+            : {
+                coverStorageKey: optionalText(
+                  category.cover_storage_key,
+                  "category_cover_key",
+                ),
+              }),
         };
       });
     },
@@ -490,10 +575,7 @@ export function createPublicCatalogGateway(
       ) {
         throw new Error("catalog_franchise_search_length_invalid");
       }
-      if (
-        filters.category &&
-        !validCatalogSlug(filters.category)
-      ) {
+      if (filters.category && !validCatalogSlug(filters.category)) {
         throw new Error("catalog_franchise_category_invalid");
       }
       const limit = filters.limit ?? 24;
@@ -540,7 +622,12 @@ export function createPublicCatalogGateway(
             category: requiredText(row.category, "franchise_category"),
             ...(row.cover_storage_key === undefined
               ? {}
-              : { coverStorageKey: optionalText(row.cover_storage_key, "franchise_cover_key") }),
+              : {
+                  coverStorageKey: optionalText(
+                    row.cover_storage_key,
+                    "franchise_cover_key",
+                  ),
+                }),
           };
           if (!validCatalogSlug(franchise.id)) {
             throw new Error("invalid_catalog_franchise_id");
@@ -566,7 +653,10 @@ export function createPublicCatalogGateway(
       filters: PublicCatalogFolderFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogFolderPage> {
-      if (!validCatalogSlug(filters.category) || !validCatalogSlug(filters.franchise)) {
+      if (
+        !validCatalogSlug(filters.category) ||
+        !validCatalogSlug(filters.franchise)
+      ) {
         throw new Error("catalog_folder_scope_invalid");
       }
       const parent = filters.parent ?? "";
@@ -581,9 +671,17 @@ export function createPublicCatalogGateway(
       if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
         throw new Error("invalid_catalog_folders");
       }
-      const data = payload as { current?: unknown; trail?: unknown; items?: unknown };
-      if (!Array.isArray(data.trail) || data.trail.length > 24 ||
-          !Array.isArray(data.items) || data.items.length > 256) {
+      const data = payload as {
+        current?: unknown;
+        trail?: unknown;
+        items?: unknown;
+      };
+      if (
+        !Array.isArray(data.trail) ||
+        data.trail.length > 24 ||
+        !Array.isArray(data.items) ||
+        data.items.length > 256
+      ) {
         throw new Error("invalid_catalog_folder_page");
       }
       const decodePath = (input: unknown, field: string): string => {
@@ -608,7 +706,11 @@ export function createPublicCatalogGateway(
         if (typeof data.current !== "object" || Array.isArray(data.current)) {
           throw new Error("invalid_catalog_folder_current");
         }
-        const row = data.current as { id?: unknown; label?: unknown; count?: unknown };
+        const row = data.current as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+        };
         current = {
           id: decodePath(row.id, "folder_current_id"),
           label: requiredText(row.label, "folder_current_label"),
@@ -619,8 +721,11 @@ export function createPublicCatalogGateway(
         throw new Error("catalog_folder_parent_mismatch");
       }
       const trail = data.trail.map(decodeTrail);
-      if ((parent && (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
-          (!parent && trail.length > 0)) {
+      if (
+        (parent &&
+          (trail.length === 0 || trail[trail.length - 1].id !== parent)) ||
+        (!parent && trail.length > 0)
+      ) {
         throw new Error("catalog_folder_trail_mismatch");
       }
       const seen = new Set<string>();
@@ -628,7 +733,13 @@ export function createPublicCatalogGateway(
         if (!value || typeof value !== "object" || Array.isArray(value)) {
           throw new Error("invalid_catalog_folder");
         }
-        const row = value as { id?: unknown; label?: unknown; count?: unknown; hasChildren?: unknown; cover_storage_key?: unknown };
+        const row = value as {
+          id?: unknown;
+          label?: unknown;
+          count?: unknown;
+          hasChildren?: unknown;
+          cover_storage_key?: unknown;
+        };
         const id = decodePath(row.id, "folder_id");
         if (seen.has(id)) throw new Error("duplicate_catalog_folder");
         seen.add(id);
@@ -643,9 +754,14 @@ export function createPublicCatalogGateway(
           label: requiredText(row.label, "folder_label"),
           count: wholeNumber(row.count, "folder_count"),
           hasChildren: row.hasChildren,
-          ...(row.cover_storage_key === undefined ? {} : {
-            coverStorageKey: optionalText(row.cover_storage_key, "folder_cover_key"),
-          }),
+          ...(row.cover_storage_key === undefined
+            ? {}
+            : {
+                coverStorageKey: optionalText(
+                  row.cover_storage_key,
+                  "folder_cover_key",
+                ),
+              }),
         };
       });
       return { current, trail, items };
@@ -655,8 +771,7 @@ export function createPublicCatalogGateway(
       slug: string,
       signal?: AbortSignal,
     ): Promise<PublicCatalogDetail> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       const result = await read(
         `api/models/${encodeURIComponent(slug)}`,
         signal,
@@ -689,8 +804,7 @@ export function createPublicCatalogGateway(
       filters: PublicCatalogGalleryFilters,
       signal?: AbortSignal,
     ): Promise<PublicCatalogGalleryPage> {
-      if (!validCatalogSlug(slug))
-        throw new Error("invalid_catalog_slug");
+      if (!validCatalogSlug(slug)) throw new Error("invalid_catalog_slug");
       if (!Number.isInteger(filters.version) || filters.version < 1)
         throw new Error("catalog_gallery_version_invalid");
       const limit = filters.limit ?? 24;
@@ -840,17 +954,19 @@ export function createPublicCatalogGateway(
         throw new Error("invalid_catalog_recent_items");
       }
       const seen = new Set<string>();
-      return items.map((value: unknown) => {
-        const model = decodeModel(value);
-        if (!validCatalogSlug(model.slug)) {
-          throw new Error("invalid_catalog_recent_slug");
-        }
-        if (seen.has(model.id)) {
-          throw new Error("duplicate_catalog_recent_model");
-        }
-        seen.add(model.id);
-        return model;
-      }).filter(isPubliclyEligibleCatalogModel);
+      return items
+        .map((value: unknown) => {
+          const model = decodeModel(value);
+          if (!validCatalogSlug(model.slug)) {
+            throw new Error("invalid_catalog_recent_slug");
+          }
+          if (seen.has(model.id)) {
+            throw new Error("duplicate_catalog_recent_model");
+          }
+          seen.add(model.id);
+          return model;
+        })
+        .filter(isPubliclyEligibleCatalogModel);
     },
     async listPage(
       filters: PublicCatalogFilters = {},
@@ -884,7 +1000,8 @@ export function createPublicCatalogGateway(
         [filters.characterId, "catalog_character_id_invalid"],
         [filters.attributeId, "catalog_attribute_id_invalid"],
       ] as const) {
-        if (value && !/^[A-Za-z0-9_-]{3,100}$/.test(value)) throw new Error(field);
+        if (value && !/^[A-Za-z0-9_-]{3,100}$/.test(value))
+          throw new Error(field);
       }
       const limit = filters.limit ?? 24;
       if (!Number.isInteger(limit) || limit < 1 || limit > 60) {
@@ -896,10 +1013,16 @@ export function createPublicCatalogGateway(
         url.searchParams.set("category", filters.category);
       if (filters.franchise)
         url.searchParams.set("franchise", filters.franchise);
-      if (filters.characterId) url.searchParams.set("character_id", filters.characterId);
-      if (filters.attributeId) url.searchParams.set("attribute_id", filters.attributeId);
+      if (filters.characterId)
+        url.searchParams.set("character_id", filters.characterId);
+      if (filters.attributeId)
+        url.searchParams.set("attribute_id", filters.attributeId);
       if (filters.folder) url.searchParams.set("folder", filters.folder);
       if (query) url.searchParams.set("q", query);
+      if (filters.globalSearch) {
+        if (!query) throw new Error("catalog_global_search_requires_query");
+        url.searchParams.set("scope", "all");
+      }
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);
 
       const payload = await read(url, signal);
@@ -916,7 +1039,9 @@ export function createPublicCatalogGateway(
       if (
         nextCursor !== null &&
         nextCursor !== undefined &&
-        (typeof nextCursor !== "string" || !nextCursor || nextCursor.length > 2048)
+        (typeof nextCursor !== "string" ||
+          !nextCursor ||
+          nextCursor.length > 2048)
       ) {
         throw new Error("invalid_catalog_page_cursor");
       }

@@ -30,9 +30,15 @@ type ImageRow = { image_id: string; source_sha256: string; position: number }
 const ROOT = '/api/telegram-studios'
 const ID = /^tg_[a-f0-9]{24}$/
 const SHA = /^[a-f0-9]{64}$/
-const VISIBLE = "m.telegram_group_key IS NOT NULL AND m.telegram_showcase_visible=1 AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected'"
+export const TELEGRAM_PUBLIC_VISIBLE_SQL = "m.telegram_group_key IS NOT NULL AND m.telegram_showcase_visible=1 AND m.telegram_review_status<>'rejected' AND m.telegram_rights_status<>'rejected'"
 // Only previously authorized list metadata is cached (60s model lists, 300s
 // aggregate studio counts); detail/media recheck revocation on every request.
+// Shared projection: resolve the authorized gallery's cover using canonical order.
+export const TELEGRAM_PUBLIC_COVER_SHA_SQL = "(SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1" +
+  " ORDER BY CASE WHEN m.cover_storage_key=('telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +
+  " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
+  " THEN 0 ELSE 1 END, s.position LIMIT 1)"
+const VISIBLE = TELEGRAM_PUBLIC_VISIBLE_SQL
 const LIST_CACHE_CONTROL = 'public, max-age=0, s-maxage=60'
 const STUDIO_DIRECTORY_CACHE_CONTROL = 'public, max-age=0, s-maxage=300'
 const metadataCache = (request: Request, cacheControl = LIST_CACHE_CONTROL) =>
@@ -199,11 +205,7 @@ export async function routeTelegramStudioShowcase(
         ' (SELECT c.slug FROM franchises f JOIN categories c ON c.id=f.category_id WHERE f.id=m.franchise_id) AS category_slug,' +
         ' (SELECT f.name FROM franchises f WHERE f.id=m.franchise_id) AS franchise,' +
         ' (SELECT f.slug FROM franchises f WHERE f.id=m.franchise_id) AS franchise_slug,' +
-        ' (SELECT s.source_sha256 FROM model_image_sources s WHERE s.model_id=m.id AND s.gallery_version=1' +
-        ' ORDER BY CASE WHEN m.cover_storage_key=(' +
-        " 'telegram-studios/v1/' || m.telegram_origin_id || '/telegram-webp-final-v1/' ||" +
-        " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
-        ' THEN 0 ELSE 1 END, s.position LIMIT 1) AS cover_sha' +
+        ' ' + TELEGRAM_PUBLIC_COVER_SHA_SQL + ' AS cover_sha' +
         ' FROM page p JOIN models m ON m.id=p.id' +
         ' ORDER BY m.name COLLATE NOCASE,m.telegram_studio COLLATE NOCASE,m.id')
         .bind(...values, Number(rawLimit), Number(rawOffset)).all<ModelRow & {cover_sha: string|null}>()).results

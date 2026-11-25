@@ -46,7 +46,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
   let allowed: readonly string[]
   if (path === "/api/catalog") {
     allowed = ["category", "franchise", "folder", "q", "material",
-      "collection", "minHeight", "maxHeight", "character_id", "attribute_id", "limit", "cursor"]
+      "collection", "minHeight", "maxHeight", "character_id", "attribute_id", "limit", "cursor", "scope"]
   } else if (path === "/api/franchises") {
     allowed = ["category", "q", "limit"]
   } else if (path === "/api/folders") {
@@ -91,6 +91,8 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
     } else if (key === "folder" || key === "parent") {
       if (value.length > 240 || value.includes("\\") ||
           value.split("/").some(part => !part || part === "." || part === "..")) return false
+    } else if (key === "scope") {
+      if (path !== "/api/catalog" || value !== "all" || !url.searchParams.has("q")) return false
     } else if (key === "q") {
       const length = Array.from(value.trim()).length
       if (length < 3) return { error: 'search_too_short', minLength: 3 }

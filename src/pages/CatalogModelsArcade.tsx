@@ -86,7 +86,11 @@ function ModelCover({
   model: PublicCatalogModel;
   mediaUrl: (key: string | null) => string | null;
 }) {
-  const url = mediaUrl(model.coverStorageKey);
+  const url = model.telegramPreview
+    ? model.telegramPreview.cover
+      ? "/catalogo-api" + model.telegramPreview.cover
+      : null
+    : mediaUrl(model.coverStorageKey);
   return (
     <CatalogCardMediaFrame imageCount={model.imageCount}>
       <CanonicalCatalogImage
@@ -213,6 +217,7 @@ export default function CatalogModelsArcade() {
           characterId: characterId || undefined,
           attributeId: attributeId || undefined,
           search: search || undefined,
+          globalSearch: Boolean(search),
           limit: PAGE_SIZE,
           cursor,
         },
@@ -263,6 +268,7 @@ export default function CatalogModelsArcade() {
   const pageSlugs =
     rows.length > 1 &&
     rows.length <= 36 &&
+    rows.every((item) => !item.telegramPreview) &&
     rows.every((item) => validCatalogSlug(item.slug))
       ? rows.map((item) => item.slug)
       : [];
@@ -841,7 +847,13 @@ export default function CatalogModelsArcade() {
                     <CatalogModelCardShell key={model.id} selected={isSelected}>
                       <div className="flex h-full flex-col">
                         <Link
-                          to={catalogModelDetailsPath(model.slug)}
+                          to={
+                            model.telegramPreview
+                              ? PUBLIC_ROUTES.catalogReview +
+                                "?modelo=" +
+                                model.id
+                              : catalogModelDetailsPath(model.slug)
+                          }
                           ref={
                             paging.scope === scope &&
                             paging.returnFocusSlug === model.slug
@@ -861,10 +873,25 @@ export default function CatalogModelsArcade() {
                           />
                           <div className="p-3 pb-1 md:px-4 md:pt-4">
                             <CatalogCardIdentity name={displayName} />
+                            {model.telegramPreview?.pending && (
+                              <span className="mt-1 inline-block text-xs text-[hsl(var(--gold-accent))]">
+                                Em revisão
+                              </span>
+                            )}
                           </div>
                         </Link>
                         <CatalogImageDownload
-                          src={gateway.mediaUrl(model.coverStorageKey)}
+                          src={
+                            model.telegramPreview
+                              ? model.telegramPreview.cover
+                                ? "/catalogo-api" +
+                                  model.telegramPreview.cover.replace(
+                                    /\/thumb$/,
+                                    "/display",
+                                  )
+                                : null
+                              : gateway.mediaUrl(model.coverStorageKey)
+                          }
                           name={model.name}
                           id={model.id}
                           className="mx-3 mb-2"
@@ -873,20 +900,22 @@ export default function CatalogModelsArcade() {
                           label={"Filtros de " + model.name}
                           groups={tagGroups}
                         />
-                        <button
-                          type="button"
-                          onClick={() => toggleSelected(model)}
-                          disabled={
-                            !isSelected &&
-                            selectedModels.length >= MAX_CANONICAL_SELECTION
-                          }
-                          aria-pressed={isSelected}
-                          className="mx-3 mb-3 inline-flex min-h-11 items-center justify-center border border-[hsl(0,0%,25%)] px-2 text-xs font-medium hover:border-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
-                        >
-                          {isSelected
-                            ? "Remover da seleção"
-                            : "Adicionar à seleção"}
-                        </button>
+                        {!model.telegramPreview && (
+                          <button
+                            type="button"
+                            onClick={() => toggleSelected(model)}
+                            disabled={
+                              !isSelected &&
+                              selectedModels.length >= MAX_CANONICAL_SELECTION
+                            }
+                            aria-pressed={isSelected}
+                            className="mx-3 mb-3 inline-flex min-h-11 items-center justify-center border border-[hsl(0,0%,25%)] px-2 text-xs font-medium hover:border-[hsl(var(--gold-accent))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-40"
+                          >
+                            {isSelected
+                              ? "Remover da seleção"
+                              : "Adicionar à seleção"}
+                          </button>
+                        )}
                       </div>
                     </CatalogModelCardShell>
                   );
