@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import { planMigrationFiles, stageOnly, approvedSeedReferences, requireExactAuth } from "./m5-d1-bounded-release.mjs";
+import { isRetiredWorkersBuilds } from "./cutover-readiness.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const migrations = readdirSync(join(root, "services/catalogo/migrations"));
@@ -105,4 +106,19 @@ test("Wrangler D1 CLI uses supported flags and the six-file isolated config", ()
   assert.match(bounded, /--config "\$RUNNER_TEMP\/\$M5_STAGE_DIR\/wrangler-d1\.jsonc"/);
   assert.doesNotMatch(bounded, /wrangler-d1\.jsonc"\s+--yes/);
   assert.doesNotMatch(bounded, /\bd1 (?:execute|migrations apply)\b[^\n]*\b0034\b/);
+});
+
+test("M5 D1 prepare and verify share the canonical Workers Builds single-writer gate", () => {
+  const tag = "ee2d9075c95d41c3bd7b2690700e0b26";
+  const retired = { scriptTag: tag, activeScriptTag: tag, configAbsent: true, triggerCount: 0 };
+  assert.equal(isRetiredWorkersBuilds(retired, tag), true);
+  assert.equal(isRetiredWorkersBuilds({ ...retired, configAbsent: false }, tag), false);
+  assert.equal(isRetiredWorkersBuilds({ ...retired, triggerCount: 1 }, tag), false);
+  assert.equal(isRetiredWorkersBuilds({ ...retired, activeScriptTag: "a".repeat(32) }, tag), false);
+  assert.equal(isRetiredWorkersBuilds(undefined, tag), false);
+  const executor = readFileSync(new URL("./m5-d1-bounded-release.mjs", import.meta.url), "utf8");
+  assert.match(executor, /await inspectRetiredWorkersBuilds\(/);
+  assert.match(executor, /ensure\(isRetiredWorkersBuilds\(/);
+  assert.ok(executor.indexOf("await inspectRetiredWorkersBuilds(") < executor.indexOf('if (mode === "prepare")'),
+    "publisher must be verified before staging any SQL files");
 });
