@@ -541,7 +541,7 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes wrangler@4.155.0 d1 migrations apply DB --remote \
-            --config "$RUNNER_TEMP/$M5_STAGE_DIR/wrangler-d1.jsonc" --yes
+            --config "$RUNNER_TEMP/$M5_STAGE_DIR/wrangler-d1.jsonc"
       - name: Verify exact ledger, schema objects and preserved catalog counts
         shell: bash
         run: |
