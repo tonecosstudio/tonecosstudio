@@ -7,6 +7,7 @@ existente, com revisão otimista e fotografia dos SHA-256, sem modificar relaç�
 from __future__ import annotations
 
 from contextlib import closing
+from pathlib import Path
 import hashlib
 import json
 import re
@@ -179,7 +180,7 @@ def list_groups(db_path, *, topic="", state="pending", risk="all",
 
 def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
                       expected_member_ids=None, expected_sha256s=None,
-                      batch_id=None, batch_size=None):
+                      batch_id=None, batch_size=None, media_root=None):
     """Shared audit decision under a caller-owned write transaction.
 
     The single-review endpoint preserves its existing API. Batch reviews
@@ -204,13 +205,29 @@ def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
         raise RuntimeError("Conflito de revisão; recarregue a prancha")
     if group["state"]=="confirmado":
         raise ValueError("Galeria confirmada exige auditoria editorial própria")
-    rows=db.execute("""SELECT m.message_id,a.sha256,a.original_topic,
-             p.title,p.variant
+    rows=db.execute("""SELECT m.message_id,a.sha256,a.original_topic,a.source_relative,
+             m.match_reason,p.title,p.variant
         FROM model_group_members m JOIN assets a USING(message_id)
         LEFT JOIN name_proposals p USING(message_id)
         WHERE m.group_key=? ORDER BY m.message_id""",(key,)).fetchall()
-    if len(rows)<2 or len({r["original_topic"] for r in rows})!=1:
+    if not rows or len({r["original_topic"] for r in rows})!=1:
         raise ValueError("Galeria sem origem única")
+    singleton=len(rows)==1
+    if singleton:
+        row=rows[0]
+        if (batch_id is None or media_root is None or decision!="same_sculpture"
+                or row["match_reason"]!="telegram_caption"
+                or row["original_topic"]!=group["studio"]
+                or not re.fullmatch(r"[0-9a-f]{64}",row["sha256"])):
+            raise ValueError("Foto única legada exige revisão de lote e prova física")
+        root=Path(media_root).resolve()
+        photo=(root/row["source_relative"]).resolve()
+        if (not photo.is_relative_to(root) or not photo.is_file()
+                or photo.stat().st_size>30*1024*1024):
+            raise ValueError("Original físico ausente ou externo")
+        with photo.open("rb") as handle:
+            if hashlib.file_digest(handle,"sha256").hexdigest()!=row["sha256"]:
+                raise ValueError("SHA-256 físico divergente")
     if rows[0]["original_topic"].casefold()==EXCLUDED.casefold():
         raise ValueError("Galeria sem origem e membros consistentes")
     member_ids=[r["message_id"] for r in rows]
@@ -218,7 +235,7 @@ def _record_review_tx(db, *, group_key, revision, decision, note, stamp,
     if expected_member_ids is not None or expected_sha256s is not None:
         if (expected_member_ids != member_ids or expected_sha256s != hashes):
             raise RuntimeError("Fotos alteradas desde a conferência: reabra a prancha")
-    if not db.execute("""SELECT 1 FROM model_group_members
+    if not singleton and not db.execute("""SELECT 1 FROM model_group_members
         WHERE group_key=? AND match_reason='telegram_album'""",
         (key,)).fetchone():
         raise ValueError("Não é um agrupamento legado por álbum")
@@ -321,7 +338,7 @@ def _committed_batch_receipt(db, reviews, batch_id):
     }
 
 
-def record_reviews_batch(db_path, *, reviews):
+def record_reviews_batch(db_path, *, reviews, media_root=None):
     """Commit up to 12 distinct, individually evidenced gallery reviews.
 
     Every member ID/SHA-256 pair must equal the current SQLite snapshot.
@@ -340,7 +357,7 @@ def record_reviews_batch(db_path, *, reviews):
         hashes=item.get("sha256s")
         if (not isinstance(key,str) or not GROUP_KEY.fullmatch(key)
                 or not isinstance(ids,list) or not isinstance(hashes,list)
-                or not 2<=len(ids)==len(hashes)<=500
+                or not 1<=len(ids)==len(hashes)<=500
                 or any(type(mid) is not int or mid<=0 for mid in ids)
                 or ids!=sorted(set(ids))
                 or any(not isinstance(h,str) or not h.strip() for h in hashes)):
@@ -388,7 +405,7 @@ def record_reviews_batch(db_path, *, reviews):
                     stamp=stamp,
                     expected_member_ids=item["member_ids"],
                     expected_sha256s=item["sha256s"],
-                    batch_id=batch_id,batch_size=len(reviews),
+                    batch_id=batch_id,batch_size=len(reviews),media_root=media_root,
                 ))
             db.commit()
             return {
