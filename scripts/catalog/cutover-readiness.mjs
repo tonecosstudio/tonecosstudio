@@ -36,6 +36,7 @@ const TARGET_REPO = CANONICAL.target.repository;
 const TARGET_REPO_ID = CANONICAL.target.repositoryId;
 const CLOUDFLARE_ACCOUNT_ID = CANONICAL.runtime.cloudflareAccountId;
 const WORKER_NAME = CANONICAL.runtime.worker;
+const WORKERS_BUILDS_SCRIPT_TAG = CANONICAL.productionObservation.workersBuildsScriptTag;
 const WORKER_D1 = WORKER_CONFIG.d1_databases?.find(
   (binding) => binding.binding === "DB",
 );
@@ -289,6 +290,19 @@ export function assessCutoverReadiness(contract, state) {
     "cloudflare_account_unverified",
   );
 
+  // A retired GitHub source is not enough: Workers Builds used to deploy
+  // this same Worker directly from main without the canonical Quality Gate.
+  const builds = observed.workersBuilds;
+  add(
+    /^[0-9a-f]{32}$/.test(WORKERS_BUILDS_SCRIPT_TAG ?? "") &&
+      o.workersBuildsScriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
+      builds?.scriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
+      builds?.activeScriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
+      builds?.configAbsent === true &&
+      builds?.triggerCount === 0,
+    "cloudflare_workers_builds_parallel_publisher_active_or_unverified",
+  );
+
   const deployment = observed.deployment;
   const traffic = deployment?.versions;
   add(
@@ -439,6 +453,49 @@ async function getJSON(url, headers = {}) {
   });
   if (!response.ok) throw new Error("readonly_api_http_" + response.status);
   return response.json();
+}
+
+// Treat a missing build configuration as retired ONLY for Cloudflare's
+// specific 12040 not-found error; permission failures, generic 404, 200,
+// or an unverified script identity all fail closed.
+async function inspectRetiredWorkersBuilds(account, token) {
+  const tag = WORKERS_BUILDS_SCRIPT_TAG;
+  if (typeof tag !== "string" || !/^[a-f0-9]{32}$/.test(tag))
+    throw new Error("workers_builds_tag_missing");
+  const base = "https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(account);
+  const headers = { Accept: "application/json", Authorization: "Bearer " + token };
+  const getBuildConfig = async () => {
+    const response = await fetch(base + "/builds/workers/" + tag, {
+      method: "GET",
+      headers,
+      signal: AbortSignal.timeout(10000),
+    });
+    const body = await response.json();
+    if (response.status === 404 &&
+      body?.success === false &&
+      Array.isArray(body.errors) &&
+      body.errors.some((e) => e.code === 12040)) return true;
+    if (!response.ok) throw new Error("workers_builds_read_http_" + response.status);
+    if (body?.success === true) return false;
+    throw new Error("workers_builds_response_invalid");
+  };
+  const [scripts, triggers, configAbsent] = await Promise.all([
+    getJSON(base + "/workers/scripts", headers),
+    getJSON(base + "/builds/workers/" + tag + "/triggers", headers),
+    getBuildConfig(),
+  ]);
+  if (scripts?.success !== true || !Array.isArray(scripts.result) ||
+    triggers?.success !== true || !Array.isArray(triggers.result))
+    throw new Error("workers_builds_inventory_unverified");
+  const matching = scripts.result.filter((x) => x.id === WORKER_NAME);
+  if (matching.length !== 1 || matching[0].tag !== tag)
+    throw new Error("workers_builds_current_script_tag_mismatch");
+  return {
+    scriptTag: tag,
+    activeScriptTag: matching[0].tag,
+    configAbsent,
+    triggerCount: triggers.result.length,
+  };
 }
 
 async function getVerifiedShowcaseSchema(account, token) {
@@ -678,12 +735,13 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
     "/workers/scripts/" +
     WORKER_NAME;
   const headers = { Authorization: "Bearer " + env.CLOUDFLARE_API_TOKEN };
-  const [deploy, settings, showcaseSchema] = await Promise.all([
+  const [deploy, settings, showcaseSchema, workersBuilds] = await Promise.all([
     getJSON(host + "/deployments", headers),
     getJSON(host + "/settings", headers),
     options.verifyShowcaseSchema === false
       ? Promise.resolve(null)
       : getVerifiedShowcaseSchema(account, env.CLOUDFLARE_API_TOKEN),
+    inspectRetiredWorkersBuilds(account, env.CLOUDFLARE_API_TOKEN),
   ]);
   if (deploy.success !== true || settings.success !== true) {
     throw new Error("cloudflare_metadata_not_verified");
@@ -692,6 +750,7 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
   state.deployment = (deploy.result?.deployments ?? [])[0];
   state.workerSettings = settings.result;
   state.bindings = settings.result?.bindings;
+  state.workersBuilds = workersBuilds;
   if (showcaseSchema !== null) state.showcaseSchema = showcaseSchema;
   return state;
 }
@@ -748,6 +807,9 @@ async function main() {
             })) ?? null,
           liveWorkerVersionId:
             state.deployment?.versions?.[0]?.version_id ?? null,
+          workerBuildsRetired: state.workersBuilds?.configAbsent === true &&
+            state.workersBuilds?.triggerCount === 0 &&
+            state.workersBuilds?.activeScriptTag === WORKERS_BUILDS_SCRIPT_TAG,
           verifiedShowcaseMigration: state.showcaseSchema?.migration ?? null,
           blockers,
         },
