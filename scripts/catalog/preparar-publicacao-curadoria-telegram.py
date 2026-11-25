@@ -659,8 +659,11 @@ def studio_member_of_topic(studio: str, topic: str) -> bool:
     # e.g. 'MPPrints _ My Poke Prints' or 'Merge Project Figures _ Nostalgic Studios'.
     # Match only a complete explicitly named component, not a substring.
     candidate = str(studio or "").strip()
+    # Telegram also contains one-sided spacing, e.g. Uel Winner_ ilustrartuel.
+    # An unspaced underscore inside a studio name is not a separator.
+    components = re.split(r"\s+_\s*|\s*_\s+", topic)
     return candidate == topic or bool(candidate and candidate in
-                                      [x.strip() for x in topic.split(" _ ")])
+                                      [x.strip() for x in components])
 
 
 def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_models: int,
