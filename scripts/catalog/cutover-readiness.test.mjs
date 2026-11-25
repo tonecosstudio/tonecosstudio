@@ -436,6 +436,16 @@ test("Cloudflare schema inspection is metadata-only and never runs DDL or model 
           : workflow,
       );
     }
+    const tag = original.productionObservation.workersBuildsScriptTag;
+    if (u.endsWith("/workers/scripts")) {
+      return Response.json({ success: true, result: [{ id: original.runtime.worker, tag }] });
+    }
+    if (u.endsWith("/builds/workers/" + tag)) {
+      return Response.json({ success: false, errors: [{ code: 12040, message: "No build configuration" }] }, { status: 404 });
+    }
+    if (u.endsWith("/builds/workers/" + tag + "/triggers")) {
+      return Response.json({ success: true, result: [] });
+    }
     if (u.endsWith("/deployments")) {
       return Response.json({
         success: true,
