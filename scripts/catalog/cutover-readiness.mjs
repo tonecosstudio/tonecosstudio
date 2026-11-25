@@ -294,12 +294,8 @@ export function assessCutoverReadiness(contract, state) {
   // this same Worker directly from main without the canonical Quality Gate.
   const builds = observed.workersBuilds;
   add(
-    /^[0-9a-f]{32}$/.test(WORKERS_BUILDS_SCRIPT_TAG ?? "") &&
-      o.workersBuildsScriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
-      builds?.scriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
-      builds?.activeScriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
-      builds?.configAbsent === true &&
-      builds?.triggerCount === 0,
+    o.workersBuildsScriptTag === WORKERS_BUILDS_SCRIPT_TAG &&
+      isRetiredWorkersBuilds(builds),
     "cloudflare_workers_builds_parallel_publisher_active_or_unverified",
   );
 
@@ -458,7 +454,15 @@ async function getJSON(url, headers = {}) {
 // Treat a missing build configuration as retired ONLY for Cloudflare's
 // specific 12040 not-found error; permission failures, generic 404, 200,
 // or an unverified script identity all fail closed.
-async function inspectRetiredWorkersBuilds(account, token) {
+export function isRetiredWorkersBuilds(state, expectedTag = WORKERS_BUILDS_SCRIPT_TAG) {
+  return /^[a-f0-9]{32}$/.test(expectedTag ?? "") &&
+    state?.scriptTag === expectedTag &&
+    state?.activeScriptTag === expectedTag &&
+    state?.configAbsent === true &&
+    state?.triggerCount === 0;
+}
+
+export async function inspectRetiredWorkersBuilds(account, token) {
   const tag = WORKERS_BUILDS_SCRIPT_TAG;
   if (typeof tag !== "string" || !/^[a-f0-9]{32}$/.test(tag))
     throw new Error("workers_builds_tag_missing");
