@@ -9,6 +9,11 @@
 > **Prontidão privada pós-M5 (25/11):** 1.701 fichas candidatas já passaram pela validação local de IDs, mensagens, hashes e 60 IDs de franquia do D1; 513 casos seguem retidos. Nenhuma ficha foi importada. O [recibo agregado](evidence/telegram-private-import-readiness-20261125.json) preserva os números sem expor o JSONL privado. A mesa de curadoria passa a permitir selecionar esse arquivo e submetê-lo pelo **mesmo endpoint administrativo** com sessão legítima Supabase; o Worker continua autoridade de ownership D1, R2 HEAD e atomicidade. A submissão é expressa, sequencial, interrompível e não autoriza mostrar ou vender os modelos.
 
 
+## Checkpoint Drive — Venom concluído (25/11/2026)
+
+- Nove referências históricas organizadas em Modelo 01–09; oito reaproveitam o preflight das pranchas 029 e 032, e a nona (`venom-estatua-colorida-sobre-destrocos.jfif`, render Fandom) foi examinada separadamente, sem correspondência Telegram inequívoca. Extensão JPEG corrigida para .jpg sem recodificação.
+- Nove IDs Drive, tamanhos, pais e permissões verificados após movimentação; SHA-256 antes/depois e ausência das origens anteriores confirmados no G:. Recibo `drive-reconciliation/venom-nine-historical-models-receipt.json`, OrdaX `55e83ca1-3892-4984-b422-3eca49e2a490`, exit 0, HISTORICAL_VERIFIED 9. Não repetir este lote; supersede a pendência Venom do checkpoint seguinte. Sem uploads, exclusões, mudanças de compartilhamento, escrita Curadoria/D1/R2 ou publicação.
+
 ## Checkpoint Drive — Ciri, Harry Potter e revisão Venom (25/11/2026)
 
 - Pranchas existentes `aspect-gap-029–032.jpg`: 19 referências históricas distintas por arquivo (8 Venom, 5 Harry Potter, 6 Ciri), comparadas com os renders Telegram apresentados, sem equivalência inequívoca; nenhuma fusão, nova confirmação de identidade ou DINO reexecutado. Venom: oito arquivos com preflight SHA físico concluído, mas ainda não movidos; há um nono arquivo fora das pranchas que requer revisão própria. Revalidar antes de aplicar.
