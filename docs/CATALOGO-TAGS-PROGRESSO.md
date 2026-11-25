@@ -15,7 +15,7 @@ Revisar todos os modelos publicados, um por vez, e completar a taxonomia públic
 
 ## Progresso
 
-**Concluídos nesta auditoria individual: 708 modelos.** O restante dos lotes anteriores permanece pendente até ser conferido por modelo; quantidade total e percentual serão calculados depois de reconciliar os inventários original e Telegram sem duplicações.
+**Concluídos nesta auditoria individual: 712 modelos.** O restante dos lotes anteriores permanece pendente até ser conferido por modelo; quantidade total e percentual serão calculados depois de reconciliar os inventários original e Telegram sem duplicações.
 
 | ID do modelo | Título público | Tags de personagem confirmadas | Escopo de franquia e editora | Evidência |
 |---|---|---|---|---|
@@ -679,6 +679,10 @@ Revisar todos os modelos publicados, um por vez, e completar a taxonomia públic
 | `mdl_794b70f6834ae9155462` | Pantera Negra e Namor | Pantera Negra · Namor | Dioramas & Confrontos · Marvel | Título nomeia os dois personagens separadamente. Fontes oficiais: [Pantera Negra/Vingadores](https://www.marvel.com/teams-and-groups/avengers/in-comics) e [Namor](https://www.marvel.com/characters/sub-mariner). |
 | `mdl_60d6adc77461a015ebef` | Pantera Negra x Killmonger | Pantera Negra · Killmonger | Dioramas & Confrontos · Marvel | Confronto tem duas relações, uma por personagem. [Marvel: Vingadores](https://www.marvel.com/teams-and-groups/avengers/in-comics) e [Killmonger](https://share.marvel.com/comics/discover/904/killmonger). |
 | `mdl_bcf35d4718ee9bb71db7` | Thanos e Sentry | Thanos · Sentry | Dioramas & Confrontos · Marvel | Título nomeia dois personagens individuais; nenhum membro da equipe foi inferido. Fontes oficiais: [Thanos](https://www.marvel.com/characters/Thanos) e [Sentry](https://share.marvel.com/comics/discover/2463/sentry). |
+| `mdl_77d457b17eb24a690e1d` | Loki | Loki | Loki e Sylvie · Marvel | Título e coleção pública confirmam Loki; primeiro ID individual. [Perfil oficial Marvel](https://www.marvel.com/characters/loki/). |
+| `mdl_c65c1e0abec4f37f1f31` | Loki | Loki | Loki e Sylvie · Marvel | Título e coleção pública confirmam Loki; segundo ID individual. [Perfil oficial Marvel](https://www.marvel.com/characters/loki/). |
+| `mdl_fe78a0784dd5090ea683` | Loki | Loki | Loki e Sylvie · Marvel | Título e coleção pública confirmam Loki; terceiro ID individual. [Perfil oficial Marvel](https://www.marvel.com/characters/loki/). |
+| `mdl_cfe37def386b9d7c7e92` | Sylvie | Sylvie | Loki e Sylvie · Marvel | Título e coleção pública confirmam Sylvie; associação separada de Loki, sem inferir sobrenome ou versão. [Marvel](https://www.marvel.com/articles/tv-shows/loki-sylvie-in-love) a descreve como variante com identidade própria. |
 ## Retido para evidência adicional
 
 | ID do modelo | Título público | Estado | Evidência necessária |
@@ -697,11 +701,11 @@ Revisar todos os modelos publicados, um por vez, e completar a taxonomia públic
 
 ## Próximo registro
 
-Batman no contrato e na API pública: **77 modelos publicados**, 76 com vínculo de personagem e `mdl_214be678a7bd0cfbf6b2` retido para evidência visual. Superman: **26/26 IDs** reconciliados. “Vilões” tem 24 publicados: 23 com personagem e a Manopla retida como equipamento. Heróis Individuais tem 143 publicados: 142 com personagem e o diorama Aranhaverso retido. Mulher-Maravilha: 21/21. Equipes e Grupos: **354/354 modelos em 8 páginas**, associações de confronto individuais. Aquaman: **9/9**; Lanterna Verde: **7/7**, com quatro identidades retidas; Titãs: **4/4**; Adão Negro: **3/3**; Lobo: **3/3**. Supergirl: **3/3**; Darkseid, Arqueiro Verde, Zatanna e Exterminador: **2/2 cada**, relações explícitas em 0045. Shazam: **5/5**; Flash: **4/4**, confrontos separados em 0046. Homem-Gavião e Mulher-Gavião: **5/5** em 0047. Caçador de Marte, Constantine, Pacificador, Solomon Grundy, Senhor Destino e Super Choque: **6/6** em 0048; Liga da Justiça: **1 retido** sem integrantes nomeados. Red Sonja: **2/2**; Dioramas & Confrontos: **5/6** com personagens ligados e Vingadores **1 retido** por falta de integrantes nomeados, revisados em 0049.
+Batman no contrato e na API pública: **77 modelos publicados**, 76 com vínculo de personagem e `mdl_214be678a7bd0cfbf6b2` retido para evidência visual. Superman: **26/26 IDs** reconciliados. “Vilões” tem 24 publicados: 23 com personagem e a Manopla retida como equipamento. Heróis Individuais tem 143 publicados: 142 com personagem e o diorama Aranhaverso retido. Mulher-Maravilha: 21/21. Equipes e Grupos: **354/354 modelos em 8 páginas**, associações de confronto individuais. Aquaman: **9/9**; Lanterna Verde: **7/7**, com quatro identidades retidas; Titãs: **4/4**; Adão Negro: **3/3**; Lobo: **3/3**. Supergirl: **3/3**; Darkseid, Arqueiro Verde, Zatanna e Exterminador: **2/2 cada**, relações explícitas em 0045. Shazam: **5/5**; Flash: **4/4**, confrontos separados em 0046. Homem-Gavião e Mulher-Gavião: **5/5** em 0047. Caçador de Marte, Constantine, Pacificador, Solomon Grundy, Senhor Destino e Super Choque: **6/6** em 0048; Liga da Justiça: **1 retido** sem integrantes nomeados. Red Sonja: **2/2**; Dioramas & Confrontos: **5/6** com personagens ligados e Vingadores **1 retido** por falta de integrantes nomeados, revisados em 0049. Loki e Sylvie: **4/4**, com três IDs Loki e um ID Sylvie separados em 0050.
 
 ## Integridade das migrations locais
 
-A migration `0032_seed_marvel_individual_catalog_tags.sql` foi substituída por um placeholder SQL sem escrita: o arquivo anterior tinha 78.595 bytes NUL e nenhum conteúdo recuperável neste checkout. Portanto, ele não associa modelos Marvel. A categoria Heróis Individuais e qualquer vínculo histórico atribuído a `0032` precisam ser conferidos novamente por ID antes de gerar novos seeds explícitos. Os seeds `0034`–`0049` guardam relações individualizadas já auditadas em SQL idempotente; são candidatos locais e não foram aplicados.
+A migration `0032_seed_marvel_individual_catalog_tags.sql` foi substituída por um placeholder SQL sem escrita: o arquivo anterior tinha 78.595 bytes NUL e nenhum conteúdo recuperável neste checkout. Portanto, ele não associa modelos Marvel. A categoria Heróis Individuais e qualquer vínculo histórico atribuído a `0032` precisam ser conferidos novamente por ID antes de gerar novos seeds explícitos. Os seeds `0034`–`0050` guardam relações individualizadas já auditadas em SQL idempotente; são candidatos locais e não foram aplicados.
 
 ## Lotes que aguardam auditoria individual
 
