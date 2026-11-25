@@ -1,3 +1,13 @@
+## CHECKPOINT M5 — GO AUTORIZADO E ORIGEM APOSENTADA (25/11/2026)
+
+- O proprietário autorizou expressamente o GO M5, o publicador único, as migrações D1 0028–0033 e a publicação do site somente depois das provas de integridade, API e downloads.
+- Os cinco workflows legados de washingtonmsdj/catalogo foram verificados como disabled_manually após o run GitHub 45546831137, com source main 1f2e4e41fa15abaadc31ec594175d5ce0eb1fcd9. Não reativar.
+- PRs da main consolidada: #169 integrou o executor D1 limitado a 0028–0033 no Quality Gate existente; #171 integrou o acionamento por registro único auditável. Não executar migrations 0034–0053: estão na main mas não foram autorizadas pelo GO.
+- Cloudflare: Worker v60 b8da2462-5dcc-497f-af5a-bbe710d78595 em 100% do tráfego, deployment 68f249d5-428b-45ed-9ad5-40f4ef93bed5; D1 ainda na migração 0027 antes de novo GO de schema.
+- Fase do manifesto: cutover-approved; sourceWriterDisabled/releaseAuthorized/releaseGoApproved são verdadeiros. targetProductionCredentialsVerified, rollbackTestedAgainstProduction e runtimeCutoverPerformed ainda falsos, targetD1MigrationEnabled continua falso. NÃO declarar Worker nem site concluídos.
+- Próximo: CI e merge desta atualização, registro único de GO no target, D1 0028–0033 pelo Quality Gate, pós-validação de esquema e dados, comprovar credenciais/rollback, HTTP 200 e downloads em desktop/mobile; somente depois Vercel definitivo.
+
+---
 ## CHECKPOINT — LOKI E ALINHAMENTO EDITORIAL (25/11/2026)
 
 - Loki: três imagens históricas de esculturas distintas organizadas em Modelo 01/01.jpg, Modelo 02/01.jpg e Modelo 03/01.png, mesmos IDs e permissões, hashes SHA-256 anteriores e posteriores idênticos. Recibo `drive-reconciliation/wicked-loki-three-historical-models-receipt.json`, ação `0d1081f1-db0a-4fbb-8650-f3da32a01449` exit 0, LOKI_VERIFIED 3. Nenhuma correspondência Telegram afirmada, nenhum upload, exclusão ou alteração de acesso. Não repetir.
