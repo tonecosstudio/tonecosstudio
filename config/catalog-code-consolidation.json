@@ -369,14 +369,14 @@
     "observedDate": "2026-11-25",
     "worker": "tonecos-catalogo-api",
     "cloudflareAccountId": "8827c547d6def5ee5b9ca550fdd5680a",
-    "currentDeploymentId": "2a075a5a-d994-448b-a7c9-7cd4354878d7",
-    "currentVersionId": "ad735b36-4da7-4ec2-9b43-95dd6402ade3",
-    "currentVersionNumber": 62,
+    "currentDeploymentId": "1f3bec06-df66-4edb-a5a1-09ccd8fd338e",
+    "currentVersionId": "cb284457-5492-48ff-830c-184563c49397",
+    "currentVersionNumber": 63,
     "currentTrafficPercent": 100,
-    "currentVersionSourceCommit": null,
-    "currentVersionDeployedAt": "2026-11-25T04:57:56.44708Z",
-    "previousVersionId": "79951f24-8acb-4e32-84b1-556c381031f7",
-    "previousVersionNumber": 61,
+    "currentVersionSourceCommit": "a12bccc474fe3c142ccac9c8467c6118f682704e",
+    "currentVersionDeployedAt": "2026-11-25T05:13:16.710991Z",
+    "previousVersionId": "ad735b36-4da7-4ec2-9b43-95dd6402ade3",
+    "previousVersionNumber": 62,
     "previousVersionMayBeRollbackCandidate": false,
     "rollbackTestedAgainstProduction": false,
     "observedMainAheadOfProductionByCommits": null,
@@ -402,6 +402,10 @@
     "targetProductionCredentialsVerified": false,
     "runtimeCutoverPerformed": false,
     "observationIsApproval": false,
-    "note": "READ-ONLY LIVE CHECK 2026-11-25: Cloudflare Worker v62/ad735b36 (100%) deployed at 04:57:56Z via Wrangler by tonecosstudio@gmail.com; v61/79951f24 preceded it at 04:41:32Z. The exact initiating process and the deployed source commit were NOT verified. Worker settings retain existing canonical D1 87006366-60f3-4937-af73-2ef5a5f901fb, R2 MEDIA tonecos-catalogo-media, R2 PRIVATE_TELEGRAM tonecos-catalogo-staging, expected CORS and secrets by name; no secret values read. Live D1 remains at migration 0027 with required v13 taxonomy tables absent. Public /api/telegram-studios/studios returns HTTP 200, while /api/telegram-studios?limit=1 and /api/health return HTTP 503. Five source workflows remain disabled. This snapshot is factual observation ONLY: no target publisher release approved or executed, no rollback validation, no schema migration or production credentials proof. Fail closed against any future deployment drift."
+    "note": "M5 2026-11-25 read-only observation. Worker v63 cb284457 is live at 100%, deployment 1f3bec06. Cloudflare Workers Builds commit a12bccc4 produced v63 despite the GitHub source workflows being disabled; previous v62 is not an approved rollback. Independent Workers Builds script tag ee2d9075c95d41c3bd7b2690700e0b26 previously had auto_build_enabled=true, trigger 96352968 and wrangler deploy; configuration now returns HTTP 404 Cloudflare 12040 and triggers list is empty (observed 25 Nov). Deletion occurred in another execution, not attributed to this change. D1 migrations only through 0027; schema v13 incomplete. Credential proof, production rollback and runtime cutover remain false. This is a factual snapshot, not release authorization.",
+    "workersBuildsScriptTag": "ee2d9075c95d41c3bd7b2690700e0b26",
+    "workersBuildsConfigPresent": false,
+    "workersBuildsActiveTriggers": 0,
+    "workersBuildsLastVerifiedAt": "2026-11-25"
   }
 }
