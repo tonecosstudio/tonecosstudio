@@ -379,7 +379,7 @@ export async function proxyCatalogRequest(request, fetcher) {
 // Pages → CATALOG_WORKER binding; public routes retain the read-only proxy.
 // Never forward browser cookies, custom headers, unknown methods or public caches.
 const PRIVATE_DRAFT_ROUTE =
-  /^api\/admin\/telegram-drafts(?:\/import|\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
+  /^api\/admin\/telegram-drafts(?:\/(?:studios|import)|\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
 const BEARER_TOKEN = /^Bearer [A-Za-z0-9._~-]{60,8192}$/;
 
 export async function proxyTelegramAdminRequest(request, fetcher) {
