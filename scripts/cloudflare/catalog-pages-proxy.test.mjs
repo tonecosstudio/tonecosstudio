@@ -556,6 +556,35 @@ test("private Pages draft gateway rejects anonymous requests before the Worker",
   }
 });
 
+test("private draft studio directory is admin-only on the same Worker and read-only", async () => {
+  const path = SITE + DRAFT_PREFIX + "/studios";
+  const token = "Bearer " + "a".repeat(100);
+  const io = mockFetch(JSON.stringify({ studios: [{ studio: "Kuton Sculpts", total: 1 }] }), 200, {
+    "content-type": "application/json",
+    "cache-control": "public, max-age=86400",
+  });
+  const anonymous = await proxyTelegramAdminRequest(new Request(path), io.fetcher);
+  assert.equal(anonymous.status, 403);
+  assert.equal(io.calls.length, 0);
+  const authenticated = await proxyTelegramAdminRequest(new Request(path, {
+    headers: { authorization: token, cookie: "secret=never-forward" },
+  }), io.fetcher);
+  assert.equal(authenticated.status, 200);
+  assert.deepEqual(await authenticated.json(), { studios: [{ studio: "Kuton Sculpts", total: 1 }] });
+  assert.equal(io.calls.length, 1);
+  assert.equal(io.calls[0].url, WORKER + "/api/admin/telegram-drafts/studios");
+  assert.equal(io.calls[0].options.method, "GET");
+  assert.equal(io.calls[0].options.headers.has("cookie"), false);
+  assert.equal(authenticated.headers.get("cache-control"), "private, no-store");
+  const mutation = await proxyTelegramAdminRequest(new Request(path, {
+    method: "POST",
+    headers: { authorization: token, "content-type": "application/json" },
+    body: "{}",
+  }), io.fetcher);
+  assert.equal(mutation.status, 404);
+  assert.equal(io.calls.length, 1);
+});
+
 test("authenticated draft reads traverse the existing binding with no cookies or public cache", async () => {
   const auth = 'Bearer ' + 'a'.repeat(100);
   const io = mockFetch(JSON.stringify({ id:DRAFT_ID, imageCount:4 }),200, {
