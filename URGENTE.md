@@ -1,3 +1,8 @@
+## CHECKPOINT — COBERTURA INTEGRAL E PESQUISA GLOBAL (25/11/2026)
+
+- Decisão atual: site e Drive incluem todos os modelos elegíveis, sem nome em A identificar; mover a mesma identidade ao nomear. Busca global unificada histórico + Telegram, etiqueta editorial discreta nos não confirmados, respeitando visibilidade. Critérios e autoridade no documento `docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md`.
+- Correção documental: recuperação de 528 linhas canônicas a partir do último conteúdo íntegro `1a0ca795`, preservando alterações posteriores válidas e removendo marcador de truncamento. Base `b09a9dfb046841594629202da7c83d85eb163ba5`. Nenhum arquivo de mídia, ficha ou publicação modificado. Próxima ação: implementar/testar busca e cobertura no mecanismo existente; não duplicar catálogo nem repetir M5.
+
 ## CHECKPOINT — TELEGRAM PRINCIPAL E HISTÓRICO COMPLEMENTAR (25/11/2026)
 
 - Decisão do proprietário registrada na [SSOT operacional](docs/CATALOGO-PUBLICO-TELEGRAM-SSOT.md#prioridade-operacional--telegram-principal-histórico-complementar-25112026). Priorizar integração Telegram; manter histórico como fallback, reconciliar durante a integração, não organizar históricos isoladamente.
