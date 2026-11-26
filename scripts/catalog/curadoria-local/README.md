@@ -3,6 +3,40 @@ Total output lines: 659
 
 # Curadoria Visual TONART — aplicativo local
 
+## Avaliação experimental de similaridade DINOv2 e SigLIP2 (somente leitura)
+
+O CLI `visual_retrieval_benchmark.py` compara o baseline dHash/aHash com
+embeddings DINOv2 ou SigLIP2, sem iniciar um host, criar banco ou modificar decisões.
+Executar com Python e dependências locais Pillow, PyTorch e Transformers;
+provisionar separadamente uma revisão confiável de DINOv2 ou SigLIP2 em safetensors
+com config.json e preprocessor_config.json. O CLI não baixa modelos e
+não aceita código remoto.
+
+```powershell
+python visual_retrieval_benchmark.py --self-test
+python visual_retrieval_benchmark.py --self-test-adapter
+python visual_retrieval_benchmark.py --sqlite "CAMINHO_SQLITE" --media-root "RAIZ_ORIGINAIS" --model-dir "DINO_LOCAL" --studio Wicked --batch-size 8 --review-limit 24
+```
+
+Usar o SQLite existente em modo somente leitura. A amostra exclui galerias
+parcialmente confirmadas, SHA em grupos conflitantes e cópias idênticas;
+verifica SHA físico antes de decodificar e recusa resultados quando a
+amostra muda durante a execução. A avaliação reporta precisão/recall e
+hit@1/3/5, cobertura, consultas sem outros membros, conflitos de variante
+e tempos separados. Os pares cross-gallery são candidatos, nunca prova
+de erro ou autorização de fusão. A lista é limitada a 0–100 entradas,
+sem materializar todos os pares em memória. Os rótulos existentes são
+proxy e exigem validação independente antes de calibrar limiares.
+Não utilizar o resultado para confirmar nomes/direitos automaticamente.
+Não executar no SQLite de produção pública nem no R2.
+
+Executar o mesmo comando novamente com --model-dir apontando para SigLIP2 local, mantendo o mesmo snapshot, estúdio e parâmetros; não comparar resultados de amostras diferentes. SigLIP2 nesta etapa avalia imagem-imagem, não atribui nomes por texto.
+
+A saída inclui `sample_sha256`, `model_sha256`, versões PyTorch/Transformers e batch size. Comparar DINOv2 e SigLIP2 somente se `sample_sha256` for idêntico; registrar também dispositivo e parâmetros. Os hashes dos pesos e configs são recalculados antes/depois para invalidar uma execução com arquivos modificados. O hash identifica o conteúdo, não certifica a origem ou qualidade dos pesos.
+
+Estado experimental: ainda sem benchmark físico no acervo Wicked.
+A prova sintética de seleção isolada não mede o DINOv2.
+
 ## Separar esculturas distintas em galeria já auditada — Wicked
 
 O `POST /api/split-audited-variant` corrige uma galeria *já auditada* de **exatamente duas fotos** que na verdade são variantes/esculturas diferentes (ex.: uma imagem de Busto e outra de Full Size). Não modifica o endpoint legado nem cria outro banco/serviço. Corpo: `group_key`, `revision`, `selected_message_id`, `proofs` (todos os dois `message_id`/`sha256`/`revision`), `corrected_variant`, `official_url` individual `https://3dwicked.gumroad.com/l/...` e `note` com descrição de ambas as esculturas.
