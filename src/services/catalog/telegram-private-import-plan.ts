@@ -102,16 +102,23 @@ export async function parsePrivateTelegramPlan(
     } catch {
       reject("invalid_jsonl");
     }
-    const operation = record.append_to_existing_private_draft === true ? "append" : "create";
+    const operation =
+      record.append_to_existing_private_draft === true ? "append" : "create";
     const expectedModelId = record.model_id;
     if (
-      (operation === "create" && (record.new_private_draft_only !== true || record.append_to_existing_private_draft !== false || record.existing_d1_model !== null)) ||
-      (operation === "append" && (record.new_private_draft_only !== false || record.existing_d1_model !== expectedModelId)) ||
+      (operation === "create" &&
+        (record.new_private_draft_only !== true ||
+          record.append_to_existing_private_draft !== false ||
+          record.existing_d1_model !== null)) ||
+      (operation === "append" &&
+        (record.new_private_draft_only !== false ||
+          record.existing_d1_model !== expectedModelId)) ||
       record.rights_verified !== false ||
       record.showcase_visible !== false ||
       record.production_write_authorized !== false ||
       record.apply_executed !== false
-    ) reject("not_private_import_operation");
+    )
+      reject("not_private_import_operation");
     if (
       typeof record.operation_id !== "string" ||
       !HEX64.test(record.operation_id) ||
