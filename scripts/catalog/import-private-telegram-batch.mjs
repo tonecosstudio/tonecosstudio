@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { parsePrivateTelegramPlan } from '../../src/services/catalog/telegram-private-import-plan.ts'
 
 const endpoint =
-  'https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/telegram-drafts/import'
+  'https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/telegram-drafts/import/service'
 const help = `Uso: node --experimental-strip-types scripts/catalog/import-private-telegram-batch.mjs --plan <arquivo.jsonl> --receipt <recibo.jsonl> [--apply]
 
 Sem --apply, valida o plano sem rede. Com --apply, chama sequencialmente o importador canônico do Worker.
