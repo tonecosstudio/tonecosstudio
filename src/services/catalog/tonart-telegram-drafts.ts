@@ -194,7 +194,10 @@ export async function getTelegramDraftImage(path: string) {
  * browser-side SQL, R2 writes or publication paths are introduced here.
  */
 export async function importPrivateTelegramDraft(
-  manifest: PrivateTelegramManifest,
+  manifest: PrivateTelegramManifest & {
+    operation?: "create" | "append";
+    expectedModelId?: string;
+  },
 ) {
   const response = await request("/api/admin/telegram-drafts/import", {
     method: "POST",

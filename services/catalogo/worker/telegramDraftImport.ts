@@ -1,7 +1,8 @@
 /**
  * Incremental private Telegram studio ingestion into the existing D1 catalog.
  * One Curadoria group => one draft model. R2 is READ-ONLY; no image reupload.
- * Called only after the canonical admin session was verified by telegramDrafts.
+ * Called only after human Supabase admin auth or the scoped Cloudflare Access
+ * service identity was verified by telegramDrafts.
  */
 type Statement = {
   bind(...values: unknown[]): Statement
@@ -19,6 +20,7 @@ export type DraftImportEnv = {
   PRIVATE_TELEGRAM?: PrivateBucket
 }
 type Photo = { messageId: number; sha256: string }
+type ImportOperation = 'create' | 'append'
 type ImportResult = { status: number; data: Record<string, unknown> }
 const sha64 = /^[a-f0-9]{64}$/
 const group24 = /^[a-f0-9]{24}$/
@@ -26,7 +28,7 @@ const group24 = /^[a-f0-9]{24}$/
 const singleGroup = /^single:([1-9][0-9]{0,15})$/
 const sourceId = '2370335738'
 const root = 'telegram-studios/v1/' + sourceId + '/telegram-webp-final-v1/'
-const allowedFields = ['originId', 'studio', 'groupKey', 'name', 'universe', 'variant', 'franchiseId', 'images']
+const allowedFields = ['originId', 'studio', 'groupKey', 'name', 'universe', 'variant', 'franchiseId', 'images', 'operation', 'expectedModelId']
 const present = (value: unknown, max: number) =>
   typeof value === 'string' && value.length > 0 && value.length <= max &&
   value.trim().length > 0 && !/\p{Cc}/u.test(value)
@@ -54,6 +56,9 @@ export async function importPrivateTelegramDraft(
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return error(400, 'invalid_group_manifest')
   const body = parsed as Record<string, unknown>
   if (Object.keys(body).some(k => !allowedFields.includes(k))) return error(400, 'unexpected_group_fields')
+  const operation: ImportOperation = body.operation === undefined ? 'create' : body.operation as ImportOperation
+  if (operation !== 'create' && operation !== 'append') return error(400, 'invalid_operation')
+  if (body.expectedModelId !== undefined && typeof body.expectedModelId !== 'string') return error(400, 'invalid_expected_model')
   const studio = body.studio
   const name = body.name
   const universe = body.universe
@@ -97,6 +102,8 @@ export async function importPrivateTelegramDraft(
   }
   if (!env.PRIVATE_TELEGRAM?.head) return error(503, 'private_storage_unavailable')
   const id = 'tg_' + canonicalGroup
+  if ((operation === 'append' && body.expectedModelId !== id) ||
+      (operation === 'create' && body.expectedModelId !== undefined)) return error(400, 'invalid_expected_model')
   const already = await env.DB.prepare(
     'SELECT id,name,published,image_count,telegram_revision,telegram_gallery_order FROM models WHERE telegram_origin_id=? AND telegram_group_key=? LIMIT 1',
   ).bind(sourceId, canonicalGroup).first<{
@@ -105,6 +112,7 @@ export async function importPrivateTelegramDraft(
   }>()
   if (already) {
     if (already.id !== id || already.published !== 0) return error(409, 'group_identity_conflict')
+    if (operation === 'append' && body.expectedModelId !== id) return error(409, 'append_target_mismatch')
     const stored = (await env.DB.prepare(
       'SELECT image_id,source_sha256,position FROM model_image_sources WHERE model_id=? AND gallery_version=1 ORDER BY position',
     ).bind(id).all<{ image_id: string; source_sha256: string; position: number }>()).results
@@ -120,6 +128,7 @@ export async function importPrivateTelegramDraft(
       return { status: 200, data: { id, created: false, reused: true,
         appended: 0, imageCount: stored.length, published: false, name: already.name } }
     }
+    if (operation !== 'append') return error(409, 'existing_group_requires_append_plan')
     const placeholders = fresh.map(() => '?').join(',')
     const otherOwner = (await env.DB.prepare(
       'SELECT model_id,source_sha256 FROM model_image_sources WHERE source_sha256 IN (' +
@@ -170,6 +179,7 @@ export async function importPrivateTelegramDraft(
     return { status: 200, data: { id, created: false, reused: true,
       appended: fresh.length, imageCount: newCount, published: false, name: already.name } }
   }
+  if (operation === 'append') return error(409, 'expected_existing_model_missing')
   const existingSameId = await env.DB.prepare(
     'SELECT id FROM models WHERE id=? LIMIT 1',
   ).bind(id).first()

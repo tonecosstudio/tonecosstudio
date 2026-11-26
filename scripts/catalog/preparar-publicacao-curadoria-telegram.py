@@ -1060,7 +1060,8 @@ def plan_private_telegram_drafts(db: Path, known_d1_csv: Path, expected_d1_model
                       [{"messageId": mid, "sha256": sha} for mid, sha in media],
         }
         # Importer validates every R2 HEAD, live identity/hash conflicts and
-        # Supabase admin session before it is permitted to create a private draft.
+        # Worker verifies either the human Supabase admin session or the scoped
+        # Cloudflare Access import service identity before creating a draft.
         operation_id = hashlib.sha256(json.dumps(
             [model_id, import_manifest], sort_keys=True,
             ensure_ascii=False, separators=(",", ":")).encode()).hexdigest()

@@ -1,6 +1,6 @@
 /**
- * Browser-only validation for the Curadoria's EXISTING private import plan.
- * This does not import or publish anything. The existing Worker admin endpoint
+ * Shared validation for the Curadoria's existing private import plan, used in
+ * the browser and the headless batch runner. The existing Worker admin endpoint
  * remains the sole D1 writer and rechecks ownership, R2 and permissions live.
  */
 export type PrivateTelegramManifest = {
@@ -17,6 +17,7 @@ export type PrivateTelegramManifest = {
 export type PrivateTelegramPlannedDraft = {
   id: string;
   operationId: string;
+  operation: "create" | "append";
   studio: string;
   manifest: PrivateTelegramManifest;
 };
@@ -101,19 +102,16 @@ export async function parsePrivateTelegramPlan(
     } catch {
       reject("invalid_jsonl");
     }
-    // This UI intentionally accepts NEW PRIVATE drafts only. An existing
-    // gallery append has different CAS/review semantics and must stay in the
-    // editor/reconciliation flow, never be smuggled into a mass import.
+    const operation = record.append_to_existing_private_draft === true ? "append" : "create";
+    const expectedModelId = record.model_id;
     if (
-      record.new_private_draft_only !== true ||
-      record.append_to_existing_private_draft !== false ||
-      record.existing_d1_model !== null ||
+      (operation === "create" && (record.new_private_draft_only !== true || record.append_to_existing_private_draft !== false || record.existing_d1_model !== null)) ||
+      (operation === "append" && (record.new_private_draft_only !== false || record.existing_d1_model !== expectedModelId)) ||
       record.rights_verified !== false ||
       record.showcase_visible !== false ||
       record.production_write_authorized !== false ||
       record.apply_executed !== false
-    )
-      reject("not_private_new_draft");
+    ) reject("not_private_import_operation");
     if (
       typeof record.operation_id !== "string" ||
       !HEX64.test(record.operation_id) ||
@@ -194,10 +192,16 @@ export async function parsePrivateTelegramPlan(
       franchiseId: m.franchiseId as number,
       images: photos,
     };
-    if (JSON.stringify(manifest).length > 20000) reject("request_size");
+    const workerBody = {
+      ...manifest,
+      operation,
+      ...(operation === "append" ? { expectedModelId: expectedId } : {}),
+    };
+    if (JSON.stringify(workerBody).length > 20000) reject("request_size");
     drafts.push({
       id: expectedId,
       operationId: record.operation_id,
+      operation,
       studio: manifest.studio,
       manifest,
     });

@@ -16,13 +16,14 @@ function entry(
   messageId = 24268,
   id = soloId,
   operationId = "b".repeat(64),
+  append = false,
 ) {
   return {
     operation_id: operationId,
     model_id: id,
-    new_private_draft_only: true,
-    append_to_existing_private_draft: false,
-    existing_d1_model: null,
+    new_private_draft_only: !append,
+    append_to_existing_private_draft: append,
+    existing_d1_model: append ? id : null,
     rights_verified: false,
     showcase_visible: false,
     r2_verified: false,
@@ -57,6 +58,16 @@ describe("TONART private draft plan uses the canonical Worker importer only", ()
     expect(plan.sha256).toBe(createHash("sha256").update(text).digest("hex"));
     expect(plan.studioCount).toBe(1);
     expect(plan.photoCount).toBe(1);
+  });
+
+  it("accepts an explicit append only when it names the derived model", async () => {
+    const row = entry(solo, 24268, soloId, "c".repeat(64), true);
+    const plan = await parsePrivateTelegramPlan(JSON.stringify(row));
+    expect(plan.drafts[0]).toMatchObject({ id: soloId, operation: "append" });
+    row.existing_d1_model = "tg_" + "f".repeat(24);
+    await expect(parsePrivateTelegramPlan(JSON.stringify(row))).rejects.toThrow(
+      "private_import_plan_not_private_import_operation",
+    );
   });
 
   it("allows conservative stable galleries but detects duplicate images across operations", async () => {
@@ -95,6 +106,12 @@ describe("TONART private draft plan uses the canonical Worker importer only", ()
       "preexisting gallery append",
       (x: ReturnType<typeof entry>) => {
         x.new_private_draft_only = false;
+      },
+    ],
+    [
+      "missing explicit create operation flag",
+      (x: ReturnType<typeof entry>) => {
+        delete (x as Partial<ReturnType<typeof entry>>).append_to_existing_private_draft;
       },
     ],
     [
