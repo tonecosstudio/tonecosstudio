@@ -236,8 +236,8 @@
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
-        "localBlob": "8a4d6330bd06cf8795270d109ead2ba6c350691e",
-        "reason": "Stage the existing private TONART R2 bucket binding and admin Supabase secrets without deploying or creating Cloudflare resources; source pin remains immutable"
+        "localBlob": "1059fb602a05f04ab271a6f05dab72ab0aa93dde",
+        "reason": "Preserve existing Worker bindings and required secrets; add the owner-verified Black Friday destination folder ID as a non-secret server-side configuration. OAuth remains an optional provisioned secret."
       },
       "config/catalog-schema-contract.json": {
         "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
@@ -246,8 +246,8 @@
       },
       "worker/entry.ts": {
         "sourceBlob": "a628fce19ce0b84f76760a716eab0152668e2290",
-        "localBlob": "08a248fa6c846cf852453746256f7089ac700fe9",
-        "reason": "Reviewed entrypoint forwards the Cloudflare Access execution context to the existing canonical Telegram import route while preserving the upstream media query budget, immutable R2 GET/HEAD/Range controls and Telegram routes. No production release."
+        "localBlob": "866c070e24c231445e2f513df32ea11b4d7cb5a0",
+        "reason": "Preserve existing Cloudflare Access and public media routing; add exact admin-only Black Friday export entrypoint using the same canonical Worker and verified public media handlers. No production release implied."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
