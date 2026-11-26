@@ -3,16 +3,24 @@
   "name": "tonecos-catalogo-api",
   "main": "worker/entry.ts",
   "compatibility_date": "2026-09-30",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "preview_urls": false,
   "cache": {
     "enabled": true
   },
   "vars": {
-    "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app,https://tonartstudio.com.br,https://www.tonartstudio.com.br"
+    "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app,https://tonartstudio.com.br,https://www.tonartstudio.com.br",
+    "TELEGRAM_IMPORT_ACCESS_AUD": "8cd07cc58be5fa99c3f72efd3bcca380982401a6051e248535022a668b31d5e7",
+    "TELEGRAM_IMPORT_ACCESS_CLIENT_ID": "432aeb2c-aca3-4538-94f5-abb6e70f12dc"
   },
   "secrets": {
-    "required": ["TURNSTILE_SECRET_KEY", "ADMIN_SUPABASE_URL", "ADMIN_SUPABASE_ANON_KEY"]
+    "required": [
+      "TURNSTILE_SECRET_KEY",
+      "ADMIN_SUPABASE_URL",
+      "ADMIN_SUPABASE_ANON_KEY"
+    ]
   },
   "d1_databases": [
     {
