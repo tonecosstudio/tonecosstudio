@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:arcade-preview": "cross-env VITE_TONECOS_COMMERCIAL_MVP=false VITE_PUBLIC_CATALOG_MVP=false vite",
     "catalog:monorepo:check": "node --test scripts/architecture/catalog-monorepo.test.mjs",
-    "build": "npm run catalog:monorepo:check && node scripts/security/assert-catalog-mvp-build.mjs && node --test scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/security/assert-public-mvp-bundle.test.mjs scripts/security/edge-cors.test.mjs scripts/seo/generate-public-index.test.mjs && vite build && node scripts/security/assert-public-mvp-bundle.mjs && node scripts/branding/generate-og-image.mjs && node scripts/seo/generate-public-index.mjs",
+    "build": "npm run catalog:monorepo:check && node scripts/security/assert-catalog-mvp-build.mjs && node --test scripts/branding/generate-og-image.test.mjs scripts/cloudflare/catalog-pages-proxy.test.mjs scripts/catalog/catalog-cloud-routing.test.mjs scripts/catalog/cloudflare-account-migration.test.mjs scripts/security/assert-public-mvp-bundle.test.mjs scripts/security/edge-cors.test.mjs scripts/seo/generate-public-index.test.mjs && vite build && node scripts/security/assert-public-mvp-bundle.mjs && node scripts/branding/generate-og-image.mjs && node scripts/seo/generate-public-index.mjs",
     "build:dev": "vite build --mode development",
     "typecheck": "tsc -b --pretty false",
     "typecheck:app": "tsc -p tsconfig.app.json --pretty false --noEmit",

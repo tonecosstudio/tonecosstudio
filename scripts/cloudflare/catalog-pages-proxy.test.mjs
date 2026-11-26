@@ -4,7 +4,7 @@ import { onRequest, proxyCatalogRequest, proxyTelegramAdminRequest } from "../..
 import vercelCatalogHandler, { isStandaloneTelegramCatalogHost, isAllowedStandaloneTelegramRoute } from "../../api/catalogo-proxy.js";
 
 const SITE = "https://tonecosstudio.pages.dev";
-import { ACTIVE_CATALOG_ORIGIN as WORKER } from "../../config/catalog-cloud-routing.mjs";
+import { ACTIVE_CATALOG_CLOUD, ACTIVE_CATALOG_ORIGIN as WORKER } from "../../config/catalog-cloud-routing.mjs";
 
 function mockFetch(body = "ok", status = 200, headers = {}) {
   const calls = [];
@@ -761,4 +761,16 @@ test("promotion proxy is authenticated and exact-route-only", async () => {
   assert.equal(res.status,200);
   assert.equal(res.headers.get("cache-control"),"private, no-store");
   assert.equal(called,1);
+});
+
+
+test("Pages rejects an account marker different from the selected authority before any binding call", async () => {
+  let calls = 0;
+  const env = { CATALOG_CLOUD: ACTIVE_CATALOG_CLOUD === "tonecos" ? "ordax" : "tonecos", CATALOG_WORKER: { fetch: async () => { calls++; return Response.json({}); } } };
+  for (const path of ["api/categories", "api/admin/telegram-drafts"]) {
+    const response = await onRequest({ request: new Request(SITE + "/catalogo-api/" + path), env });
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get("Cache-Control"), "no-store");
+  }
+  assert.equal(calls, 0);
 });
