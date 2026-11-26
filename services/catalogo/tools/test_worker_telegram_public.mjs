@@ -72,7 +72,7 @@ test("Worker edge cache reuses anonymous list/studio responses without repeat D1
    assert.equal(first.status,200);
    await Promise.all(pending);
    const d1AfterFirst=queries.length;
-   assert.equal(d1AfterFirst,2);
+   assert.equal(d1AfterFirst,3);
    const second=await routeTelegramStudioShowcase(url,env,bg);
    assert.equal(second.status,200);
    assert.deepEqual(await second.json(),await first.json());
@@ -83,7 +83,7 @@ test("Worker edge cache reuses anonymous list/studio responses without repeat D1
    assert.equal(studio.status,200);
    await Promise.all(pending);
    const d1AfterStudio=queries.length;
-   assert.equal(d1AfterStudio,3);
+   assert.equal(d1AfterStudio,4);
    assert.deepEqual(await (await routeTelegramStudioShowcase(studioUrl,env,bg)).json(),
                     await studio.json());
    assert.equal(queries.length,d1AfterStudio,"repeated studio list must use cache");
@@ -105,29 +105,36 @@ test("public list cache keys share aliases without merging distinct filters", as
    const {env,queries}=fixture();
    const page=await routeTelegramStudioShowcase(request("?studio=Studio%20A&limit=24&offset=0"),env);
    assert.equal(page.status,200);
-   assert.equal(queries.length,2);
+   assert.equal(queries.length,3);
    const alias=await routeTelegramStudioShowcase(request("?offset=0&studio=Studio%20A"),env);
    assert.equal(alias.status,200);
    assert.deepEqual(await alias.json(),await page.json());
-   assert.equal(queries.length,2,"equivalent list URLs must share one D1 result");
+   assert.equal(queries.length,3,"equivalent list URLs must share one D1 result");
    assert.equal(written.length,1);
    assert.ok(written[0].endsWith("?limit=24&offset=0&studio=Studio+A"));
 
    const anotherStudio=await routeTelegramStudioShowcase(request("?studio=Studio%20B&limit=24"),env);
    assert.equal(anotherStudio.status,200);
-   assert.equal(queries.length,4,"studio filters must remain isolated");
+   assert.equal(queries.length,6,"studio filters must remain isolated");
 
    const defaultPage=await routeTelegramStudioShowcase(request(""),env);
    assert.equal(defaultPage.status,200);
-   assert.equal(queries.length,6);
+   assert.equal(queries.length,9);
    const defaultAlias=await routeTelegramStudioShowcase(request("?offset=0&limit=24"),env);
    assert.equal(defaultAlias.status,200);
-   assert.equal(queries.length,6,"missing defaults must not repeat D1 reads");
+   assert.equal(queries.length,9,"missing defaults must not repeat D1 reads");
 
    const differentPage=await routeTelegramStudioShowcase(request("?offset=24&limit=24"),env);
    assert.equal(differentPage.status,200);
-   assert.equal(queries.length,8,"different pages must remain distinct");
+   assert.equal(queries.length,12,"different pages must remain distinct");
    assert.equal(written.length,4);
+    const named=await routeTelegramStudioShowcase(request("?identity=identified"),env);
+    const unnamed=await routeTelegramStudioShowcase(request("?identity=unidentified"),env);
+    assert.equal(named.status,200);assert.equal(unnamed.status,200);
+    assert.equal(queries.length,18);
+    await routeTelegramStudioShowcase(request("?identity=identified"),env);
+    assert.equal(queries.length,18,"identity-specific cache remains isolated and reusable");
+    assert.equal(written.length,6);
  } finally {
    if(previous)Object.defineProperty(globalThis,"caches",previous);
    else delete globalThis.caches;
@@ -189,7 +196,12 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
     CREATE TABLE model_image_sources(
       model_id TEXT,gallery_version INTEGER,source_sha256 TEXT,position INTEGER
     );
-    CREATE INDEX source_page_cover ON model_image_sources(model_id,gallery_version);
+    CREATE TABLE catalog_characters(id TEXT PRIMARY KEY, display_name TEXT, canonical_slug TEXT,status TEXT);
+     CREATE TABLE catalog_model_characters(model_id TEXT,character_id TEXT,review_state TEXT);
+     CREATE TABLE catalog_character_attributes(character_id TEXT,attribute_id TEXT,review_state TEXT);
+     CREATE TABLE catalog_attributes(id TEXT PRIMARY KEY,kind TEXT,display_name TEXT,canonical_slug TEXT,status TEXT);
+     INSERT INTO catalog_characters VALUES ('chr_escultura','Escultura','escultura','confirmed');
+     CREATE INDEX source_page_cover ON model_image_sources(model_id,gallery_version);
     CREATE INDEX idx_models_telegram_showcase_name
       ON models(telegram_showcase_visible,name COLLATE NOCASE,
                 telegram_studio COLLATE NOCASE,id)
@@ -209,7 +221,8 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
      const cover="telegram-studios/v1/2370335738/telegram-webp-final-v1/bb/"+b+"/display.webp";
      insertModel.run(modelId,"Modelo "+String(i).padStart(5,"0"),studio,"Escultura",
                      "2370335738","Busto",2,0,modelId,1,"pending","not_reviewed",1,cover);
-     insertImage.run(modelId,1,a,0);
+     db.prepare("INSERT INTO catalog_model_characters VALUES (?,?,?)").run(modelId,"chr_escultura","confirmed");
+      insertImage.run(modelId,1,a,0);
      insertImage.run(modelId,1,b,1);
    }
    db.exec("COMMIT");
@@ -261,12 +274,29 @@ test("indexed page is materialized before resolving gallery covers (4,200-model 
    assert.equal(page.total,2100);
    assert.equal(page.items[0].name,"Modelo 00201");
    assert.equal(page.items.length,24);
-   const exact=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Escultura&limit=24"),env);
+   // Probable names are not unidentified. A rename moves the same ID,
+   // while a rejected/private row remains invisible in either view.
+   const unidentifiedId="tg_"+(0).toString(16).padStart(24,"0");
+   db.prepare("UPDATE models SET name=?,telegram_name_provisional=1 WHERE id=?").run("Modelo sem nome #1212",unidentifiedId);
+   const unnamed=await routeTelegramStudioShowcase(request("?identity=unidentified&limit=24"),env);
+   assert.equal(unnamed.status,200);
+   const unnamedPage=await unnamed.json();
+   assert.equal(unnamedPage.total,1);
+   assert.equal(unnamedPage.items[0].id,unidentifiedId);
+   assert.equal((await (await routeTelegramStudioShowcase(request("?identity=identified"),env)).json()).total,4199);
+   const directory=await routeTelegramStudioShowcase(request("/studios?identity=unidentified"),env);
+   assert.deepEqual((await directory.json()).studios,[{studio:"Studio A",total:1}]);
+   db.prepare("UPDATE models SET name=? WHERE id=?").run("Aang",unidentifiedId);
+   assert.equal((await (await routeTelegramStudioShowcase(request("?identity=unidentified"),env)).json()).total,0);
+   const named=await routeTelegramStudioShowcase(request("?identity=identified&q=Aang"),env);
+   assert.equal((await named.json()).items[0].id,unidentifiedId);
+   db.prepare("UPDATE models SET name=?,telegram_name_provisional=0 WHERE id=?").run("Modelo 00000",unidentifiedId);
+   const exact=await routeTelegramStudioShowcase(request("?franchise=one-piece&character_id=chr_escultura&limit=24"),env);
    assert.equal(exact.status,200);
    assert.equal((await exact.json()).total,4200);
-   const wrongCharacter=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Ace&limit=24"),env);
+   const wrongCharacter=await routeTelegramStudioShowcase(request("?franchise=one-piece&character_id=chr_ace&limit=24"),env);
    assert.equal((await wrongCharacter.json()).total,0);
-   const wrongFranchise=await routeTelegramStudioShowcase(request("?franchise=pokemon&character=Escultura&limit=24"),env);
+   const wrongFranchise=await routeTelegramStudioShowcase(request("?franchise=pokemon&character_id=chr_escultura&limit=24"),env);
    assert.equal((await wrongFranchise.json()).total,0);
  }finally{db.close()}
 });
@@ -299,6 +329,15 @@ test("category filter binds canonical taxonomy and rejects invalid slugs",async(
  for(const url of ["?category=Anime","?category=anime%20game","?category=anime&category=anime","?category=-anime"]){
   assert.equal((await routeTelegramStudioShowcase(request(url),env)).status,400,url);
  }
+});
+test("identity view rejects invalid filters and preserves explicit visibility",async()=>{
+ const {env,queries}=fixture();
+ for(const url of ["?identity=unknown","?identity=identified&identity=unidentified","/studios?identity=all"]) {
+   assert.equal((await routeTelegramStudioShowcase(request(url),env)).status,400);
+ }
+ assert.equal((await routeTelegramStudioShowcase(request("?identity=identified"),env)).status,200);
+ assert.ok(queries.every(sql=>sql.includes("telegram_showcase_visible=1") || !sql.includes("FROM models m")));
+ assert.ok(queries.some(sql=>sql.includes("NOT (TRIM(COALESCE(m.name")));
 });
 test("provisional filter is server-side and rejects unexpected values",async()=>{
  const {env,queries}=fixture();
@@ -433,15 +472,16 @@ test("Telegram showcase alphabetical pagination uses the visibility-scoped D1 in
 
 test("franchise and exact character filters preserve canonical identity",async()=>{
  const {env,queries,bindings}=fixture();
- const response=await routeTelegramStudioShowcase(request("?franchise=one-piece&character=Ace&limit=24"),env);
+ const response=await routeTelegramStudioShowcase(request("?franchise=one-piece&character_id=chr_ace&limit=24"),env);
  assert.equal(response.status,200);
  const count=queries.find(sql=>sql.startsWith("SELECT COUNT(*) AS total"));
  assert.ok(count.includes('f.slug=?'));
- assert.ok(count.includes('m.telegram_character=? COLLATE NOCASE'));
+ assert.ok(count.includes('mc.character_id=?'));
+  assert.ok(count.includes("mc.review_state='confirmed'"));
  assert.doesNotMatch(count,/m.telegram_character LIKE/);
  const page=queries.find(sql=>sql.includes("WITH page AS MATERIALIZED"));
- assert.deepEqual(bindings.find(x=>x.sql===page).values,["one-piece","Ace",24,0]);
- for(const invalid of ["?character=Ace","?character=Ace&franchise=-one-piece","?character=%20Ace&franchise=one-piece","?character=Ace&character=Ace&franchise=one-piece"]){
+ assert.deepEqual(bindings.find(x=>x.sql===page).values,["one-piece","chr_ace",24,0]);
+ for(const invalid of ["?character_id=chr_ace","?character_id=chr_ace&franchise=-one-piece","?character_id=%20chr_ace&franchise=one-piece","?character_id=chr_ace&character_id=chr_ace&franchise=one-piece"]){
    assert.equal((await routeTelegramStudioShowcase(request(invalid),env)).status,400,invalid);
  }
 });

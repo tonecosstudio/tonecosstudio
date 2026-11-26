@@ -108,6 +108,25 @@ describe("Telegram-only public studio gallery", () => {
     expect(screen.getByRole("button", { name: "Anime" })).toBeInTheDocument();
   });
 
+  it("requests unidentified previews in the dedicated route using the shared catalog", async () => {
+    window.history.replaceState(null, "", "/catalogo/a-identificar");
+    const fetcher = mockCatalog();
+    render(<TelegramStudioCatalog embedded />);
+    expect(
+      await screen.findByRole("heading", { name: "Modelos a identificar" }),
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        fetcher.mock.calls.some(([uri]) =>
+          String(uri).includes("identity=unidentified"),
+        ),
+      ).toBe(true),
+    );
+    expect(
+      screen.getByRole("link", { name: "Catálogo em organização" }),
+    ).toHaveAttribute("href", "/catalogo/em-revisao");
+  });
+
   it("shows models immediately and keeps advanced facets collapsed until requested", async () => {
     mockCatalog();
     render(<TelegramStudioCatalog />);
@@ -390,7 +409,7 @@ describe("Telegram-only public studio gallery", () => {
     expect(card).toHaveTextContent(/2 fotos/);
     expect(screen.getByText(/Acervo em atualização/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Filtros" }));
-    fireEvent.click(screen.getByRole("button", { name: "Em curadoria" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nome provisório" }));
     await waitFor(() =>
       expect(
         fetcher.mock.calls.some(([uri]) =>
