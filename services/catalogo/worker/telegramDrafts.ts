@@ -178,14 +178,22 @@ export async function routeTelegramDrafts(
       : new Response(null, { status: 403 })
   }
   if (!['GET', 'PATCH', 'POST'].includes(request.method)) return result(request, env, { error: 'method_not_allowed' }, 405)
-  const isImportPost = request.method === 'POST' && url.pathname === PREFIX + '/import'
-  const serviceAuthorized = isImportPost && await verifyImportService(env, context)
-  if (!serviceAuthorized) {
+  // Keep Supabase human imports separate from Access service authentication.
+  // Both routes invoke the same canonical importer and D1/R2 authority.
+  const isServiceImport = url.pathname === PREFIX + '/import/service'
+  const serviceAuthorized =
+    isServiceImport &&
+    request.method === 'POST' &&
+    (await verifyImportService(env, context))
+  if (isServiceImport && !serviceAuthorized) {
+    return result(request, env, { error: 'service_access_required' }, 403)
+  }
+  if (!isServiceImport) {
     const auth = await verifyAdmin(request, env)
     if (auth === null) return result(request, env, { error: 'admin_auth_unconfigured' }, 503)
     if (!auth) return result(request, env, { error: 'admin_required' }, 403)
   }
-  if (url.pathname === PREFIX + '/import') {
+  if (url.pathname === PREFIX + '/import' || isServiceImport) {
     if (request.method !== 'POST') return result(request, env, { error: 'method_not_allowed' }, 405)
     const output = await importPrivateTelegramDraft(request, env as unknown as DraftImportEnv)
     return result(request, env, output.data, output.status)
