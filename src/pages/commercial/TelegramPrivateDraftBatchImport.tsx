@@ -87,7 +87,8 @@ export default function TelegramPrivateDraftBatchImport() {
               (result.created === true && result.reused === true) ||
               (result.appended ?? 0) !== 0)) ||
           (item.operation === "append" &&
-            (result.created !== false || result.reused !== true ||
+            (result.created !== false ||
+              result.reused !== true ||
               !Number.isSafeInteger(result.appended) ||
               (result.appended as number) < 0 ||
               (result.appended as number) > item.manifest.images.length))
@@ -166,8 +167,7 @@ export default function TelegramPrivateDraftBatchImport() {
             </p>
             <p role="status">
               {progress} de {plan.drafts.length} verificadas · {created} criadas
-              · {reused} reutilizadas
-              · {appended} imagens anexadas
+              · {reused} reutilizadas · {appended} imagens anexadas
             </p>
           </div>
           <progress

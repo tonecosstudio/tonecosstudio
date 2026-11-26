@@ -111,7 +111,8 @@ describe("TONART private draft plan uses the canonical Worker importer only", ()
     [
       "missing explicit create operation flag",
       (x: ReturnType<typeof entry>) => {
-        delete (x as Partial<ReturnType<typeof entry>>).append_to_existing_private_draft;
+        delete (x as Partial<ReturnType<typeof entry>>)
+          .append_to_existing_private_draft;
       },
     ],
     [
