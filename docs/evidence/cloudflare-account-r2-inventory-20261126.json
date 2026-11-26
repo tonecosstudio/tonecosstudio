@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "observedDate": "2026-11-26",
+  "mode": "read-only",
+  "source": {
+    "completePagination": true,
+    "pages": 32,
+    "totalObjects": 31711,
+    "payloadBytes": 7213915036,
+    "buckets": [
+      {
+        "name": "tonecos-catalogo-media",
+        "objects": 12993,
+        "bytes": 539371762,
+        "groups": [
+          {
+            "prefix": "gallery/",
+            "objects": 4897,
+            "bytes": 4354930,
+            "disposition": "preserve_manifest_relationships"
+          },
+          {
+            "prefix": "media/",
+            "objects": 8096,
+            "bytes": 535016832,
+            "disposition": "preserve_existing_content"
+          }
+        ],
+        "sameSizeEtagExtraObjects": 0
+      },
+      {
+        "name": "tonecos-catalogo-staging",
+        "objects": 18718,
+        "bytes": 6674543274,
+        "groups": [
+          {
+            "prefix": "curadoria/",
+            "objects": 2,
+            "bytes": 82652,
+            "disposition": "preserve_provenance_private"
+          },
+          {
+            "prefix": "telegram-studios/",
+            "objects": 17262,
+            "bytes": 458484578,
+            "disposition": "reuse_existing_webp_and_thumbnails_private"
+          },
+          {
+            "prefix": "stlforge-cl/",
+            "objects": 1454,
+            "bytes": 6215976044,
+            "disposition": "hold_pending_reference_and_retention_review",
+            "objectsWithShaMetadata": 1440
+          }
+        ],
+        "sameSizeEtagExtraObjects": 91
+      }
+    ]
+  },
+  "candidateFirstWave": {
+    "objects": 30257,
+    "bytes": 997938992,
+    "approvedForCopy": false,
+    "reason": "Require scoped transfer authorization, verified budget and complete key inventory. Preserve original account; no site switch."
+  },
+  "sourceD1": {
+    "schemaReadSucceeded": true,
+    "referenceAggregationBlocked": {
+      "http": 400,
+      "code": 7500,
+      "reason": "daily free tier row read limit"
+    },
+    "referencesVerified": false,
+    "doNotRetryBeforeReset": true
+  },
+  "deduplication": {
+    "sameSizeEtagIsNotDeletionProof": true,
+    "doNotDelete": true,
+    "doNotReencode": true
+  },
+  "destination": {
+    "transferStarted": false
+  },
+  "notes": [
+    "All 32 pages were enumerated. Aggregate inventory only; a fresh complete key-level delta is required at execution.",
+    "STLForge is not classified obsolete; hold only, preserve original.",
+    "R2 inventory and account metrics agree on object count and payload bytes."
+  ]
+}
