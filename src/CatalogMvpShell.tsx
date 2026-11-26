@@ -1,7 +1,15 @@
 /** Shared catalog shell: no Supabase, auth, quoting or commercial imports. */
 import { Suspense, lazy, useLayoutEffect, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Link, Navigate, Route, Routes, useLocation, useNavigationType } from "react-router-dom";
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ArcadeFrame } from "@/components/layouts/ArcadeFrame";
 import { ArcadeNavView } from "@/components/arcade/ArcadeNavView";
@@ -19,9 +27,19 @@ const Models = lazy(() => import("@/pages/CatalogModelsArcade"));
 const TelegramCatalog = lazy(() => import("@/TelegramStudioCatalog"));
 const Details = lazy(() => import("@/pages/catalog/CanonicalModelDetails"));
 const About = lazy(() => import("@/pages/AboutArcade"));
-const Privacy = lazy(() => import("@/pages/PrivacyArcadeView").then(m => ({ default: m.PrivacyArcadeView })));
-const Terms = lazy(() => import("@/pages/TermsArcadeView").then(m => ({ default: m.TermsArcadeView })));
-const HistoricalCharacter = lazy(() => import("@/pages/CatalogCharacterArcade"));
+const Privacy = lazy(() =>
+  import("@/pages/PrivacyArcadeView").then((m) => ({
+    default: m.PrivacyArcadeView,
+  })),
+);
+const Terms = lazy(() =>
+  import("@/pages/TermsArcadeView").then((m) => ({
+    default: m.TermsArcadeView,
+  })),
+);
+const HistoricalCharacter = lazy(
+  () => import("@/pages/CatalogCharacterArcade"),
+);
 
 const queryClient = new QueryClient();
 
@@ -68,7 +86,10 @@ function NotFound() {
 export function CatalogMvpShell({
   navigation,
   extraRoutes,
-}: { navigation?: ReactNode; extraRoutes?: ReactNode }) {
+}: {
+  navigation?: ReactNode;
+  extraRoutes?: ReactNode;
+}) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="tonecos-catalog-theme">
@@ -77,34 +98,94 @@ export function CatalogMvpShell({
           <Sonner />
           <PublicRouteScrollReset />
           <CatalogBrowsingProvider>
-            <ArcadeFrame nav={navigation ?? <ArcadeNavView />} footer={<ArcadeFooterView />}>
-              <Suspense fallback={<div role="status" className="min-h-[50vh] p-12 text-center">Carregando catálogo...</div>}>
+            <ArcadeFrame
+              nav={navigation ?? <ArcadeNavView />}
+              footer={<ArcadeFooterView />}
+            >
+              <Suspense
+                fallback={
+                  <div role="status" className="min-h-[50vh] p-12 text-center">
+                    Carregando catálogo...
+                  </div>
+                }
+              >
                 <Routes>
-                  <Route path={PUBLIC_ROUTES.home} element={
-                    import.meta.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
-                    import.meta.env.VITE_CATALOG_GALLERY_HOME === "true"
-                      ? <Navigate to={PUBLIC_ROUTES.catalogModels} replace />
-                      : <Home />
-                  } />
+                  <Route
+                    path={PUBLIC_ROUTES.home}
+                    element={
+                      import.meta.env.VITE_PUBLIC_CATALOG_MVP === "true" &&
+                      import.meta.env.VITE_CATALOG_GALLERY_HOME === "true" ? (
+                        <Navigate to={PUBLIC_ROUTES.catalogModels} replace />
+                      ) : (
+                        <Home />
+                      )
+                    }
+                  />
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
-                  <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
-                  <Route path={PUBLIC_ROUTES.catalogHistorical} element={<Models />} />
-                  <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
-                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
-                  <Route path={PUBLIC_ROUTES.catalogUnidentified} element={<TelegramCatalog key="unidentified" embedded />} />
-                  <Route path={PUBLIC_ROUTES.catalogUnidentifiedStudios} element={<TelegramCatalog key="unidentified" embedded />} />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogHub}
+                    element={<CatalogEntryPage />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogHistorical}
+                    element={<Models />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogReview}
+                    element={<TelegramCatalog embedded />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogReviewStudios}
+                    element={<TelegramCatalog embedded />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogUnidentified}
+                    element={<TelegramCatalog key="unidentified" embedded />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogUnidentifiedStudios}
+                    element={<TelegramCatalog key="unidentified" embedded />}
+                  />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
-                  <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
-                  <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />
-                  <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<Universe />} />
-                  <Route path={PUBLIC_ROUTES.catalogCharacter} element={<HistoricalCharacter />} />
-                  <Route path={PUBLIC_ROUTES.catalogModels} element={<Models />} />
-                  <Route path={PUBLIC_ROUTES.catalogDetails} element={<Details />} />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogUniverseTheme}
+                    element={<Universe />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogUniverseFranchise}
+                    element={<Universe />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogUniverseCharacter}
+                    element={<Universe />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogCharacter}
+                    element={<HistoricalCharacter />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogModels}
+                    element={<Models />}
+                  />
+                  <Route
+                    path={PUBLIC_ROUTES.catalogDetails}
+                    element={<Details />}
+                  />
                   <Route path={PUBLIC_ROUTES.about} element={<About />} />
-                  <Route path={PUBLIC_ROUTES.contact} element={<PublicCatalogContact />} />
+                  <Route
+                    path={PUBLIC_ROUTES.contact}
+                    element={<PublicCatalogContact />}
+                  />
                   {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" && (
-                    <Route path={PUBLIC_ROUTES.quotePortal}
-                      element={<Navigate to={TONECOS_COMMERCIAL_ROUTES.login} replace />} />
+                    <Route
+                      path={PUBLIC_ROUTES.quotePortal}
+                      element={
+                        <Navigate
+                          to={TONECOS_COMMERCIAL_ROUTES.login}
+                          replace
+                        />
+                      }
+                    />
                   )}
                   <Route path={PUBLIC_ROUTES.privacy} element={<Privacy />} />
                   <Route path={PUBLIC_ROUTES.terms} element={<Terms />} />
