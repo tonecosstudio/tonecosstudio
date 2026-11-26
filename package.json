@@ -28,6 +28,7 @@
     "test:performance": "cross-env VITEST_PERFORMANCE=true vitest run src/test/performance.test.ts",
     "test:e2e": "cross-env VITEST_INTEGRATION=true vitest run src/test/e2e-integration.test.ts",
     "catalog:import-drive": "node scripts/catalog/import-drive-manifest.mjs",
+    "catalog:telegram-import:apply": "node --experimental-strip-types scripts/catalog/import-private-telegram-batch.mjs",
     "catalog:publish-ready": "node scripts/catalog/publish-ready-catalog-items.mjs",
     "catalog:dedupe": "node scripts/catalog/backfill-dedupe-metadata.mjs",
     "catalog:db-ready": "node scripts/catalog/catalog-db-readiness.mjs",

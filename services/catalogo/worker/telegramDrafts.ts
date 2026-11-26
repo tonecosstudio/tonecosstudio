@@ -23,6 +23,17 @@ export type TelegramDraftEnv = {
   CORS_ORIGINS: string
   ADMIN_SUPABASE_URL?: string
   ADMIN_SUPABASE_ANON_KEY?: string
+  TELEGRAM_IMPORT_ACCESS_AUD?: string
+  TELEGRAM_IMPORT_ACCESS_CLIENT_ID?: string
+}
+export type TelegramDraftAccessContext = {
+  access?: {
+    aud?: string
+    getIdentity(): Promise<{
+      service_token_id?: string
+      service_token_status?: boolean
+    } | null>
+  }
 }
 
 type Draft = {
@@ -94,6 +105,21 @@ async function verifyAdmin(request: Request, env: TelegramDraftEnv): Promise<boo
     return false
   }
 }
+async function verifyImportService(
+  env: TelegramDraftEnv, context?: TelegramDraftAccessContext,
+): Promise<boolean> {
+  const expectedAud = env.TELEGRAM_IMPORT_ACCESS_AUD
+  const expectedClientId = env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID
+  if (!expectedAud || !expectedClientId || !context?.access ||
+      context.access.aud !== expectedAud) return false
+  try {
+    const identity = await context.access.getIdentity()
+    return identity?.service_token_status === true &&
+      identity.service_token_id === expectedClientId
+  } catch {
+    return false
+  }
+}
 const FIELDS = `m.id,m.name,m.variant_name,m.collection,m.published,m.image_count,
   m.telegram_group_key,m.telegram_origin_id,m.telegram_studio,m.telegram_character,
   m.telegram_review_status,m.telegram_rights_status,m.telegram_name_provisional,
@@ -142,7 +168,9 @@ function validText(value: unknown, max: number, required: boolean): value is str
     (!required || value.trim().length > 0)
 }
 
-export async function routeTelegramDrafts(request: Request, env: TelegramDraftEnv): Promise<Response> {
+export async function routeTelegramDrafts(
+  request: Request, env: TelegramDraftEnv, context?: TelegramDraftAccessContext,
+): Promise<Response> {
   const url = new URL(request.url)
   if (request.method === 'OPTIONS') {
     return headers(request, env)['access-control-allow-origin']
@@ -150,9 +178,13 @@ export async function routeTelegramDrafts(request: Request, env: TelegramDraftEn
       : new Response(null, { status: 403 })
   }
   if (!['GET', 'PATCH', 'POST'].includes(request.method)) return result(request, env, { error: 'method_not_allowed' }, 405)
-  const auth = await verifyAdmin(request, env)
-  if (auth === null) return result(request, env, { error: 'admin_auth_unconfigured' }, 503)
-  if (!auth) return result(request, env, { error: 'admin_required' }, 403)
+  const isImportPost = request.method === 'POST' && url.pathname === PREFIX + '/import'
+  const serviceAuthorized = isImportPost && await verifyImportService(env, context)
+  if (!serviceAuthorized) {
+    const auth = await verifyAdmin(request, env)
+    if (auth === null) return result(request, env, { error: 'admin_auth_unconfigured' }, 503)
+    if (!auth) return result(request, env, { error: 'admin_required' }, 403)
+  }
   if (url.pathname === PREFIX + '/import') {
     if (request.method !== 'POST') return result(request, env, { error: 'method_not_allowed' }, 405)
     const output = await importPrivateTelegramDraft(request, env as unknown as DraftImportEnv)

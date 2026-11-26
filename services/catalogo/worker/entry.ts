@@ -1,11 +1,12 @@
 import apiWorker from './index'
 import { PUBLIC_MEDIA_PREFIX, servePublicMedia, type PublicMediaBucket } from './media'
 import { validatePublicCatalogQuery } from './publicQueryBudget'
+import type { TelegramDraftAccessContext } from './telegramDrafts'
 
 type ApiEnv = Parameters<typeof apiWorker.fetch>[1]
 
 export default {
-  async fetch(request: Request, env: ApiEnv, ctx?: { waitUntil(promise: Promise<unknown>): void }): Promise<Response> {
+  async fetch(request: Request, env: ApiEnv, ctx?: { waitUntil(promise: Promise<unknown>): void } & TelegramDraftAccessContext): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname.startsWith(PUBLIC_MEDIA_PREFIX)) {
       // Immutable R2 keys never accept cache-busting query suffixes.

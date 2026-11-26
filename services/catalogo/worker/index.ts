@@ -1,5 +1,5 @@
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
-import { routeTelegramDrafts, type TelegramDraftEnv } from './telegramDrafts'
+import { routeTelegramDrafts, type TelegramDraftAccessContext, type TelegramDraftEnv } from './telegramDrafts'
 import { routeTelegramStudioShowcase, TELEGRAM_PUBLIC_VISIBLE_SQL, TELEGRAM_PUBLIC_COVER_SHA_SQL, type TelegramPublicEnv } from './telegramPublic'
 import { aggregateGallerySources, type GallerySourceState } from './galleryAggregation'
 import { type GalleryModelState } from './galleryValidation'
@@ -657,7 +657,7 @@ async function createQuote(request: Request, env: Env) {
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx?: { waitUntil(promise: Promise<unknown>): void }): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: { waitUntil(promise: Promise<unknown>): void } & TelegramDraftAccessContext): Promise<Response> {
     const url = new URL(request.url)
     // The standalone studio catalog never queries the legacy published model inventory.
     if (url.pathname === '/api/telegram-studios' || url.pathname.startsWith('/api/telegram-studios/')) {
@@ -666,7 +666,7 @@ export default {
     // Protect private drafts and R2 before any public route or public CORS.
     if (url.pathname === '/api/admin/telegram-drafts' ||
         url.pathname.startsWith('/api/admin/telegram-drafts/')) {
-      return routeTelegramDrafts(request, env as unknown as TelegramDraftEnv)
+      return routeTelegramDrafts(request, env as unknown as TelegramDraftEnv, ctx)
     }
     if (request.method === 'OPTIONS') return options(request, env)
 

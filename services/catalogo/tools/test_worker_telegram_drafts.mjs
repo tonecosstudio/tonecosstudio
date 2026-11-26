@@ -94,7 +94,9 @@ function setup() {
   globalThis.fetch = async (url, options) => {
     log.authCalls.push(String(url))
     assert.equal(options?.headers?.apikey, 'mock-publishable-key')
-    assert.equal(options?.headers?.authorization, token)
+    if (options?.headers?.authorization !== token) {
+      return new Response(JSON.stringify({ error: 'invalid_token' }), { status: 401 })
+    }
     if (String(url).endsWith('/auth/v1/user')) return new Response(JSON.stringify({ id: 'owner-1' }), { status: 200 })
     if (String(url).endsWith('/rest/v1/rpc/is_tonecos_admin')) return new Response('true', { status: 200 })
     return new Response('not_found', { status: 404 })
@@ -154,6 +156,89 @@ test('private draft never authenticates from UI alone and fails closed', async (
     assert.equal(log.privateReads.length, 0)
     r = await routeTelegramDrafts(request('/api/admin/telegram-drafts'), { ...env, ADMIN_SUPABASE_URL: '' })
     assert.equal(r.status, 503)
+  } finally { restore() }
+})
+
+test('Cloudflare service identity is limited to the exact private import POST', async () => {
+  const { env, log, restore } = setup()
+  try {
+    env.TELEGRAM_IMPORT_ACCESS_AUD = 'aud-private-import'
+    env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID = 'tonart-importer.access'
+    const access = {
+      aud: 'aud-private-import',
+      async getIdentity() {
+        return { service_token_status: true, service_token_id: 'tonart-importer.access' }
+      },
+    }
+    let response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts', 'GET', undefined, false), env, { access },
+    )
+    assert.equal(response.status, 403)
+    assert.equal(log.queries.length, 0)
+    assert.equal(log.privateReads.length, 0)
+
+    for (const [path, method] of [
+      ['/api/admin/telegram-drafts/studios', 'GET'],
+      ['/api/admin/telegram-drafts/' + id, 'PATCH'],
+      ['/api/admin/telegram-drafts', 'POST'],
+    ]) {
+      response = await routeTelegramDrafts(request(path, method,
+        method === 'PATCH' ? { revision: 0 } : method === 'POST' ? {} : undefined, false), env, { access })
+      assert.equal(response.status, 403, `${method} ${path} is outside the service identity scope`)
+    }
+    assert.equal(log.queries.length, 0)
+    assert.equal(log.privateReads.length, 0)
+
+    response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      { access: { ...access, aud: 'wrong-audience' } },
+    )
+    assert.equal(response.status, 403)
+
+    response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      { access: { ...access, async getIdentity() {
+        return { service_token_status: false, service_token_id: 'tonart-importer.access' }
+      } } },
+    )
+    assert.equal(response.status, 403, 'a non-service or invalid Access token cannot import')
+
+    response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      { access: { ...access, async getIdentity() {
+        return { service_token_status: true, service_token_id: 'other-token.access' }
+      } } },
+    )
+    assert.equal(response.status, 403)
+
+    const validImport = {
+      originId: '2370335738', studio: 'Momoji', groupKey: 'a'.repeat(24),
+      name: 'Modelo de teste', universe: 'Naruto', variant: '', franchiseId: 48,
+      images: [{ messageId: 17278, sha256: 'b'.repeat(64) }],
+    }
+    response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts/import', 'POST', validImport, false), env,
+      { access },
+    )
+    assert.equal(response.status, 503)
+    assert.equal((await response.json()).error, 'private_storage_unavailable')
+    assert.equal(log.authCalls.length, 0, 'service auth never creates or impersonates a Supabase user')
+    assert.equal(log.queries.length, 0, 'malformed service requests do not reach D1')
+  } finally { restore() }
+})
+
+test('invalid human JWT is rejected by Supabase Auth without reaching D1 or R2', async () => {
+  const { env, log, restore } = setup()
+  try {
+    const invalid = new Request('https://catalog.example.test/api/admin/telegram-drafts', {
+      method: 'GET',
+      headers: { origin: 'https://tonartstudio.com.br', authorization: 'Bearer ' + 'x'.repeat(64) },
+    })
+    const response = await routeTelegramDrafts(invalid, env)
+    assert.equal(response.status, 403)
+    assert.equal(log.authCalls.length, 1)
+    assert.equal(log.queries.length, 0)
+    assert.equal(log.privateReads.length, 0)
   } finally { restore() }
 })
 
@@ -453,7 +538,7 @@ test('incremental curation appends only new private images and preserves edited 
   const x=draftImportFixture()
   const created=await x.run(x.input)
   assert.equal(created.status,201)
-  const next={...x.input,name:'Name revised by admin',
+  const next={...x.input,operation:'append',expectedModelId:'tg_'+x.input.groupKey,name:'Name revised by admin',
     images:[...x.input.images,{messageId:17280,sha256:'3'.repeat(64)}]}
   const appended=await x.run(next)
   assert.equal(appended.status,200)
@@ -469,6 +554,24 @@ test('incremental curation appends only new private images and preserves edited 
   assert.equal(replay.data.appended,0)
   assert.equal(x.getBatches(),2,'reimport never duplicates the appended photo')
   assert.equal(x.heads.length,6)
+})
+
+test('create operation cannot silently append and append requires its exact existing target',async()=>{
+  const x=draftImportFixture()
+  await x.run(x.input)
+  const expanded={...x.input,images:[...x.input.images,{messageId:17280,sha256:'3'.repeat(64)}]}
+  const implicit=await x.run(expanded)
+  assert.equal(implicit.status,409)
+  assert.equal(implicit.data.error,'existing_group_requires_append_plan')
+  const wrongTarget=await x.run({...expanded,operation:'append',expectedModelId:'tg_'+'f'.repeat(24)})
+  assert.equal(wrongTarget.status,400)
+  const append=await x.run({...expanded,operation:'append',expectedModelId:'tg_'+x.input.groupKey})
+  assert.equal(append.status,200)
+  assert.equal(append.data.appended,1)
+  const replay=await x.run({...expanded,operation:'append',expectedModelId:'tg_'+x.input.groupKey})
+  assert.equal(replay.status,200)
+  assert.equal(replay.data.appended,0)
+  assert.equal(x.getBatches(),2)
 })
 
 test('partial replay cannot silently delete a previously indexed image',async()=>{

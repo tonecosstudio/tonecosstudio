@@ -15,6 +15,7 @@ export default function TelegramPrivateDraftBatchImport() {
   const [progress, setProgress] = useState(0);
   const [created, setCreated] = useState(0);
   const [reused, setReused] = useState(0);
+  const [appended, setAppended] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [running, setRunning] = useState(false);
@@ -29,6 +30,7 @@ export default function TelegramPrivateDraftBatchImport() {
     setProgress(0);
     setCreated(0);
     setReused(0);
+    setAppended(0);
     setConfirmed(false);
     setError("");
     setNotice("");
@@ -71,18 +73,30 @@ export default function TelegramPrivateDraftBatchImport() {
         const item = plan.drafts[i];
         // The Worker repeats all authoritative checks and returns a stable ID.
         // A failed, ambiguous or mismatching response STOPS the entire batch.
-        const result = await importPrivateTelegramDraft(item.manifest);
+        const result = await importPrivateTelegramDraft({
+          ...item.manifest,
+          operation: item.operation,
+          ...(item.operation === "append" ? { expectedModelId: item.id } : {}),
+        });
         if (
           result.id !== item.id ||
           result.published !== false ||
-          (result.created !== true && result.reused !== true) ||
-          (result.created === true && result.reused === true) ||
-          (result.reused === true && result.appended !== 0)
+          result.imageCount !== item.manifest.images.length ||
+          (item.operation === "create" &&
+            ((result.created !== true && result.reused !== true) ||
+              (result.created === true && result.reused === true) ||
+              (result.appended ?? 0) !== 0)) ||
+          (item.operation === "append" &&
+            (result.created !== false || result.reused !== true ||
+              !Number.isSafeInteger(result.appended) ||
+              (result.appended as number) < 0 ||
+              (result.appended as number) > item.manifest.images.length))
         ) {
           throw new Error("Resposta inesperada do Worker para " + item.id);
         }
         if (result.created) nCreated++;
         if (result.reused) nReused++;
+        if (result.appended) setAppended((count) => count + result.appended!);
         setCreated(nCreated);
         setReused(nReused);
         setProgress(i + 1);
@@ -153,6 +167,7 @@ export default function TelegramPrivateDraftBatchImport() {
             <p role="status">
               {progress} de {plan.drafts.length} verificadas · {created} criadas
               · {reused} reutilizadas
+              · {appended} imagens anexadas
             </p>
           </div>
           <progress
@@ -168,9 +183,8 @@ export default function TelegramPrivateDraftBatchImport() {
               disabled={running || progress === plan.drafts.length}
               onChange={(event) => setConfirmed(event.target.checked)}
             />
-            Confirmo que este arquivo pertence à Curadoria autorizada e que
-            somente rascunhos privados devem ser criados, sem alteração de
-            direitos.
+            Confirmo que este arquivo pertence à Curadoria autorizada e que as
+            fichas devem permanecer privadas, sem alteração de direitos.
           </label>
           <div className="mt-4 flex flex-wrap gap-2">
             <button
