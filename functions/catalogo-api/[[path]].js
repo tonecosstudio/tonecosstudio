@@ -392,6 +392,10 @@ export async function proxyCatalogRequest(request, fetcher) {
 // Private, authenticated administration lives behind the SAME first-party
 // Pages → CATALOG_WORKER binding; public routes retain the read-only proxy.
 // Never forward browser cookies, custom headers, unknown methods or public caches.
+const PROMOTION_ROUTE = "api/admin/promotions/blackfriday";
+export function isCatalogAdminRoute(route) {
+  return typeof route === "string" && (route === PROMOTION_ROUTE || route === "api/admin/telegram-drafts" || route.startsWith("api/admin/telegram-drafts/"));
+}
 const PRIVATE_DRAFT_ROUTE =
   /^api\/admin\/telegram-drafts(?:\/(?:studios|import)|\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:display|thumb))?)?$/;
 const BEARER_TOKEN = /^Bearer [A-Za-z0-9._~-]{60,8192}$/;
@@ -403,7 +407,7 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
   }
   const route = incoming.pathname.slice(PREFIX.length);
   if (
-    !PRIVATE_DRAFT_ROUTE.test(route) ||
+    (!PRIVATE_DRAFT_ROUTE.test(route) && route !== PROMOTION_ROUTE) ||
     incoming.pathname.length + incoming.search.length > 4096 ||
     incoming.search.length > 2048
   ) {
@@ -422,7 +426,8 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
   if (
     (method === "PATCH" && (incoming.search || !targetIsModel)) ||
     (method === "POST" &&
-      (incoming.search || route !== "api/admin/telegram-drafts/import")) ||
+      (incoming.search || (route !== "api/admin/telegram-drafts/import" && route !== PROMOTION_ROUTE))) ||
+    (route === PROMOTION_ROUTE && (incoming.search || method === "PATCH")) ||
     (method === "GET" && route === "api/admin/telegram-drafts/import")
   ) {
     return new Response("Not found", { status: 404 });
@@ -503,8 +508,7 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
 export function onRequest({ request, env }) {
   const pathname = new URL(request.url).pathname;
   if (
-    pathname === "/catalogo-api/api/admin/telegram-drafts" ||
-    pathname.startsWith("/catalogo-api/api/admin/telegram-drafts/")
+    pathname.startsWith(PREFIX) && isCatalogAdminRoute(pathname.slice(PREFIX.length))
   ) {
     return proxyTelegramAdminRequest(request, (url, options) => {
       if (typeof env?.CATALOG_WORKER?.fetch !== "function") {

@@ -25,6 +25,7 @@ import TonartAdminCatalogReview from "./TonartAdminCatalogReview";
 import TonartTelegramDrafts from "./TonartTelegramDrafts";
 import TonartAdminOriginalSection from "./TonartAdminOriginalSection";
 import TonartCommercialOffersAdmin from "./TonartCommercialOffersAdmin";
+import TonartPromotionSelection from "./TonartPromotionSelection";
 
 const coinsEnabled = true;
 const quotesEnabled = true;
@@ -56,6 +57,7 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 };
 
 const originalAdminSubpages = [
+  {parent:"catalog-hub",path:TONECOS_COMMERCIAL_ROUTES.adminBlackFriday,label:"Black Friday"},
   {
     parent: "catalog-hub",
     path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers,
@@ -521,6 +523,8 @@ export default function TonecosAdminHomePage() {
             (selectedSubpage.path ===
             TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
               <TonartCommercialOffersAdmin />
+            ) : selectedSubpage.path === TONECOS_COMMERCIAL_ROUTES.adminBlackFriday ? (
+              <TonartPromotionSelection />
             ) : (
               <TonartAdminOriginalSection
                 section={selectedSubpage}

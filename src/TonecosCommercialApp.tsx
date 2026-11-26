@@ -19,6 +19,7 @@ import {
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { LOCAL_SUPABASE_FALLBACK, PREVIEW_READ_ONLY } from "@/config/supabase-environment";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
+import { PromotionSelectionProvider } from "@/components/catalog/PromotionSelectionProvider";
 
 const Account = lazy(() => import("@/pages/commercial/TonecosAccountPage"));
 const Recovery = lazy(
@@ -261,6 +262,7 @@ export default function TonecosCommercialApp() {
     <CatalogMvpShell
       navigation={<TonecosCommercialNav />}
       extraRoutes={commercialRoutes}
+      renderCatalogMedia={(page) => <PromotionSelectionProvider>{page}</PromotionSelectionProvider>}
     />
   );
 }

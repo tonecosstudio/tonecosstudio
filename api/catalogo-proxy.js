@@ -1,4 +1,4 @@
-import { proxyCatalogRequest, proxyTelegramAdminRequest } from "../functions/catalogo-api/[[path]].js";
+import { proxyCatalogRequest, proxyTelegramAdminRequest, isCatalogAdminRoute } from "../functions/catalogo-api/[[path]].js";
 import { isRestrictedCatalogMediaPath } from "../scripts/security/catalog-public-media-approval-policy.mjs";
 
 // The canonical Worker already controls browser cache headers. Extend only
@@ -69,15 +69,12 @@ function publicQueryFromVercelRequest(req, incoming) {
 // Adapt the reviewed Pages read-only proxy; no parallel catalog implementation.
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
-  // Private Telegram editor is the only non-GET exception to public read-only
+  // Authenticated administration is the only non-GET exception to public read-only
   // Vercel catalog routes. The canonical authenticated adapter owns the allowlist.
   const rawCandidate =
     req.query?.path ?? new URL(req.url || "/", "https://tonart.local").searchParams.get("path");
   const candidate = Array.isArray(rawCandidate) ? rawCandidate.join("/") : rawCandidate;
-  const isTelegramPrivate =
-    typeof candidate === "string" &&
-    (candidate === "api/admin/telegram-drafts" ||
-      candidate.startsWith("api/admin/telegram-drafts/"));
+  const isPrivateCatalog = isCatalogAdminRoute(candidate);
   // Separate public Telegram catalog: do not proxy the legacy commercial
   // catalog, nor admin draft endpoints, on the dedicated public hostname.
   if (!isAllowedStandaloneTelegramRoute(req.headers?.host, candidate, req.method)) {
@@ -85,7 +82,7 @@ export default async function handler(req, res) {
     res.end("Not found");
     return;
   }
-  if (req.method !== "GET" && !isTelegramPrivate) {
+  if (req.method !== "GET" && !isPrivateCatalog) {
     res.statusCode = 405;
     res.setHeader("Allow", "GET");
     res.end("Method not allowed");
@@ -104,7 +101,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (isTelegramPrivate) {
+    if (isPrivateCatalog) {
       // Reuse the same authenticated Pages adapter, Worker and D1; do not
       // create a Vercel catalog data layer or forward browser cookies.
       const search = publicQueryFromVercelRequest(req, incoming);

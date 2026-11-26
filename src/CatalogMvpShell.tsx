@@ -86,9 +86,11 @@ function NotFound() {
 export function CatalogMvpShell({
   navigation,
   extraRoutes,
+  renderCatalogMedia = (page) => page,
 }: {
   navigation?: ReactNode;
   extraRoutes?: ReactNode;
+  renderCatalogMedia?: (page: ReactNode) => ReactNode;
 }) {
   return (
     <QueryClientProvider client={queryClient}>
@@ -132,19 +134,19 @@ export function CatalogMvpShell({
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogReview}
-                    element={<TelegramCatalog embedded />}
+                    element={renderCatalogMedia(<TelegramCatalog embedded />)}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogReviewStudios}
-                    element={<TelegramCatalog embedded />}
+                    element={renderCatalogMedia(<TelegramCatalog embedded />)}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogUnidentified}
-                    element={<TelegramCatalog key="unidentified" embedded />}
+                    element={renderCatalogMedia(<TelegramCatalog key="unidentified" embedded />)}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogUnidentifiedStudios}
-                    element={<TelegramCatalog key="unidentified" embedded />}
+                    element={renderCatalogMedia(<TelegramCatalog key="unidentified" embedded />)}
                   />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route
@@ -169,7 +171,7 @@ export function CatalogMvpShell({
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogDetails}
-                    element={<Details />}
+                    element={renderCatalogMedia(<Details />)}
                   />
                   <Route path={PUBLIC_ROUTES.about} element={<About />} />
                   <Route
