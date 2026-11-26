@@ -48,6 +48,7 @@ const ASSET_ROLE = argValue("asset-role", "all");
 const ALLOW_OVERWRITE =
   argFlag("allow-overwrite") ||
   process.env.CLOUDFLARE_R2_ALLOW_OVERWRITE === "true";
+const REPAIR_IDENTICAL_METADATA = argFlag("repair-identical-metadata");
 
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 const ACCESS_KEY_ID = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID;
@@ -304,8 +305,19 @@ async function privateOne(op) {
       const before = await headObject(op.storage_path);
       if (before.exists === null) throw new Error("R2 HEAD failed (" + before.status + ")");
       if (before.exists === true) {
-        assertPrivateHead(before, op);
-        return { status: "reused", bytes: 0 };
+        try {
+          assertPrivateHead(before, op);
+          return { status: "reused", bytes: 0 };
+        } catch (error) {
+          if (!REPAIR_IDENTICAL_METADATA) throw error;
+          // Metadata repair is allowed only after a full GET proves that the
+          // remote object is byte-for-byte the exact authorized local asset.
+          await privateFullGet(op);
+          await putObject(op, local.bytes);
+          const repaired = await headObject(op.storage_path);
+          assertPrivateHead(repaired, op);
+          return { status: "metadata_repaired", bytes: local.actualBytes };
+        }
       }
       await putObject(op, local.bytes);
       const after = await headObject(op.storage_path);
@@ -327,6 +339,7 @@ async function privateFullGet(op) {
   if (bytes.length !== op.expected_bytes || sha256Hex(bytes) !== op.sha256) {
     throw new Error("R2 GET SHA-256 mismatch for " + op.operation_id);
   }
+  return bytes;
 }
 
 async function mainPrivate() {
@@ -340,8 +353,8 @@ async function mainPrivate() {
   const report = {
     mode: "private_telegram_studios", bucket: BUCKET, namespace: "telegram-studios/v1",
     plan_path: PLAN_PATH, checkpoint_path: checkpoint, execute: EXECUTE,
-    eligible: operations.length, uploaded: 0, reused: 0, bytes_transferred: 0,
-    remote_head_verified: 0, remote_full_sha_verified: 0,
+    eligible: operations.length, uploaded: 0, reused: 0, metadata_repaired: 0,
+    bytes_transferred: 0, remote_head_verified: 0, remote_full_sha_verified: 0,
     dry_run_ready: 0, pending: operations.length, failed: 0, failures: [],
     public_upload_performed: false,
   };
@@ -381,6 +394,7 @@ async function mainPrivate() {
         report.dry_run_ready++;
       } else {
         if (item.outcome.status === "uploaded") report.uploaded++;
+        else if (item.outcome.status === "metadata_repaired") report.metadata_repaired++;
         else report.reused++;
         report.bytes_transferred += item.outcome.bytes;
         report.remote_head_verified++;

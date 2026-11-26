@@ -45,12 +45,15 @@ const server = http.createServer(async (req, res) => {
   const hit = objects.get(key);
   if (req.method === "HEAD") {
     if (!hit) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, {
+    const headers = {
       "content-length": String(hit.body.length),
       "etag": '"mock-etag"',
-      "x-amz-meta-optimized-sha256": hit.hash,
-      "x-amz-meta-original-sha256": hit.originalSha,
-    }); res.end(); return;
+    };
+    if (hit.metadataComplete !== false) {
+      headers["x-amz-meta-optimized-sha256"] = hit.hash;
+      headers["x-amz-meta-original-sha256"] = hit.originalSha;
+    }
+    res.writeHead(200, headers); res.end(); return;
   }
   if (req.method === "PUT") {
     const chunks = [];
@@ -70,7 +73,7 @@ const server = http.createServer(async (req, res) => {
       res.end("temporary R2 internal error");
       return;
     }
-    objects.set(key, { body, hash, originalSha }); writes++;
+    objects.set(key, { body, hash, originalSha, metadataComplete: true }); writes++;
     res.writeHead(200); res.end(); return;
   }
   if (req.method === "GET") {
@@ -128,15 +131,38 @@ try {
   assert.equal(report.reused, 0);
   assert.equal(report.remote_full_sha_verified, 2);
   assert.equal(writes, 2);
-  const target = objects.get(prefix + "/display.webp");
-  objects.set(prefix + "/display.webp", {...target, hash: "f".repeat(64)});
-  const third = await run();
-  assert.notEqual(third.code, 0);
+  const displayKey = prefix + "/display.webp";
+  const target = objects.get(displayKey);
+  objects.set(displayKey, {...target, metadataComplete: false});
+  const missingMetadata = await run();
+  assert.notEqual(missingMetadata.code, 0);
+  report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
+  assert.equal(report.failed, 1);
+  assert.equal(writes, 2, "metadata absence must fail closed without explicit repair");
+
+  const repaired = await run(["--repair-identical-metadata"]);
+  assert.equal(repaired.code, 0, repaired.err);
+  report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
+  assert.equal(report.metadata_repaired, 1);
+  assert.equal(report.reused, 1);
+  assert.equal(writes, 3);
+  assert.equal(objects.get(displayKey).metadataComplete, true);
+
+  const corruptBody = Buffer.from(target.body);
+  corruptBody[corruptBody.length - 1] ^= 1;
+  objects.set(displayKey, {
+    ...target,
+    body: corruptBody,
+    hash: crypto.createHash("sha256").update(corruptBody).digest("hex"),
+    metadataComplete: false,
+  });
+  const collision = await run(["--repair-identical-metadata"]);
+  assert.notEqual(collision.code, 0);
   report = JSON.parse(fs.readFileSync(reportFile, "utf8"));
   assert.equal(report.failed, 1);
   assert.equal(report.pending, 1);
-  assert.equal(writes, 2);
-  console.log("Mock R2 E2E: upload, SHA HEAD/GET, reuse, checkpoint, collision fail-closed; requests=" + requests);
+  assert.equal(writes, 3, "different remote bytes must never be overwritten by metadata repair");
+  console.log("Mock R2 E2E: upload, SHA HEAD/GET, reuse, checkpoint, identical-metadata repair, collision fail-closed; requests=" + requests);
 } finally {
   await new Promise(resolve => server.close(resolve));
   fs.rmSync(tmp, { recursive: true, force: true });
