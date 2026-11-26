@@ -21,3 +21,7 @@ python scripts/catalog/sync_promotion_drive.py <manifesto.json> --root "G:\Meu D
 ```
 
 O script só lê a origem pública oficial, revalida o vínculo à galeria, a categoria e o nome, confirma SHA-256 antes da cópia, deduplica arquivos já existentes e reconcilia a contagem real. Não extrai JWT nem remove imagens do Drive. Um manifesto antigo, mídia alterada ou conflito interrompe a execução antes da cópia. A eventual sincronização remota do cliente Google Drive deve ser confirmada separadamente.
+
+## Liberação canônica da infraestrutura
+
+O Quality Gate existente possui a operação manual `promotion-schema`, com confirmação de escopo `GO-PROMOTION-SELECTION-0054-ONLY`. Ela usa a mesma trava de escritor de produção, valida o histórico 0001–0033 e os publicadores aposentados, prepara um diretório contendo exclusivamente 0054, captura o bookmark, aplica a migração e confere o ledger exato e a tabela física. As migrações editoriais 0034–0053 permanecem de fora; o antigo gate M5 não muda. A publicação rotineira do Worker exige a prova da tabela antes do upload.

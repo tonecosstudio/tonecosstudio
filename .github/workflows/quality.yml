@@ -77,7 +77,12 @@ on:
           - worker-release
           - worker-update
           - m5-schema
+          - promotion-schema
         default: verify
+      promotion_ack:
+        description: Confirm isolated Black Friday selection table only (0054)
+        required: false
+        type: string
       m5_ack:
         description: Confirm the owner-authorized M5 D1 0028-0033 migration scope
         required: false
@@ -89,7 +94,7 @@ permissions:
 concurrency:
   # Manual M5 ownership inspections never cancel (or get cancelled by) push CI.
   group: >-
-    ${{ ((github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'worker-update' || inputs.operation == 'm5-schema')) || (github.event_name == 'push' && (github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033' || github.event.head_commit.message == 'ops(m5): execute approved Worker release after D1'))) && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
+    ${{ ((github.event_name == 'workflow_dispatch' && (inputs.operation == 'worker-release' || inputs.operation == 'worker-update' || inputs.operation == 'm5-schema' || inputs.operation == 'promotion-schema')) || (github.event_name == 'push' && (github.event.head_commit.message == 'ops(m5): execute authorized D1 schema 0028-0033' || github.event.head_commit.message == 'ops(m5): execute approved Worker release after D1'))) && 'tonart-catalog-production-writer' || (github.event_name == 'workflow_dispatch' && inputs.operation == 'm5-ownership' && 'tonart-catalog-m5-ownership' || format('quality-{0}-{1}', github.workflow, github.ref)) }}
   cancel-in-progress: >-
     ${{ (github.event_name != 'workflow_dispatch' && github.event.head_commit.message != 'ops(m5): execute authorized D1 schema 0028-0033' && github.event.head_commit.message != 'ops(m5): execute approved Worker release after D1') || inputs.operation == 'verify' }}
 
@@ -308,6 +313,10 @@ jobs:
       - name: Typecheck Worker
         run: npm run catalog:worker:typecheck
 
+      - name: Test isolated promotion schema and manifest synchronization
+        run: |
+          node --test scripts/catalog/promotion-schema-release.test.mjs
+          python3 -m unittest discover -s scripts/catalog -p test_sync_promotion_drive.py
       - name: Test Worker runtime offline
         run: npm run catalog:worker:test
 
@@ -426,6 +435,9 @@ jobs:
           else
             node scripts/catalog/cutover-readiness.mjs --worker-stage
           fi
+
+      - name: Verify promotion schema before any Worker upload
+        run: node scripts/catalog/promotion-schema-release.mjs ready
 
       - name: Verify unchanged production version before upload
         run: |
@@ -585,3 +597,60 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/catalog/m5-d1-bounded-release.mjs verify "$RUNNER_TEMP/$M5_STAGE_DIR"
+
+  # Same Quality Gate and production-writer lock. Only the independent table.
+  catalog-promotion-schema:
+    name: Authorized promotion selection schema (0054 only)
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.operation == 'promotion-schema'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ github.token }}
+      PROMOTION_OPERATION: ${{ inputs.operation }}
+      PROMOTION_ACK: ${{ inputs.promotion_ack }}
+      PROMOTION_STAGE_DIR: tonart-promotion-d1-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Checkout exact current main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Use Node.js 24
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Resolve production account and verify exact tested commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          node scripts/catalog/production-cloudflare-env.mjs
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/quality.yml/runs?head_sha=$GITHUB_SHA&event=push&status=success" --jq '.workflow_runs | length' | grep -E '^[1-9][0-9]*$'
+      - name: Test bounded promotion migration offline
+        run: node --test scripts/catalog/promotion-schema-release.test.mjs
+      - name: Prepare only 0054 after ownership, ledger and bookmark checks
+        id: promotion_prepare
+        run: |
+          set -euo pipefail
+          proof="$(node scripts/catalog/promotion-schema-release.mjs prepare "$RUNNER_TEMP/$PROMOTION_STAGE_DIR")"
+          echo "$proof"
+          status="$(jq -er '.status' <<<"$proof")"
+          case "$status" in
+            PREPARED_ONLY) echo 'apply=true' >> "$GITHUB_OUTPUT" ;;
+            VERIFIED_ALREADY_APPLIED) echo 'apply=false' >> "$GITHUB_OUTPUT" ;;
+            *) exit 2 ;;
+          esac
+      - name: Apply ONLY the promotion selection migration
+        if: steps.promotion_prepare.outputs.apply == 'true'
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.155.0 d1 migrations apply DB --remote --config "$RUNNER_TEMP/$PROMOTION_STAGE_DIR/wrangler-d1.jsonc"
+      - name: Verify exact ledger and physical promotion table
+        run: |
+          set -euo pipefail
+          node scripts/catalog/promotion-schema-release.mjs verify "$RUNNER_TEMP/$PROMOTION_STAGE_DIR"
