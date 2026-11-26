@@ -496,9 +496,9 @@ test('Telegram studio/name duplicate check uses the existing D1 title index with
   assert.equal((await x.run(x.input)).status,201)
   const sql=queries.find(s=>s.includes('COALESCE(variant_name') && s.includes('telegram_studio=?'))
   assert.ok(sql,'import must check same-studio, same-title, same-variant identity')
-  assert.match(sql,/published IN \\(0,1\\)/,'both private and public models are checked')
+  assert.match(sql,/published IN \(0,1\)/,'both private and public models are checked')
 
-  // These are the two canonical SQLite indexes already deployed in D1.
+  // The canonical SQLite index below is already deployed in D1.
   // EXPLAIN prevents a regression to one full models scan per imported group.
   const db=new DatabaseSync(':memory:')
   try{
