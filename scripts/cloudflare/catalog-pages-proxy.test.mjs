@@ -740,3 +740,25 @@ test("the standalone Telegram catalog never exposes commercial or admin API rout
   assert.equal(res.statusCode, 404);
   assert.equal(res.body, "Not found");
 });
+
+test("promotion proxy is authenticated and exact-route-only", async () => {
+  const url="https://tonartstudio.com.br/catalogo-api/api/admin/promotions/blackfriday";
+  const authorization="Bearer "+"a".repeat(100);
+  let called=0;
+  const fetcher=async (target,options)=>{
+    called++;
+    assert.equal(String(target),"https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/promotions/blackfriday");
+    assert.equal(options.headers.get("authorization"),authorization);
+    assert.equal(options.headers.get("cookie"),null);
+    return new Response(JSON.stringify({saved:true}),{headers:{"content-type":"application/json","cache-control":"public,max-age=600"}});
+  };
+  assert.equal((await proxyTelegramAdminRequest(new Request(url),fetcher)).status,403);
+  for(const suffix of ["/other","?x=1"]){
+    assert.equal((await proxyTelegramAdminRequest(new Request(url+suffix,{headers:{authorization}}),fetcher)).status,404);
+  }
+  assert.equal(called,0);
+  const res=await proxyTelegramAdminRequest(new Request(url,{method:"POST",headers:{authorization,"content-type":"application/json"},body:JSON.stringify({action:"remove",sha256:"a".repeat(64)})}),fetcher);
+  assert.equal(res.status,200);
+  assert.equal(res.headers.get("cache-control"),"private, no-store");
+  assert.equal(called,1);
+});

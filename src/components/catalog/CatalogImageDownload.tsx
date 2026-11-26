@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Download } from "lucide-react";
+import { useContext, useState } from "react";
+import { Download, Plus, Check } from "lucide-react";
+import { PromotionSelectionContext, type PromotionSelectionAccess, type PromotionSource } from "./PromotionSelectionContext";
 
 /** Temporary public UI switch. Never changes API/media authorization. */
 export function catalogImageDownloadEnabled(): boolean {
@@ -60,19 +61,39 @@ export function catalogDownloadUrl(
   }
 }
 
+function AddToPromotion({access, source}: {access: PromotionSelectionAccess; source: PromotionSource}) {
+  const [status,setStatus] = useState<"idle"|"saving"|"saved"|"error">("idle");
+  async function save(){
+    if(status==="saving"||status==="saved")return;
+    setStatus("saving");
+    try {await access.save(source);setStatus("saved");}catch{setStatus("error");}
+  }
+  return <div className="mt-2">
+    <button type="button" onClick={()=>void save()} disabled={status==="saving"||status==="saved"}
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-sm border border-white/20 px-3 py-2 text-xs font-medium text-white/85 hover:border-[hsl(var(--gold-accent))] disabled:opacity-60">
+      {status==="saved"?<Check size={16} aria-hidden="true"/>:<Plus size={16} aria-hidden="true"/>}
+      {status==="saving"?"Adicionando…":status==="saved"?"Adicionada à Black Friday":"Adicionar à Black Friday"}
+    </button>
+    {status==="error"&&<p role="alert" className="mt-1 text-xs text-red-300">Não foi possível confirmar a seleção. Tente novamente.</p>}
+  </div>;
+}
+
 export function CatalogImageDownload({
   src,
   name,
   id,
   className = "",
+  modelSlug,
 }: {
   src: string | null | undefined;
   name: string;
   id: string;
   className?: string;
+  modelSlug?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const access = useContext(PromotionSelectionContext);
   const url = catalogDownloadUrl(src);
   if (!catalogImageDownloadEnabled() || !url) return null;
 
@@ -130,6 +151,9 @@ export function CatalogImageDownload({
         <Download size={16} aria-hidden="true" />
         {busy ? "Baixando…" : "Baixar imagem"}
       </button>
+      {access && (modelSlug || new URL(url).pathname.startsWith("/catalogo-api/api/telegram-studios/")) && (
+        <AddToPromotion key={url+(modelSlug??"")} access={access} source={{path:new URL(url).pathname.slice("/catalogo-api".length),modelSlug}}/>
+      )}
       {error && (
         <p role="alert" className="mt-1 text-xs text-red-300">
           Não foi possível baixar. Tente novamente.

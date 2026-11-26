@@ -52,7 +52,7 @@ export function planMigrationFiles({ applied, canonical = MIGRATIONS, additional
   ensure(additionalFiles.every((n) => !canonical.includes(n)), "duplicate_unexpected_migration_files");
   return { applied: canonical.slice(0, done), pending: canonical.slice(done), all: canonical };
 }
-function loadContract() {
+export function loadContract() {
   const manifest = asJSON(join(ROOT, "config/catalog-code-consolidation.json"));
   const wrangler = asJSON(join(ROOT, "services/catalogo/wrangler.jsonc"));
   const schema = asJSON(join(ROOT, "services/catalogo/config/catalog-schema-contract.json"));
@@ -80,7 +80,7 @@ async function requestJSON(url, headers) {
   ensure(response.ok, "http_" + response.status + "_" + new URL(url).pathname);
   return response.json();
 }
-async function verifyRetiredSource(token, manifest) {
+export async function verifyRetiredSource(token, manifest) {
   const repo = manifest.origin.repository;
   const headers = { Accept: "application/vnd.github+json", Authorization: "Bearer " + token, "User-Agent": "tonart-m5-d1-bounded" };
   const ids = [manifest.origin.apiDeployWorkflowId, ...manifest.origin.additionalWriterWorkflows.map((w) => w.id)];
@@ -98,7 +98,7 @@ async function verifyRetiredSource(token, manifest) {
     ensure(page.workflow_runs.every((run) => !ids.includes(run.workflow_id)), "source_writer_not_quiescent_" + status);
   }
 }
-async function d1Fetch(token, account, dbid, sql) {
+export async function d1Fetch(token, account, dbid, sql) {
   const response = await fetch("https://api.cloudflare.com/client/v4/accounts/" + account + "/d1/database/" + dbid + "/query", {
     method: "POST",
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
@@ -158,7 +158,7 @@ async function verifySeedReferences(token, manifest, db) {
   ensure(new Set(foundFranchises.map((x) => x.slug)).size === franchiseSlugs.length && franchiseSlugs.every((slug) => foundFranchises.some((x) => x.slug === slug)), "reviewed_seed_franchises_missing");
 }
 
-async function getBookmark(token, account, dbid) {
+export async function getBookmark(token, account, dbid) {
   const data = await requestJSON(
     "https://api.cloudflare.com/client/v4/accounts/" + account + "/d1/database/" + dbid + "/time_travel/bookmark",
     { Authorization: "Bearer " + token },

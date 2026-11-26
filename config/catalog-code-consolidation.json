@@ -246,8 +246,8 @@
       },
       "worker/entry.ts": {
         "sourceBlob": "a628fce19ce0b84f76760a716eab0152668e2290",
-        "localBlob": "08a248fa6c846cf852453746256f7089ac700fe9",
-        "reason": "Reviewed entrypoint forwards the Cloudflare Access execution context to the existing canonical Telegram import route while preserving the upstream media query budget, immutable R2 GET/HEAD/Range controls and Telegram routes. No production release."
+        "localBlob": "f7c5f39fec52872fb3c317531909e201c43a278a",
+        "reason": "Reviewed administrator promotion selection route in the existing catalog Worker; preserve canonical public media routing, Cloudflare Access and upstream import pins. No production approval implied."
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
