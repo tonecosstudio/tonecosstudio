@@ -1,3 +1,4 @@
+import { serveCachedPublicMetadata, type BackgroundTasks } from './publicMetadataCache'
 /**
  * Public, read-only presentation of explicitly visible Telegram studio models.
  * The canonical D1 remains the single source of models, and the private R2
@@ -52,60 +53,13 @@ const STUDIO_DIRECTORY_CACHE_CONTROL = 'public, max-age=0, s-maxage=300'
 const metadataCache = (request: Request, cacheControl = LIST_CACHE_CONTROL) =>
   request.headers.has('authorization') || request.headers.has('cookie') ? 'no-store' : cacheControl
 
-type PublicEdgeCache = {
-  match(request: Request): Promise<Response | undefined>
-  put(request: Request, response: Response): Promise<void>
-}
-type BackgroundTasks = { waitUntil(promise: Promise<unknown>): void }
-
-/**
- * Reuse the existing Cloudflare edge cache on anonymous public metadata only.
- * No cache namespace, KV, R2 objects or D1 counters are created. Details,
- * individual media, errors and authenticated requests always recheck storage.
- * Cache API is regional; a miss in another colo is not a publication grant.
- */
-async function serveCachedMetadata(
-  request: Request,
-  build: () => Promise<Response>,
-  background?: BackgroundTasks,
-): Promise<Response> {
-  const allowed = request.method === 'GET' &&
-    !request.headers.has('authorization') && !request.headers.has('cookie') &&
-    !request.headers.has('range') && !request.headers.has('if-none-match') &&
-    !request.headers.has('if-modified-since')
-  const cache = allowed
-    ? (globalThis as unknown as { caches?: { default?: PublicEdgeCache } }).caches?.default
-    : undefined
-  if (!cache) return build()
-
-  // The route already validated allowed parameters and rejected duplicates.
-  // Canonicalize equivalent public-list URLs so parameter order and omitted
-  // pagination defaults do not multiply D1 reads on regional cache misses.
-  // Do not normalize studio, search, category or provisional filters.
-  const cacheUrl = new URL(request.url)
-  if (cacheUrl.pathname === ROOT) {
-    if (!cacheUrl.searchParams.has('limit')) cacheUrl.searchParams.set('limit', '24')
-    if (!cacheUrl.searchParams.has('offset')) cacheUrl.searchParams.set('offset', '0')
-  }
-  cacheUrl.searchParams.sort()
-  // Recreate a header-free request: user-controlled headers never vary the key.
-  const key = new Request(cacheUrl.toString(), { method: 'GET' })
-  try {
-    const hit = await cache.match(key)
-    if (hit?.status === 200) return hit
-  } catch {
-    // An unavailable cache is a miss, never a catalog outage.
-  }
-
-  const response = await build()
-  if (response.status === 200 && response.headers.get('cache-control')?.startsWith('public,')) {
-    const write = cache.put(key, response.clone()).catch(() => {
-      // Cache insertion failures must never hide a valid D1 response.
-    })
-    if (background) background.waitUntil(write)
-    else await write
-  }
-  return response
+function serveCachedMetadata(request: Request, build: () => Promise<Response>, background?: BackgroundTasks) {
+  return serveCachedPublicMetadata(request, build, background, url => {
+    if (url.pathname === ROOT) {
+      if (!url.searchParams.has('limit')) url.searchParams.set('limit', '24')
+      if (!url.searchParams.has('offset')) url.searchParams.set('offset', '0')
+    }
+  })
 }
 
 function json(data: unknown, status = 200, cacheControl = 'no-store') {
