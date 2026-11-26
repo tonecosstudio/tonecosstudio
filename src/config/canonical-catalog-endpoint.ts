@@ -4,8 +4,8 @@
  * the native CATALOG_WORKER binding. No catalog rows are copied to Supabase.
  */
 export const CANONICAL_CATALOG_PROXY_PATH = "/catalogo-api/";
-export const CANONICAL_CATALOG_WORKER_ORIGIN =
-  "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+import { ACTIVE_CATALOG_ORIGIN } from "../../config/catalog-cloud-routing.mjs";
+export const CANONICAL_CATALOG_WORKER_ORIGIN = ACTIVE_CATALOG_ORIGIN;
 
 const DIRECT_ADMIN_WORKER_HOSTS = new Set([
   "tonartstudio.com.br",

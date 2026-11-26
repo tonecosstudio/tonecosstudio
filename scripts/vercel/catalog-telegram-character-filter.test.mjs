@@ -16,7 +16,7 @@ function sink() {
   };
 }
 
-const BASE = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+import { ACTIVE_CATALOG_ORIGIN as BASE } from "../../config/catalog-cloud-routing.mjs";
 
 test("canonical proxy forwards exact franchise and character filters without SQL or new API", async () => {
   const original = globalThis.fetch;

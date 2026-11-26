@@ -4,7 +4,7 @@ import { isRestrictedCatalogMediaPath } from "../../scripts/security/catalog-pub
  * Only public, read-only routes are forwarded to the existing Worker.
  * No D1 bindings, writes, alternate catalog service or browser credentials.
  */
-const CATALOG_ORIGIN = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+import { ACTIVE_CATALOG_CLOUD, ACTIVE_CATALOG_ORIGIN as CATALOG_ORIGIN, checkCatalogBinding } from "../../config/catalog-cloud-routing.mjs";
 const PREFIX = "/catalogo-api/";
 const PUBLIC_LIST_ROUTES = new Set([
   "api/catalog",
@@ -506,6 +506,11 @@ export async function proxyTelegramAdminRequest(request, fetcher) {
 
 /** Pages Functions entrypoint. */
 export function onRequest({ request, env }) {
+  // A native binding cannot cross accounts. An explicitly selected OrdaX
+  // deployment must attest its own binding; never route to the old account.
+  if (!checkCatalogBinding(ACTIVE_CATALOG_CLOUD, env?.CATALOG_CLOUD)) {
+    return new Response("Catalog cloud binding mismatch", { status: 503, headers: { "Cache-Control": "no-store" } });
+  }
   const pathname = new URL(request.url).pathname;
   if (
     pathname.startsWith(PREFIX) && isCatalogAdminRoute(pathname.slice(PREFIX.length))

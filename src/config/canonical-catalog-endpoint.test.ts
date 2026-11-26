@@ -1,3 +1,4 @@
+import { ACTIVE_CATALOG_CLOUD, ACTIVE_CATALOG_ORIGIN, assertCatalogCsp } from "../../config/catalog-cloud-routing.mjs";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -95,7 +96,7 @@ describe("Cloudflare Pages canonical public catalog", () => {
   );
 
   it("uses the canonical Worker directly only for authenticated admin traffic on official Vercel domains", () => {
-    const worker = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+    const worker = ACTIVE_CATALOG_ORIGIN;
     expect(CANONICAL_CATALOG_WORKER_ORIGIN).toBe(worker);
     for (const origin of [
       "https://tonartstudio.com.br",
@@ -202,9 +203,9 @@ describe("Cloudflare Pages canonical public catalog", () => {
       .flatMap((rule) => rule.headers)
       .find((header) => header.key === "Content-Security-Policy")?.value;
     expect(csp).toContain(
-      "connect-src 'self' https://icmtmaakjucmuzxnofkd.supabase.co https://tonecos-catalogo-api.tonecosstudio.workers.dev;",
+      "connect-src 'self' https://icmtmaakjucmuzxnofkd.supabase.co " + ACTIVE_CATALOG_ORIGIN + ";",
     );
     expect(csp).not.toContain("*.supabase.co");
-    expect(csp).not.toContain("ordax");
+    expect(() => assertCatalogCsp(csp, ACTIVE_CATALOG_CLOUD)).not.toThrow();
   });
 });

@@ -3,8 +3,9 @@ import { appendFile, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parsePrivateTelegramPlan } from '../../src/services/catalog/telegram-private-import-plan.ts'
 
-const endpoint =
-  'https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/telegram-drafts/import/service'
+import { ACTIVE_CATALOG_CLOUD, ACTIVE_CATALOG_ORIGIN, assertImportCloud, receiptMatchesCloud } from '../../config/catalog-cloud-routing.mjs'
+
+const endpoint = new URL('/api/admin/telegram-drafts/import/service', ACTIVE_CATALOG_ORIGIN).toString()
 const help = `Uso: node --experimental-strip-types scripts/catalog/import-private-telegram-batch.mjs --plan <arquivo.jsonl> --receipt <recibo.jsonl> [--apply]
 
 Sem --apply, valida o plano sem rede. Com --apply, chama sequencialmente o importador canônico do Worker.
@@ -54,6 +55,8 @@ async function main() {
   )
   if (!options.apply) return
 
+  assertImportCloud(ACTIVE_CATALOG_CLOUD, process.env.TONART_IMPORT_CLOUD)
+
   const clientId = process.env.TONART_IMPORT_CF_ACCESS_CLIENT_ID
   const clientSecret = process.env.TONART_IMPORT_CF_ACCESS_CLIENT_SECRET
   if (!clientId || !clientSecret)
@@ -75,6 +78,8 @@ async function main() {
     } catch {
       throw new Error('recibo existente contém JSON inválido')
     }
+    if (!receiptMatchesCloud(ACTIVE_CATALOG_CLOUD, row))
+      throw new Error('recibo pertence a outra conta Cloudflare; reconcilie os dados migrados antes de importar')
     if (row.planSha256 !== plan.sha256)
       throw new Error(
         'recibo pertence a outro plano; use um caminho de recibo separado',
@@ -99,6 +104,7 @@ async function main() {
     try {
       response = await fetch(endpoint, {
         method: 'POST',
+        redirect: 'manual',
         headers: {
           'content-type': 'application/json',
           'CF-Access-Client-Id': clientId,
@@ -143,6 +149,7 @@ async function main() {
       )
     }
     const receipt = {
+      catalogCloud: ACTIVE_CATALOG_CLOUD,
       planSha256: plan.sha256,
       operationId: item.operationId,
       modelId: item.id,

@@ -1,3 +1,4 @@
+import { ACTIVE_CATALOG_CLOUD } from "../../config/catalog-cloud-routing.mjs";
 import { Readable } from "node:stream";
 import { onRequest } from "../../functions/catalogo-api/[[path]].js";
 
@@ -44,6 +45,7 @@ export function catalogReadOnlyViteProxy() {
         void Promise.resolve().then(() => onRequest({
           request: pagesRequest,
           env: {
+            CATALOG_CLOUD: ACTIVE_CATALOG_CLOUD,
             CATALOG_WORKER: {
               fetch: (url, options) => {
                 // Node's fetch transparently decompresses upstream bodies.

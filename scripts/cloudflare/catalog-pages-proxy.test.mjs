@@ -4,7 +4,7 @@ import { onRequest, proxyCatalogRequest, proxyTelegramAdminRequest } from "../..
 import vercelCatalogHandler, { isStandaloneTelegramCatalogHost, isAllowedStandaloneTelegramRoute } from "../../api/catalogo-proxy.js";
 
 const SITE = "https://tonecosstudio.pages.dev";
-const WORKER = "https://tonecos-catalogo-api.tonecosstudio.workers.dev";
+import { ACTIVE_CATALOG_ORIGIN as WORKER } from "../../config/catalog-cloud-routing.mjs";
 
 function mockFetch(body = "ok", status = 200, headers = {}) {
   const calls = [];

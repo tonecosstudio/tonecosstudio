@@ -1,3 +1,4 @@
+import { ACTIVE_CATALOG_ORIGIN } from "../../config/catalog-cloud-routing.mjs";
 import test from "node:test";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -147,7 +148,7 @@ test("Vercel proxy serves a normal catalog image without a publication allowlist
     }, res);
     assert.equal(res.statusCode, 200);
     assert.equal(calls.length, 1);
-    assert.equal(calls[0], "https://tonecos-catalogo-api.tonecosstudio.workers.dev/media/mdl-ordinary/image/card.webp");
+    assert.equal(calls[0], ACTIVE_CATALOG_ORIGIN + "/media/mdl-ordinary/image/card.webp");
     assert.equal(res.body.toString(), "normal-image");
   } finally {
     globalThis.fetch = originalFetch;
@@ -252,7 +253,7 @@ test("Vercel catalog proxy forwards only a bounded read through the canonical pr
     assert.equal(res.statusCode, 200);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url,
-      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/catalog?limit=12");
+      ACTIVE_CATALOG_ORIGIN + "/api/catalog?limit=12");
     assert.equal(calls[0].init.method, "GET");
     assert.equal(calls[0].init.headers.get("Accept"), "application/json");
     assert.equal(calls[0].init.headers.get("cookie"), null);
@@ -285,7 +286,7 @@ test("Vercel proxy builds the public query from request.query after a rewrite", 
     assert.equal(categories.statusCode, 200);
     assert.equal(
       calls[0],
-      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/categories",
+      ACTIVE_CATALOG_ORIGIN + "/api/categories",
     );
 
     const catalog = responseSink();
@@ -298,7 +299,7 @@ test("Vercel proxy builds the public query from request.query after a rewrite", 
     assert.equal(catalog.statusCode, 200);
     assert.equal(
       calls[1],
-      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/catalog?limit=12",
+      ACTIVE_CATALOG_ORIGIN + "/api/catalog?limit=12",
     );
 
     const duplicate = responseSink();
@@ -529,7 +530,7 @@ test("Vercel sends authenticated Telegram draft GET to the existing Worker with 
     assert.equal(JSON.parse(res.body.toString()).total, 8);
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url,
-      "https://tonecos-catalogo-api.tonecosstudio.workers.dev/api/admin/telegram-drafts?studio=Abe3D");
+      ACTIVE_CATALOG_ORIGIN + "/api/admin/telegram-drafts?studio=Abe3D");
     assert.equal(calls[0].init.method, "GET");
     assert.equal(calls[0].init.headers.get("authorization"), TELEGRAM_AUTH);
     assert.equal(calls[0].init.headers.has("cookie"), false);
