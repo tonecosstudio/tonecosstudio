@@ -188,8 +188,13 @@ export async function importPrivateTelegramDraft(
   // variants legitimately create different models. A same-studio/same-variant
   // title is a review candidate, not proof of duplicate bytes.
   // Group key and SHA owners have already been checked above.
+  // Both canonical publish states (0=private, 1=public) are indexed by
+  // idx_models_published_name_id (published, name NOCASE, id). Without
+  // constraining the leading index column, this per-group check scans
+  // the entire catalog and exhausts D1's daily read budget.
   const possibleSameSculpture = await env.DB.prepare(
-    'SELECT id FROM models WHERE telegram_studio=? AND name=? COLLATE NOCASE' +
+    'SELECT id FROM models WHERE published IN (0,1)' +
+    ' AND telegram_studio=? AND name=? COLLATE NOCASE' +
     ' AND COALESCE(variant_name, \'\')=? COLLATE NOCASE AND id<>? LIMIT 1',
   ).bind((studio as string).trim(), (name as string).trim(),
     (variant as string).trim(), id).first()
