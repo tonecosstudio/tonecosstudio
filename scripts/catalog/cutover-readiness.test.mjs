@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   assessCutoverReadiness,
   assessWorkerZeroTrafficStageReadiness,
+  assessRoutineWorkerUpdateReadiness,
   inspectLiveReadOnly,
 } from "./cutover-readiness.mjs";
 
@@ -176,6 +177,26 @@ test("completed M5 cannot replay a one-use Worker release authorization", () => 
   assert.ok(!result.blockers.includes("target_credentials_unverified"));
   assert.ok(!result.blockers.includes("rollback_not_verified"));
   assert.ok(!result.blockers.includes("explicit_release_go_missing"));
+});
+
+test("routine update requires completed M5 and a freshly observed single-version baseline", () => {
+  const contract = structuredClone(original);
+  const state = fullState();
+  contract.productionObservation.releaseGoApproved = false;
+  state.deployment.versions[0].version_id = "dddddddd-1111-2222-3333-aaaaaaaaaaaa";
+  assert.equal(assessRoutineWorkerUpdateReadiness(contract, state).ready, true);
+  assert.equal(assessWorkerZeroTrafficStageReadiness(contract, state).ready, false);
+  assert.equal(assessRoutineWorkerUpdateReadiness(approvedContract(), state).ready, false);
+  for (const corrupt of [
+    s => { s.workflow.state = "active"; },
+    s => { s.workersBuilds.triggerCount = 1; },
+    s => { s.deployment.versions[0].percentage = 90; },
+    s => { s.showcaseSchema.appliedMigrations.pop(); },
+  ]) {
+    const invalid = structuredClone(state);
+    corrupt(invalid);
+    assert.equal(assessRoutineWorkerUpdateReadiness(contract, invalid).ready, false);
+  }
 });
 
 test("zero-percent staging defers only pending proof in the historical approved phase", () => {

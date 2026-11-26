@@ -104,7 +104,7 @@ const sameNames = (expected, actual) =>
   new Set(actual).size === actual.length &&
   expected.every((name) => actual.includes(name));
 
-export function assessCutoverReadiness(contract, state) {
+export function assessCutoverReadiness(contract, state, { routineUpdate = false } = {}) {
   const blockers = [];
   const m = contract?.migration ?? {};
   const o = contract?.productionObservation ?? {};
@@ -203,11 +203,13 @@ export function assessCutoverReadiness(contract, state) {
       WORKER_CONFIG.main === "worker/entry.ts",
     "staged_worker_config_mismatch",
   );
-  add(m.phase === "cutover-approved", "cutover_not_approved");
-  add(
-    m.releaseAuthorized === true && o.releaseGoApproved === true,
-    "explicit_release_go_missing",
-  );
+  if (routineUpdate) {
+    add(m.phase === "cutover-complete" && o.runtimeCutoverPerformed === true, "cutover_not_completed");
+    add(m.releaseAuthorized === true, "canonical_publisher_not_authorized");
+  } else {
+    add(m.phase === "cutover-approved", "cutover_not_approved");
+    add(m.releaseAuthorized === true && o.releaseGoApproved === true, "explicit_release_go_missing");
+  }
   add(
     m.sourceWriterDisabled === true &&
       o.sourceWorkflowDisabledVerified === true,
@@ -305,7 +307,9 @@ export function assessCutoverReadiness(contract, state) {
     Array.isArray(traffic) &&
       traffic.length === 1 &&
       traffic[0]?.percentage === 100 &&
-      traffic[0]?.version_id === o.currentVersionId,
+      (routineUpdate
+        ? /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(traffic[0]?.version_id ?? "")
+        : traffic[0]?.version_id === o.currentVersionId),
     "cloudflare_active_version_unverified_or_changed",
   );
 
@@ -464,6 +468,11 @@ export function assessWorkerZeroTrafficStageReadiness(contract, state) {
     deferredProof: full.blockers.filter((name) => deferred.has(name)),
     stageOnly: true,
   };
+}
+
+// Routine updates never reuse M5 GO or defer credential and rollback proof.
+export function assessRoutineWorkerUpdateReadiness(contract, state) {
+  return assessCutoverReadiness(contract, state, { routineUpdate: true });
 }
 
 async function getJSON(url, headers = {}) {
@@ -787,10 +796,10 @@ export async function inspectLiveReadOnly(env = process.env, options = {}) {
 async function main() {
   if (
     process.argv.length !== 3 ||
-    !["--live", "--ownership-only", "--worker-stage"].includes(process.argv[2])
+    !["--live", "--ownership-only", "--worker-stage", "--worker-update-stage"].includes(process.argv[2])
   ) {
     console.error(
-      "Read-only gate: use --ownership-only (no D1), --live (full schema), or --worker-stage (zero-traffic staging only). No deployment option exists.",
+      "Read-only gate: use --ownership-only (no D1), --live (full schema), or --worker-stage (M5 zero-traffic staging only), or --worker-update-stage (routine update). No deployment option exists.",
     );
     process.exitCode = 2;
     return;
@@ -798,13 +807,16 @@ async function main() {
   const contract = CANONICAL;
   const ownershipOnly = process.argv[2] === "--ownership-only";
   const workerStageOnly = process.argv[2] === "--worker-stage";
+  const routineUpdate = process.argv[2] === "--worker-update-stage";
   try {
     const state = await inspectLiveReadOnly(process.env, {
       verifyShowcaseSchema: !ownershipOnly,
     });
-    const verdict = workerStageOnly
-      ? assessWorkerZeroTrafficStageReadiness(contract, state)
-      : assessCutoverReadiness(contract, state);
+    const verdict = routineUpdate
+      ? assessRoutineWorkerUpdateReadiness(contract, state)
+      : workerStageOnly
+        ? assessWorkerZeroTrafficStageReadiness(contract, state)
+        : assessCutoverReadiness(contract, state);
     const blockers = ownershipOnly
       ? [
           ...new Set([
@@ -818,11 +830,11 @@ async function main() {
         {
           status:
             verdict.ready && !ownershipOnly
-              ? workerStageOnly
+              ? workerStageOnly || routineUpdate
                 ? "SAFE_TO_STAGE_AT_ZERO_PERCENT_ONLY"
                 : "READY_FOR_SEPARATELY_AUTHORIZED_CUTOVER"
               : "BLOCKED",
-          mode: ownershipOnly ? "ownership-only" : workerStageOnly ? "worker-stage" : "full-live",
+          mode: routineUpdate ? "worker-update-stage" : ownershipOnly ? "ownership-only" : workerStageOnly ? "worker-stage" : "full-live",
           deferredProof: workerStageOnly ? verdict.deferredProof : undefined,
           d1SchemaCheck: ownershipOnly ? "skipped_by_design" : "required",
           sourceWorkflow: state.workflow?.state ?? "unverified",

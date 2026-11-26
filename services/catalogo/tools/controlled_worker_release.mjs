@@ -146,10 +146,43 @@ export async function smokePreviousTelegram(apiUrl, fetchImpl=fetch) {
   return {previousWorkerRestored:true,telegramModels:catalog.total,studios:studios.studios.length}
 }
 
+export async function smokeGlobalSearch(apiUrl, candidate=null, fetchImpl=fetch) {
+  const origin=canonicalWorkerOrigin(apiUrl)
+  const headers={accept:'application/json','cache-control':'no-cache'}
+  if(candidate)headers['Cloudflare-Workers-Version-Overrides']=config.name+'="'+validId(candidate)+'"'
+  const response=await fetchImpl(origin+'/api/catalog?q=Thanos&scope=all&limit=12',{
+    method:'GET',headers,signal:AbortSignal.timeout(12000)
+  })
+  if(response.status!==200)throw Error('Global search HTTP '+response.status)
+  const data=await response.json()
+  if(!Array.isArray(data?.items)||data.items.length<1||data.items.length>12||
+     new Set(data.items.map(x=>x.id)).size!==data.items.length)
+    throw Error('Global search result invalid')
+  for(const item of data.items){
+    if(item.telegram_preview!==undefined &&
+       (!/^tg_[a-f0-9]{24}$/.test(item.id)||item.cover_storage_key!==null||
+        typeof item.telegram_preview?.pending!=='boolean'||
+        (item.telegram_preview.cover!==null &&
+         !new RegExp('^/api/telegram-studios/'+item.id+'/media/[a-f0-9]{64}/thumb$').test(item.telegram_preview.cover))))
+      throw Error('Global search preview boundary invalid')
+  }
+  return {items:data.items.length,telegram:data.items.filter(x=>x.telegram_preview).length}
+}
+
 async function main(){
   const [mode,a,b]=process.argv.slice(2)
   let result
-  if(mode==='before'){
+  const routine=process.env.RELEASE_MODE==='worker-update'
+  if(mode==='before' && routine){
+    if(manifest.migration.phase!=='cutover-complete'||manifest.migration.releaseAuthorized!==true||
+       manifest.migration.sourceWriterDisabled!==true||manifest.migration.targetWorkerReleaseEnabled!==true||
+       manifest.activeWorkerPublisher!==manifest.target.repository||manifest.migration.targetD1MigrationEnabled!==false)
+      throw Error('Routine Worker release not authorized')
+    const old=validId(process.env.VERIFIED_BASELINE_VERSION)
+    assertTraffic(await readLiveDeployment(),old,null,'before')
+    await smoke(process.env.CATALOG_API_URL)
+    result=old
+  }else if(mode==='before'){
     if(manifest.migration.phase!=='cutover-approved'||manifest.migration.releaseAuthorized!==true||
        manifest.migration.sourceWriterDisabled!==true||manifest.migration.targetWorkerReleaseEnabled!==true)
       throw Error('M5 release not authorized')
@@ -163,13 +196,15 @@ async function main(){
     result=rollbackPlan(await readLiveDeployment(),validId(a))
   }else if(mode==='rollback-drill'||mode==='rollback-verify'){
     assertTraffic(await readLiveDeployment(),validId(a),null,'before')
-    result=await smokePreviousTelegram(process.env.CATALOG_API_URL)
+    result=routine ? await smoke(process.env.CATALOG_API_URL) : await smokePreviousTelegram(process.env.CATALOG_API_URL)
   }else if(mode==='staged'){
     assertTraffic(await readLiveDeployment(),a,b,'staged')
     result=await smoke(process.env.CATALOG_API_URL,b)
+    if(routine)result.globalSearch=await smokeGlobalSearch(process.env.CATALOG_API_URL,b)
   }else if(mode==='promoted'){
     assertTraffic(await readLiveDeployment(),a,a,'promoted')
     result=await smoke(process.env.CATALOG_API_URL)
+    if(routine)result.globalSearch=await smokeGlobalSearch(process.env.CATALOG_API_URL)
   }else throw Error('Unknown M5 read-only release verification')
   process.stdout.write(typeof result==='string'?result+'\n':JSON.stringify(result)+'\n')
 }

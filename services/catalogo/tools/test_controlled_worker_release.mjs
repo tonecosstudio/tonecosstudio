@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {readFileSync} from 'node:fs'
-import {deploymentVersions,assertTraffic,rollbackPlan,uploadedVersion,readLiveDeployment,smoke,smokePreviousTelegram} from './controlled_worker_release.mjs'
+import {deploymentVersions,assertTraffic,rollbackPlan,uploadedVersion,readLiveDeployment,smoke,smokePreviousTelegram,smokeGlobalSearch} from './controlled_worker_release.mjs'
 
 const previous='aa8fd20c-857c-4780-a15e-021569a32251'
 const candidate='dddddddd-1111-2222-3333-aaaaaaaaaaaa'
@@ -95,6 +95,21 @@ test('zero-traffic rollback drill verifies previous Telegram service without cla
     'https://tonecos-catalogo-api.tonecosstudio.workers.dev',
     async()=>new Response('error',{status:503})
   ))
+})
+
+test('routine global-search smoke checks bounded results and private cover isolation',async()=>{
+  const id='tg_'+'a'.repeat(24)
+  const cover='/api/telegram-studios/'+id+'/media/'+'b'.repeat(64)+'/thumb'
+  const base='https://tonecos-catalogo-api.tonecosstudio.workers.dev'
+  const response=items=>async(url,init)=>{
+    assert.ok(url.endsWith('/api/catalog?q=Thanos&scope=all&limit=12'))
+    assert.equal(init.headers['Cloudflare-Workers-Version-Overrides'],'tonecos-catalogo-api="'+candidate+'"')
+    return Response.json({items})
+  }
+  const item={id,cover_storage_key:null,telegram_preview:{pending:true,cover}}
+  assert.deepEqual(await smokeGlobalSearch(base,candidate,response([{id:'old'},item])),{items:2,telegram:1})
+  await assert.rejects(smokeGlobalSearch(base,candidate,response([{...item,cover_storage_key:'private/key'}])))
+  await assert.rejects(smokeGlobalSearch(base,candidate,response([item,item])))
 })
 
 test('one existing workflow owns controlled release, protected by M5 and rollback',()=>{
