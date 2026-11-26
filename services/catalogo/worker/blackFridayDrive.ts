@@ -218,11 +218,13 @@ class Drive {
     if (!id || !ID.test(id)) fail('drive_invalid_id')
     return id
   }
-  async createFolder(root: string, category: string) {
-    return this.json<DriveFile>(DRIVE+'files?supportsAllDrives=true&fields=id,name,mimeType,parents', {
+  async createFolder(root: string, category: string, id: string) {
+    const response = await this.request(DRIVE+'files?supportsAllDrives=true&fields=id', {
       method:'POST', headers:{'content-type':'application/json'},
-      body:JSON.stringify({name:category+' [0]',mimeType:FOLDER,parents:[root]}),
+      body:JSON.stringify({id,name:category+' [0]',mimeType:FOLDER,parents:[root]}),
     })
+    if (!response.ok && response.status !== 409) fail('drive_folder_creation_failed')
+    return this.file(id)
   }
   async upload(id: string, folder: string, source: Awaited<ReturnType<typeof publicSource>>) {
     const boundary = 'tonart_'+crypto.randomUUID()
@@ -288,7 +290,18 @@ async function exportImage(env: BlackFridayDriveEnv, c: Config, source: Awaited<
       }
     }
     let folder = folders.get(source.category)
-    if (!folder) folder = await drive.createFolder(c.root,source.category)
+    if (!folder) {
+      let reservation = await env.DB.prepare('SELECT drive_folder_id FROM blackfriday_drive_folders WHERE root_id=? AND category=?')
+        .bind(c.root,source.category).first<{drive_folder_id:string}>()
+      if (!reservation) {
+        const id = await drive.generateId()
+        await env.DB.prepare('INSERT INTO blackfriday_drive_folders(root_id,category,drive_folder_id) VALUES(?,?,?)')
+          .bind(c.root,source.category,id).run()
+        reservation = {drive_folder_id:id}
+      }
+      if (!ID.test(reservation.drive_folder_id)) fail('drive_reservation_conflict',409)
+      folder = await drive.createFolder(c.root,source.category,reservation.drive_folder_id)
+    }
     const verifiedFolder = await drive.file(folder.id)
     if (verifiedFolder.trashed || verifiedFolder.mimeType !== FOLDER || !verifiedFolder.parents?.includes(c.root)
         || verifiedFolder.capabilities?.canAddChildren !== true || verifiedFolder.capabilities?.canEdit !== true

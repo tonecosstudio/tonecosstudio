@@ -259,11 +259,10 @@ export default function TonecosCommercialApp() {
   }
   assertTonecosCommercialEnabled();
   return (
-    <TonartBlackFridayDriveProvider>
-      <CatalogMvpShell
-        navigation={<TonecosCommercialNav />}
-        extraRoutes={commercialRoutes}
-      />
-    </TonartBlackFridayDriveProvider>
+    <CatalogMvpShell
+      navigation={<TonecosCommercialNav />}
+      extraRoutes={commercialRoutes}
+      renderCatalogMedia={(page) => <TonartBlackFridayDriveProvider>{page}</TonartBlackFridayDriveProvider>}
+    />
   );
 }

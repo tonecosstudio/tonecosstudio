@@ -68,7 +68,8 @@ function NotFound() {
 export function CatalogMvpShell({
   navigation,
   extraRoutes,
-}: { navigation?: ReactNode; extraRoutes?: ReactNode }) {
+  renderCatalogMedia = (page) => page,
+}: { navigation?: ReactNode; extraRoutes?: ReactNode; renderCatalogMedia?: (page: ReactNode) => ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="dark" storageKey="tonecos-catalog-theme">
@@ -89,15 +90,15 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
                   <Route path={PUBLIC_ROUTES.catalogHub} element={<CatalogEntryPage />} />
                   <Route path={PUBLIC_ROUTES.catalogHistorical} element={<Models />} />
-                  <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
-                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
+                  <Route path={PUBLIC_ROUTES.catalogReview} element={renderCatalogMedia(<TelegramCatalog embedded />)} />
+                  <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={renderCatalogMedia(<TelegramCatalog embedded />)} />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseCharacter} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogCharacter} element={<HistoricalCharacter />} />
                   <Route path={PUBLIC_ROUTES.catalogModels} element={<Models />} />
-                  <Route path={PUBLIC_ROUTES.catalogDetails} element={<Details />} />
+                  <Route path={PUBLIC_ROUTES.catalogDetails} element={renderCatalogMedia(<Details />)} />
                   <Route path={PUBLIC_ROUTES.about} element={<About />} />
                   <Route path={PUBLIC_ROUTES.contact} element={<PublicCatalogContact />} />
                   {import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" && (

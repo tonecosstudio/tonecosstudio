@@ -10,3 +10,10 @@ CREATE TABLE IF NOT EXISTS blackfriday_drive_exports (
   folder_id TEXT NOT NULL,
   PRIMARY KEY(root_id, sha256)
 );
+
+CREATE TABLE IF NOT EXISTS blackfriday_drive_folders (
+  root_id TEXT NOT NULL,
+  category TEXT NOT NULL,
+  drive_folder_id TEXT NOT NULL UNIQUE,
+  PRIMARY KEY(root_id, category)
+);
