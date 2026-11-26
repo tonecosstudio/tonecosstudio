@@ -42,5 +42,44 @@
   ],
   "observability": {
     "enabled": true
+  },
+  "env": {
+    "ordax": {
+      "name": "tonecos-catalogo-api",
+      "account_id": "42586bf13b61436219d21def299833e4",
+      "workers_dev": false,
+      "preview_urls": false,
+      "vars": {
+        "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app,https://tonartstudio.com.br,https://www.tonartstudio.com.br"
+      },
+      "secrets": {
+        "required": [
+          "TURNSTILE_SECRET_KEY",
+          "ADMIN_SUPABASE_URL",
+          "ADMIN_SUPABASE_ANON_KEY"
+        ]
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "tonecos-catalogo",
+          "database_id": "8d1a3f8b-3f82-4e50-bfda-1b94b3d40272",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "tonecos-catalogo-media"
+        },
+        {
+          "binding": "PRIVATE_TELEGRAM",
+          "bucket_name": "tonecos-catalogo-staging"
+        }
+      ],
+      "observability": {
+        "enabled": true
+      }
+    }
   }
 }
