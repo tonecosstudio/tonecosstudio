@@ -3,7 +3,10 @@
  * No public R2 URL, Supabase mirror, or direct D1 credentials in the browser.
  */
 import { getCurrentAuthSession } from "@/services/auth/auth-session-service";
-import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
+import {
+  CANONICAL_CATALOG_ADMIN_API_BASE,
+  CANONICAL_CATALOG_API_BASE,
+} from "@/config/canonical-catalog-endpoint";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
 import type { PrivateTelegramManifest } from "./telegram-private-import-plan";
 
@@ -61,17 +64,23 @@ export type TelegramDraftEdit = {
   imageOrder: number[];
 };
 
-function base() {
+function publicBase() {
   if (!CANONICAL_CATALOG_API_BASE)
     throw new Error("catalog_gateway_not_configured");
   return CANONICAL_CATALOG_API_BASE.replace(/\/+$/, "");
+}
+
+function adminBase() {
+  if (!CANONICAL_CATALOG_ADMIN_API_BASE)
+    throw new Error("catalog_admin_gateway_not_configured");
+  return CANONICAL_CATALOG_ADMIN_API_BASE.replace(/\/+$/, "");
 }
 
 async function request(path: string, init?: RequestInit) {
   await requireTonecosAdminAccess();
   const session = await getCurrentAuthSession();
   if (!session?.access_token) throw new Error("admin_session_missing");
-  const url = base() + path;
+  const url = adminBase() + path;
   const response = await fetch(url, {
     ...init,
     cache: "no-store",
@@ -127,9 +136,12 @@ export async function searchTelegramStudioIndex(
   if (studio) query.set("studio", studio);
   if (q) query.set("q", q);
   if (onlyProvisional) query.set("provisional", "1");
-  const response = await fetch(base() + "/api/telegram-studios?" + query, {
-    cache: "no-store",
-  });
+  const response = await fetch(
+    publicBase() + "/api/telegram-studios?" + query,
+    {
+      cache: "no-store",
+    },
+  );
   if (!response.ok) throw new Error("catalog_search_unavailable");
   return (await response.json()) as TelegramStudioIndexPage;
 }
@@ -139,7 +151,7 @@ export function telegramStudioCoverUrl(path: string | null) {
     /^\/api\/telegram-studios\/tg_[a-f0-9]{24}\/media\/[a-f0-9]{64}\/thumb$/.test(
       path,
     )
-    ? base() + path
+    ? publicBase() + path
     : undefined;
 }
 
