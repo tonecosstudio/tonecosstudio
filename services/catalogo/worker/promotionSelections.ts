@@ -68,7 +68,7 @@ async function jsonRead<T>(read:ReadPublic,path:string):Promise<T>{
 function storagePath(key:string){return '/'+key.split('/').map(encodeURIComponent).join('/')}
 async function resolveImage(data:{path?:unknown;modelSlug?:unknown},read:ReadPublic){
   const {path,modelSlug}=data
-  if(typeof path!=='string'||path.length>1400||!path.startsWith('/')||/[?#\\\x00-\x1f]/.test(path))fail('invalid_source',400)
+  if(typeof path!=='string'||path.length>1400||!path.startsWith('/')||/[?#\\]|\p{Cc}/u.test(path))fail('invalid_source',400)
   const tg=MEDIA.exec(path)
   let model:PublicModel,mediaPath:string
   if(tg){

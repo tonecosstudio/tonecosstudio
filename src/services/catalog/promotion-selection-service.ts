@@ -2,7 +2,7 @@
 import { CANONICAL_CATALOG_ADMIN_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { getCurrentAuthSession } from "@/services/auth/auth-session-service";
 import { requireTonecosAdminAccess } from "@/services/auth/tonecos-admin-access";
-import type { PromotionSource } from "@/components/catalog/PromotionSelectionContext";
+import type { PromotionSource } from "@/types/promotion-selection";
 
 export type PromotionItem = {
   sha256: string; modelId: string; modelSlug: string | null;
