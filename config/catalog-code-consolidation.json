@@ -231,8 +231,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "043defdbf9475405f495ecfac2758d04318ee673",
-        "reason": "Reviewed TONART-local overlay routes Telegram public/private endpoints through the existing Worker, forwards the Cloudflare execution context for bounded anonymous metadata caching and preserves public query budgets before D1 checks. No alternative Worker, storage or production cutover.; staged bounded public taxonomy reads and validated character/attribute filters retain parameterized SQL and published-model boundary"
+        "localBlob": "5c58fe80ffcb6699380824bc3ddb1dc81abd9002",
+        "reason": "Reviewed TONART-local overlay routes Telegram public/private endpoints through the existing Worker, forwards the Cloudflare execution context for bounded anonymous metadata caching and preserves public query budgets before D1 checks. No alternative Worker, storage or production cutover.; staged bounded public taxonomy reads and validated character/attribute filters retain parameterized SQL and published-model boundary; Public cross-catalog text search uses one bounded keyset page and retains commercial and Telegram visibility predicates, with protected cover routes."
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
@@ -251,8 +251,8 @@
       },
       "worker/publicQueryBudget.ts": {
         "sourceBlob": "cc2b8d5e4806b9c1f82b8b1e0c518dd56f6f2c74",
-        "localBlob": "39a72df90d857d92da6d16a9c556d4f1715d6dd3",
-        "reason": "Reviewed TONART-local lint correction: replaces the rejected ASCII-control regex literal with an equivalent charCodeAt scan; preserves the upstream source pin, rejection semantics and single Worker ownership. No release.; staged allowlist includes character_id and attribute_id, without raising query limits"
+        "localBlob": "c221ee3540fd2f2c9396ac8ccc09c7098ffca7c5",
+        "reason": "Reviewed TONART-local lint correction: replaces the rejected ASCII-control regex literal with an equivalent charCodeAt scan; preserves the upstream source pin, rejection semantics and single Worker ownership. No release.; staged allowlist includes character_id and attribute_id, without raising query limits; Allow only the explicit global scope value and require text search without expanding the bounded request limits."
       },
       "tools/test_schema_contract.mjs": {
         "sourceBlob": "fc6335a7c3e2458d8a3d81cecdcc24c4d7a3e34a",
@@ -266,8 +266,8 @@
       },
       "tools/test_worker_catalog_scale_sqlite.mjs": {
         "sourceBlob": "b4dca481759d53448f31aaaff879b01546c3c74f",
-        "localBlob": "dc401b6c9758af2111594d704779e02f50936a6c",
-        "reason": "Reviewed TONART-only offline 20k SQLite scale regression fixture now derives unpublished canonical seed prerequisites from the already staged migrations and preserves D1 foreign keys, keyset budgets and source import pins. No Worker or D1 production change."
+        "localBlob": "0f9e5053a464d6d4653a44b6aa63f716aaa66c4e",
+        "reason": "Reviewed TONART-only offline 20k SQLite scale regression fixture now derives unpublished canonical seed prerequisites from the already staged migrations and preserves D1 foreign keys, keyset budgets and source import pins. No Worker or D1 production change.; Offline full-schema regression proves combined sources, hidden drafts, literal wildcard handling and pagination on 20k synthetic models."
       },
       "worker/schemaContract.ts": {
         "sourceBlob": "6e9f77269e844849653b9314517c28df7ef3c976",
