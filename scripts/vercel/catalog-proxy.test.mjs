@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import handler from "../../api/catalogo-proxy.js";
+import { isAllowedStandaloneTelegramRoute } from "../../api/catalogo-proxy.js";
 import { proxyCatalogRequest } from "../../functions/catalogo-api/[[path]].js";
 import { approvedPublicMediaPaths, isRestrictedCatalogMediaPath, validatePublicRenderApprovals } from "../security/catalog-public-media-approval-policy.mjs";
 
@@ -676,4 +677,11 @@ test("the Telegram-only Vercel host rejects commercial browser routes without ch
     headers: { host: "catalogo.tonartstudio.com.br" },
   }, res);
   assert.equal(res.statusCode, 404);
+});
+
+test("standalone public catalog never proxies the promotion administration route", async () => {
+  const path="api/admin/promotions/blackfriday";
+  for(const method of ["GET","POST"]){
+    assert.equal(isAllowedStandaloneTelegramRoute("catalogo.tonartstudio.com.br",path,method),false);
+  }
 });

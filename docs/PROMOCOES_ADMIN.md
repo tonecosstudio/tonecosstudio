@@ -10,3 +10,14 @@ Decisão do proprietário de 26/11/2026: substituir integralmente a proposta de 
 - GPT + OrdaX MCP usa manifesto recém-exportado pelo administrador (não tokens, banco direto nem GitHub como banco). Valida novamente visibilidade, vínculo da imagem à ficha, conteúdo e SHA-256 através do site normal antes de gravar na pasta Blackfriday. Deduplica pelo hash, organiza em categorias planas e recalcula títulos pelo inventário real. A exportação não implica exclusão de arquivos anteriormente copiados.
 - A migração independente `0054_promotion_image_selections.sql` cria exclusivamente a tabela de seleções. Não aplicar a fila editorial 0034–0053 nem executar Wrangler manual. Integrar por Quality Gate e autorização de schema estritamente delimitada, preservando o publicador único; não declarar produção pronta sem testes, schema, Worker e frontend reais.
 
+
+## Sincronizar no computador autorizado
+
+Exportar a lista atual pelo admin quando o computador estiver acessível. O manifesto expira operacionalmente em 30 minutos, portanto exportar novamente se necessário. Usar o script canônico, primeiro em simulação e depois com `--apply`:
+
+```powershell
+python scripts/catalog/sync_promotion_drive.py <manifesto.json> --root "G:\Meu Drive\Blackfriday"
+python scripts/catalog/sync_promotion_drive.py <manifesto.json> --root "G:\Meu Drive\Blackfriday" --apply
+```
+
+O script só lê a origem pública oficial, revalida o vínculo à galeria, a categoria e o nome, confirma SHA-256 antes da cópia, deduplica arquivos já existentes e reconcilia a contagem real. Não extrai JWT nem remove imagens do Drive. Um manifesto antigo, mídia alterada ou conflito interrompe a execução antes da cópia. A eventual sincronização remota do cliente Google Drive deve ser confirmada separadamente.
