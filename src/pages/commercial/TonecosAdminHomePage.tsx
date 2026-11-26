@@ -57,7 +57,11 @@ const coinLabels: Record<TonartAdminCoinEntry["type"], string> = {
 };
 
 const originalAdminSubpages = [
-  {parent:"catalog-hub",path:TONECOS_COMMERCIAL_ROUTES.adminBlackFriday,label:"Black Friday"},
+  {
+    parent: "catalog-hub",
+    path: TONECOS_COMMERCIAL_ROUTES.adminBlackFriday,
+    label: "Black Friday",
+  },
   {
     parent: "catalog-hub",
     path: TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers,
@@ -523,7 +527,8 @@ export default function TonecosAdminHomePage() {
             (selectedSubpage.path ===
             TONECOS_COMMERCIAL_ROUTES.adminCommercialOffers ? (
               <TonartCommercialOffersAdmin />
-            ) : selectedSubpage.path === TONECOS_COMMERCIAL_ROUTES.adminBlackFriday ? (
+            ) : selectedSubpage.path ===
+              TONECOS_COMMERCIAL_ROUTES.adminBlackFriday ? (
               <TonartPromotionSelection />
             ) : (
               <TonartAdminOriginalSection

@@ -142,11 +142,15 @@ export function CatalogMvpShell({
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogUnidentified}
-                    element={renderCatalogMedia(<TelegramCatalog key="unidentified" embedded />)}
+                    element={renderCatalogMedia(
+                      <TelegramCatalog key="unidentified" embedded />,
+                    )}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogUnidentifiedStudios}
-                    element={renderCatalogMedia(<TelegramCatalog key="unidentified" embedded />)}
+                    element={renderCatalogMedia(
+                      <TelegramCatalog key="unidentified" embedded />,
+                    )}
                   />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route

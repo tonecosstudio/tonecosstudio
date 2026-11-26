@@ -119,26 +119,60 @@ describe("catalog image download", () => {
 describe("promotion selection", () => {
   const label = "Adicionar à Black Friday";
   it("does not show the administrator action to a guest", () => {
-    render(<CatalogImageDownload src={src} name="Modelo" id="123" modelSlug="modelo" />);
+    render(
+      <CatalogImageDownload
+        src={src}
+        name="Modelo"
+        id="123"
+        modelSlug="modelo"
+      />,
+    );
     expect(screen.queryByRole("button", { name: label })).toBeNull();
-    expect(screen.getByRole("button", { name: "Baixar imagem de Modelo" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Baixar imagem de Modelo" }),
+    ).toBeEnabled();
   });
-  it.each([src, telegram])("saves only the selected image and awaits the server receipt: %s", async media => {
-    const save=vi.fn().mockResolvedValue(undefined);
-    render(<PromotionSelectionContext.Provider value={{save}}>
-      <CatalogImageDownload src={media} name="Modelo" id="123" modelSlug={media===src?"modelo":undefined}/>
-    </PromotionSelectionContext.Provider>);
-    expect(save).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button",{name:label}));
-    expect(await screen.findByRole("button",{name:"Adicionada à Black Friday"})).toBeDisabled();
-    expect(save).toHaveBeenCalledWith({path:media.slice("/catalogo-api".length),modelSlug:media===src?"modelo":undefined});
-    expect(screen.getByRole("button", { name: "Baixar imagem de Modelo" })).toBeEnabled();
-  });
-  it("never shows a saved state for an unsuccessful request",async()=>{
-    const save=vi.fn().mockRejectedValue(new Error("offline"));
-    render(<PromotionSelectionContext.Provider value={{save}}><CatalogImageDownload src={telegram} name="Modelo" id="123"/></PromotionSelectionContext.Provider>);
-    fireEvent.click(screen.getByRole("button",{name:label}));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível confirmar");
-    expect(screen.getByRole("button",{name:label})).toBeEnabled();
+  it.each([src, telegram])(
+    "saves only the selected image and awaits the server receipt: %s",
+    async (media) => {
+      const save = vi.fn().mockResolvedValue(undefined);
+      render(
+        <PromotionSelectionContext.Provider value={{ save }}>
+          <CatalogImageDownload
+            src={media}
+            name="Modelo"
+            id="123"
+            modelSlug={media === src ? "modelo" : undefined}
+          />
+        </PromotionSelectionContext.Provider>,
+      );
+      expect(save).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      expect(
+        await screen.findByRole("button", {
+          name: "Adicionada à Black Friday",
+        }),
+      ).toBeDisabled();
+      expect(save).toHaveBeenCalledWith({
+        path: media.slice("/catalogo-api".length),
+        modelSlug: media === src ? "modelo" : undefined,
+      });
+      expect(
+        screen.getByRole("button", { name: "Baixar imagem de Modelo" }),
+      ).toBeEnabled();
+    },
+  );
+  it("never shows a saved state for an unsuccessful request", async () => {
+    const save = vi.fn().mockRejectedValue(new Error("offline"));
+    render(
+      <PromotionSelectionContext.Provider value={{ save }}>
+        <CatalogImageDownload src={telegram} name="Modelo" id="123" />
+      </PromotionSelectionContext.Provider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: label }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível confirmar",
+    );
+    expect(screen.getByRole("button", { name: label })).toBeEnabled();
   });
 });
