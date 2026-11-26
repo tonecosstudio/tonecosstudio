@@ -294,6 +294,36 @@ jobs:
       # gate; a stale backend pin must not suppress frontend test evidence.
       - name: Lint before merging catalog changes
         run: npm run lint
+      - name: Check formatting of changed source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' changed_files < <(git diff --name-only -z --diff-filter=ACMR HEAD^1 HEAD)
+          prettier_files=()
+
+          for file in "${changed_files[@]}"; do
+            if [[ "$file" == src/*.ts || "$file" == src/*.tsx || "$file" == src/*.json || "$file" == src/*.md ]]; then
+              prettier_files+=("$file")
+            elif [[ "$file" != */* && ( "$file" == *.json || "$file" == *.md ) ]]; then
+              prettier_files+=("$file")
+            fi
+          done
+
+          if (( ${#prettier_files[@]} == 0 )); then
+            echo "No changed files in the repository's Prettier scope."
+            exit 0
+          fi
+
+          printf 'Checking formatting for:\n - %s\n' "${prettier_files[@]}"
+          if ! npx prettier --check "${prettier_files[@]}"; then
+            echo "::group::Suggested formatting changes (first 1000 lines)"
+            npx prettier --write "${prettier_files[@]}" > /dev/null
+            git --no-pager diff -- "${prettier_files[@]}" | sed -n '1,1000p'
+            echo "::endgroup::"
+            echo "::error::Format the listed files with npx prettier --write before merging."
+            exit 1
+          fi
+
       - name: Test public MVP, commercial rules and SpecialSTL offline curation
         run: |
           npm run catalog:mvp:test

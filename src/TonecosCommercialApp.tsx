@@ -17,7 +17,10 @@ import {
   secondaryClass,
 } from "@/pages/commercial/CommercialPage";
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
-import { LOCAL_SUPABASE_FALLBACK, PREVIEW_READ_ONLY } from "@/config/supabase-environment";
+import {
+  LOCAL_SUPABASE_FALLBACK,
+  PREVIEW_READ_ONLY,
+} from "@/config/supabase-environment";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
 import { PromotionSelectionProvider } from "@/components/catalog/PromotionSelectionProvider";
 
@@ -262,7 +265,9 @@ export default function TonecosCommercialApp() {
     <CatalogMvpShell
       navigation={<TonecosCommercialNav />}
       extraRoutes={commercialRoutes}
-      renderCatalogMedia={(page) => <PromotionSelectionProvider>{page}</PromotionSelectionProvider>}
+      renderCatalogMedia={(page) => (
+        <PromotionSelectionProvider>{page}</PromotionSelectionProvider>
+      )}
     />
   );
 }
