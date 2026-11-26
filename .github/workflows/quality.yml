@@ -292,6 +292,8 @@ jobs:
 
       # Validate the read-only MVP before the independent backend ownership
       # gate; a stale backend pin must not suppress frontend test evidence.
+      - name: Lint before merging catalog changes
+        run: npm run lint
       - name: Test public MVP, commercial rules and SpecialSTL offline curation
         run: |
           npm run catalog:mvp:test

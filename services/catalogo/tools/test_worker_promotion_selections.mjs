@@ -53,7 +53,7 @@ test('selection is durable and idempotent, rights and current identity remain li
 })
 test('arbitrary and private media references fail closed',async()=>{
  const t=setup();try{
-  for(const p of ['https://example.org/test.webp','/api/admin/telegram-drafts/'+id+'/media/'+'b'.repeat(64)+'/display',path+'?x=1']){
+  for(const p of ['https://example.org/test.webp','/api/admin/telegram-drafts/'+id+'/media/'+'b'.repeat(64)+'/display',path+'?x=1',path+'\u0000',path+'\u007f']){
    assert.equal((await routePromotion(req({action:'add',path:p}),t.env,t.read)).status,400)
   }
   assert.equal(t.db.prepare('SELECT COUNT(*) n FROM promotion_image_selections').get().n,0)
