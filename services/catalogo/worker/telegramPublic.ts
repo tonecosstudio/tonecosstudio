@@ -39,6 +39,14 @@ export const TELEGRAM_PUBLIC_COVER_SHA_SQL = "(SELECT s.source_sha256 FROM model
   " substr(s.source_sha256,1,2) || '/' || s.source_sha256 || '/display.webp')" +
   " THEN 0 ELSE 1 END, s.position LIMIT 1)"
 const VISIBLE = TELEGRAM_PUBLIC_VISIBLE_SQL
+// Identification is independent from editorial confirmation (provisional=1
+// includes real, probable names). Only the canonical placeholder title is
+// classified as unidentified; keep the visibility/rights gate unchanged.
+const UNIDENTIFIED = "(TRIM(COALESCE(m.name,''))='' OR LOWER(TRIM(m.name)) LIKE 'modelo sem nome%' OR LOWER(TRIM(m.name)) LIKE 'modelo tg-%' OR LOWER(TRIM(m.name)) IN ('sem nome','a identificar','unknown','unnamed','untitled'))"
+function identityCondition(identity: string | null) {
+  return identity === 'unidentified' ? UNIDENTIFIED :
+    identity === 'identified' ? 'NOT ' + UNIDENTIFIED : ''
+}
 const LIST_CACHE_CONTROL = 'public, max-age=0, s-maxage=60'
 const STUDIO_DIRECTORY_CACHE_CONTROL = 'public, max-age=0, s-maxage=300'
 const metadataCache = (request: Request, cacheControl = LIST_CACHE_CONTROL) =>
@@ -123,11 +131,14 @@ export async function routeTelegramStudioShowcase(
   if (request.method !== 'GET') return json({ error: 'method_not_allowed' }, 405)
   if (!env.DB || !env.PRIVATE_TELEGRAM) return json({ error: 'catalog_studios_unavailable' }, 503)
   try {
+    const identity = url.searchParams.get('identity')
+    const validIdentity = identity === null || identity === 'identified' || identity === 'unidentified'
     if (url.pathname === ROOT + '/studios') {
-      if (url.search) return json({ error: 'invalid_query' }, 400)
+      if (!validIdentity || [...url.searchParams.keys()].some(k => k !== 'identity' || url.searchParams.getAll(k).length !== 1))
+        return json({ error: 'invalid_query' }, 400)
       return await serveCachedMetadata(request, async () => {
         const rows = (await env.DB.prepare("SELECT m.telegram_studio AS studio, COUNT(*) AS total FROM models m WHERE " +
-          VISIBLE + " GROUP BY m.telegram_studio ORDER BY m.telegram_studio COLLATE NOCASE")
+          VISIBLE + (identityCondition(identity) ? ' AND ' + identityCondition(identity) : '') + " GROUP BY m.telegram_studio ORDER BY m.telegram_studio COLLATE NOCASE")
           .all<{ studio: string; total: number }>()).results
         return json({ studios: rows }, 200, metadataCache(request, STUDIO_DIRECTORY_CACHE_CONTROL))
       }, background)
@@ -142,8 +153,8 @@ export async function routeTelegramStudioShowcase(
       const attributeId = url.searchParams.get('attribute_id') ?? ''
       const rawOffset = url.searchParams.get('offset') ?? '0'
       const rawLimit = url.searchParams.get('limit') ?? '24'
-      const allowed = new Set(['studio', 'q', 'category', 'franchise', 'character_id', 'attribute_id', 'provisional', 'offset', 'limit'])
-      if ([...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
+      const allowed = new Set(['studio', 'q', 'category', 'franchise', 'character_id', 'attribute_id', 'provisional', 'identity', 'offset', 'limit'])
+      if (!validIdentity || [...url.searchParams.keys()].some(k => !allowed.has(k) || url.searchParams.getAll(k).length !== 1) ||
           studio.length > 120 || /\p{Cc}/u.test(studio) ||
           category.length > 80 || (category !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(category)) ||
           franchise.length > 80 || (franchise !== '' && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(franchise)) ||
@@ -158,6 +169,8 @@ export async function routeTelegramStudioShowcase(
         return json({ error: 'invalid_query' }, 400)
       return await serveCachedMetadata(request, async () => {
       const where = [VISIBLE]
+      const identityFilter = identityCondition(identity)
+      if (identityFilter) where.push(identityFilter)
       const values: unknown[] = []
       if (studio) { where.push('m.telegram_studio=?'); values.push(studio) }
       if (category) { where.push('m.franchise_id IN (SELECT f.id FROM franchises f JOIN categories c ON c.id=f.category_id WHERE c.slug=?)'); values.push(category) }

@@ -65,7 +65,12 @@ describe("TONART shared public/mobile navigation", () => {
     const mobileMenu = document.getElementById("tonart-mobile-navigation");
     expect(mobileMenu).not.toBeNull();
     const links = [...(mobileMenu?.querySelectorAll("a") ?? [])];
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
+    expect(
+      links.some(
+        (link) => link.getAttribute("href") === "/catalogo/a-identificar",
+      ),
+    ).toBe(true);
     for (const link of links) {
       expect(link.classList.contains("flex")).toBe(true);
       expect(link.classList.contains("inline-flex")).toBe(false);

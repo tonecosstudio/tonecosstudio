@@ -8,6 +8,8 @@ export const PUBLIC_ROUTES = {
   catalogHistorical: "/catalogo/antigos",
   catalogReview: "/catalogo/em-revisao",
   catalogReviewStudios: "/catalogo/em-revisao/estudios",
+  catalogUnidentified: "/catalogo/a-identificar",
+  catalogUnidentifiedStudios: "/catalogo/a-identificar/estudios",
   catalogModels: "/modelos",
   catalogUniverseTheme: "/universo/:themeKey",
   catalogUniverseFranchise: "/universo/:themeKey/:franchiseKey",

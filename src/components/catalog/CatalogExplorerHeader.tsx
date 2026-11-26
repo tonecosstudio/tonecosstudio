@@ -32,6 +32,7 @@ export type CatalogExplorerHeaderProps = {
   collectionHref: string;
   activeTab?: "explore" | "collections";
   standalone?: boolean;
+  unidentified?: boolean;
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -53,6 +54,7 @@ export function CatalogExplorerHeader({
   collectionHref,
   activeTab = "explore",
   standalone = false,
+  unidentified = false,
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -68,10 +70,14 @@ export function CatalogExplorerHeader({
 
   const review = kind === "review";
   const title = review
-    ? PUBLIC_CATALOG_LABELS.review
+    ? unidentified
+      ? "Modelos a identificar"
+      : PUBLIC_CATALOG_LABELS.review
     : PUBLIC_CATALOG_LABELS.historical;
   const intro = review
-    ? "Estamos ampliando e organizando nosso catálogo. Alguns modelos podem apresentar nomes ou classificações provisórias."
+    ? unidentified
+      ? "Referências ainda sem nome. Ao serem identificadas, passam para o catálogo em organização."
+      : "Estamos ampliando e organizando nosso catálogo. Alguns modelos podem apresentar nomes ou classificações provisórias."
     : "Explore nossos modelos, seus universos e suas galerias.";
   const tabs = [
     {
@@ -80,7 +86,9 @@ export function CatalogExplorerHeader({
         review && standalone
           ? "/"
           : review
-            ? PUBLIC_ROUTES.catalogReview
+            ? unidentified
+              ? PUBLIC_ROUTES.catalogUnidentified
+              : PUBLIC_ROUTES.catalogReview
             : PUBLIC_ROUTES.catalogHistorical,
       active: activeTab === "explore",
     },
@@ -89,6 +97,19 @@ export function CatalogExplorerHeader({
       href: collectionHref,
       active: activeTab === "collections",
     },
+    ...(!standalone && review
+      ? [
+          {
+            label: unidentified
+              ? PUBLIC_CATALOG_LABELS.review
+              : "A identificar",
+            href: unidentified
+              ? PUBLIC_ROUTES.catalogReview
+              : PUBLIC_ROUTES.catalogUnidentified,
+            active: false,
+          },
+        ]
+      : []),
     ...(!standalone
       ? [
           {
@@ -240,7 +261,9 @@ export function CatalogExplorerHeader({
               aria-hidden="true"
               className="h-1.5 w-1.5 shrink-0 rounded-full bg-[hsl(var(--gold-accent)/0.7)]"
             />
-            Acervo em atualização
+            {unidentified
+              ? "Em curadoria · aguardando nome"
+              : "Acervo em atualização"}
           </p>
         ) : null}
         {totalLabel ? (

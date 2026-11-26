@@ -135,42 +135,44 @@ function isBoundedPublicQuery(route, searchParams) {
           "franchise",
           "character",
           "provisional",
+          "identity",
           "offset",
           "limit",
         ]
-      : route === "api/telegram-studios/studios" ||
-          /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(
-            route,
-          )
-        ? []
-        : route === "api/catalog"
-          ? [
-              "category",
-              "franchise",
-              "folder",
-              "q",
-              "material",
-              "collection",
-              "minHeight",
-              "maxHeight",
-              "limit",
-              "cursor",
-              "scope",
-            ]
-          : route === "api/franchises"
-            ? ["category", "q", "limit"]
-            : route === "api/folders"
-              ? ["category", "franchise", "parent"]
-              : route === "api/recent"
-                ? ["limit"]
-                : route === "api/categories" ||
-                    /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
-                  ? []
-                  : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(
-                        route,
-                      )
-                    ? ["limit", "cursor", "v"]
-                    : null;
+      : route === "api/telegram-studios/studios"
+        ? ["identity"]
+        : /^api\/telegram-studios\/tg_[a-f0-9]{24}(?:\/media\/[a-f0-9]{64}\/(?:thumb|display))?$/.test(
+              route,
+            )
+          ? []
+          : route === "api/catalog"
+            ? [
+                "category",
+                "franchise",
+                "folder",
+                "q",
+                "material",
+                "collection",
+                "minHeight",
+                "maxHeight",
+                "limit",
+                "cursor",
+                "scope",
+              ]
+            : route === "api/franchises"
+              ? ["category", "q", "limit"]
+              : route === "api/folders"
+                ? ["category", "franchise", "parent"]
+                : route === "api/recent"
+                  ? ["limit"]
+                  : route === "api/categories" ||
+                      /^api\/models\/[a-z0-9][a-z0-9-]{0,239}$/.test(route)
+                    ? []
+                    : /^api\/models\/[a-z0-9][a-z0-9-]{0,239}\/images$/.test(
+                          route,
+                        )
+                      ? ["limit", "cursor", "v"]
+                      : null;
   if (!routeKeys) return false;
   const allowed = new Set(routeKeys);
   const seen = new Set();
@@ -198,6 +200,14 @@ function isBoundedPublicQuery(route, searchParams) {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
     } else if (key === "scope") {
       if (route !== "api/catalog" || value !== "all" || !searchParams.has("q"))
+        return false;
+    } else if (key === "identity") {
+      if (
+        !["api/telegram-studios", "api/telegram-studios/studios"].includes(
+          route,
+        ) ||
+        (value !== "identified" && value !== "unidentified")
+      )
         return false;
     } else if (key === "provisional") {
       if (route !== "api/telegram-studios" || !/^[01]$/.test(value))

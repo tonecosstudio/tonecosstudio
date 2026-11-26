@@ -58,6 +58,33 @@ test("Telegram provisional filter passes only bounded values through the same ca
   }
 });
 
+test("Telegram identity partition is forwarded only on the public list and directory", async () => {
+  for (const route of [
+    "api/telegram-studios?identity=identified&limit=24",
+    "api/telegram-studios?identity=unidentified",
+    "api/telegram-studios/studios?identity=identified",
+    "api/telegram-studios/studios?identity=unidentified",
+    "api/catalog?q=Thanos&scope=all",
+  ]) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(new Request(SITE + "/catalogo-api/" + route), io.fetcher);
+    assert.equal(response.status, 200, route);
+    assert.equal(io.calls[0].url, WORKER + "/" + route);
+  }
+  for (const route of [
+    "api/telegram-studios?identity=all",
+    "api/telegram-studios?identity=identified&identity=unidentified",
+    "api/telegram-studios/studios?identity=unknown",
+    "api/catalog?q=Thanos&identity=unidentified",
+    "api/telegram-studios/tg_abcdef0123456789abcdef01?identity=identified",
+  ]) {
+    const io = mockFetch();
+    const response = await proxyCatalogRequest(new Request(SITE + "/catalogo-api/" + route), io.fetcher);
+    assert.equal(response.status, 400, route);
+    assert.equal(io.calls.length, 0, route);
+  }
+});
+
 test("Telegram category is forwarded only as a bounded public-list filter", async () => {
   for (const suffix of [
     "?category=anime&limit=1&offset=0",

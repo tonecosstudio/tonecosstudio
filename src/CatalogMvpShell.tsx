@@ -91,6 +91,8 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.catalogHistorical} element={<Models />} />
                   <Route path={PUBLIC_ROUTES.catalogReview} element={<TelegramCatalog embedded />} />
                   <Route path={PUBLIC_ROUTES.catalogReviewStudios} element={<TelegramCatalog embedded />} />
+                  <Route path={PUBLIC_ROUTES.catalogUnidentified} element={<TelegramCatalog key="unidentified" embedded />} />
+                  <Route path={PUBLIC_ROUTES.catalogUnidentifiedStudios} element={<TelegramCatalog key="unidentified" embedded />} />
                   <Route path={PUBLIC_ROUTES.catalog} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseTheme} element={<Universe />} />
                   <Route path={PUBLIC_ROUTES.catalogUniverseFranchise} element={<Universe />} />
