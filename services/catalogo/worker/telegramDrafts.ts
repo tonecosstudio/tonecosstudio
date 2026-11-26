@@ -81,7 +81,7 @@ function result(request: Request, env: TelegramDraftEnv, body: unknown, status =
     status, headers: { ...headers(request, env), 'content-type': 'application/json; charset=utf-8' },
   })
 }
-async function verifyAdmin(request: Request, env: TelegramDraftEnv): Promise<boolean | null> {
+export async function verifyAdmin(request: Request, env: Pick<TelegramDraftEnv, 'ADMIN_SUPABASE_URL' | 'ADMIN_SUPABASE_ANON_KEY'>): Promise<boolean | null> {
   // Missing config is a service failure, never an authorization bypass.
   const base = env.ADMIN_SUPABASE_URL
   const apikey = env.ADMIN_SUPABASE_ANON_KEY

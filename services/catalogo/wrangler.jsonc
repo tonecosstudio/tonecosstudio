@@ -9,6 +9,7 @@
     "enabled": true
   },
   "vars": {
+    "BLACKFRIDAY_DRIVE_FOLDER_ID": "1NWuAN5rzvAsvoy50MpsIjrZowFXYBzmQ",
     "CORS_ORIGINS": "https://washingtonmsdj.github.io,https://acheguese.com.br,https://www.acheguese.com.br,https://acheguese.vercel.app,https://tonartstudio.com.br,https://www.tonartstudio.com.br"
   },
   "secrets": {

@@ -19,6 +19,7 @@ import {
 import { assertTonecosCommercialEnabled } from "@/config/tonecos-commercial-authority";
 import { LOCAL_SUPABASE_FALLBACK, PREVIEW_READ_ONLY } from "@/config/supabase-environment";
 import TonecosCommercialNav from "@/pages/commercial/TonecosCommercialNav";
+import { TonartBlackFridayDriveProvider } from "@/components/catalog/TonartBlackFridayDriveProvider";
 
 const Account = lazy(() => import("@/pages/commercial/TonecosAccountPage"));
 const Recovery = lazy(
@@ -258,9 +259,11 @@ export default function TonecosCommercialApp() {
   }
   assertTonecosCommercialEnabled();
   return (
-    <CatalogMvpShell
-      navigation={<TonecosCommercialNav />}
-      extraRoutes={commercialRoutes}
-    />
+    <TonartBlackFridayDriveProvider>
+      <CatalogMvpShell
+        navigation={<TonecosCommercialNav />}
+        extraRoutes={commercialRoutes}
+      />
+    </TonartBlackFridayDriveProvider>
   );
 }

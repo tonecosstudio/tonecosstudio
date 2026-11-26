@@ -710,6 +710,7 @@ export default function CanonicalModelDetails() {
                     src={activeImageUrl}
                     name={model.name}
                     id={model.id + "-" + (activeImage?.id ?? "capa")}
+                    modelSlug={model.slug}
                     className="mb-3"
                   />
                   <ArcadeCard className="flex min-h-[clamp(18rem,58svh,30rem)] items-center justify-center sm:min-h-[22.5rem] md:min-h-[35rem]">

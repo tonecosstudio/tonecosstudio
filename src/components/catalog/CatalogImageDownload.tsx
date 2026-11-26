@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Download } from "lucide-react";
+import { useContext, useState } from "react";
+import { Download, FolderPlus } from "lucide-react";
+import { CatalogImageDriveContext, type CatalogImageDriveAccess } from "./CatalogImageDriveContext";
 
 /** Temporary public UI switch. Never changes API/media authorization. */
 export function catalogImageDownloadEnabled(): boolean {
@@ -60,19 +61,49 @@ export function catalogDownloadUrl(
   }
 }
 
+function SaveToDrive({ access, path, modelSlug }: {access: CatalogImageDriveAccess; path: string; modelSlug?: string}) {
+  const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [message, setMessage] = useState("");
+  async function save() {
+    if (!access.configured || state === "saving") return;
+    setState("saving");
+    try {
+      const result = await access.save({path,modelSlug});
+      setMessage((result.duplicate ? "Já existe em " : "Salva em ") + result.folderName);
+      setState("saved");
+    } catch {
+      setState("error");
+      setMessage("Não foi possível confirmar o envio ao Drive. Tente novamente.");
+    }
+  }
+  return <div className="mt-2">
+    <button type="button" aria-label="Salvar imagem na Black Friday do Google Drive"
+      disabled={!access.configured || state === "saving" || state === "saved"}
+      onClick={() => void save()}
+      className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-[hsl(var(--gold-accent)/0.4)] px-2 py-1.5 text-xs font-medium text-[hsl(var(--gold-accent))] disabled:opacity-50">
+      <FolderPlus size={16} aria-hidden="true"/>
+      {!access.configured ? "Drive não conectado" : state === "saving" ? "Salvando…" : state === "saved" ? "Salva no Drive" : "Salvar no Drive"}
+    </button>
+    {message && <p role={state === "error" ? "alert" : "status"} className="mt-1 text-xs">{message}</p>}
+  </div>;
+}
+
 export function CatalogImageDownload({
   src,
   name,
   id,
   className = "",
+  modelSlug,
 }: {
   src: string | null | undefined;
   name: string;
   id: string;
   className?: string;
+  modelSlug?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const access = useContext(CatalogImageDriveContext);
   const url = catalogDownloadUrl(src);
   if (!catalogImageDownloadEnabled() || !url) return null;
 
@@ -130,6 +161,10 @@ export function CatalogImageDownload({
         <Download size={16} aria-hidden="true" />
         {busy ? "Baixando…" : "Baixar imagem"}
       </button>
+      {access && (modelSlug || new URL(url).pathname.startsWith("/catalogo-api/api/telegram-studios/")) && (
+        <SaveToDrive key={url + (modelSlug ?? "")} access={access} modelSlug={modelSlug}
+          path={new URL(url).pathname.slice("/catalogo-api".length)}/>
+      )}
       {error && (
         <p role="alert" className="mt-1 text-xs text-red-300">
           Não foi possível baixar. Tente novamente.
