@@ -83,3 +83,50 @@ test('bundled edge entrypoint returns 206 only on explicit Range and blocks medi
   assert.equal(blocked.status, 405)
   assert.equal(reads.length, 1)
 })
+
+test('discovery cache serves only validated anonymous metadata without D1', async () => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'caches')
+  const hits = []
+  let reads = 0
+  let writes = 0
+  Object.defineProperty(globalThis, 'caches', { configurable: true, value: { default: {
+    async match(key) {
+      hits.push(key.url)
+      return Response.json({ items: [] }, { headers: { 'cache-control': 'public, max-age=300, s-maxage=1800' } })
+    },
+    async put() { writes++ },
+  } } })
+  const env = {
+    DB: { prepare() { reads++; throw new Error('D1 unavailable') } },
+    MEDIA: {},
+    CORS_ORIGINS: 'https://tonartstudio.com.br',
+  }
+  const origin = 'https://catalog.example.test'
+  try {
+    for (const route of ['/api/categories', '/api/franchises?category=anime', '/api/folders?franchise=marvel&category=anime']) {
+      const response = await worker.fetch(new Request(origin + route), env)
+      assert.equal(response.status, 200, route)
+      assert.deepEqual(await response.json(), { items: [] })
+    }
+    assert.deepEqual(hits, [
+      origin + '/api/categories',
+      origin + '/api/franchises?category=anime&limit=24',
+      origin + '/api/folders?category=anime&franchise=marvel',
+    ])
+    assert.equal(reads, 0)
+    assert.equal(writes, 0)
+    const invalid = await worker.fetch(new Request(origin + '/api/categories?extra=1'), env)
+    assert.equal(invalid.status, 400)
+    assert.equal(hits.length, 3)
+    for (const headers of [{ authorization: 'Bearer test' }, { cookie: 'session=test' }, { origin: 'https://tonartstudio.com.br' }]) {
+      const response = await worker.fetch(new Request(origin + '/api/categories', { headers }), env)
+      assert.equal(response.status, 503)
+    }
+    assert.ok(reads > 0)
+    assert.equal(hits.length, 3)
+    assert.equal(writes, 0)
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'caches', original)
+    else delete globalThis.caches
+  }
+})
