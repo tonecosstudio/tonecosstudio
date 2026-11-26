@@ -498,18 +498,20 @@ test('Telegram studio/name duplicate check uses the existing D1 title index with
   assert.ok(sql,'import must check same-studio, same-title, same-variant identity')
   assert.match(sql,/published IN \(0,1\)/,'both private and public models are checked')
 
-  // The canonical SQLite index below is already deployed in D1.
+  // Use the actual canonical migration, not a synthetic test-only index.
   // EXPLAIN prevents a regression to one full models scan per imported group.
   const db=new DatabaseSync(':memory:')
   try{
     db.exec(`
       CREATE TABLE models (
-        id TEXT PRIMARY KEY,published INTEGER NOT NULL DEFAULT 0,
-        telegram_studio TEXT NOT NULL,name TEXT NOT NULL,variant_name TEXT
+        id TEXT PRIMARY KEY,franchise_id INTEGER NOT NULL DEFAULT 1,
+        published INTEGER NOT NULL DEFAULT 0,telegram_studio TEXT NOT NULL,
+        name TEXT NOT NULL,variant_name TEXT
       );
-      CREATE INDEX idx_models_published_name_id
-        ON models(published,name COLLATE NOCASE,id);
-      INSERT INTO models VALUES
+    `)
+    db.exec(readFileSync(join(dir,'../migrations/0002_keyset_pagination.sql'),'utf8'))
+    db.exec(`
+      INSERT INTO models(id,published,telegram_studio,name,variant_name) VALUES
         ('private-a',0,'Abe3D','Bowsette',''),
         ('public-b',1,'AnotherStudio','Bowsette',''),
         ('variant-c',0,'Abe3D','Bowsette','gold');
