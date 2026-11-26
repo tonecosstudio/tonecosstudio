@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
+import { DatabaseSync } from 'node:sqlite'
 import esbuild from 'esbuild'
 
 const dir = dirname(fileURLToPath(import.meta.url))
@@ -482,6 +483,50 @@ test('same studio, exact name and variant stays under manual duplicate review',a
   assert.equal(held.data.error,'possible_same_studio_sculpture')
   assert.equal(x.getBatches(),0)
   assert.equal(x.heads.length,0)
+})
+
+test('Telegram studio/name duplicate check uses the existing D1 title index without losing review protection',async()=>{
+  const x=draftImportFixture()
+  const queries=[]
+  const prepare=x.env.DB.prepare.bind(x.env.DB)
+  x.env.DB.prepare=sql=>{
+    queries.push(sql)
+    return prepare(sql)
+  }
+  assert.equal((await x.run(x.input)).status,201)
+  const sql=queries.find(s=>s.includes('COALESCE(variant_name') && s.includes('telegram_studio=?'))
+  assert.ok(sql,'import must check same-studio, same-title, same-variant identity')
+  assert.match(sql,/published IN \\(0,1\\)/,'both private and public models are checked')
+
+  // These are the two canonical SQLite indexes already deployed in D1.
+  // EXPLAIN prevents a regression to one full models scan per imported group.
+  const db=new DatabaseSync(':memory:')
+  try{
+    db.exec(`
+      CREATE TABLE models (
+        id TEXT PRIMARY KEY,published INTEGER NOT NULL DEFAULT 0,
+        telegram_studio TEXT NOT NULL,name TEXT NOT NULL,variant_name TEXT
+      );
+      CREATE INDEX idx_models_published_name_id
+        ON models(published,name COLLATE NOCASE,id);
+      INSERT INTO models VALUES
+        ('private-a',0,'Abe3D','Bowsette',''),
+        ('public-b',1,'AnotherStudio','Bowsette',''),
+        ('variant-c',0,'Abe3D','Bowsette','gold');
+    `)
+    const plan=db.prepare('EXPLAIN QUERY PLAN '+sql)
+      .all('Abe3D','Bowsette','','not-this-model')
+    assert.ok(plan.some(x=>String(x.detail).includes('USING INDEX idx_models_published_name_id')),
+      JSON.stringify(plan))
+    const lookup=db.prepare(sql)
+    assert.equal(lookup.get('Abe3D','BOWSETTE','','new-id')?.id,'private-a')
+    assert.equal(lookup.get('AnotherStudio','bowsette','','new-id')?.id,'public-b')
+    assert.equal(lookup.get('Abe3D','Bowsette','gold','new-id')?.id,'variant-c')
+    assert.equal(lookup.get('Abe3D','Bowsette','','private-a'),undefined,
+      'same model is not a false collision')
+    assert.equal(lookup.get('DifferentStudio','Bowsette','','new-id'),undefined,
+      'other studio does not block legitimate sculptors')
+  }finally{db.close()}
 })
 
 test('Curadoria single message identity has stable D1 key and replay cannot duplicate a draft',async()=>{
