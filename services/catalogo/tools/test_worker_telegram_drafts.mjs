@@ -189,14 +189,21 @@ test('Cloudflare service identity is limited to the exact private import POST', 
     assert.equal(log.queries.length, 0)
     assert.equal(log.privateReads.length, 0)
 
+    // Access credentials must not bypass the existing human-only Supabase route.
     response = await routeTelegramDrafts(
-      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false),
+      env, { access },
+    )
+    assert.equal(response.status, 403)
+
+    response = await routeTelegramDrafts(
+      request('/api/admin/telegram-drafts/import/service', 'POST', { originId: '2370335738' }, false), env,
       { access: { ...access, aud: 'wrong-audience' } },
     )
     assert.equal(response.status, 403)
 
     response = await routeTelegramDrafts(
-      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      request('/api/admin/telegram-drafts/import/service', 'POST', { originId: '2370335738' }, false), env,
       { access: { ...access, async getIdentity() {
         return { service_token_status: false, service_token_id: 'tonart-importer.access' }
       } } },
@@ -204,7 +211,7 @@ test('Cloudflare service identity is limited to the exact private import POST', 
     assert.equal(response.status, 403, 'a non-service or invalid Access token cannot import')
 
     response = await routeTelegramDrafts(
-      request('/api/admin/telegram-drafts/import', 'POST', { originId: '2370335738' }, false), env,
+      request('/api/admin/telegram-drafts/import/service', 'POST', { originId: '2370335738' }, false), env,
       { access: { ...access, async getIdentity() {
         return { service_token_status: true, service_token_id: 'other-token.access' }
       } } },
@@ -217,7 +224,7 @@ test('Cloudflare service identity is limited to the exact private import POST', 
       images: [{ messageId: 17278, sha256: 'b'.repeat(64) }],
     }
     response = await routeTelegramDrafts(
-      request('/api/admin/telegram-drafts/import', 'POST', validImport, false), env,
+      request('/api/admin/telegram-drafts/import/service', 'POST', validImport, false), env,
       { access },
     )
     assert.equal(response.status, 503)

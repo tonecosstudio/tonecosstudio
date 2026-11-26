@@ -236,8 +236,8 @@
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
-        "localBlob": "8a4d6330bd06cf8795270d109ead2ba6c350691e",
-        "reason": "Stage the existing private TONART R2 bucket binding and admin Supabase secrets without deploying or creating Cloudflare resources; source pin remains immutable"
+        "localBlob": "526533f0e4b09078518860b041bdacfea7ecd602",
+        "reason": "Canonical binding for private Telegram R2 and Supabase admin secrets, plus scoped nonsecret Cloudflare Access audience/service identity for the existing batch import Worker; preserve imported source pin and fail-closed authorization."
       },
       "config/catalog-schema-contract.json": {
         "sourceBlob": "084ca978a3d2352221a4c9cd606c6376697a8c9d",
