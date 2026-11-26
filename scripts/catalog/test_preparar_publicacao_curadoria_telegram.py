@@ -18,6 +18,16 @@ spec.loader.exec_module(m)
 
 
 def run():
+    # Match whole credited studio components, including real one-sided separators.
+    for topic in ("Uel Winner _ ilustrartuel", "Uel Winner_ ilustrartuel",
+                  "Uel Winner _ilustrartuel"):
+        assert m.studio_member_of_topic("Uel Winner", topic)
+        assert m.studio_member_of_topic("ilustrartuel", topic)
+        assert not m.studio_member_of_topic("Winner", topic)
+        assert not m.studio_member_of_topic("Unrelated Studio", topic)
+    assert m.studio_member_of_topic("Studio_Name", "Studio_Name")
+    assert not m.studio_member_of_topic("Studio", "Studio_Name")
+    assert not m.studio_member_of_topic("", "Uel Winner_ ilustrartuel")
     with tempfile.TemporaryDirectory(prefix="tonart-staging-") as tmp:
         home = Path(tmp)
         source = home / "telegram"
