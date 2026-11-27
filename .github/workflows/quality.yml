@@ -463,9 +463,9 @@ jobs:
             if proof="$(node scripts/catalog/cutover-readiness.mjs --worker-update-stage)"; then
               echo "$proof"
             else
+              readiness_status=$?
               echo "$proof"
-              echo "::error::Routine Worker preflight blocked; see diagnostic above."
-              exit 2
+              exit "$readiness_status"
             fi
             baseline="$(jq -er '.liveWorkerVersionId | select(test("^[a-fA-F0-9-]{36}$"))' <<<"$proof")"
             echo "VERIFIED_BASELINE_VERSION=$baseline" >> "$GITHUB_ENV"
