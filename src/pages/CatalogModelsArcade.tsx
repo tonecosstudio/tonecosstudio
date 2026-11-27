@@ -15,6 +15,7 @@ import {
 import {
   catalogModelDisplayName,
   catalogTagGroupsFromPublicTags,
+  catalogTagSearchParams,
   CatalogCardIdentity,
   CatalogCardMediaFrame,
   CatalogCardTagRow,
@@ -305,18 +306,7 @@ export default function CatalogModelsArcade() {
   }
 
   function applyCanonicalTag(model: PublicCatalogModel, tag: CatalogTag) {
-    const params = new URLSearchParams();
-    if (tag.kind === "category") params.set("category", tag.slug);
-    else if (tag.kind === "franchise") params.set("franchise", tag.slug);
-    else {
-      params.set("category", model.categorySlug);
-      params.set("franchise", model.franchiseSlug);
-      params.set(
-        tag.kind === "character" ? "character_id" : "attribute_id",
-        tag.id,
-      );
-    }
-    setSearchParams(params);
+    setSearchParams(catalogTagSearchParams(model, tag));
   }
 
   function changeParams(

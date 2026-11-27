@@ -16,6 +16,7 @@ import { CatalogImageDownload } from "@/components/catalog/CatalogImageDownload"
 import {
   catalogModelDisplayName,
   catalogTagLabel,
+  catalogTagSearchParams,
   CatalogFilterTag,
   visibleCatalogTags,
 } from "@/components/catalog/CatalogTaxonomy";
@@ -315,36 +316,6 @@ export default function CanonicalModelDetails() {
   });
   const model = modelQuery.data;
 
-  function applyModelTag(kind: "category" | "franchise", value: string) {
-    const params = new URLSearchParams();
-    if (kind === "category") params.set("category", value);
-    else params.set("franchise", value);
-    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
-  }
-
-  function applyModelCharacterTag(
-    model: PublicCatalogDetail,
-    characterId: string,
-  ) {
-    const params = new URLSearchParams({
-      category: model.categorySlug,
-      franchise: model.franchiseSlug,
-      character_id: characterId,
-    });
-    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
-  }
-
-  function applyModelAttributeTag(
-    model: PublicCatalogDetail,
-    attributeId: string,
-  ) {
-    const params = new URLSearchParams({
-      category: model.categorySlug,
-      franchise: model.franchiseSlug,
-      attribute_id: attributeId,
-    });
-    navigate(PUBLIC_ROUTES.catalogModels + "?" + params.toString());
-  }
   const coverReleased = Boolean(model && isApprovedPublicCover(model));
   // Navigation from a related card is a new detail view. Announce its
   // heading to keyboard/screen-reader users after the detail has loaded.
@@ -531,11 +502,7 @@ export default function CanonicalModelDetails() {
         label: catalogTagLabel(tag.label),
         provisional: tag.provisional,
         onClick: () => {
-          if (tag.kind === "category" || tag.kind === "franchise")
-            applyModelTag(tag.kind, tag.slug);
-          else if (tag.kind === "character")
-            applyModelCharacterTag(model, tag.id);
-          else applyModelAttributeTag(model, tag.id);
+          navigate(PUBLIC_ROUTES.catalogModels + "?" + catalogTagSearchParams(model, tag).toString());
         },
       }))
     : [];

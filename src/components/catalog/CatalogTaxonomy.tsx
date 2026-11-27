@@ -1,10 +1,4 @@
-import {
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PropsWithChildren,
-} from "react";
+import type { PropsWithChildren } from "react";
 import { Images } from "lucide-react";
 import type { CatalogTag, CatalogTagKind } from "@/types/catalog-tags";
 
@@ -261,27 +255,23 @@ function uniqueCardTags(
   });
 }
 
-/** Single ordering and compact-card policy for both catalog sources. */
-export function resolveCatalogCardTagGroups(groups: CatalogCardTagGroups) {
-  const attributes = groups.attributes ?? [];
-  const franchise = groups.franchise ?? null;
-  const category = groups.category ?? null;
-  return {
-    items: uniqueCardTags([
-      ...groups.identities,
-      ...attributes,
-      franchise,
-      category,
-    ]),
-    fallbackItems: uniqueCardTags([
-      groups.identities[0],
-      attributes[0],
-      franchise,
-    ]),
-  };
+/** Build the same canonical facet navigation for every public catalog card. */
+export function catalogTagSearchParams(
+  model: { categorySlug: string; franchiseSlug: string },
+  tag: CatalogTag,
+): URLSearchParams {
+  const params = new URLSearchParams();
+  if (tag.kind === "category") params.set("category", tag.slug);
+  else if (tag.kind === "franchise") params.set("franchise", tag.slug);
+  else {
+    params.set("category", model.categorySlug);
+    params.set("franchise", model.franchiseSlug);
+    params.set(tag.kind === "character" ? "character_id" : "attribute_id", tag.id);
+  }
+  return params;
 }
 
-/** Show the prioritized facets that fit on one card line; keep secondary facets for the detail view. */
+/** Render confirmed facets from the shared taxonomy without dropping them on narrow cards. */
 export function CatalogCardTagRow({
   label,
   groups,
@@ -289,135 +279,30 @@ export function CatalogCardTagRow({
   label: string;
   groups: CatalogCardTagGroups;
 }) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const measureRef = useRef<HTMLDivElement>(null);
-  const [visibleKeys, setVisibleKeys] = useState<string[] | null>(null);
-  const { items } = useMemo(
-    () => resolveCatalogCardTagGroups(groups),
-    [groups],
-  );
-  const balanced = items.some(
-    (item) => item.kind === "sign" || item.kind === "constellation",
-  );
-
-  useLayoutEffect(() => {
-    const row = rowRef.current;
-    const measure = measureRef.current;
-    if (!row || !measure) return;
-    const update = () => {
-      if (row.clientWidth === 0) return;
-      const style = window.getComputedStyle(row);
-      const available =
-        row.clientWidth -
-        Number.parseFloat(style.paddingLeft) -
-        Number.parseFloat(style.paddingRight);
-      const nodes = Array.from(measure.children) as HTMLElement[];
-      if (nodes.length !== items.length) return;
-      const widths = new Map<string, number>();
-      items.forEach((item, index) => {
-        widths.set(item.key, nodes[index].getBoundingClientRect().width);
-      });
-      const gap =
-        Number.parseFloat(window.getComputedStyle(measure).columnGap) || 0;
-      const commitVisibleKeys = (next: string[]) => {
-        setVisibleKeys((current) =>
-          current?.length === next.length &&
-          current.every((key, index) => key === next[index])
-            ? current
-            : next,
-        );
-      };
-      const fits = (candidate: CatalogCardTagItem[]) => {
-        const width =
-          candidate.reduce(
-            (sum, item) => sum + (widths.get(item.key) ?? 0),
-            0,
-          ) +
-          Math.max(0, candidate.length - 1) * gap;
-        return width <= available + 1;
-      };
-
-      if (fits(items)) {
-        commitVisibleKeys(items.map((item) => item.key));
-        return;
-      }
-
-      const identity = groups.identities[0] ?? null;
-      const firstAttribute = groups.attributes?.[0] ?? null;
-      const franchise = groups.franchise ?? null;
-      const candidates = [
-        uniqueCardTags([identity, firstAttribute, franchise]),
-        uniqueCardTags([identity, franchise]),
-        uniqueCardTags([identity, firstAttribute]),
-        uniqueCardTags([identity]),
-      ];
-      const anchors =
-        candidates.find(
-          (candidate) => candidate.length > 0 && fits(candidate),
-        ) ??
-        candidates.find((candidate) => candidate.length > 0) ??
-        [];
-      const selected = new Set(anchors.map((item) => item.key));
-      const selectedItems = [...anchors];
-      for (const item of items) {
-        if (selected.has(item.key)) continue;
-        const candidate = [...selectedItems, item];
-        if (!fits(candidate)) continue;
-        selected.add(item.key);
-        selectedItems.push(item);
-      }
-      const orderedKeys = items
-        .filter((item) => selected.has(item.key))
-        .map((item) => item.key);
-      commitVisibleKeys(orderedKeys);
-    };
-    update();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(update);
-    observer.observe(row);
-    observer.observe(measure);
-    return () => observer.disconnect();
-  }, [items, groups.identities, groups.attributes, groups.franchise]);
-
-  const visibleItemKeys = visibleKeys === null ? null : new Set(visibleKeys);
-  const visibleItems = visibleItemKeys
-    ? items.filter((item) => visibleItemKeys.has(item.key))
-    : items;
+  const items = uniqueCardTags([
+    groups.franchise,
+    ...groups.identities,
+    ...(groups.attributes ?? []),
+    groups.category,
+  ]);
+  if (items.length === 0) return null;
   return (
     <div
-      ref={rowRef}
       role="group"
       aria-label={label}
-      className="flex min-w-0 flex-nowrap items-center gap-1 sm:gap-1.5 overflow-hidden px-3 pb-3 md:px-4 md:pb-4"
+      className="flex min-w-0 flex-wrap items-center gap-1 px-3 pb-3 md:px-4 md:pb-4"
     >
-      {visibleItems.map((item) => (
+      {items.map((item) => (
         <CatalogFilterTag
           key={item.key}
           kind={item.kind}
           label={item.label}
           provisional={item.provisional}
           disabled={item.disabled}
-          balanced={balanced}
+          compact
           onClick={item.onClick}
         />
       ))}
-      <div
-        ref={measureRef}
-        aria-hidden="true"
-        className="pointer-events-none absolute -left-[10000px] top-0 flex w-max flex-nowrap gap-1 sm:gap-1.5 whitespace-nowrap"
-      >
-        {items.map((item) => (
-          <CatalogFilterTag
-            key={item.key}
-            kind={item.kind}
-            label={item.label}
-            provisional={item.provisional}
-            disabled
-            balanced={balanced}
-            onClick={() => undefined}
-          />
-        ))}
-      </div>
     </div>
   );
 }

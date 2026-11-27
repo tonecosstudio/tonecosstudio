@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
 import {
   isCatalogMediaUnderReview,
@@ -9,12 +9,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
 import {
-  ArcadeCard,
   ArcadeSectionTitle,
 } from "@/components/arcade/ArcadeLayout";
 import { CollectorBenefits } from "@/components/arcade/CollectorBenefits";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
+import {
+  catalogModelDisplayName,
+  catalogTagGroupsFromPublicTags,
+  catalogTagSearchParams,
+  CatalogCardIdentity,
+  CatalogCardTagRow,
+  CatalogModelCardShell,
+} from "@/components/catalog/CatalogTaxonomy";
 import { PUBLIC_ROUTES, catalogModelDetailsPath } from "@/config/routes";
 import { CANONICAL_CATALOG_API_BASE } from "@/config/canonical-catalog-endpoint";
 import { createPublicCatalogGateway } from "@/services/catalog/public-catalog-gateway";
@@ -102,6 +109,7 @@ const homeApprovedRenders = approvedPublicRenders.filter(
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   const publicReadOnly =
     import.meta.env.VITE_PREVIEW_READ_ONLY === "true" &&
     isCatalogPublicMvpEnabled();
@@ -353,14 +361,17 @@ export default function LandingPage() {
                 {models.map((model) => {
                   const imageUrl =
                     gateway?.mediaUrl(model.coverStorageKey) ?? null;
+                  const tagGroups = catalogTagGroupsFromPublicTags(
+                    model.tags ?? [],
+                    (tag) => navigate(PUBLIC_ROUTES.catalogModels + "?" + catalogTagSearchParams(model, tag).toString()),
+                  );
                   return (
-                    <Link
-                      key={model.id}
-                      to={catalogModelDetailsPath(model.slug)}
-                      className="group block"
-                      aria-label={"Ver detalhes de " + model.name}
-                    >
-                      <ArcadeCard>
+                    <CatalogModelCardShell key={model.id}>
+                      <Link
+                        to={catalogModelDetailsPath(model.slug)}
+                        className="block"
+                        aria-label={"Ver detalhes de " + model.name}
+                      >
                         <div className="aspect-[4/5] overflow-hidden bg-[hsl(0,0%,8%)]">
                           <CanonicalCatalogImage
                             src={imageUrl}
@@ -368,16 +379,12 @@ export default function LandingPage() {
                             imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
                           />
                         </div>
-                        <div className="px-4 py-4">
-                          <p className="line-clamp-2 font-mono text-xs uppercase tracking-wider text-[hsl(0,0%,80%)]">
-                            {model.name}
-                          </p>
-                          <p className="mt-2 line-clamp-1 font-mono text-[10px] uppercase text-[hsl(var(--gold-accent)/0.75)]">
-                            {model.variantName || model.franchise}
-                          </p>
+                        <div className="px-3 pt-4 pb-2 md:px-4">
+                          <CatalogCardIdentity name={catalogModelDisplayName(model)} />
                         </div>
-                      </ArcadeCard>
-                    </Link>
+                      </Link>
+                      <CatalogCardTagRow label={"Filtros de " + model.name} groups={tagGroups} />
+                    </CatalogModelCardShell>
                   );
                 })}
               </div>
