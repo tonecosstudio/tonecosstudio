@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import esbuild from 'esbuild'
+import { parseReconciliationPlan, verifyReconciliationResponse } from '../../../scripts/catalog/reconcile-private-telegram-batch.mjs'
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const entry = join(dir, '../worker/telegramDrafts.ts')
@@ -116,6 +117,33 @@ function request(path, method = 'GET', data, authorize = true) {
     ...(data ? { body: JSON.stringify(data) } : {}),
   })
 }
+
+test('reconciliation client rejects duplicate and unsafe metadata plans and verifies receipts', () => {
+  const row = { id, revision: 0, name: ' Monica Rambeau ', sourceSha256: [sha] }
+  const encode = (...rows) => rows.map(x => JSON.stringify(x)).join('\n')
+  const plan = parseReconciliationPlan(encode(row))
+  assert.equal(plan.entries.length, 1)
+  assert.equal(plan.entries[0].body.name, 'Monica Rambeau')
+  assert.match(plan.sha256, /^[0-9a-f]{64}$/)
+  for (const invalid of [
+    '', encode(row, row), encode(row, { ...row, id: 'tg_' + 'a'.repeat(24) }),
+    encode({ ...row, revision: -1 }), encode({ ...row, sourceSha256: [sha, sha] }),
+    encode({ ...row, sourceSha256: [] }), encode({ ...row, published: true }),
+    encode({ ...row, reviewStatus: 'confirmed' }), encode({ ...row, rightsStatus: 'approved' }),
+    encode({ ...row, name: ' ' }),
+  ]) assert.throws(() => parseReconciliationPlan(invalid))
+  const item = plan.entries[0]
+  const response = { id, revision: 1, name: 'Monica Rambeau', published: false,
+    reviewStatus: 'pending', rightsStatus: 'not_reviewed', provisionalName: true,
+    imageCount: 1, images: [{ sha256: sha }] }
+  assert.equal(verifyReconciliationResponse(item, response), true)
+  assert.equal(verifyReconciliationResponse(item, { ...response, revision: 0 }), true)
+  for (const bad of [
+    { ...response, revision: 2 }, { ...response, published: true },
+    { ...response, rightsStatus: 'approved' }, { ...response, images: [] },
+    { ...response, name: 'Wrong name' },
+  ]) assert.equal(verifyReconciliationResponse(item, bad), false)
+})
 
 test('a zero-row D1 update remains a conflict even when the editor is authenticated', async () => {
   const { env, log, row, restore } = setup()
