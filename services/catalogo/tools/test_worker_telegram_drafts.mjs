@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { test } from 'node:test'
 import { DatabaseSync } from 'node:sqlite'
 import esbuild from 'esbuild'
+import { parseReconciliationPlan, verifyReconciliationResponse } from '../../../scripts/catalog/reconcile-private-telegram-batch.mjs'
 
 const dir = dirname(fileURLToPath(import.meta.url))
 const entry = join(dir, '../worker/telegramDrafts.ts')
@@ -32,6 +33,7 @@ function setup() {
     telegram_origin_id: '2370335738', telegram_studio: 'Abe3D',
     telegram_character: 'Monica Rambeau', telegram_review_status: 'pending',
     telegram_rights_status: 'not_reviewed', telegram_name_provisional: 1, telegram_revision: 0,
+    telegram_showcase_visible: 0,
     telegram_gallery_order: '[]',
   }
   const env = {
@@ -115,6 +117,33 @@ function request(path, method = 'GET', data, authorize = true) {
     ...(data ? { body: JSON.stringify(data) } : {}),
   })
 }
+
+test('reconciliation client rejects duplicate and unsafe metadata plans and verifies receipts', () => {
+  const row = { id, revision: 0, name: ' Monica Rambeau ', sourceSha256: [sha] }
+  const encode = (...rows) => rows.map(x => JSON.stringify(x)).join('\n')
+  const plan = parseReconciliationPlan(encode(row))
+  assert.equal(plan.entries.length, 1)
+  assert.equal(plan.entries[0].body.name, 'Monica Rambeau')
+  assert.match(plan.sha256, /^[0-9a-f]{64}$/)
+  for (const invalid of [
+    '', encode(row, row), encode(row, { ...row, id: 'tg_' + 'a'.repeat(24) }),
+    encode({ ...row, revision: -1 }), encode({ ...row, sourceSha256: [sha, sha] }),
+    encode({ ...row, sourceSha256: [] }), encode({ ...row, published: true }),
+    encode({ ...row, reviewStatus: 'confirmed' }), encode({ ...row, rightsStatus: 'approved' }),
+    encode({ ...row, name: ' ' }),
+  ]) assert.throws(() => parseReconciliationPlan(invalid))
+  const item = plan.entries[0]
+  const response = { id, revision: 1, name: 'Monica Rambeau', published: false,
+    reviewStatus: 'pending', rightsStatus: 'not_reviewed', provisionalName: true,
+    imageCount: 1, images: [{ sha256: sha }] }
+  assert.equal(verifyReconciliationResponse(item, response), true)
+  assert.equal(verifyReconciliationResponse(item, { ...response, revision: 0 }), true)
+  for (const bad of [
+    { ...response, revision: 2 }, { ...response, published: true },
+    { ...response, rightsStatus: 'approved' }, { ...response, images: [] },
+    { ...response, name: 'Wrong name' },
+  ]) assert.equal(verifyReconciliationResponse(item, bad), false)
+})
 
 test('a zero-row D1 update remains a conflict even when the editor is authenticated', async () => {
   const { env, log, row, restore } = setup()
@@ -232,6 +261,78 @@ test('Cloudflare service identity is limited to the exact private import POST', 
     assert.equal((await response.json()).error, 'private_storage_unavailable')
     assert.equal(log.authCalls.length, 0, 'service auth never creates or impersonates a Supabase user')
     assert.equal(log.queries.length, 0, 'malformed service requests do not reach D1')
+  } finally { restore() }
+})
+
+test('dedicated reconciliation service can edit private draft metadata only with full gallery evidence', async () => {
+  const { env, log, row, restore } = setup()
+  try {
+    env.TELEGRAM_IMPORT_ACCESS_AUD = 'aud-import'
+    env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID = 'import.access'
+    env.TELEGRAM_RECONCILE_ACCESS_AUD = 'aud-reconcile'
+    env.TELEGRAM_RECONCILE_ACCESS_CLIENT_ID = 'reconcile.access'
+    const access = {
+      aud: 'aud-reconcile',
+      async getIdentity() {
+        return { service_token_status: true, service_token_id: 'reconcile.access' }
+      },
+    }
+    const route = '/api/admin/telegram-drafts/reconcile/service/' + id
+    const body = { revision: 0, name: 'Monica Rambeau revisada', studio: 'Abe3D',
+      sourceSha256: gallery.map(x => x.source_sha256) }
+    const patch = (data = body, ctx = { access }, target = route, method = 'PATCH') =>
+      routeTelegramDrafts(request(target, method, data, false), env, ctx)
+    assert.equal((await patch(body, {})).status, 403)
+    assert.equal((await patch(body, { access: { ...access, aud: 'aud-import' } })).status, 403)
+    assert.equal((await patch(body, { access: { ...access, async getIdentity() {
+      return { service_token_status: true, service_token_id: 'import.access' }
+    } } })).status, 403)
+    assert.equal((await patch(body, { access: { ...access, async getIdentity() {
+      return { service_token_status: false, service_token_id: 'reconcile.access' }
+    } } })).status, 403)
+    assert.equal((await patch(body, { access }, route, 'POST')).status, 403)
+    assert.equal((await patch(body, { access }, '/api/admin/telegram-drafts/' + id)).status, 403)
+    assert.equal((await patch(body, { access }, '/api/admin/telegram-drafts/import/service', 'POST')).status, 403)
+    assert.equal(log.queries.length, 0)
+    const reconcileAud = env.TELEGRAM_RECONCILE_ACCESS_AUD
+    env.TELEGRAM_RECONCILE_ACCESS_AUD = undefined
+    assert.equal((await patch()).status, 403)
+    env.TELEGRAM_RECONCILE_ACCESS_AUD = reconcileAud
+    for (const [field, value] of [
+      ['reviewStatus', 'confirmed'], ['published', true], ['rightsStatus', 'approved'],
+      ['telegram_showcase_visible', 1], ['imageOrder', [21448]], ['revision', 1],
+    ]) {
+      assert.equal((await patch({ ...body, [field]: value })).status, 409, field)
+    }
+    for (const hashes of [
+      [], [sha], [sha, sha, sha, sha], [...body.sourceSha256.slice(0, 3), 'e'.repeat(64)],
+    ]) {
+      assert.equal((await patch({ ...body, sourceSha256: hashes })).status, 409)
+    }
+    row.telegram_showcase_visible = 1
+    assert.equal((await patch()).status, 409)
+    row.telegram_showcase_visible = 0
+    row.telegram_review_status = 'confirmed'
+    assert.equal((await patch()).status, 409)
+    row.telegram_review_status = 'pending'
+    row.telegram_rights_status = 'approved'
+    assert.equal((await patch()).status, 409)
+    row.telegram_rights_status = 'not_reviewed'
+    assert.equal(row.telegram_revision, 0)
+    const response = await patch()
+    assert.equal(response.status, 200)
+    assert.equal((await response.json()).revision, 1)
+    assert.equal(row.name, body.name)
+    assert.equal(row.telegram_review_status, 'pending')
+    assert.equal(row.telegram_name_provisional, 1)
+    assert.equal(row.telegram_showcase_visible, 0)
+    assert.equal(row.telegram_rights_status, 'not_reviewed')
+    assert.equal(row.published, 0)
+    assert.equal((await patch()).status, 409, 'stale revision cannot overwrite')
+    assert.equal((await patch({ ...body, revision: 1 })).status, 200, 'no-op does not write')
+    assert.equal(row.telegram_revision, 1)
+    assert.equal(log.privateReads.length, 0)
+    assert.equal(log.authCalls.length, 0, 'service never impersonates a human')
   } finally { restore() }
 })
 
