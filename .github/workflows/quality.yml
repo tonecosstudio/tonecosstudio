@@ -460,8 +460,13 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           if [ "$RELEASE_MODE" = "worker-update" ]; then
-            proof="$(node scripts/catalog/cutover-readiness.mjs --worker-update-stage)"
-            echo "$proof"
+            if proof="$(node scripts/catalog/cutover-readiness.mjs --worker-update-stage)"; then
+              echo "$proof"
+            else
+              readiness_status=$?
+              echo "$proof"
+              exit "$readiness_status"
+            fi
             baseline="$(jq -er '.liveWorkerVersionId | select(test("^[a-fA-F0-9-]{36}$"))' <<<"$proof")"
             echo "VERIFIED_BASELINE_VERSION=$baseline" >> "$GITHUB_ENV"
           else
