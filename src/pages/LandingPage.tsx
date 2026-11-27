@@ -87,6 +87,16 @@ export function landingCopyForMode(publicReadOnly: boolean) {
       };
 }
 
+// Editorial exclusions apply only to Home, never to the catalog or media.
+const HOME_EXCLUDED_MODEL_IDS = new Set([
+  "mdl_20fd1bcacf1504630f1d", // Malevola
+  "mdl_93be42fe77b0641688f3", // Morrigan
+  "mdl_f49a9e4caa5e19646979", // Lilith
+]);
+const homeApprovedRenders = approvedPublicRenders.filter(
+  (entry) => !HOME_EXCLUDED_MODEL_IDS.has(entry.modelId),
+);
+
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -109,7 +119,7 @@ export default function LandingPage() {
   // pointless Worker/D1 recent query on every Home visit while preserving
   // direct catalog browsing and the eventual release after approval.
   const catalogMediaOnHold = isCatalogMediaUnderReview();
-  const hasApprovedRenders = catalogMediaOnHold && approvedPublicRenders.length > 0;
+  const hasApprovedRenders = catalogMediaOnHold && homeApprovedRenders.length > 0;
 
   // Use the existing indexed recent-publications endpoint, not an
   // alphabetical catalog page or a client-side full-acervo scan.
@@ -131,7 +141,7 @@ export default function LandingPage() {
     retry: false,
     staleTime: 60 * 1000,
   });
-  const models = modelsQuery.data?.slice(0, 6) ?? [];
+  const models = modelsQuery.data?.filter((model) => !HOME_EXCLUDED_MODEL_IDS.has(model.id)).slice(0, 6) ?? [];
   const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
   const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
 
@@ -222,7 +232,7 @@ export default function LandingPage() {
       </section>
 
       {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
-      {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} /> : (
+      {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} releases={homeApprovedRenders} /> : (
         <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
           <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
             <div>
