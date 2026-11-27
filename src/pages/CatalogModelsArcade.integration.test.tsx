@@ -370,6 +370,7 @@ describe("Tonecos canonical model discovery UI", () => {
   });
 
   it("preserves selected IDs across cursor pages without creating a commercial order", async () => {
+    vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
     const { calls } = setupFetch();
     await renderCatalog();
     const firstLink = await screen.findByRole("link", {
@@ -812,6 +813,7 @@ it("returns to the same catalog search and folder filters after opening a model"
 });
 
 it("keeps page two and a provisional selection across model detail navigation", async () => {
+  vi.stubEnv("VITE_PREVIEW_READ_ONLY", "false");
   const { calls, fetcher } = setupFetch();
   vi.stubGlobal(
     "fetch",
