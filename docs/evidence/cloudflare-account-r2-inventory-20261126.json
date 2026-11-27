@@ -71,7 +71,47 @@
       "reason": "daily free tier row read limit"
     },
     "referencesVerified": false,
-    "doNotRetryBeforeReset": true
+    "doNotRetryBeforeReset": true,
+    "referenceAudit": {
+      "status": "partial_dependencies_verified",
+      "dailyReadLimitRecovered": true,
+      "modelCount": 8806,
+      "modelRowsRead": 17612,
+      "modelGroups": [
+        {
+          "origin": "other",
+          "published": false,
+          "coverPrefix": "media",
+          "manifestPrefix": "gallery",
+          "models": 34
+        },
+        {
+          "origin": "other",
+          "published": true,
+          "coverPrefix": "media",
+          "manifestPrefix": "gallery",
+          "models": 2575
+        },
+        {
+          "origin": "telegram",
+          "published": false,
+          "coverPrefix": "telegram-studios",
+          "manifestPrefix": null,
+          "models": 6197
+        }
+      ],
+      "directStlforgeCoverOrManifestReferences": 0,
+      "sourceHashes": 10766,
+      "sourceHashRowsRead": 10766,
+      "archiveObjects": 1454,
+      "archivePayloadBytes": 6215976044,
+      "archiveDistinctSha256Metadata": 1440,
+      "matchedProvenanceHashes": 73,
+      "unmatchedProvenanceHashes": 1367,
+      "objectsWithoutValidSha256Metadata": 14,
+      "physicalDependencyFullyVerified": false,
+      "decision": "Preserve the source archive in place; do not move or delete it in first wave. Match of source_sha256 is provenance, not evidence that the original bytes are required at runtime. Before final migration, verify gallery manifests, import/curation retention and the 14 objects without hash metadata."
+    }
   },
   "deduplication": {
     "sameSizeEtagIsNotDeletionProof": true,
