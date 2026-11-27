@@ -49,7 +49,6 @@ import {
   createPublicCatalogGateway,
   validCatalogFolder,
   validCatalogSlug,
-  type PublicCatalogDetail,
   type PublicCatalogImage,
 } from "@/services/catalog/public-catalog-gateway";
 
