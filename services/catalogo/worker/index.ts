@@ -1,3 +1,4 @@
+import { serveCachedPublicMetadata } from './publicMetadataCache'
 import { createSharedCollection, getSharedCollection } from './sharedCollections'
 import { routeTelegramDrafts, type TelegramDraftAccessContext, type TelegramDraftEnv } from './telegramDrafts'
 import { routeTelegramStudioShowcase, TELEGRAM_PUBLIC_VISIBLE_SQL, TELEGRAM_PUBLIC_COVER_SHA_SQL, type TelegramPublicEnv } from './telegramPublic'
@@ -691,28 +692,44 @@ export default {
       )
     }
 
-    const schema = await catalogSchemaStatus(env.DB)
-    if (!schema.ready) {
-      return json(request, env, { error: 'schema_not_ready', schema }, { status: 503 })
-    }
+    const dispatch = async () => {
+      const schema = await catalogSchemaStatus(env.DB)
+      if (!schema.ready) {
+        return json(request, env, { error: 'schema_not_ready', schema }, { status: 503 })
+      }
 
-    if (request.method === 'GET' && url.pathname === '/api/categories') return listCategories(request, env)
-    if (request.method === 'GET' && url.pathname === '/api/franchises') return listFranchises(request, env)
-    if (request.method === 'GET' && url.pathname === '/api/folders') return listFolders(request, env)
-    if (request.method === 'GET' && url.pathname === '/api/catalog') return listCatalog(request, env)
-    if (request.method === 'GET' && url.pathname === '/api/recent') return listRecentCatalog(request, env)
-    const imageMatch = url.pathname.match(/^\/api\/models\/([^/]+)\/images$/)
-    if (request.method === 'GET' && imageMatch) return listImages(request, decodeURIComponent(imageMatch[1]), env)
-    const modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)$/)
-    if (request.method === 'GET' && modelMatch) return getModel(request, decodeURIComponent(modelMatch[1]), env)
-    if (request.method === 'POST' && url.pathname === '/api/shared-collections') {
-      return createSharedCollection(request, env, { allowedOrigin, json, validateTurnstile })
+      if (request.method === 'GET' && url.pathname === '/api/categories') return listCategories(request, env)
+      if (request.method === 'GET' && url.pathname === '/api/franchises') return listFranchises(request, env)
+      if (request.method === 'GET' && url.pathname === '/api/folders') return listFolders(request, env)
+      if (request.method === 'GET' && url.pathname === '/api/catalog') return listCatalog(request, env)
+      if (request.method === 'GET' && url.pathname === '/api/recent') return listRecentCatalog(request, env)
+      const imageMatch = url.pathname.match(/^\/api\/models\/([^/]+)\/images$/)
+      if (request.method === 'GET' && imageMatch) return listImages(request, decodeURIComponent(imageMatch[1]), env)
+      const modelMatch = url.pathname.match(/^\/api\/models\/([^/]+)$/)
+      if (request.method === 'GET' && modelMatch) return getModel(request, decodeURIComponent(modelMatch[1]), env)
+      if (request.method === 'POST' && url.pathname === '/api/shared-collections') {
+        return createSharedCollection(request, env, { allowedOrigin, json, validateTurnstile })
+      }
+      const sharedMatch = url.pathname.match(/^\/api\/shared-collections\/([^/]+)$/)
+      if (request.method === 'GET' && sharedMatch) {
+        return getSharedCollection(request, decodeURIComponent(sharedMatch[1]), env, { allowedOrigin, json, validateTurnstile })
+      }
+      if (request.method === 'POST' && url.pathname === '/api/quotes') return createQuote(request, env)
+      return json(request, env, { error: 'not_found' }, { status: 404 })
     }
-    const sharedMatch = url.pathname.match(/^\/api\/shared-collections\/([^/]+)$/)
-    if (request.method === 'GET' && sharedMatch) {
-      return getSharedCollection(request, decodeURIComponent(sharedMatch[1]), env, { allowedOrigin, json, validateTurnstile })
+    // Cache only already-public discovery metadata, after canonical query
+    // validation. A cache miss always executes the existing schema gate.
+    // Private actions, health, model details and media remain live.
+    if (request.method === 'GET' && (
+      url.pathname === '/api/categories' || url.pathname === '/api/franchises' ||
+      url.pathname === '/api/folders'
+    )) {
+      return serveCachedPublicMetadata(request, dispatch, ctx, cacheUrl => {
+        if (cacheUrl.pathname === '/api/franchises' && !cacheUrl.searchParams.has('limit')) {
+          cacheUrl.searchParams.set('limit', '24')
+        }
+      })
     }
-    if (request.method === 'POST' && url.pathname === '/api/quotes') return createQuote(request, env)
-    return json(request, env, { error: 'not_found' }, { status: 404 })
+    return dispatch()
   },
 }

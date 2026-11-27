@@ -231,8 +231,8 @@
       },
       "worker/index.ts": {
         "sourceBlob": "0e16fbecb305dabf6f2858865f1e518c3afbaa0c",
-        "localBlob": "f4e2e8349fb44fe01ed5d130956ba7848fb5dcc5",
-        "reason": "Reviewed TONART-local overlay routes Telegram public/private endpoints through the existing Worker, forwards Cloudflare execution context for Access authentication, and preserves public query budgets before D1 checks. No alternative Worker, storage or production cutover.; staged bounded public taxonomy reads and validated character/attribute filters retain parameterized SQL and published-model boundary; Public cross-catalog text search uses one bounded keyset page and retains commercial and Telegram visibility predicates, with protected cover routes."
+        "localBlob": "bf6327881039a526294702715e5a39cb07668769",
+        "reason": "Reviewed TONART-local overlay routes Telegram public/private endpoints through the existing Worker, forwards Cloudflare execution context for Access authentication, and preserves public query budgets before D1 checks. No alternative Worker, storage or production cutover.; staged bounded public taxonomy reads and validated character/attribute filters retain parameterized SQL and published-model boundary; Public cross-catalog text search uses one bounded keyset page and retains commercial and Telegram visibility predicates, with protected cover routes. Shared anonymous discovery cache preserves the canonical query and schema gates on cache misses, without duplicating catalog storage."
       },
       "wrangler.jsonc": {
         "sourceBlob": "30de26c6cf5dd743a5567cce3674b4d56cf71a4d",
