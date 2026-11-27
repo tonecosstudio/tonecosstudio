@@ -86,11 +86,9 @@ const bindings = [
     type: "r2_bucket",
     bucket_name: "tonecos-catalogo-staging",
   },
-  {
-    name: "CORS_ORIGINS",
-    type: "plain_text",
-    text: workerConfig.vars.CORS_ORIGINS,
-  },
+  ...Object.entries(workerConfig.vars).map(([name, text]) => ({
+    name, type: "plain_text", text,
+  })),
   { name: "ADMIN_SUPABASE_URL", type: "secret_text" },
   { name: "ADMIN_SUPABASE_ANON_KEY", type: "secret_text" },
   { name: "TURNSTILE_SECRET_KEY", type: "secret_text" },
@@ -197,6 +195,24 @@ test("routine update requires completed M5 and a freshly observed single-version
     corrupt(invalid);
     assert.equal(assessRoutineWorkerUpdateReadiness(contract, invalid).ready, false);
   }
+});
+
+test("routine update requires exact declared import Access binding values and types", () => {
+  for (const name of ["TELEGRAM_IMPORT_ACCESS_AUD", "TELEGRAM_IMPORT_ACCESS_CLIENT_ID"]) {
+    assert.equal(typeof workerConfig.vars[name], "string");
+    for (const mutate of [
+      state => { state.bindings = state.bindings.filter(b => b.name !== name); },
+      state => { state.bindings.find(b => b.name === name).text = "wrong"; },
+      state => { state.bindings.find(b => b.name === name).type = "secret_text"; },
+    ]) {
+      const state = fullState();
+      mutate(state);
+      const verdict = assessRoutineWorkerUpdateReadiness(original, state);
+      assert.equal(verdict.ready, false);
+      assert.ok(verdict.blockers.includes("worker_plain_text_bindings_mismatch"));
+    }
+  }
+  assert.equal(assessRoutineWorkerUpdateReadiness(original, fullState()).ready, true);
 });
 
 test("zero-percent staging defers only pending proof in the historical approved phase", () => {

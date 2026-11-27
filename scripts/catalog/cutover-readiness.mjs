@@ -331,7 +331,7 @@ export function assessCutoverReadiness(contract, state, { routineUpdate = false 
   const findBinding = (name) =>
     Array.isArray(bindings) ? bindings.find((x) => x.name === name) : undefined;
   const expectedNames = [
-    "CORS_ORIGINS",
+    ...Object.keys(WORKER_CONFIG.vars ?? {}),
     "DB",
     ...(WORKER_CONFIG.r2_buckets ?? []).map((binding) => binding.binding),
     ...(WORKER_CONFIG.secrets?.required ?? []),
@@ -375,6 +375,16 @@ export function assessCutoverReadiness(contract, state, { routineUpdate = false 
       typeof WORKER_CONFIG.vars?.CORS_ORIGINS === "string" &&
       cors.text === WORKER_CONFIG.vars.CORS_ORIGINS,
     "cors_binding_unverified",
+  );
+  // Wrangler owns the exact non-secret variable inventory and values. New
+  // declared variables are not unexpected bindings, but drift still blocks.
+  add(
+    Object.entries(WORKER_CONFIG.vars ?? {}).every(([name, value]) => {
+      const binding = findBinding(name);
+      return typeof value === "string" && binding?.type === "plain_text" &&
+        binding.text === value;
+    }),
+    "worker_plain_text_bindings_mismatch",
   );
   add(
     REQUIRED_ADMIN_SECRETS.every(
