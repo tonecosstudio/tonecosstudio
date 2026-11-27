@@ -1,12 +1,10 @@
 import { Link } from "react-router-dom";
 import { BRAND_NAME, BRAND_SHORT_NAME } from "@/config/brand";
-import { isCatalogMediaUnderReview, isCatalogPublicMvpEnabled } from "@/config/catalog-public-mvp";
 import {
-  ArrowRight,
-  Crosshair,
-  Shield,
-  Eye,
-} from "lucide-react";
+  isCatalogMediaUnderReview,
+  isCatalogPublicMvpEnabled,
+} from "@/config/catalog-public-mvp";
+import { ArrowRight, Crosshair, Shield, Eye } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
@@ -76,14 +74,18 @@ function ParallaxGrid({ scrollY }: { scrollY: number }) {
 export function landingCopyForMode(publicReadOnly: boolean) {
   return publicReadOnly
     ? {
-        description: "Explore personagens, esculturas e referências digitais para inspirar sua próxima peça colecionável.",
+        description:
+          "Explore personagens, esculturas e referências digitais para inspirar sua próxima peça colecionável.",
         ctaTitle: "CONHEÇA O ACERVO",
-        ctaDescription: "Explore personagens e referências do acervo. Para conversar sobre uma ideia, fale diretamente com o estúdio.",
+        ctaDescription:
+          "Explore personagens e referências do acervo. Para conversar sobre uma ideia, fale diretamente com o estúdio.",
       }
     : {
-        description: "Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão.",
+        description:
+          "Plataforma de colecionáveis artesanais premium. Escolha, acompanhe e colecione peças exclusivas feitas à mão.",
         ctaTitle: "READY PLAYER?",
-        ctaDescription: "Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total.",
+        ctaDescription:
+          "Entre para o esquadrão de colecionadores. Peças exclusivas, produção artesanal e acompanhamento total.",
       };
 }
 
@@ -100,7 +102,9 @@ const homeApprovedRenders = approvedPublicRenders.filter(
 // ─── MAIN LANDING PAGE ───────────────────────────────────────────────
 
 export default function LandingPage() {
-  const publicReadOnly = import.meta.env.VITE_PREVIEW_READ_ONLY === "true" && isCatalogPublicMvpEnabled();
+  const publicReadOnly =
+    import.meta.env.VITE_PREVIEW_READ_ONLY === "true" &&
+    isCatalogPublicMvpEnabled();
   const landingCopy = landingCopyForMode(publicReadOnly);
   const commercialMvpAvailable =
     import.meta.env.VITE_TONECOS_COMMERCIAL_MVP === "true" &&
@@ -119,7 +123,8 @@ export default function LandingPage() {
   // pointless Worker/D1 recent query on every Home visit while preserving
   // direct catalog browsing and the eventual release after approval.
   const catalogMediaOnHold = isCatalogMediaUnderReview();
-  const hasApprovedRenders = catalogMediaOnHold && homeApprovedRenders.length > 0;
+  const hasApprovedRenders =
+    catalogMediaOnHold && homeApprovedRenders.length > 0;
 
   // Use the existing indexed recent-publications endpoint, not an
   // alphabetical catalog page or a client-side full-acervo scan.
@@ -141,9 +146,14 @@ export default function LandingPage() {
     retry: false,
     staleTime: 60 * 1000,
   });
-  const models = modelsQuery.data?.filter((model) => !HOME_EXCLUDED_MODEL_IDS.has(model.id)).slice(0, 6) ?? [];
-  const isCatalogLoading = gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
-  const hasCatalogError = !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
+  const models =
+    modelsQuery.data
+      ?.filter((model) => !HOME_EXCLUDED_MODEL_IDS.has(model.id))
+      .slice(0, 6) ?? [];
+  const isCatalogLoading =
+    gateway !== null && !catalogMediaOnHold && modelsQuery.isPending;
+  const hasCatalogError =
+    !catalogMediaOnHold && (gateway === null || modelsQuery.isError);
 
   return (
     <Page
@@ -198,7 +208,11 @@ export default function LandingPage() {
               style={{ fontFamily: "'Press Start 2P', monospace" }}
             >
               <TypewriterText
-                text={publicReadOnly ? "PERSONAGENS, ESCULTURAS E REFERÊNCIAS PARA COLECIONADORES." : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."}
+                text={
+                  publicReadOnly
+                    ? "PERSONAGENS, ESCULTURAS E REFERÊNCIAS PARA COLECIONADORES."
+                    : ">> PERSONAGENS, MODELOS E VARIAÇÕES SOB ENCOMENDA."
+                }
                 delay={800}
               />
             </p>
@@ -215,7 +229,10 @@ export default function LandingPage() {
                 style={{ animationDuration: "3s" }}
               />
               VER CATÁLOGO
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
+              <ArrowRight
+                className="w-5 h-5 group-hover:translate-x-1 transition-transform"
+                aria-hidden="true"
+              />
             </Link>
 
             <Link
@@ -226,105 +243,171 @@ export default function LandingPage() {
               CONHEÇA O ESTÚDIO
             </Link>
           </div>
-
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[hsl(var(--gold-accent)/0.3)] to-transparent" />
       </section>
 
       {/* Do not render an empty "Recent models" showcase while no photographs are approved. */}
-      {catalogMediaOnHold ? (hasApprovedRenders ? <ApprovedHomeHighlights gateway={gateway} releases={homeApprovedRenders} /> : (
-        <section aria-labelledby="catalog-curation-heading" className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">O ACERVO TONART</p>
-              <h2 id="catalog-curation-heading" className="mt-4 max-w-xl text-3xl font-semibold uppercase leading-tight tracking-[0.035em] text-white sm:text-4xl">
-                Conheça novas possibilidades
-              </h2>
-              <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
-                Explore inspirações do universo das esculturas e dos personagens colecionáveis.
-              </p>
-              <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
-                Novas referências serão publicadas em breve.
-              </p>
-            </div>
-            <div className="border-l-2 border-[hsl(var(--gold-accent)/0.65)] bg-[hsl(0,0%,7%)] px-6 py-7 sm:px-8 sm:py-9">
-              <div className="flex items-center gap-3">
-                <Shield size={20} className="shrink-0 text-[hsl(var(--gold-accent))]" aria-hidden="true" />
-                <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">Sobre as imagens</h3>
+      {catalogMediaOnHold ? (
+        hasApprovedRenders ? (
+          <ApprovedHomeHighlights
+            gateway={gateway}
+            releases={homeApprovedRenders}
+          />
+        ) : (
+          <section
+            aria-labelledby="catalog-curation-heading"
+            className="relative border-y border-[hsl(var(--gold-accent)/0.12)] bg-[hsl(0,0%,5%)] px-6 py-14 sm:py-20"
+          >
+            <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--gold-accent))]">
+                  O ACERVO TONART
+                </p>
+                <h2
+                  id="catalog-curation-heading"
+                  className="mt-4 max-w-xl text-3xl font-semibold uppercase leading-tight tracking-[0.035em] text-white sm:text-4xl"
+                >
+                  Conheça novas possibilidades
+                </h2>
+                <p className="mt-5 max-w-xl text-base leading-7 text-[hsl(0,0%,70%)]">
+                  Explore inspirações do universo das esculturas e dos
+                  personagens colecionáveis.
+                </p>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-[hsl(0,0%,52%)]">
+                  Novas referências serão publicadas em breve.
+                </p>
               </div>
-              <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
-                As imagens digitais mostram referências. A aparência de uma peça produzida pode variar conforme escala, materiais e acabamento.
-              </p>
-              <Link to={PUBLIC_ROUTES.contact} className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]">
-                Falar com o estúdio <ArrowRight size={16} aria-hidden="true" />
+              <div className="border-l-2 border-[hsl(var(--gold-accent)/0.65)] bg-[hsl(0,0%,7%)] px-6 py-7 sm:px-8 sm:py-9">
+                <div className="flex items-center gap-3">
+                  <Shield
+                    size={20}
+                    className="shrink-0 text-[hsl(var(--gold-accent))]"
+                    aria-hidden="true"
+                  />
+                  <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-[hsl(0,0%,92%)]">
+                    Sobre as imagens
+                  </h3>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-[hsl(0,0%,70%)]">
+                  As imagens digitais mostram referências. A aparência de uma
+                  peça produzida pode variar conforme escala, materiais e
+                  acabamento.
+                </p>
+                <Link
+                  to={PUBLIC_ROUTES.contact}
+                  className="mt-6 inline-flex min-h-11 items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[hsl(var(--gold-accent))]"
+                >
+                  Falar com o estúdio{" "}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )
+      ) : (
+        <section className="relative px-4 py-10 sm:px-6 sm:py-14">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <ArcadeSectionTitle>EM DESTAQUE</ArcadeSectionTitle>
+              <Link
+                to={PUBLIC_ROUTES.catalogModels}
+                className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              >
+                Catálogo completo{" "}
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
               </Link>
             </div>
+            {isCatalogMediaUnderReview() ? (
+              <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
+                Fotos em revisão para publicação. Apenas referências autorizadas
+                são exibidas no catálogo.
+              </p>
+            ) : null}
+            {hasCatalogError ? (
+              <div
+                role="alert"
+                className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]"
+              >
+                Não foi possível carregar as referências publicadas.
+                {gateway && (
+                  <button
+                    type="button"
+                    className="ml-3 border border-[hsl(var(--gold-accent))] px-3 py-2 text-[hsl(var(--gold-accent))]"
+                    onClick={() => void modelsQuery.refetch()}
+                  >
+                    Tentar novamente
+                  </button>
+                )}
+              </div>
+            ) : isCatalogLoading ? (
+              <p className="mt-5 p-6 text-sm" role="status">
+                Carregando modelos publicados…
+              </p>
+            ) : models.length === 0 ? (
+              <p className="mt-5 p-6 text-sm" role="status">
+                Novas referências serão publicadas em breve.
+              </p>
+            ) : (
+              <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
+                {models.map((model) => {
+                  const imageUrl =
+                    gateway?.mediaUrl(model.coverStorageKey) ?? null;
+                  return (
+                    <Link
+                      key={model.id}
+                      to={catalogModelDetailsPath(model.slug)}
+                      className="group block"
+                      aria-label={"Ver detalhes de " + model.name}
+                    >
+                      <ArcadeCard>
+                        <div className="aspect-[4/5] overflow-hidden bg-[hsl(0,0%,8%)]">
+                          <CanonicalCatalogImage
+                            src={imageUrl}
+                            alt={"Referência visual de " + model.name}
+                            imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
+                          />
+                        </div>
+                        <div className="px-4 py-4">
+                          <p className="line-clamp-2 font-mono text-xs uppercase tracking-wider text-[hsl(0,0%,80%)]">
+                            {model.name}
+                          </p>
+                          <p className="mt-2 line-clamp-1 font-mono text-[10px] uppercase text-[hsl(var(--gold-accent)/0.75)]">
+                            {model.variantName || model.franchise}
+                          </p>
+                        </div>
+                      </ArcadeCard>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
-      )) : (
-      <section className="relative px-4 py-10 sm:px-6 sm:py-14">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-            <ArcadeSectionTitle>EM DESTAQUE</ArcadeSectionTitle>
-            <Link to={PUBLIC_ROUTES.catalogModels} className="inline-flex min-h-11 items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[hsl(var(--gold-accent))] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
-              Catálogo completo <ArrowRight className="h-3 w-3" aria-hidden="true" />
-            </Link>
-          </div>
-           {isCatalogMediaUnderReview() ? (
-             <p className="mt-4 text-sm text-[hsl(0,0%,70%)]">
-               Fotos em revisão para publicação. Apenas referências autorizadas são exibidas no catálogo.
-             </p>
-           ) : null}
-          {hasCatalogError ? (
-            <div role="alert" className="mt-5 border border-[hsl(0,0%,18%)] p-6 text-sm text-[hsl(0,0%,70%)]">
-              Não foi possível carregar as referências publicadas.
-              {gateway && (
-                <button type="button" className="ml-3 border border-[hsl(var(--gold-accent))] px-3 py-2 text-[hsl(var(--gold-accent))]" onClick={() => void modelsQuery.refetch()}>
-                  Tentar novamente
-                </button>
-              )}
-            </div>
-          ) : isCatalogLoading ? (
-            <p className="mt-5 p-6 text-sm" role="status">Carregando modelos publicados…</p>
-          ) : models.length === 0 ? (
-            <p className="mt-5 p-6 text-sm" role="status">Novas referências serão publicadas em breve.</p>
-          ) : (
-            <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-3">
-              {models.map((model) => {
-                const imageUrl = gateway?.mediaUrl(model.coverStorageKey) ?? null;
-                return (
-                  <Link key={model.id} to={catalogModelDetailsPath(model.slug)} className="group block" aria-label={"Ver detalhes de " + model.name}>
-                    <ArcadeCard>
-                      <div className="aspect-[4/5] overflow-hidden bg-[hsl(0,0%,8%)]">
-                        <CanonicalCatalogImage
-                          src={imageUrl}
-                          alt={"Referência visual de " + model.name}
-                          imageClassName="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none"
-                        />
-                      </div>
-                      <div className="px-4 py-4">
-                        <p className="line-clamp-2 font-mono text-xs uppercase tracking-wider text-[hsl(0,0%,80%)]">{model.name}</p>
-                        <p className="mt-2 line-clamp-1 font-mono text-[10px] uppercase text-[hsl(var(--gold-accent)/0.75)]">{model.variantName || model.franchise}</p>
-                      </div>
-                    </ArcadeCard>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
       )}
 
-      {commercialMvpAvailable && <CollectorBenefits coinsAvailable={coinsAvailable} />}
+      {commercialMvpAvailable && (
+        <CollectorBenefits coinsAvailable={coinsAvailable} />
+      )}
 
       <section className="px-5 pb-12 sm:px-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5">
-          <div><h2 className="text-lg font-medium text-[hsl(0,0%,90%)]">Uma peça com a sua personalidade.</h2><p className="mt-2 text-sm text-[hsl(0,0%,60%)]">Converse com o estúdio sobre tamanho, acabamento e detalhes.</p></div>
-          <Link to={PUBLIC_ROUTES.contact} className="inline-flex min-h-11 items-center gap-4 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">Fale com a TONART <ArrowRight size={16} aria-hidden="true" /></Link>
+          <div>
+            <h2 className="text-lg font-medium text-[hsl(0,0%,90%)]">
+              Uma peça com a sua personalidade.
+            </h2>
+            <p className="mt-2 text-sm text-[hsl(0,0%,60%)]">
+              Converse com o estúdio sobre tamanho, acabamento e detalhes.
+            </p>
+          </div>
+          <Link
+            to={PUBLIC_ROUTES.contact}
+            className="inline-flex min-h-11 items-center gap-4 text-xs font-semibold uppercase tracking-wider text-[hsl(var(--gold-accent))] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+          >
+            Fale com a TONART <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </div>
       </section>
-
     </Page>
   );
 }
