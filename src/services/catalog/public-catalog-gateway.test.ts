@@ -119,10 +119,11 @@ describe("canonical catalog read boundary", () => {
       coverStorageKey: null,
       telegramPreview: { pending: true, cover },
     });
-    await expect(gateway.listPage({ globalSearch: true })).rejects.toThrow(
-      "catalog_global_search_requires_query",
-    );
-    expect(io).toHaveBeenCalledTimes(1);
+    await gateway.listPage({ globalSearch: true });
+    const [browseUrl] = io.mock.calls[1] as unknown as [string];
+    expect(new URL(browseUrl).searchParams.get("scope")).toBe("all");
+    expect(new URL(browseUrl).searchParams.has("q")).toBe(false);
+    expect(io).toHaveBeenCalledTimes(2);
   });
 
   it("rejects invalid search, scope, and oversized pages without making a request", async () => {

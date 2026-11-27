@@ -1020,7 +1020,6 @@ export function createPublicCatalogGateway(
       if (filters.folder) url.searchParams.set("folder", filters.folder);
       if (query) url.searchParams.set("q", query);
       if (filters.globalSearch) {
-        if (!query) throw new Error("catalog_global_search_requires_query");
         url.searchParams.set("scope", "all");
       }
       if (filters.cursor) url.searchParams.set("cursor", filters.cursor);

@@ -92,7 +92,7 @@ export function validatePublicCatalogQuery(url: URL): CatalogQueryBudgetResult {
       if (value.length > 240 || value.includes("\\") ||
           value.split("/").some(part => !part || part === "." || part === "..")) return false
     } else if (key === "scope") {
-      if (path !== "/api/catalog" || value !== "all" || !url.searchParams.has("q")) return false
+      if (path !== "/api/catalog" || value !== "all") return false
     } else if (key === "q") {
       const length = Array.from(value.trim()).length
       if (length < 3) return { error: 'search_too_short', minLength: 3 }

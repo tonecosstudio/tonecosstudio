@@ -461,6 +461,17 @@ test("global search combines eligible historical and Telegram rows, preserves ke
   });
   assert.equal(wildcard.response.status, 200);
   assert.deepEqual(wildcard.body.items, []);
-  const invalid = await requestCatalog(database, { scope: "all" });
-  assert.equal(invalid.response.status, 400);
+  const unified = await requestCatalog(database, { scope: "all", limit: 60 });
+  assert.equal(unified.response.status, 200);
+  const unifiedIds = unified.body.items.map((m) => m.id);
+  assert.ok(unifiedIds.includes(ids[1]));
+  assert.ok(!unifiedIds.includes(ids[2]));
+  assert.ok(!unifiedIds.includes(ids[3]));
+  // Narrow by existing canonical franchise and preserve pagination.
+  const browse = await requestCatalog(database, { scope: "all", franchise: "saga-alfa", limit: 2 });
+  assert.equal(browse.response.status, 200);
+  assert.ok(browse.body.nextCursor);
+  const next = await requestCatalog(database, { scope: "all", franchise: "saga-alfa", limit: 2, cursor: browse.body.nextCursor });
+  assert.equal(next.response.status, 200);
+  assert.ok(next.body.items.every((m) => !browse.body.items.some((first) => first.id === m.id)));
 });
