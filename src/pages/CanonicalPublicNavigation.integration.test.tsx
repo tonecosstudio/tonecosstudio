@@ -45,8 +45,18 @@ const model = {
   cover_storage_key: "media/model-one/img_one/card.webp",
   tags: [
     { kind: "category", id: "games", label: "Games", slug: "games" },
-    { kind: "franchise", id: "resident-evil", label: "Resident Evil", slug: "resident-evil" },
-    { kind: "character", id: "char_fixture", label: "Personagem teste", slug: "personagem-teste" },
+    {
+      kind: "franchise",
+      id: "resident-evil",
+      label: "Resident Evil",
+      slug: "resident-evil",
+    },
+    {
+      kind: "character",
+      id: "char_fixture",
+      label: "Personagem teste",
+      slug: "personagem-teste",
+    },
   ],
 };
 
@@ -316,10 +326,24 @@ describe("canonical public navigation without Supabase catalog", () => {
     expect(calls[0].url.searchParams.get("limit")).toBe("24");
     expect(calls[0].init.method).toBe("GET");
     expect(calls[0].init.credentials).toBe("omit");
-    expect(screen.getByRole("button", { name: "Filtrar por franquia Resident Evil" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Filtrar por categoria Games" })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Filtrar por personagem Personagem teste" }));
-    expect(await screen.findByText("destination: /modelos?category=games&franchise=resident-evil&character_id=char_fixture")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Filtrar por franquia Resident Evil",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Filtrar por categoria Games" }),
+    ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Filtrar por personagem Personagem teste",
+      }),
+    );
+    expect(
+      await screen.findByText(
+        "destination: /modelos?category=games&franchise=resident-evil&character_id=char_fixture",
+      ),
+    ).toBeInTheDocument();
     expect(calls).toHaveLength(1);
   });
 

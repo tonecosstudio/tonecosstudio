@@ -266,7 +266,10 @@ export function catalogTagSearchParams(
   else {
     params.set("category", model.categorySlug);
     params.set("franchise", model.franchiseSlug);
-    params.set(tag.kind === "character" ? "character_id" : "attribute_id", tag.id);
+    params.set(
+      tag.kind === "character" ? "character_id" : "attribute_id",
+      tag.id,
+    );
   }
   return params;
 }

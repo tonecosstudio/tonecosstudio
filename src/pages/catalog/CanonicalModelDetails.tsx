@@ -502,7 +502,11 @@ export default function CanonicalModelDetails() {
         label: catalogTagLabel(tag.label),
         provisional: tag.provisional,
         onClick: () => {
-          navigate(PUBLIC_ROUTES.catalogModels + "?" + catalogTagSearchParams(model, tag).toString());
+          navigate(
+            PUBLIC_ROUTES.catalogModels +
+              "?" +
+              catalogTagSearchParams(model, tag).toString(),
+          );
         },
       }))
     : [];

@@ -8,9 +8,7 @@ import { ArrowRight, Crosshair, Shield, Eye } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Page } from "@/components/layouts/Page";
-import {
-  ArcadeSectionTitle,
-} from "@/components/arcade/ArcadeLayout";
+import { ArcadeSectionTitle } from "@/components/arcade/ArcadeLayout";
 import { CollectorBenefits } from "@/components/arcade/CollectorBenefits";
 import { FloatingParticles } from "@/components/arcade/ArcadeEffects";
 import { CanonicalCatalogImage } from "@/components/catalog/CanonicalCatalogImage";
@@ -363,7 +361,12 @@ export default function LandingPage() {
                     gateway?.mediaUrl(model.coverStorageKey) ?? null;
                   const tagGroups = catalogTagGroupsFromPublicTags(
                     model.tags ?? [],
-                    (tag) => navigate(PUBLIC_ROUTES.catalogModels + "?" + catalogTagSearchParams(model, tag).toString()),
+                    (tag) =>
+                      navigate(
+                        PUBLIC_ROUTES.catalogModels +
+                          "?" +
+                          catalogTagSearchParams(model, tag).toString(),
+                      ),
                   );
                   return (
                     <CatalogModelCardShell key={model.id}>
@@ -380,10 +383,15 @@ export default function LandingPage() {
                           />
                         </div>
                         <div className="px-3 pt-4 pb-2 md:px-4">
-                          <CatalogCardIdentity name={catalogModelDisplayName(model)} />
+                          <CatalogCardIdentity
+                            name={catalogModelDisplayName(model)}
+                          />
                         </div>
                       </Link>
-                      <CatalogCardTagRow label={"Filtros de " + model.name} groups={tagGroups} />
+                      <CatalogCardTagRow
+                        label={"Filtros de " + model.name}
+                        groups={tagGroups}
+                      />
                     </CatalogModelCardShell>
                   );
                 })}
