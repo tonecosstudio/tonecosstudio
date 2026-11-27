@@ -133,7 +133,8 @@ function isBoundedPublicQuery(route, searchParams) {
           "q",
           "category",
           "franchise",
-          "character",
+          "character_id",
+          "attribute_id",
           "provisional",
           "identity",
           "offset",
@@ -150,6 +151,8 @@ function isBoundedPublicQuery(route, searchParams) {
                 "category",
                 "franchise",
                 "folder",
+                "character_id",
+                "attribute_id",
                 "q",
                 "material",
                 "collection",
@@ -229,14 +232,11 @@ function isBoundedPublicQuery(route, searchParams) {
         if (value.length > 80 || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
           return false;
       } else if (!/^[a-z0-9][a-z0-9-]{0,239}$/.test(value)) return false;
-    } else if (key === "character") {
-      // The Worker requires exact, franchise-scoped character names. Keep
-      // the same fail-closed bounds in the first-party Pages/Vercel proxy.
+    } else if (key === "character_id" || key === "attribute_id") {
       if (
-        route !== "api/telegram-studios" ||
-        !searchParams.has("franchise") ||
-        value.length > 80 ||
-        value !== value.trim()
+        !/^[A-Za-z0-9_-]{3,100}$/.test(value) ||
+        (searchParams.has("character_id") && searchParams.has("attribute_id")) ||
+        (route === "api/telegram-studios" && !searchParams.has("franchise"))
       )
         return false;
     } else if (key === "folder" || key === "parent") {
