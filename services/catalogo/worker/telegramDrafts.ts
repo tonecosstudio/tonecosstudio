@@ -25,6 +25,8 @@ export type TelegramDraftEnv = {
   ADMIN_SUPABASE_ANON_KEY?: string
   TELEGRAM_IMPORT_ACCESS_AUD?: string
   TELEGRAM_IMPORT_ACCESS_CLIENT_ID?: string
+  TELEGRAM_RECONCILE_ACCESS_AUD?: string
+  TELEGRAM_RECONCILE_ACCESS_CLIENT_ID?: string
 }
 export type TelegramDraftAccessContext = {
   access?: {
@@ -47,6 +49,7 @@ type Draft = {
   telegram_review_status: string
   telegram_rights_status: string
   telegram_name_provisional: number
+  telegram_showcase_visible: number
   telegram_revision: number
   telegram_gallery_order: string
   published: number
@@ -105,11 +108,10 @@ export async function verifyAdmin(request: Request, env: Pick<TelegramDraftEnv, 
     return false
   }
 }
-async function verifyImportService(
-  env: TelegramDraftEnv, context?: TelegramDraftAccessContext,
+async function verifyDraftService(
+  expectedAud: string | undefined, expectedClientId: string | undefined,
+  context?: TelegramDraftAccessContext,
 ): Promise<boolean> {
-  const expectedAud = env.TELEGRAM_IMPORT_ACCESS_AUD
-  const expectedClientId = env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID
   if (!expectedAud || !expectedClientId || !context?.access ||
       context.access.aud !== expectedAud) return false
   try {
@@ -123,7 +125,7 @@ async function verifyImportService(
 const FIELDS = `m.id,m.name,m.variant_name,m.collection,m.published,m.image_count,
   m.telegram_group_key,m.telegram_origin_id,m.telegram_studio,m.telegram_character,
   m.telegram_review_status,m.telegram_rights_status,m.telegram_name_provisional,
-  m.telegram_revision,m.telegram_gallery_order`
+  m.telegram_revision,m.telegram_gallery_order,m.telegram_showcase_visible`
 async function findDraft(db: Database, id: string): Promise<Draft | null> {
   return db.prepare(`SELECT ${FIELDS} FROM models m
     WHERE m.id=? AND m.telegram_group_key IS NOT NULL AND m.published=0 LIMIT 1`)
@@ -181,14 +183,20 @@ export async function routeTelegramDrafts(
   // Keep Supabase human imports separate from Access service authentication.
   // Both routes invoke the same canonical importer and D1/R2 authority.
   const isServiceImport = url.pathname === PREFIX + '/import/service'
-  const serviceAuthorized =
-    isServiceImport &&
+  const reconcileMatch = url.pathname.match(/^\/api\/admin\/telegram-drafts\/reconcile\/service\/(tg_[0-9a-f]{24})$/)
+  const isServiceReconcile = reconcileMatch !== null
+  const serviceAuthorized = isServiceImport &&
     request.method === 'POST' &&
-    (await verifyImportService(env, context))
-  if (isServiceImport && !serviceAuthorized) {
+    (await verifyDraftService(env.TELEGRAM_IMPORT_ACCESS_AUD, env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID, context))
+  const reconcileAuthorized = isServiceReconcile &&
+    request.method === 'PATCH' &&
+    env.TELEGRAM_RECONCILE_ACCESS_AUD !== env.TELEGRAM_IMPORT_ACCESS_AUD &&
+    env.TELEGRAM_RECONCILE_ACCESS_CLIENT_ID !== env.TELEGRAM_IMPORT_ACCESS_CLIENT_ID &&
+    (await verifyDraftService(env.TELEGRAM_RECONCILE_ACCESS_AUD, env.TELEGRAM_RECONCILE_ACCESS_CLIENT_ID, context))
+  if ((isServiceImport && !serviceAuthorized) || (isServiceReconcile && !reconcileAuthorized)) {
     return result(request, env, { error: 'service_access_required' }, 403)
   }
-  if (!isServiceImport) {
+  if (!isServiceImport && !isServiceReconcile) {
     const auth = await verifyAdmin(request, env)
     if (auth === null) return result(request, env, { error: 'admin_auth_unconfigured' }, 503)
     if (!auth) return result(request, env, { error: 'admin_required' }, 403)
@@ -230,13 +238,20 @@ export async function routeTelegramDrafts(
       })),
     })
   }
-  const match = url.pathname.match(/^\/api\/admin\/telegram-drafts\/(tg_[0-9a-f]{24})(?:\/media\/([0-9a-f]{64})\/(display|thumb))?$/)
+  const match = reconcileMatch || url.pathname.match(/^\/api\/admin\/telegram-drafts\/(tg_[0-9a-f]{24})(?:\/media\/([0-9a-f]{64})\/(display|thumb))?$/)
   if (!match) return result(request, env, { error: 'not_found' }, 404)
   const [, id, digest, role] = match
   if (!DRAFT_ID.test(id)) return result(request, env, { error: 'invalid_id' }, 400)
   const model = await findDraft(env.DB, id)
   if (!model || model.telegram_origin_id !== '2370335738') {
     return result(request, env, { error: 'not_found' }, 404)
+  }
+  // Automated reconciliation is restricted to hidden, provisional, pending drafts.
+  // The human editor retains exclusive control over review, visibility and rights.
+  if (isServiceReconcile && (model.telegram_review_status !== 'pending' ||
+      model.telegram_name_provisional !== 1 || model.telegram_showcase_visible !== 0 ||
+      model.telegram_rights_status !== 'not_reviewed')) {
+    return result(request, env, { error: 'reconciliation_scope_conflict' }, 409)
   }
   if (digest && role) {
     if (request.method !== 'GET' || !SHA.test(digest) || !ROLES.has(role)) {
@@ -259,7 +274,9 @@ export async function routeTelegramDrafts(
   let input: unknown
   try {
     if (Number(request.headers.get('content-length') || 0) > 8192) throw Error('too_big')
-    input = await request.json()
+    const raw = await request.text()
+    if (new TextEncoder().encode(raw).length > 8192) throw Error('too_big')
+    input = JSON.parse(raw)
   } catch {
     return result(request, env, { error: 'invalid_body' }, 400)
   }
@@ -267,7 +284,9 @@ export async function routeTelegramDrafts(
     return result(request, env, { error: 'invalid_body' }, 400)
   }
   const body = input as Record<string, unknown>
-  const accepted = new Set(['revision','name','studio','character','variant','reviewStatus','imageOrder'])
+  const accepted = isServiceReconcile
+    ? new Set(['revision','name','studio','character','variant','sourceSha256'])
+    : new Set(['revision','name','studio','character','variant','reviewStatus','imageOrder'])
   if (Object.keys(body).some(x => !accepted.has(x)) || !Number.isSafeInteger(body.revision) ||
       body.revision !== model.telegram_revision ||
       !Object.keys(body).some(x => x !== 'revision')) {
@@ -284,6 +303,21 @@ export async function routeTelegramDrafts(
     return result(request, env, { error: 'invalid_field_values' }, 400)
   }
   const images = await sources(env.DB, id)
+  if (isServiceReconcile) {
+    const hashes = body.sourceSha256
+    const storedHashes = new Set(images.map(x => x.source_sha256))
+    if (!Array.isArray(hashes) || hashes.length === 0 || hashes.length > 80 ||
+        hashes.length !== model.image_count || images.length !== model.image_count ||
+        storedHashes.size !== images.length || new Set(hashes).size !== hashes.length ||
+        !hashes.every(x => typeof x === 'string' && SHA.test(x) && storedHashes.has(x)) ||
+        !['name','studio','character','variant'].some(key => body[key] !== undefined)) {
+      return result(request, env, { error: 'reconciliation_gallery_conflict' }, 409)
+    }
+    if (name.trim() === model.name && studio.trim() === model.telegram_studio &&
+        character.trim() === model.telegram_character && variant.trim() === model.variant_name) {
+      return result(request, env, detail(model, images))
+    }
+  }
   const current = detail(model, images).images
   const ids = current.map(x => x.messageId)
   const requested = body.imageOrder
@@ -303,7 +337,9 @@ export async function routeTelegramDrafts(
     telegram_name_provisional=CASE WHEN ?='confirmed' THEN 0 ELSE telegram_name_provisional END,
     telegram_gallery_order=?,cover_storage_key=?,
     telegram_revision=telegram_revision+1,search_text=?,updated_at=CURRENT_TIMESTAMP
-    WHERE id=? AND telegram_group_key IS NOT NULL AND published=0 AND telegram_revision=?`)
+    WHERE id=? AND telegram_group_key IS NOT NULL AND published=0 AND telegram_revision=?${isServiceReconcile
+      ? " AND telegram_review_status='pending' AND telegram_name_provisional=1 AND telegram_showcase_visible=0 AND telegram_rights_status='not_reviewed'"
+      : ''}`)
     .bind(name.trim(),studio.trim(),character.trim(),variant.trim(),status,status,
       JSON.stringify(order),cover,
       [studio.trim(),name.trim(),character.trim(),variant.trim()].filter(Boolean).join(' '),
