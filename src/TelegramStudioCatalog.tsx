@@ -642,6 +642,7 @@ export default function TelegramStudioCatalog({
             }
             coverUrl={imageUrl(page?.items[0]?.cover)}
             collectionHref={studiosHref}
+            activeTab={studio ? "collections" : "explore"}
             heroEyebrow={studio ? "COLEÇÃO POR ESTÚDIO" : undefined}
             heroTitle={studio || undefined}
             heroIntro={
