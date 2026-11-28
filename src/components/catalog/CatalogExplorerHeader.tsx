@@ -33,6 +33,9 @@ export type CatalogExplorerHeaderProps = {
   activeTab?: "explore" | "collections";
   standalone?: boolean;
   unidentified?: boolean;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroIntro?: string;
 };
 
 /** Shared visual structure for both public catalog channels. Data and approval remain with their owners. */
@@ -55,6 +58,9 @@ export function CatalogExplorerHeader({
   activeTab = "explore",
   standalone = false,
   unidentified = false,
+  heroEyebrow,
+  heroTitle,
+  heroIntro,
 }: CatalogExplorerHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -69,16 +75,20 @@ export function CatalogExplorerHeader({
   }, []);
 
   const review = kind === "review";
-  const title = review
-    ? unidentified
-      ? "Modelos a identificar"
-      : PUBLIC_CATALOG_LABELS.review
-    : PUBLIC_CATALOG_LABELS.historical;
-  const intro = review
-    ? unidentified
-      ? "Referências ainda sem nome. Ao serem identificadas, passam para o catálogo em organização."
-      : "Estamos ampliando e organizando nosso catálogo. Alguns modelos podem apresentar nomes ou classificações provisórias."
-    : "Explore nossos modelos, seus universos e suas galerias.";
+  const title =
+    heroTitle ??
+    (review
+      ? unidentified
+        ? "Modelos a identificar"
+        : PUBLIC_CATALOG_LABELS.review
+      : PUBLIC_CATALOG_LABELS.historical);
+  const intro =
+    heroIntro ??
+    (review
+      ? unidentified
+        ? "Referências ainda sem nome. Ao serem identificadas, passam para o catálogo em organização."
+        : "Estamos ampliando e organizando nosso catálogo. Alguns modelos podem apresentar nomes ou classificações provisórias."
+      : "Explore nossos modelos, seus universos e suas galerias.");
   const tabs = [
     {
       label: "Explorar",
@@ -216,7 +226,7 @@ export function CatalogExplorerHeader({
           className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[hsl(0,0%,6%)] via-[hsl(0,0%,6%)/0.92] to-[hsl(0,0%,6%)/0.25]"
         />
         <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-[hsl(var(--gold-accent))]">
-          ACERVO TONART
+          {heroEyebrow ?? "ACERVO TONART"}
         </p>
         <h1
           className="mt-3 text-[clamp(1.9rem,8.5vw,3rem)] font-bold uppercase leading-[0.98] tracking-wide text-white sm:text-5xl"

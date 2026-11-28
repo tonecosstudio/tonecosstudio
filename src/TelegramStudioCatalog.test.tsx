@@ -402,6 +402,9 @@ describe("Telegram-only public studio gallery", () => {
     expect(within(card!).getByText("Aang")).toBeInTheDocument();
     expect(within(card!).queryByText("3DXM")).toBeNull();
     expect(
+      within(card!).queryByLabelText(/Variante do estúdio/),
+    ).not.toBeInTheDocument();
+    expect(
       within(card!).getByRole("button", {
         name: "Filtrar por categoria Animes/Desenho",
       }),
@@ -593,8 +596,19 @@ describe("Telegram-only public studio gallery", () => {
     const open = await screen.findByRole("button", {
       name: /abrir galeria de ace/i,
     });
+    expect(
+      screen.getByRole("heading", { name: "RedBushido" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Coleções" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByText("2 modelos")).toBeInTheDocument();
     const card = open.closest("article");
     expect(card).not.toBeNull();
+    expect(
+      within(card!).getByLabelText("Variante do estúdio: Chibi"),
+    ).toHaveTextContent("Chibi");
     expect(
       within(card!).getByRole("button", {
         name: "Filtrar por categoria Animes/Desenho",

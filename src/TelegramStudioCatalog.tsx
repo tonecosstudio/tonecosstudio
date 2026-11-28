@@ -636,11 +636,20 @@ export default function TelegramStudioCatalog({
             filtersControlId="telegram-catalog-filters"
             totalLabel={
               page
-                ? page.total.toLocaleString("pt-BR") + " referências"
+                ? page.total.toLocaleString("pt-BR") +
+                  (studio ? " modelos" : " referências")
                 : undefined
             }
             coverUrl={imageUrl(page?.items[0]?.cover)}
             collectionHref={studiosHref}
+            activeTab={studio ? "collections" : "explore"}
+            heroEyebrow={studio ? "COLEÇÃO POR ESTÚDIO" : undefined}
+            heroTitle={studio || undefined}
+            heroIntro={
+              studio
+                ? "Explore as esculturas reunidas neste estúdio e descubra cada modelo em sua galeria."
+                : undefined
+            }
           />
         )}
         {(view === "models" || Boolean(studio)) && (
@@ -650,17 +659,16 @@ export default function TelegramStudioCatalog({
             className="scroll-mt-28 px-4 pt-2 sm:px-6 sm:pt-3 xl:px-8"
           >
             {studio ? (
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.16)] pb-4">
                 <a
                   href={studiosHref}
-                  className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] hover:underline"
+                  className="inline-flex min-h-10 items-center gap-2 text-sm text-[hsl(var(--gold-accent))] transition-colors hover:text-white hover:underline"
                 >
                   ← Todos os estúdios
                 </a>
-                <p className="text-sm text-[hsl(0,0%,70%)]">
-                  Coleção do estúdio:{" "}
-                  <strong className="text-white">{studio}</strong>
-                </p>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[hsl(0,0%,58%)]">
+                  Coleção selecionada
+                </span>
               </div>
             ) : null}
             {/* Pesquisa única compartilhada com a navegação dos dois catálogos. */}
@@ -835,7 +843,7 @@ export default function TelegramStudioCatalog({
             <div className="mt-4 flex flex-wrap items-end justify-between gap-3 border-b border-[hsl(var(--gold-accent)/0.2)] pb-3">
               <div>
                 <h2 className="font-serif text-2xl sm:text-3xl">
-                  {studio ? "Modelos de " + studio : "Galeria de modelos"}
+                  {studio ? "Peças desta coleção" : "Galeria de modelos"}
                 </h2>
                 {query && (
                   <p className="mt-1 text-sm text-[#b7a99a]">
@@ -866,7 +874,9 @@ export default function TelegramStudioCatalog({
                   {loading
                     ? "Carregando…"
                     : page
-                      ? page.total.toLocaleString("pt-BR") + " modelos"
+                      ? studio
+                        ? "Peças da coleção"
+                        : page.total.toLocaleString("pt-BR") + " modelos"
                       : "Indisponível"}
                 </span>
                 {(query ||
@@ -974,11 +984,14 @@ export default function TelegramStudioCatalog({
                             </span>
                           )}
                         </CatalogCardMediaFrame>
-                        <div className="space-y-1.5 p-3 pb-1 md:px-4 md:pt-4">
-                          {showStudioModelTags && (
-                            <p className="text-[11px] font-medium uppercase tracking-wider text-[#d9ac79]">
-                              {model.studio}
-                            </p>
+                        <div className="space-y-2 p-3 pb-1 md:px-4 md:pt-4">
+                          {showStudioModelTags && model.variant.trim() && (
+                            <span
+                              aria-label={"Variante do estúdio: " + model.variant}
+                              className="inline-flex max-w-full items-center rounded-full border border-[#8c7655]/70 bg-[#2b281f] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] text-[#e4c99f]"
+                            >
+                              {model.variant}
+                            </span>
                           )}
                           <CatalogCardIdentity name={model.name} />
                         </div>
