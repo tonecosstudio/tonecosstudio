@@ -1,3 +1,18 @@
+## PRIORIDADE EDITORIAL GLOBAL — TELEGRAM SEM NOME, SEM IDENTIDADE OU COM TÍTULO GENÉRICO (25/11/2026)
+
+**Decisão do proprietário com precedência imediata sobre a ordem editorial anterior.** Percorrer todo o acervo Telegram elegível e priorizar imagens/modelos sem nome, sem identidade ou com título genérico. Não aguardar o encerramento de Wicked nem qualquer etapa de DINO. Esta decisão substitui exclusivamente a prioridade antiga de estúdio fixo e a dependência de similaridade; não revoga gates, owners, privacidade, direitos, cobertura ou importação pendente.
+
+- Usar pranchas e miniaturas já existentes, em ciclos de 20–50 imagens, preservando para cada item `message_id`, `group_key` quando houver, SHA-256 da imagem original e revisão atual. Respeitar a paginação/limites do host existente; não gerar novo inventário nem refazer pranchas íntegras.
+- Identificar visualmente personagem e franquia quando a imagem e as fontes existentes sustentarem a conclusão. Separar três decisões: identidade do personagem, identidade da escultura/galeria e variante de impressão/apresentação. Personagens iguais em esculturas diferentes compartilham identidade somente por prova; isso nunca funde galerias ou variantes.
+- Priorizar casos claros. Registrar propostas visuais no fluxo canônico. Aplicar nomes somente pelo host/owner existente, com evidência exigida pelo contrato, SHA físico, CAS e leitura posterior. Se faltar fonte específica exigida para confirmação, manter proposta sem falsificar confirmação e seguir para outros casos claros.
+- Não reprocessar nomes confirmados, não inventar personagem, franquia, estúdio ou escala e não converter título genérico, similaridade ou embedding em confirmação. Itens ainda sem nome permanecem no Catálogo em organização; nomes confirmados são promovidos pela sincronização canônica autorizada, preservando o mesmo ID.
+- DINO atua exclusivamente em embeddings, agrupamento e candidatos a duplicidade. Seus resultados apenas priorizam inspeção; não confirmam identidade e não bloqueiam esta curadoria.
+- Preservar em paralelo a importação privada dos 1.701 rascunhos e as demais metas legítimas do MVP. Não repetir M5, não reabrir PRs #183/#185, não contornar a sessão admin, não alterar direitos, visibilidade, licenças, originais, R2 ou owners.
+- Reutilizar o OrdaX MCP e o host atuais. Melhorar preview nativo somente se necessário e em coordenação com o responsável OrdaX, sem interromper a curadoria. Não criar agente, job, SSOT, banco, pipeline ou publicador paralelo.
+- Em cada ciclo informar separadamente: imagens/fotos vistas; modelos únicos com nome proposto; modelos únicos efetivamente nomeados/aplicados; propostas; pendências/bloqueios; e confirmação por leitura no destino. Nunca tratar quantidade de fotos como quantidade de modelos.
+
+---
+
 ## CHECKPOINT — NOMENCLATURA PÚBLICA DOS CATÁLOGOS (25/11/2026)
 
 - Proprietário aprovou Catálogo e Catálogo em organização. Banner responsivo no catálogo principal; navegação desktop/mobile e títulos compartilham a configuração de rótulos; rotas e acesso existentes preservados. Alteração frontend, sem escrita D1/R2/Drive. Base `a6f6566173043f3fcae77681b6133952d7994a62`; validar UI e publicação pelo mecanismo canônico. Busca global é entrega distinta, não declarar concluída por este ajuste.
