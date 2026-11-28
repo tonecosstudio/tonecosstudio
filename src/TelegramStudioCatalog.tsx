@@ -873,7 +873,9 @@ export default function TelegramStudioCatalog({
                   {loading
                     ? "Carregando…"
                     : page
-                      ? page.total.toLocaleString("pt-BR") + " modelos"
+                      ? studio
+                        ? "Peças da coleção"
+                        : page.total.toLocaleString("pt-BR") + " modelos"
                       : "Indisponível"}
                 </span>
                 {(query ||
