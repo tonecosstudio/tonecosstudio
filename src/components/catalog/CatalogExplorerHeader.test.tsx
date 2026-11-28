@@ -86,15 +86,18 @@ describe("TONART shared catalog discovery structure", () => {
     },
   );
 
-  it("invites visitors to the organization catalog from the historical page", () => {
+  it("shows a single public catalog navigation without an origin split", () => {
     renderHeader("historical");
-    const banner = screen.getByRole("complementary", {
-      name: "Catálogo em organização",
-    });
+    const tabs = screen.getByRole("navigation", { name: "Explorar catálogo" });
     expect(
-      within(banner).getByRole("link", { name: "Explorar modelos" }),
-    ).toHaveAttribute("href", "/catalogo/em-revisao");
-    expect(banner).toHaveTextContent("nomes ou classificações provisórias");
+      within(tabs).getByRole("link", { name: "Explorar" }),
+    ).toHaveAttribute("href", "/modelos");
+    expect(
+      within(tabs).queryByRole("link", { name: "Catálogo em organização" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("complementary", { name: "Catálogo em organização" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not repeat the invitation on the organization page", () => {
@@ -115,7 +118,7 @@ describe("TONART shared catalog discovery structure", () => {
     ).toHaveAttribute("href", "/catalogo/em-revisao/estudios");
     expect(
       within(tabs).getByRole("link", { name: "Catálogo" }),
-    ).toHaveAttribute("href", "/catalogo/antigos");
+    ).toHaveAttribute("href", "/modelos");
     expect(
       within(tabs).queryByRole("button", {
         name: /Favoritos|Novos|Minha lista/,

@@ -218,7 +218,7 @@ export default function CatalogModelsArcade() {
           characterId: characterId || undefined,
           attributeId: attributeId || undefined,
           search: search || undefined,
-          globalSearch: Boolean(search),
+          globalSearch: true,
           limit: PAGE_SIZE,
           cursor,
         },

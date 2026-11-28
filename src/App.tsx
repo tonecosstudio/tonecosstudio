@@ -13,7 +13,6 @@ import {
 import { useAuthProfileSync } from "@/hooks/useAuthProfileSync";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MainLayout } from "@/components/layouts/MainLayout";
-import CatalogEntryPage from "@/pages/CatalogEntryPage";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import RequireAdmin from "./components/RequireAdmin";
 import RequireAuth from "./components/RequireAuth";
@@ -124,6 +123,16 @@ function HiddenCollectionsPage() {
   return <NotFoundArcade />;
 }
 
+function CatalogEntryRedirect() {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={PUBLIC_ROUTES.catalogModels + location.search}
+      replace
+    />
+  );
+}
+
 function CatalogPublicMvpGate({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   return isCatalogPublicMvpEnabled() && !isPublicCatalogMvpPath(pathname) ? (
@@ -155,11 +164,11 @@ function AppContent() {
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogHub}
-                    element={<CatalogEntryPage />}
+                    element={<CatalogEntryRedirect />}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogHistorical}
-                    element={<CatalogModelsArcade />}
+                    element={<CatalogEntryRedirect />}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogReview}

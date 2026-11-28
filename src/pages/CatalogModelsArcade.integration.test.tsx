@@ -194,6 +194,27 @@ describe("Tonecos canonical model discovery UI", () => {
     ).toBe("all");
   });
 
+  it("lists both sources without a search on the canonical public page", async () => {
+    const { calls } = setupFetch([original, telegram]);
+    await renderCatalog();
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Escultura original",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", {
+        name: "Ver detalhes de Thanos provisório",
+      }),
+    ).toBeInTheDocument();
+    const catalogCalls = calls.filter(({ url }) =>
+      url.pathname.endsWith("/api/catalog"),
+    );
+    expect(catalogCalls).toHaveLength(1);
+    expect(catalogCalls[0].url.searchParams.get("scope")).toBe("all");
+    expect(catalogCalls[0].url.searchParams.has("q")).toBe(false);
+  });
+
   it("restores ordinary image cards in read-only public mode despite the old blanket flag", async () => {
     vi.stubEnv("VITE_TONART_HIDE_CATALOG_MEDIA", "true");
     vi.stubEnv("VITE_PUBLIC_CATALOG_MVP", "true");

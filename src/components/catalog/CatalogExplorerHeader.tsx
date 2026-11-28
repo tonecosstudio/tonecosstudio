@@ -89,7 +89,7 @@ export function CatalogExplorerHeader({
             ? unidentified
               ? PUBLIC_ROUTES.catalogUnidentified
               : PUBLIC_ROUTES.catalogReview
-            : PUBLIC_ROUTES.catalogHistorical,
+            : PUBLIC_ROUTES.catalogModels,
       active: activeTab === "explore",
     },
     {
@@ -110,15 +110,11 @@ export function CatalogExplorerHeader({
           },
         ]
       : []),
-    ...(!standalone
+    ...(!standalone && review
       ? [
           {
-            label: review
-              ? PUBLIC_CATALOG_LABELS.historical
-              : PUBLIC_CATALOG_LABELS.review,
-            href: review
-              ? PUBLIC_ROUTES.catalogHistorical
-              : PUBLIC_ROUTES.catalogReview,
+            label: PUBLIC_CATALOG_LABELS.historical,
+            href: PUBLIC_ROUTES.catalogModels,
             active: false,
           },
         ]
@@ -202,30 +198,6 @@ export function CatalogExplorerHeader({
           );
         })}{" "}
       </nav>
-
-      {!review && !standalone && (
-        <aside
-          data-catalog-organization-banner="true"
-          aria-label={PUBLIC_CATALOG_LABELS.review}
-          className="mt-4 flex flex-col gap-3 rounded-lg border border-[hsl(var(--gold-accent)/0.25)] bg-[hsl(var(--gold-accent)/0.05)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
-        >
-          <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-white">
-              Conheça também o {PUBLIC_CATALOG_LABELS.review}
-            </h2>
-            <p className="mt-1 text-xs leading-relaxed text-[hsl(0,0%,70%)] sm:text-sm">
-              Estamos ampliando nosso acervo. Explore mais modelos, inclusive
-              aqueles que ainda possuem nomes ou classificações provisórias.
-            </p>
-          </div>
-          <Link
-            to={PUBLIC_ROUTES.catalogReview}
-            className="inline-flex min-h-11 shrink-0 items-center gap-2 self-start rounded-md border border-[hsl(var(--gold-accent)/0.5)] px-4 text-xs font-semibold text-[hsl(var(--gold-accent))] transition-colors hover:bg-[hsl(var(--gold-accent)/0.12)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--gold-accent))] sm:self-center"
-          >
-            Explorar modelos <ArrowRight size={15} aria-hidden="true" />
-          </Link>
-        </aside>
-      )}
 
       <header
         data-compact="true"
