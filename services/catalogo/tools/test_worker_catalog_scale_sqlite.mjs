@@ -461,6 +461,35 @@ test("global search combines eligible historical and Telegram rows, preserves ke
   });
   assert.equal(wildcard.response.status, 200);
   assert.deepEqual(wildcard.body.items, []);
-  const invalid = await requestCatalog(database, { scope: "all" });
-  assert.equal(invalid.response.status, 400);
+  // Isolate the five mixed fixture rows in a dedicated franchise so the
+  // 20,320 scale fixtures cannot hide expected IDs beyond the first page.
+  const mixedFranchise = db
+    .prepare("SELECT COALESCE(MAX(id), 0) + 1 AS id FROM franchises")
+    .get().id;
+  db.prepare(
+    "INSERT INTO franchises(id,category_id,slug,name) SELECT ?,category_id,'mixed-fixture','Mixed fixture' FROM franchises WHERE id=?",
+  ).run(mixedFranchise, franchise);
+  const move = db.prepare("UPDATE models SET franchise_id=? WHERE id=?");
+  for (const id of ["historical-thanos", ...ids]) {
+    move.run(mixedFranchise, id);
+  }
+  const browse = await requestCatalog(database, {
+    scope: "all",
+    franchise: "mixed-fixture",
+    limit: 2,
+  });
+  assert.equal(browse.response.status, 200);
+  assert.ok(browse.body.nextCursor);
+  const next = await requestCatalog(database, {
+    scope: "all",
+    franchise: "mixed-fixture",
+    limit: 2,
+    cursor: browse.body.nextCursor,
+  });
+  assert.equal(next.response.status, 200);
+  assert.equal(next.body.nextCursor, null);
+  assert.deepEqual(
+    [...browse.body.items, ...next.body.items].map((m) => m.id),
+    [ids[1], "historical-thanos", ids[0]],
+  );
 });

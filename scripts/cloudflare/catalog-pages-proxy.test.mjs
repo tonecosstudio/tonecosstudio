@@ -65,6 +65,7 @@ test("Telegram identity partition is forwarded only on the public list and direc
     "api/telegram-studios/studios?identity=identified",
     "api/telegram-studios/studios?identity=unidentified",
     "api/catalog?q=Thanos&scope=all",
+    "api/catalog?scope=all&limit=24",
   ]) {
     const io = mockFetch();
     const response = await proxyCatalogRequest(new Request(SITE + "/catalogo-api/" + route), io.fetcher);

@@ -381,9 +381,8 @@ async function listCatalog(request: Request, env: Env) {
     if (length > 120) return json(request, env, { error: 'search_too_long', maxLength: 120 }, { status: 400 })
   }
 
-  // Global text search does not change commercial browsing or publication.
+  // Explicit unified public browsing uses the same visibility gate as global search.
   const globalSearch = url.searchParams.get('scope') === 'all'
-  if (globalSearch && !query) return json(request, env, { error: 'global_search_requires_query' }, { status: 400 })
   const where = [globalSearch
     ? "((m.telegram_group_key IS NULL AND m.published=1) OR (" + TELEGRAM_PUBLIC_VISIBLE_SQL + "))"
     : 'm.published = 1']

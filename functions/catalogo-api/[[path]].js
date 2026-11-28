@@ -202,7 +202,7 @@ function isBoundedPublicQuery(route, searchParams) {
     } else if (key === "studio") {
       if (value.length > 120 || /[\x00-\x1f\x7f]/.test(value)) return false;
     } else if (key === "scope") {
-      if (route !== "api/catalog" || value !== "all" || !searchParams.has("q"))
+      if (route !== "api/catalog" || value !== "all")
         return false;
     } else if (key === "identity") {
       if (

@@ -47,6 +47,7 @@ test('all canonical public catalog request variants remain accepted', () => {
   const allowed = [
     '/api/catalog',
     '/api/catalog?limit=12',
+    '/api/catalog?scope=all&limit=12',
     '/api/catalog?category=filmes&franchise=classicos&folder=colecao%2Fpersonagens&limit=12',
     '/api/catalog?category=all&q=Boneco%20Raro&limit=12',
     '/api/catalog?material=Resina&collection=Especial&minHeight=10&maxHeight=120',
