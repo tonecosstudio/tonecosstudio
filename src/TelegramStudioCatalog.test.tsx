@@ -599,6 +599,10 @@ describe("Telegram-only public studio gallery", () => {
     expect(
       screen.getByRole("heading", { name: "RedBushido" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Coleções" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByText("2 modelos")).toBeInTheDocument();
     const card = open.closest("article");
     expect(card).not.toBeNull();
