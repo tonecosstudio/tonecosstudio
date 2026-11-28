@@ -17,7 +17,6 @@ import { ArcadeFooterView } from "@/components/arcade/ArcadeFooterView";
 import { CatalogBrowsingProvider } from "@/services/catalog/catalog-browsing-context";
 import { PUBLIC_ROUTES, TONECOS_COMMERCIAL_ROUTES } from "@/config/routes";
 import PublicCatalogContact from "@/pages/PublicCatalogContact";
-import CatalogEntryPage from "@/pages/CatalogEntryPage";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
@@ -53,6 +52,13 @@ function PublicRouteScrollReset() {
   }, [pathname, hash, navigationType]);
 
   return null;
+}
+
+function CatalogEntryRedirect() {
+  const location = useLocation();
+  return (
+    <Navigate to={PUBLIC_ROUTES.catalogModels + location.search} replace />
+  );
 }
 
 function NotFound() {
@@ -126,11 +132,11 @@ export function CatalogMvpShell({
                   <Route path={PUBLIC_ROUTES.landing} element={<Home />} />
                   <Route
                     path={PUBLIC_ROUTES.catalogHub}
-                    element={<CatalogEntryPage />}
+                    element={<CatalogEntryRedirect />}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogHistorical}
-                    element={<Models />}
+                    element={<CatalogEntryRedirect />}
                   />
                   <Route
                     path={PUBLIC_ROUTES.catalogReview}
