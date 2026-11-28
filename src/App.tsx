@@ -126,10 +126,7 @@ function HiddenCollectionsPage() {
 function CatalogEntryRedirect() {
   const location = useLocation();
   return (
-    <Navigate
-      to={PUBLIC_ROUTES.catalogModels + location.search}
-      replace
-    />
+    <Navigate to={PUBLIC_ROUTES.catalogModels + location.search} replace />
   );
 }
 
