@@ -461,17 +461,35 @@ test("global search combines eligible historical and Telegram rows, preserves ke
   });
   assert.equal(wildcard.response.status, 200);
   assert.deepEqual(wildcard.body.items, []);
-  const unified = await requestCatalog(database, { scope: "all", limit: 60 });
-  assert.equal(unified.response.status, 200);
-  const unifiedIds = unified.body.items.map((m) => m.id);
-  assert.ok(unifiedIds.includes(ids[1]));
-  assert.ok(!unifiedIds.includes(ids[2]));
-  assert.ok(!unifiedIds.includes(ids[3]));
-  // Narrow by existing canonical franchise and preserve pagination.
-  const browse = await requestCatalog(database, { scope: "all", franchise: "saga-alfa", limit: 2 });
+  // Isolate the five mixed fixture rows in a dedicated franchise so the
+  // 20,320 scale fixtures cannot hide expected IDs beyond the first page.
+  const mixedFranchise = db
+    .prepare("SELECT COALESCE(MAX(id), 0) + 1 AS id FROM franchises")
+    .get().id;
+  db.prepare(
+    "INSERT INTO franchises(id,category_id,slug,name) SELECT ?,category_id,'mixed-fixture','Mixed fixture' FROM franchises WHERE id=?",
+  ).run(mixedFranchise, franchise);
+  const move = db.prepare("UPDATE models SET franchise_id=? WHERE id=?");
+  for (const id of ["historical-thanos", ...ids]) {
+    move.run(mixedFranchise, id);
+  }
+  const browse = await requestCatalog(database, {
+    scope: "all",
+    franchise: "mixed-fixture",
+    limit: 2,
+  });
   assert.equal(browse.response.status, 200);
   assert.ok(browse.body.nextCursor);
-  const next = await requestCatalog(database, { scope: "all", franchise: "saga-alfa", limit: 2, cursor: browse.body.nextCursor });
+  const next = await requestCatalog(database, {
+    scope: "all",
+    franchise: "mixed-fixture",
+    limit: 2,
+    cursor: browse.body.nextCursor,
+  });
   assert.equal(next.response.status, 200);
-  assert.ok(next.body.items.every((m) => !browse.body.items.some((first) => first.id === m.id)));
+  assert.equal(next.body.nextCursor, null);
+  assert.deepEqual(
+    [...browse.body.items, ...next.body.items].map((m) => m.id),
+    [ids[1], "historical-thanos", ids[0]],
+  );
 });
